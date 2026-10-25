@@ -1,0 +1,563 @@
+package com.luisell.bestkeyboard
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.os.Handler
+import android.os.Looper
+import android.view.MotionEvent
+import android.view.View
+import android.view.inputmethod.EditorInfo
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
+
+/**
+ * El teclado completo dibujado a mano en una sola vista nativa (Canvas).
+ * Es la forma más rápida: no hay botones ni WebView, solo dibujo directo.
+ */
+@SuppressLint("ViewConstructor")
+class KeyboardView(context: Context) : View(context) {
+
+    interface Listener {
+        fun onKeyText(text: String)
+        fun onKeyCode(code: Int)
+        fun onDeletePress()
+        fun onCursorMove(steps: Int)
+        fun onToolbar(action: Int)
+        fun onLongPressGlobe()
+        fun onKeyFeedback()
+    }
+
+    companion object {
+        const val TOOL_SETTINGS = 0
+        const val TOOL_THEME = 1
+        const val TOOL_HIDE = 2
+        private const val LONG_PRESS_MS = 350L
+        private const val REPEAT_START_MS = 400L
+    }
+
+    var listener: Listener? = null
+    private val d = resources.displayMetrics.density
+
+    var palette: Palette = Palette.DARK
+        set(v) { field = v; invalidate() }
+    var keyHeightDp = 52f
+        set(v) { if (field != v) { field = v; requestLayout(); invalidate() } }
+    var shift = 0 // 0 = minúsculas, 1 = una mayúscula, 2 = bloqueo de mayúsculas
+        set(v) { if (field != v) { field = v; invalidate() } }
+    var enterAction = EditorInfo.IME_ACTION_NONE
+        set(v) { if (field != v) { field = v; invalidate() } }
+    var spaceLabel = ""
+        set(v) { if (field != v) { field = v; invalidate() } }
+    var showPreview = true
+
+    private var rows: List<List<Key>> = emptyList()
+    private val stripH = 46f * d
+    private val bottomPad = 6f * d
+    private val keyH get() = keyHeightDp * d
+    private val gapX = 5f * d
+    private val gapY = 8f * d
+    private val radius = 7f * d
+
+    // Pinturas creadas una sola vez (nada se crea mientras se dibuja = más fluido)
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.DEFAULT
+    }
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val fm = Paint.FontMetrics()
+    private val path = Path()
+    private val tmp = RectF()
+
+    // Estado del toque
+    private val handler = Handler(Looper.getMainLooper())
+    private var activeId = -1
+    private var activeKey: Key? = null
+    private var downX = 0f
+    private var longPressed = false
+    private var stripPressed = -1
+    private var spaceDragging = false
+    private var spaceLastX = 0f
+    private var repeatCount = 0
+
+    // Ventanita de acentos
+    private var altKeys: List<String>? = null
+    private var altSel = 0
+    private var altLeft = 0f
+    private var altTop = 0f
+    private var altW = 0f
+    private var altH = 0f
+    private var altCellW = 0f
+    private val altPad = 4f * d
+
+    private val longPressRunnable = Runnable { onLongPress() }
+    private val repeatRunnable = object : Runnable {
+        override fun run() {
+            listener?.onDeletePress()
+            repeatCount++
+            handler.postDelayed(this, if (repeatCount > 12) 30L else 60L)
+        }
+    }
+
+    fun setRows(r: List<List<Key>>) {
+        val heightChanges = r.size != rows.size
+        rows = r
+        reset()
+        if (heightChanges) requestLayout()
+        if (width > 0) layoutKeys()
+        invalidate()
+    }
+
+    /** Cancela cualquier toque en curso (por ejemplo al cerrar el teclado). */
+    fun reset() {
+        handler.removeCallbacksAndMessages(null)
+        activeKey = null
+        activeId = -1
+        altKeys = null
+        stripPressed = -1
+        longPressed = false
+        spaceDragging = false
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val w = MeasureSpec.getSize(widthMeasureSpec)
+        val h = (stripH + rows.size * keyH + bottomPad).toInt()
+        setMeasuredDimension(w, h)
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        layoutKeys()
+    }
+
+    private fun layoutKeys() {
+        val w = width.toFloat()
+        val kh = keyH
+        var y = stripH
+        for (row in rows) {
+            val total = row.fold(0f) { a, k -> a + k.weight }
+            var x = 0f
+            for ((i, k) in row.withIndex()) {
+                val kw = w * k.weight / total
+                val right = if (i == row.lastIndex) w else x + kw
+                k.cell.set(x, y, right, y + kh)
+                val l = x + gapX / 2 + (if (i == 0) gapX / 2 else 0f)
+                val r = right - gapX / 2 - (if (i == row.lastIndex) gapX / 2 else 0f)
+                k.rect.set(l, y + gapY / 2, r, y + kh - gapY / 2)
+                x += kw
+            }
+            y += kh
+        }
+    }
+
+    private fun findKey(x: Float, yIn: Float): Key? {
+        if (rows.isEmpty()) return null
+        val lastRow = rows.last()
+        if (lastRow.isEmpty()) return null
+        val y = min(yIn, lastRow[0].cell.bottom - 1f)
+        for (row in rows) {
+            if (row.isEmpty()) continue
+            val c = row[0].cell
+            if (y < c.top || y >= c.bottom) continue
+            for (k in row) if (x >= k.cell.left && x < k.cell.right) return k
+            return if (x < c.left) row.first() else row.last()
+        }
+        return null
+    }
+
+    private fun stripHit(x: Float): Int = when {
+        x < 52f * d -> TOOL_SETTINGS
+        x < 100f * d -> TOOL_THEME
+        x > width - 56f * d -> TOOL_HIDE
+        else -> -1
+    }
+
+    // ---------------------------------------------------------------- Toques
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> startPointer(e.getPointerId(0), e.getX(0), e.getY(0))
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                // Escritura rápida: si tocas otra tecla antes de soltar, la anterior se escribe ya
+                if (activeId != -1) releasePointer(true)
+                val i = e.actionIndex
+                startPointer(e.getPointerId(i), e.getX(i), e.getY(i))
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val i = e.findPointerIndex(activeId)
+                if (i >= 0) movePointer(e.getX(i), e.getY(i))
+            }
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (e.getPointerId(e.actionIndex) == activeId) releasePointer(true)
+            }
+            MotionEvent.ACTION_UP -> {
+                if (e.getPointerId(e.actionIndex) == activeId) releasePointer(true)
+                activeId = -1
+            }
+            MotionEvent.ACTION_CANCEL -> releasePointer(false)
+        }
+        return true
+    }
+
+    private fun startPointer(id: Int, x: Float, y: Float) {
+        activeId = id
+        downX = x
+        longPressed = false
+        spaceDragging = false
+        altKeys = null
+        if (y < stripH) {
+            stripPressed = stripHit(x)
+            if (stripPressed >= 0) listener?.onKeyFeedback()
+            invalidate()
+            return
+        }
+        val key = findKey(x, y) ?: return
+        activeKey = key
+        listener?.onKeyFeedback()
+        when (key.code) {
+            Codes.DELETE -> {
+                listener?.onDeletePress()
+                repeatCount = 0
+                handler.postDelayed(repeatRunnable, REPEAT_START_MS)
+            }
+            Codes.SHIFT -> listener?.onKeyCode(Codes.SHIFT)
+            else -> if (key.alts.isNotEmpty() || key.code == Codes.LANG) {
+                handler.postDelayed(longPressRunnable, LONG_PRESS_MS)
+            }
+        }
+        invalidate()
+    }
+
+    private fun movePointer(x: Float, y: Float) {
+        val key = activeKey ?: return
+        val alts = altKeys
+        if (alts != null) {
+            val sel = ((x - altLeft - altPad) / altCellW).toInt().coerceIn(0, alts.size - 1)
+            if (sel != altSel) { altSel = sel; invalidate() }
+            return
+        }
+        if (key.code == Codes.SPACE) {
+            // Deslizar sobre la barra espaciadora mueve el cursor
+            if (!spaceDragging && abs(x - downX) > 18f * d) {
+                spaceDragging = true
+                spaceLastX = x
+            }
+            if (spaceDragging) {
+                val step = 11f * d
+                val n = ((x - spaceLastX) / step).toInt()
+                if (n != 0) {
+                    listener?.onCursorMove(n)
+                    spaceLastX += n * step
+                }
+            }
+            return
+        }
+        if (key.code == 0 && !longPressed) {
+            val k = findKey(x, y)
+            if (k != null && k !== key && k.code == 0) {
+                activeKey = k
+                handler.removeCallbacks(longPressRunnable)
+                if (k.alts.isNotEmpty()) handler.postDelayed(longPressRunnable, LONG_PRESS_MS)
+                invalidate()
+            }
+        }
+    }
+
+    private fun releasePointer(commit: Boolean) {
+        handler.removeCallbacks(longPressRunnable)
+        handler.removeCallbacks(repeatRunnable)
+        activeId = -1
+        if (stripPressed >= 0) {
+            val action = stripPressed
+            stripPressed = -1
+            invalidate()
+            if (commit) listener?.onToolbar(action)
+            return
+        }
+        val key = activeKey
+        val alts = altKeys
+        activeKey = null
+        altKeys = null
+        invalidate()
+        if (key == null || !commit) return
+        if (alts != null) {
+            listener?.onKeyText(alts[altSel])
+            return
+        }
+        if (longPressed) return
+        when (key.code) {
+            0 -> key.text?.let { listener?.onKeyText(it) }
+            Codes.SPACE -> if (!spaceDragging) listener?.onKeyCode(Codes.SPACE)
+            Codes.DELETE, Codes.SHIFT -> Unit
+            else -> listener?.onKeyCode(key.code)
+        }
+    }
+
+    private fun onLongPress() {
+        val key = activeKey ?: return
+        longPressed = true
+        if (key.code == Codes.LANG) {
+            listener?.onLongPressGlobe()
+            return
+        }
+        if (key.alts.isEmpty()) return
+        val list = key.alts.map { if (shift > 0) upper(it) else it }
+        altCellW = max(key.rect.width(), 34f * d)
+        altW = list.size * altCellW + 2 * altPad
+        val maxW = width - 4f * d
+        if (altW > maxW) {
+            altCellW = (maxW - 2 * altPad) / list.size
+            altW = maxW
+        }
+        altH = keyH + altPad
+        altLeft = (key.rect.centerX() - altCellW / 2 - altPad)
+            .coerceIn(2f * d, max(2f * d, width - altW - 2f * d))
+        altTop = max(2f * d, key.rect.top - altH - 4f * d)
+        altSel = ((key.rect.centerX() - altLeft - altPad) / altCellW).toInt().coerceIn(0, list.size - 1)
+        altKeys = list
+        listener?.onKeyFeedback()
+        invalidate()
+    }
+
+    private fun upper(s: String): String =
+        if (s.length == 1) Character.toUpperCase(s[0]).toString() else s.uppercase()
+
+    private fun display(label: String): String =
+        if (shift > 0 && label.length == 1 && label[0].isLetter()) upper(label) else label
+
+    // ---------------------------------------------------------------- Dibujo
+
+    override fun onDraw(c: Canvas) {
+        val p = palette
+        c.drawColor(p.bg)
+        drawStrip(c, p)
+        for (row in rows) for (k in row) drawKey(c, k, p)
+        val ak = activeKey
+        if (altKeys != null) drawAlts(c, p)
+        else if (ak != null && showPreview && ak.code == 0 && !longPressed) drawPreview(c, ak, p)
+    }
+
+    private fun st(color: Int) {
+        stroke.color = color
+        stroke.strokeWidth = 1.8f * d
+    }
+
+    private fun drawLabel(c: Canvas, s: String, cx: Float, cy: Float, size: Float, color: Int) {
+        text.textSize = size
+        text.color = color
+        text.getFontMetrics(fm)
+        c.drawText(s, cx, cy - (fm.ascent + fm.descent) / 2f, text)
+    }
+
+    private fun drawKey(c: Canvas, k: Key, p: Palette) {
+        val pressed = k === activeKey
+        val bg = when {
+            k.code == Codes.ENTER -> if (pressed) p.accentPressed else p.accent
+            pressed -> p.keyPressed
+            k.special -> p.special
+            else -> p.key
+        }
+        if (!p.isDark) {
+            fill.color = p.shadow
+            tmp.set(k.rect)
+            tmp.offset(0f, 1f * d)
+            c.drawRoundRect(tmp, radius, radius, fill)
+        }
+        fill.color = bg
+        c.drawRoundRect(k.rect, radius, radius, fill)
+
+        val cx = k.rect.centerX()
+        val cy = k.rect.centerY()
+        val s = keyH * 0.19f
+        val fg = if (k.code == Codes.ENTER) p.onAccent else p.text
+        when (k.code) {
+            0 -> drawLabel(c, display(k.label), cx, cy, if (k.label.length > 1) keyH * 0.3f else keyH * 0.42f, fg)
+            Codes.SPACE -> drawLabel(c, spaceLabel, cx, cy, keyH * 0.26f, p.hint)
+            Codes.SHIFT -> drawShift(c, cx, cy, s, fg)
+            Codes.DELETE -> drawDelete(c, cx, cy, s, fg)
+            Codes.ENTER -> drawEnter(c, cx, cy, s, fg)
+            Codes.LANG -> drawGlobe(c, cx, cy, s, fg)
+            else -> drawLabel(c, k.label, cx, cy, keyH * 0.29f, fg)
+        }
+    }
+
+    private fun drawShift(c: Canvas, cx: Float, cyIn: Float, s: Float, color: Int) {
+        val cy = cyIn - s * 0.1f
+        path.reset()
+        path.moveTo(cx, cy - s)
+        path.lineTo(cx + s, cy)
+        path.lineTo(cx + s * 0.45f, cy)
+        path.lineTo(cx + s * 0.45f, cy + s * 0.85f)
+        path.lineTo(cx - s * 0.45f, cy + s * 0.85f)
+        path.lineTo(cx - s * 0.45f, cy)
+        path.lineTo(cx - s, cy)
+        path.close()
+        if (shift == 0) {
+            st(color); c.drawPath(path, stroke)
+        } else {
+            fill.color = color; c.drawPath(path, fill)
+        }
+        if (shift == 2) {
+            st(color)
+            c.drawLine(cx - s * 0.6f, cy + s * 1.3f, cx + s * 0.6f, cy + s * 1.3f, stroke)
+        }
+    }
+
+    private fun drawDelete(c: Canvas, cx: Float, cy: Float, s: Float, color: Int) {
+        st(color)
+        path.reset()
+        path.moveTo(cx - s * 1.2f, cy)
+        path.lineTo(cx - s * 0.5f, cy - s * 0.75f)
+        path.lineTo(cx + s * 1.1f, cy - s * 0.75f)
+        path.lineTo(cx + s * 1.1f, cy + s * 0.75f)
+        path.lineTo(cx - s * 0.5f, cy + s * 0.75f)
+        path.close()
+        c.drawPath(path, stroke)
+        c.drawLine(cx - s * 0.05f, cy - s * 0.32f, cx + s * 0.6f, cy + s * 0.32f, stroke)
+        c.drawLine(cx - s * 0.05f, cy + s * 0.32f, cx + s * 0.6f, cy - s * 0.32f, stroke)
+    }
+
+    private fun drawEnter(c: Canvas, cx: Float, cy: Float, s: Float, color: Int) {
+        st(color)
+        when (enterAction) {
+            EditorInfo.IME_ACTION_SEARCH -> {
+                c.drawCircle(cx - s * 0.2f, cy - s * 0.2f, s * 0.6f, stroke)
+                c.drawLine(cx + s * 0.25f, cy + s * 0.25f, cx + s * 0.85f, cy + s * 0.85f, stroke)
+            }
+            EditorInfo.IME_ACTION_SEND -> {
+                path.reset()
+                path.moveTo(cx - s * 0.85f, cy - s * 0.85f)
+                path.lineTo(cx + s * 0.95f, cy)
+                path.lineTo(cx - s * 0.85f, cy + s * 0.85f)
+                path.lineTo(cx - s * 0.45f, cy)
+                path.close()
+                c.drawPath(path, stroke)
+                c.drawLine(cx - s * 0.45f, cy, cx + s * 0.2f, cy, stroke)
+            }
+            EditorInfo.IME_ACTION_GO, EditorInfo.IME_ACTION_NEXT -> {
+                c.drawLine(cx - s * 0.85f, cy, cx + s * 0.85f, cy, stroke)
+                c.drawLine(cx + s * 0.3f, cy - s * 0.55f, cx + s * 0.85f, cy, stroke)
+                c.drawLine(cx + s * 0.3f, cy + s * 0.55f, cx + s * 0.85f, cy, stroke)
+            }
+            EditorInfo.IME_ACTION_PREVIOUS -> {
+                c.drawLine(cx - s * 0.85f, cy, cx + s * 0.85f, cy, stroke)
+                c.drawLine(cx - s * 0.3f, cy - s * 0.55f, cx - s * 0.85f, cy, stroke)
+                c.drawLine(cx - s * 0.3f, cy + s * 0.55f, cx - s * 0.85f, cy, stroke)
+            }
+            EditorInfo.IME_ACTION_DONE -> {
+                path.reset()
+                path.moveTo(cx - s * 0.85f, cy)
+                path.lineTo(cx - s * 0.25f, cy + s * 0.6f)
+                path.lineTo(cx + s * 0.9f, cy - s * 0.6f)
+                c.drawPath(path, stroke)
+            }
+            else -> {
+                path.reset()
+                path.moveTo(cx + s * 0.8f, cy - s * 0.75f)
+                path.lineTo(cx + s * 0.8f, cy + s * 0.25f)
+                path.lineTo(cx - s * 0.8f, cy + s * 0.25f)
+                c.drawPath(path, stroke)
+                c.drawLine(cx - s * 0.8f, cy + s * 0.25f, cx - s * 0.35f, cy - s * 0.2f, stroke)
+                c.drawLine(cx - s * 0.8f, cy + s * 0.25f, cx - s * 0.35f, cy + s * 0.7f, stroke)
+            }
+        }
+    }
+
+    private fun drawGlobe(c: Canvas, cx: Float, cy: Float, s: Float, color: Int) {
+        st(color)
+        val r = s * 0.9f
+        c.drawCircle(cx, cy, r, stroke)
+        tmp.set(cx - r * 0.42f, cy - r, cx + r * 0.42f, cy + r)
+        c.drawOval(tmp, stroke)
+        c.drawLine(cx - r, cy, cx + r, cy, stroke)
+        c.drawLine(cx - r * 0.82f, cy - r * 0.5f, cx + r * 0.82f, cy - r * 0.5f, stroke)
+        c.drawLine(cx - r * 0.82f, cy + r * 0.5f, cx + r * 0.82f, cy + r * 0.5f, stroke)
+    }
+
+    private fun drawStrip(c: Canvas, p: Palette) {
+        val cy = stripH / 2f
+        val s = stripH * 0.22f
+        val xs = floatArrayOf(28f * d, 76f * d, width - 28f * d)
+        for (i in 0..2) {
+            val cx = xs[i]
+            if (stripPressed == i) {
+                fill.color = p.keyPressed
+                c.drawCircle(cx, cy, stripH * 0.4f, fill)
+            }
+            st(p.hint)
+            when (i) {
+                TOOL_SETTINGS -> {
+                    c.drawCircle(cx, cy, s * 0.35f, stroke)
+                    c.drawCircle(cx, cy, s * 0.75f, stroke)
+                    for (t in 0 until 8) {
+                        val a = t * Math.PI / 4
+                        val ca = cos(a).toFloat()
+                        val sa = sin(a).toFloat()
+                        c.drawLine(cx + ca * s * 0.75f, cy + sa * s * 0.75f, cx + ca * s * 1.08f, cy + sa * s * 1.08f, stroke)
+                    }
+                }
+                TOOL_THEME -> {
+                    val r = s * 0.85f
+                    c.drawCircle(cx, cy, r, stroke)
+                    tmp.set(cx - r, cy - r, cx + r, cy + r)
+                    fill.color = p.hint
+                    c.drawArc(tmp, 90f, 180f, true, fill)
+                }
+                TOOL_HIDE -> {
+                    path.reset()
+                    path.moveTo(cx - s * 0.7f, cy - s * 0.3f)
+                    path.lineTo(cx, cy + s * 0.4f)
+                    path.lineTo(cx + s * 0.7f, cy - s * 0.3f)
+                    c.drawPath(path, stroke)
+                }
+            }
+        }
+    }
+
+    private fun drawBubble(c: Canvas, r: RectF, p: Palette) {
+        fill.color = p.shadow
+        r.offset(0f, 2f * d)
+        c.drawRoundRect(r, radius * 1.3f, radius * 1.3f, fill)
+        r.offset(0f, -2f * d)
+        fill.color = p.popup
+        c.drawRoundRect(r, radius * 1.3f, radius * 1.3f, fill)
+    }
+
+    private fun drawPreview(c: Canvas, k: Key, p: Palette) {
+        val w = max(k.rect.width() * 1.3f, 44f * d)
+        val h = keyH * 1.15f
+        val left = (k.rect.centerX() - w / 2).coerceIn(2f * d, max(2f * d, width - w - 2f * d))
+        val top = max(2f * d, k.rect.top - h - 2f * d)
+        tmp.set(left, top, left + w, top + h)
+        drawBubble(c, tmp, p)
+        drawLabel(c, display(k.label), tmp.centerX(), tmp.centerY(), keyH * 0.55f, p.text)
+    }
+
+    private fun drawAlts(c: Canvas, p: Palette) {
+        val alts = altKeys ?: return
+        tmp.set(altLeft, altTop, altLeft + altW, altTop + altH)
+        drawBubble(c, tmp, p)
+        for (i in alts.indices) {
+            val l = altLeft + altPad + i * altCellW
+            if (i == altSel) {
+                fill.color = p.accent
+                tmp.set(l, altTop + altPad, l + altCellW, altTop + altH - altPad)
+                c.drawRoundRect(tmp, radius, radius, fill)
+            }
+            drawLabel(c, alts[i], l + altCellW / 2, altTop + altH / 2, keyH * 0.42f,
+                if (i == altSel) p.onAccent else p.text)
+        }
+    }
+}
