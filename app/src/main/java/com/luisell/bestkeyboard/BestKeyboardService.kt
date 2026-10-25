@@ -7,6 +7,8 @@ import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -14,7 +16,9 @@ import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
+import com.luisell.bestkeyboard.words.TextUtil
 
 /** El servicio del teclado: recibe las teclas y las escribe en la app que estés usando. */
 class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
@@ -25,6 +29,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private lateinit var prefs: SharedPreferences
     private var vibrator: Vibrator? = null
     private var audio: AudioManager? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     private var page = Page.LETTERS
     private var shift = 0
@@ -41,11 +46,25 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var doubleSpace = true
     private var numberRow = true
     private var lang = "es"
+    private var suggestOn = true
+    private var autocorrectOn = true
+    private var learnOn = true
 
     // Tipo de campo
     private var isPassword = false
     private var phone = false
     private var commaMode = ","
+    private var fieldSuggest = true
+    private var fieldCorrect = true
+    private var fieldLearn = true
+
+    // Sugerencias
+    private val slotWords = arrayOfNulls<String>(3)
+    private var slotTyped = -1
+    private var autoSpace = false
+    /** Última autocorrección: (lo que escribiste, la corrección, el separador). Borrar la deshace. */
+    private var lastCorrection: Triple<String, String, String>? = null
+    private val updateRunnable = Runnable { updateSuggestions() }
 
     override fun onCreate() {
         super.onCreate()
@@ -53,6 +72,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         @Suppress("DEPRECATION")
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         audio = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        WordStore.load(this) { scheduleUpdate() }
     }
 
     override fun onCreateInputView(): View {
@@ -88,6 +108,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             variation == InputType.TYPE_TEXT_VARIATION_URI -> "/"
             else -> ","
         }
+        val noSuggestions = (type and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0
+        fieldSuggest = cls == InputType.TYPE_CLASS_TEXT && !isPassword && commaMode == "," && !noSuggestions
+        fieldCorrect = fieldSuggest && variation != InputType.TYPE_TEXT_VARIATION_FILTER
+        fieldLearn = fieldSuggest && (info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
         kv?.enterAction = enterActionFor(info)
 
         if (!restarting) {
@@ -96,13 +120,23 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             manualShift = false
         }
         lastWasSpace = false
+        autoSpace = false
+        lastCorrection = null
         rebuild()
         updateAutoCaps()
+        scheduleUpdate()
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
         kv?.reset()
+        clearSlots()
+        WordStore.saveNow()
+    }
+
+    override fun onDestroy() {
+        WordStore.saveNow()
+        super.onDestroy()
     }
 
     override fun onUpdateSelection(
@@ -111,6 +145,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
         updateAutoCaps()
+        if (newSelStart != newSelEnd) {
+            clearSlots()
+            handler.removeCallbacks(updateRunnable)
+        } else {
+            scheduleUpdate()
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -153,6 +193,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         autoCap = prefs.getBoolean(Prefs.AUTOCAP, true)
         doubleSpace = prefs.getBoolean(Prefs.DOUBLE_SPACE, true)
         lang = prefs.getString(Prefs.LANG, "es") ?: "es"
+        suggestOn = prefs.getBoolean(Prefs.SUGGEST, true)
+        autocorrectOn = prefs.getBoolean(Prefs.AUTOCORRECT, true)
+        learnOn = prefs.getBoolean(Prefs.LEARN, true)
 
         val newNumberRow = prefs.getBoolean(Prefs.NUMBER_ROW, true)
         if (newNumberRow != numberRow) {
@@ -211,6 +254,128 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         return if (a == EditorInfo.IME_ACTION_UNSPECIFIED) EditorInfo.IME_ACTION_NONE else a
     }
 
+    // ---------------------------------------------------------------- Sugerencias
+
+    private fun scheduleUpdate() {
+        handler.removeCallbacks(updateRunnable)
+        handler.post(updateRunnable)
+    }
+
+    private fun clearSlots() {
+        slotWords.fill(null)
+        slotTyped = -1
+        kv?.clearSuggestions()
+    }
+
+    private fun showSlots(left: String?, center: String?, right: String?, bold: Boolean, typedLeft: Boolean) {
+        slotWords[0] = left
+        slotWords[1] = center
+        slotWords[2] = right
+        slotTyped = if (typedLeft) 0 else -1
+        kv?.setSuggestions(left, center, right, bold, typedLeft)
+    }
+
+    private fun canCorrect(word: String, before: CharSequence): Boolean {
+        if (!autocorrectOn || !fieldCorrect) return false
+        // Un nombre propio en medio de la frase (ej. "Mendoza") no se corrige
+        if (word.length > 1 && word[0].isUpperCase() && !TextUtil.isSentenceStart(before, word.length)) return false
+        return true
+    }
+
+    private fun updateSuggestions() {
+        val eng = WordStore.engine
+        val ic = currentInputConnection
+        if (!suggestOn || !fieldSuggest || eng == null || ic == null || page == Page.NUM) {
+            clearSlots(); return
+        }
+        val before = ic.getTextBeforeCursor(48, 0) ?: ""
+        val after = ic.getTextAfterCursor(1, 0) ?: ""
+        if (after.isNotEmpty() && TextUtil.isWordChar(after[0])) { clearSlots(); return }
+
+        val word = TextUtil.currentWord(before)
+        if (word.isEmpty()) {
+            // Predicción: lo que sueles escribir después de la palabra anterior
+            val prev = TextUtil.previousWord(before, 0)
+            val preds = if (prev != null) eng.predictions(prev, lang) else emptyList()
+            if (preds.isEmpty()) { clearSlots(); return }
+            val capital = shift > 0 && page == Page.LETTERS
+            val p = preds.map { if (capital) TextUtil.matchCase(it, "A") else it }
+            showSlots(p.getOrNull(1), p.getOrNull(0), p.getOrNull(2), bold = false, typedLeft = false)
+            return
+        }
+
+        val prev = TextUtil.previousWord(before, word.length)
+        val res = eng.suggest(word, prev, lang)
+        val corr = if (canCorrect(word, before)) res.correction else null
+        if (corr != null && corr != word) {
+            val right = res.suggestions.firstOrNull { !it.equals(corr, true) && !it.equals(word, true) }
+            showSlots(word, corr, right, bold = true, typedLeft = true)
+            return
+        }
+        val list = res.suggestions.filter { it != word }.toMutableList()
+        val known = eng.isKnown(word.lowercase())
+        if (known || res.suggestions.any { it == word }) {
+            // Lo que escribiste es una palabra: va en el centro
+            showSlots(list.getOrNull(0), word, list.getOrNull(1), bold = false, typedLeft = false)
+        } else {
+            showSlots(word, list.getOrNull(0), list.getOrNull(1), bold = false, typedLeft = true)
+        }
+    }
+
+    override fun onSuggestion(slot: Int) {
+        val w = slotWords.getOrNull(slot) ?: return
+        val ic = currentInputConnection ?: return
+        val before = ic.getTextBeforeCursor(48, 0) ?: ""
+        val cur = TextUtil.currentWord(before)
+        val prev = TextUtil.previousWord(before, cur.length)
+        ic.beginBatchEdit()
+        if (cur.isNotEmpty()) ic.deleteSurroundingText(cur.length, 0)
+        ic.commitText("$w ", 1)
+        ic.endBatchEdit()
+        val eng = WordStore.engine
+        if (eng != null && learnOn && fieldLearn) {
+            if (slot == slotTyped) eng.user.learn(w) else eng.user.add(w)
+            if (prev != null) eng.user.addBigram(prev, w)
+            WordStore.scheduleSave()
+        }
+        lastCorrection = null
+        autoSpace = true
+        lastWasSpace = true
+        if (shift == 1) { manualShift = false; setShift(0) }
+        if (page == Page.SYM || page == Page.SYM2) { page = Page.LETTERS; rebuild() }
+        updateAutoCaps()
+    }
+
+    /**
+     * Se llama justo antes de escribir un espacio o un signo: corrige la palabra si hace falta
+     * y aprende lo que escribiste. Devuelve la corrección hecha (lo escrito, lo corregido) o null.
+     */
+    private fun finishWord(ic: InputConnection): Pair<String, String>? {
+        if (!fieldSuggest || page == Page.NUM) return null
+        val before = ic.getTextBeforeCursor(48, 0) ?: return null
+        val word = TextUtil.currentWord(before)
+        if (word.isEmpty()) return null
+        val eng = WordStore.engine ?: return null
+        val prev = TextUtil.previousWord(before, word.length)
+        var final = word
+        var fixed: Pair<String, String>? = null
+        if (canCorrect(word, before)) {
+            val corr = eng.correction(word, lang)?.let { TextUtil.matchCase(it, word) }
+            if (corr != null && corr != word) {
+                ic.deleteSurroundingText(word.length, 0)
+                ic.commitText(corr, 1)
+                final = corr
+                fixed = Pair(word, corr)
+            }
+        }
+        if (learnOn && fieldLearn) {
+            eng.user.add(final)
+            if (prev != null) eng.user.addBigram(prev, final)
+            WordStore.scheduleSave()
+        }
+        return fixed
+    }
+
     // ---------------------------------------------------------------- Teclas
 
     override fun onKeyText(text: String) {
@@ -219,7 +384,32 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (page == Page.LETTERS && shift > 0 && t.length == 1) {
             t = Character.toUpperCase(t[0]).toString()
         }
-        ic.commitText(t, 1)
+        lastCorrection = null
+        val punct = t.length == 1 && t[0] in ".,?!;:"
+        if (punct && autoSpace) {
+            // "hola " + "," -> "hola, " (el espacio que puso la sugerencia se mueve después del signo)
+            val b = ic.getTextBeforeCursor(1, 0)
+            if (b != null && b.length == 1 && b[0] == ' ') {
+                ic.beginBatchEdit()
+                ic.deleteSurroundingText(1, 0)
+                ic.commitText("$t ", 1)
+                ic.endBatchEdit()
+                autoSpace = false
+                lastWasSpace = false
+                if (shift == 1) { manualShift = false; setShift(0) }
+                return
+            }
+        }
+        autoSpace = false
+        if (punct) {
+            ic.beginBatchEdit()
+            val fixed = finishWord(ic)
+            ic.commitText(t, 1)
+            ic.endBatchEdit()
+            if (fixed != null) lastCorrection = Triple(fixed.first, fixed.second, t)
+        } else {
+            ic.commitText(t, 1)
+        }
         lastWasSpace = false
         if (shift == 1) {
             manualShift = false
@@ -229,9 +419,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onKeyCode(code: Int) {
         val ic = currentInputConnection
+        if (code != Codes.SHIFT) lastCorrection = null
         when (code) {
             Codes.SPACE -> {
                 if (ic == null) return
+                autoSpace = false
                 val before = if (doubleSpace && !isPassword && lastWasSpace) ic.getTextBeforeCursor(2, 0) else null
                 if (before != null && before.length == 2 && before[1] == ' ' && before[0].isLetterOrDigit()) {
                     // Doble espacio = punto y espacio
@@ -239,7 +431,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     ic.commitText(". ", 1)
                     lastWasSpace = false
                 } else {
+                    ic.beginBatchEdit()
+                    val fixed = finishWord(ic)
                     ic.commitText(" ", 1)
+                    ic.endBatchEdit()
+                    if (fixed != null) lastCorrection = Triple(fixed.first, fixed.second, " ")
                     lastWasSpace = true
                 }
                 if (shift == 1) { manualShift = false; setShift(0) }
@@ -251,6 +447,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
             Codes.ENTER -> {
                 if (ic == null) return
+                autoSpace = false
+                ic.beginBatchEdit()
+                finishWord(ic)
+                ic.endBatchEdit()
                 handleEnter()
                 lastWasSpace = false
                 manualShift = false
@@ -267,6 +467,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 lastShiftTime = now
                 manualShift = next != 0
                 setShift(next)
+                scheduleUpdate()
             }
             Codes.MODE_SYM -> { page = Page.SYM; rebuild() }
             Codes.MODE_SYM2 -> { page = Page.SYM2; rebuild() }
@@ -280,6 +481,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 lang = if (lang == "es") "en" else "es"
                 prefs.edit().putString(Prefs.LANG, lang).apply()
                 kv?.spaceLabel = if (lang == "es") "Español" else "English"
+                scheduleUpdate()
             }
         }
     }
@@ -297,9 +499,30 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDeletePress() {
-        if (currentInputConnection == null) return
-        sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+        val ic = currentInputConnection ?: return
+        autoSpace = false
         lastWasSpace = false
+        val lc = lastCorrection
+        lastCorrection = null
+        if (lc != null) {
+            // Deshacer la autocorrección: "también " -> "tambien" (y ya no se corrige más)
+            val (typed, corr, sep) = lc
+            val tail = corr + sep
+            val before = ic.getTextBeforeCursor(tail.length, 0)
+            if (before != null && before.toString() == tail) {
+                ic.beginBatchEdit()
+                ic.deleteSurroundingText(tail.length, 0)
+                ic.commitText(typed, 1)
+                ic.endBatchEdit()
+                val eng = WordStore.engine
+                if (eng != null && learnOn && fieldLearn) {
+                    eng.user.learn(typed)
+                    WordStore.scheduleSave()
+                }
+                return
+            }
+        }
+        sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
     }
 
     override fun onCursorMove(steps: Int) {
@@ -307,6 +530,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val key = if (steps > 0) KeyEvent.KEYCODE_DPAD_RIGHT else KeyEvent.KEYCODE_DPAD_LEFT
         repeat(kotlin.math.abs(steps)) { sendDownUpKeyEvents(key) }
         lastWasSpace = false
+        autoSpace = false
+        lastCorrection = null
     }
 
     override fun onToolbar(action: Int) {

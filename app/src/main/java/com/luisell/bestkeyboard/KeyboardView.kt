@@ -33,6 +33,7 @@ class KeyboardView(context: Context) : View(context) {
         fun onToolbar(action: Int)
         fun onLongPressGlobe()
         fun onKeyFeedback()
+        fun onSuggestion(slot: Int)
     }
 
     companion object {
@@ -57,6 +58,23 @@ class KeyboardView(context: Context) : View(context) {
     var spaceLabel = ""
         set(v) { if (field != v) { field = v; invalidate() } }
     var showPreview = true
+
+    // Barra de sugerencias: [izquierda, centro, derecha]
+    private val slots = arrayOfNulls<String>(3)
+    private var centerBold = false
+    private var leftQuoted = false
+    private val hasSuggestions get() = slots[0] != null || slots[1] != null || slots[2] != null
+
+    fun setSuggestions(left: String?, center: String?, right: String?, bold: Boolean, quoteLeft: Boolean) {
+        if (slots[0] == left && slots[1] == center && slots[2] == right &&
+            centerBold == bold && leftQuoted == quoteLeft) return
+        slots[0] = left; slots[1] = center; slots[2] = right
+        centerBold = bold
+        leftQuoted = quoteLeft
+        invalidate(0, 0, width, stripH.toInt() + 1)
+    }
+
+    fun clearSuggestions() = setSuggestions(null, null, null, false, false)
 
     private var rows: List<List<Key>> = emptyList()
     private val stripH = 46f * d
@@ -176,7 +194,15 @@ class KeyboardView(context: Context) : View(context) {
         return null
     }
 
-    private fun stripHit(x: Float): Int = when {
+    private fun stripHit(x: Float): Int {
+        if (hasSuggestions) {
+            val slot = (x / (width / 3f)).toInt().coerceIn(0, 2)
+            return if (slots[slot] != null) 10 + slot else -1
+        }
+        return toolHit(x)
+    }
+
+    private fun toolHit(x: Float): Int = when {
         x < 52f * d -> TOOL_SETTINGS
         x < 100f * d -> TOOL_THEME
         x > width - 56f * d -> TOOL_HIDE
@@ -283,7 +309,9 @@ class KeyboardView(context: Context) : View(context) {
             val action = stripPressed
             stripPressed = -1
             invalidate()
-            if (commit) listener?.onToolbar(action)
+            if (commit) {
+                if (action >= 10) listener?.onSuggestion(action - 10) else listener?.onToolbar(action)
+            }
             return
         }
         val key = activeKey
@@ -487,6 +515,7 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun drawStrip(c: Canvas, p: Palette) {
+        if (hasSuggestions) { drawSuggestions(c, p); return }
         val cy = stripH / 2f
         val s = stripH * 0.22f
         val xs = floatArrayOf(28f * d, 76f * d, width - 28f * d)
@@ -523,6 +552,44 @@ class KeyboardView(context: Context) : View(context) {
                     c.drawPath(path, stroke)
                 }
             }
+        }
+    }
+
+    private fun drawSuggestions(c: Canvas, p: Palette) {
+        val cellW = width / 3f
+        val cy = stripH / 2f
+        for (i in 0..2) {
+            val left = i * cellW
+            if (stripPressed == 10 + i) {
+                fill.color = p.keyPressed
+                tmp.set(left + 4f * d, 4f * d, left + cellW - 4f * d, stripH - 4f * d)
+                c.drawRoundRect(tmp, radius, radius, fill)
+            }
+            if (i > 0) {
+                fill.color = p.hint
+                fill.alpha = 70
+                c.drawRect(left - 0.5f * d, stripH * 0.3f, left + 0.5f * d, stripH * 0.7f, fill)
+                fill.alpha = 255
+            }
+            val word = slots[i] ?: continue
+            var label = if (i == 0 && leftQuoted) "“$word”" else word
+            val bold = i == 1 && centerBold
+            text.typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+            val maxW = cellW - 12f * d
+            var size = stripH * 0.37f
+            text.textSize = size
+            var w = text.measureText(label)
+            if (w > maxW) {
+                size = maxOf(size * maxW / w, stripH * 0.27f)
+                text.textSize = size
+                w = text.measureText(label)
+                while (w > maxW && label.length > 2) {
+                    label = label.substring(0, label.length - 2) + "…"
+                    w = text.measureText(label)
+                }
+            }
+            drawLabel(c, label, left + cellW / 2f, cy, size, p.text)
+            text.typeface = Typeface.DEFAULT
         }
     }
 

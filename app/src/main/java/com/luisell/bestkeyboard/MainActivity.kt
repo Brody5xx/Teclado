@@ -1,6 +1,7 @@
 package com.luisell.bestkeyboard
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -27,6 +28,7 @@ class MainActivity : Activity() {
     private lateinit var step1: Button
     private lateinit var step2: Button
     private lateinit var col: LinearLayout
+    private lateinit var learnedInfo: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +40,13 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        WordStore.load(this) { refreshLearned() }
+    }
+
+    private fun refreshLearned() {
+        if (!::learnedInfo.isInitialized) return
+        val n = WordStore.learnedCount()
+        learnedInfo.text = "Palabras tuyas aprendidas: $n"
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -97,6 +106,27 @@ class MainActivity : Activity() {
         ))
         switch("Sonido", Prefs.SOUND, false)
 
+        section("Sugerencias y autocorrector")
+        switch("Mostrar sugerencias de palabras", Prefs.SUGGEST, true)
+        switch("Autocorrector (corrige al tocar espacio)", Prefs.AUTOCORRECT, true)
+        switch("Aprender mis palabras (nombres, palabras del trabajo)", Prefs.LEARN, true)
+        text(
+            "Si el autocorrector cambia una palabra que estaba bien, toca borrar ⌫ justo después: " +
+                "vuelve a tu palabra y la aprende para no cambiarla más.", 13f, faded = true,
+        )
+        learnedInfo = text("", 13f, faded = true)
+        button("Borrar las palabras aprendidas") {
+            AlertDialog.Builder(this)
+                .setTitle("¿Borrar lo aprendido?")
+                .setMessage("El teclado olvidará tus palabras y las que sueles escribir juntas.")
+                .setPositiveButton("Borrar") { _, _ ->
+                    WordStore.clearLearned(this)
+                    refreshLearned()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+
         section("Escritura")
         switch("Mayúscula automática al empezar una oración", Prefs.AUTOCAP, true)
         switch("Doble espacio pone un punto", Prefs.DOUBLE_SPACE, true)
@@ -107,24 +137,29 @@ class MainActivity : Activity() {
                 "• Mantén presionado el punto para ¿ ? ¡ ! y más signos.\n" +
                 "• Toca ⇧ dos veces seguidas para escribir TODO EN MAYÚSCULAS.\n" +
                 "• Desliza el dedo sobre la barra espaciadora para mover el cursor.\n" +
-                "• Toca 🌐 para cambiar Español / English.\n" +
+                "• Toca una sugerencia de arriba para escribirla. La del centro en negrita es la corrección.\n" +
+                "• Si la palabra que escribiste sale entre comillas “así”, tócala para que el teclado la aprenda.\n" +
+                "• Toca 🌐 para cambiar Español / English (las sugerencias usan los dos idiomas a la vez).\n" +
                 "• Mantén presionado 🌐 para cambiar a otro teclado (por ejemplo, Gboard).\n" +
                 "• Arriba del teclado: ⚙ abre esta pantalla, ◐ cambia claro/oscuro, ⌄ esconde el teclado.\n" +
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 1")
+        section("Novedades — Versión 2")
         text(
-            "Primera versión: teclado nativo y rápido con letras (incluye Ñ y acentos), números, " +
-                "símbolos, temas claro y oscuro, vibración, sonido, mayúscula automática, doble espacio " +
-                "para el punto, mover el cursor con la barra espaciadora y teclado numérico grande para " +
-                "campos de teléfono y números.", 14f,
+            "• Sugerencias de palabras en español e inglés al mismo tiempo (casi 100 000 palabras).\n" +
+                "• Autocorrector: arregla dedazos y pone los acentos solo (tambien → también, " +
+                "manana → mañana, dont → don't, im → I'm).\n" +
+                "• Borrar justo después de una corrección la deshace.\n" +
+                "• Aprende tus palabras (nombres, siglas, palabras del trabajo) y qué palabra sueles " +
+                "escribir después de otra, para sugerirla antes de que empieces a escribir.\n" +
+                "• Las siglas en MAYÚSCULAS (RUMC, DVSS) y los nombres propios no se corrigen.\n" +
+                "• Todo funciona sin internet y lo aprendido se guarda solo en tu teléfono.", 14f,
         )
 
         section("Próximamente")
         text(
-            "v2: sugerencias de palabras y autocorrector (español e inglés)\n" +
-                "v3: emojis y portapapeles infinito con imágenes\n" +
+            "v3: emojis y portapapeles infinito con imágenes\n" +
                 "v4: dictado por voz y traducción\n" +
                 "v5: escanear texto con la cámara\n" +
                 "v6: deslizar el dedo para escribir", 14f,

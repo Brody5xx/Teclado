@@ -16,3 +16,7 @@ y reemplaza el archivo de ese enlace (tarda unos 4-6 minutos).
 3. Abre **Best Keyboard** y sigue los 2 pasos de la pantalla.
 
 Las versiones nuevas se instalan encima de la anterior sin perder tus ajustes.
+
+## Créditos
+Diccionarios de frecuencia: [FrequencyWords](https://github.com/hermitdave/FrequencyWords) de Hermit Dave
+(subtítulos de OpenSubtitles 2018), licencia CC-BY-SA 4.0. Se generan con `tools/make_dicts.py`.

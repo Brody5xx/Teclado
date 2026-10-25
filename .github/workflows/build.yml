@@ -2,7 +2,7 @@ name: Construir APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, prueba]
   workflow_dispatch:
 
 permissions:
@@ -27,8 +27,10 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Construir el APK
-        run: gradle assembleRelease --no-daemon --stacktrace
+      - name: Probar y construir el APK
+        run: |
+          set -o pipefail
+          gradle testReleaseUnitTest assembleRelease --no-daemon 2>&1 | tee build.log
 
       - name: Preparar el archivo
         run: cp app/build/outputs/apk/release/app-release.apk BestKeyboard.apk
@@ -37,9 +39,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete ultima-version --yes --cleanup-tag || true
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then TAG=ultima-version; EXTRA=""; else TAG=prueba; EXTRA="--prerelease"; fi
+          gh release delete "$TAG" --yes --cleanup-tag || true
           sleep 3
-          gh release create ultima-version BestKeyboard.apk \
-            --title "Best Keyboard - última versión (build ${GITHUB_RUN_NUMBER})" \
+          gh release create "$TAG" BestKeyboard.apk $EXTRA \
+            --title "Best Keyboard - ${TAG} (build ${GITHUB_RUN_NUMBER})" \
             --notes "Construido automáticamente. Descarga BestKeyboard.apk e instálalo encima del anterior." \
             --target "${GITHUB_SHA}"
+          if [ -f app/build/reporte-pruebas.txt ]; then gh release upload "$TAG" app/build/reporte-pruebas.txt --clobber; fi
+
+      - name: Publicar el registro de errores (si falló)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete registro-error --yes --cleanup-tag || true
+          sleep 2
+          tail -c 200000 build.log > registro-error.txt || echo "sin registro" > registro-error.txt
+          gh release create registro-error registro-error.txt --title "Registro de error" --notes "Error de construcción" --target "${GITHUB_SHA}" --prerelease

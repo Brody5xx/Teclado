@@ -15,7 +15,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = buildNumber
-        versionName = "1.0 (build $buildNumber)"
+        versionName = "2.0 (build $buildNumber)"
     }
 
     // Firma fija: así cada APK nuevo se instala ENCIMA del anterior sin borrar nada
@@ -47,4 +47,8 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
 }

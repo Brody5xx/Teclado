@@ -15,6 +15,9 @@ object Prefs {
     const val AUTOCAP = "autocap"
     const val DOUBLE_SPACE = "double_space"
     const val LANG = "lang"              // es / en
+    const val SUGGEST = "suggest"
+    const val AUTOCORRECT = "autocorrect"
+    const val LEARN = "learn"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)
