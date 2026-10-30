@@ -184,6 +184,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     fun spellCheck(typed: String, lang: String, max: Int = 5, strict: Boolean = false): Spell {
         val ok = Spell(false, emptyList())
         val w = typed.trim('\'', '’', '"', '“', '”', '¿', '¡', '(', ')')
+        if (strict && w.length == 1 && w[0].isLetter()) return singleLetter(w, lang)
         if (w.length < 2 || w.length > 40) return ok
         if (w.any { it.isDigit() || it == '@' || it == '/' || it == '.' || it == '_' || it == '#' }) return ok
         val letters = w.filter { it.isLetter() }
@@ -234,6 +235,46 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return Spell(true, list)
     }
 
+    /** Una letra sola que no es palabra ("n") -> palabras cortas que la contienen ("no", "en", "un"). */
+    private fun singleLetter(w: String, lang: String): Spell {
+        val c = w.lowercase()[0]
+        val valid = if (lang == "es") "aeouy" else "ai"
+        if (c in valid || (lang == "en" && w == "I")) return Spell(false, emptyList())
+        val active = dicts.firstOrNull { it.lang == lang } ?: return Spell(false, emptyList())
+        val found = ArrayList<Pair<String, Float>>()
+        for (x in ALPHABET) for (cand in listOf("$c$x", "$x$c")) {
+            val i = active.bestForFold(cand)
+            if (i >= 0 && active.logFreq[i] >= MIN_EDIT_LF) found.add(Pair(active.words[i], active.logFreq[i]))
+        }
+        val list = found.sortedByDescending { it.second }.map { TextUtil.matchCase(it.first, w) }.distinct().take(4)
+        return Spell(true, list)
+    }
+
+    /**
+     * Palabra partida: "toda vio" -> "todavía". Solo si juntas forman una palabra común y no son
+     * dos palabras muy comunes (para no unir "si no" o "de más").
+     */
+    fun joinedWord(a: String, b: String, lang: String): String? {
+        if (a.length + b.length < 5 || a.any { !it.isLetter() } || b.any { !it.isLetter() }) return null
+        val active = dicts.firstOrNull { it.lang == lang } ?: return null
+        val la = active.indexOf(a.lowercase()).let { if (it >= 0) active.logFreq[it] else 0f }
+        val lb = active.indexOf(b.lowercase()).let { if (it >= 0) active.logFreq[it] else 0f }
+        if (minOf(la, lb) > ln(60000f)) return null
+        if (user.bigramCount(a.lowercase(), b.lowercase()) >= 2) return null // tú las escribes juntas así
+        val j = TextUtil.fold(a + b)
+        val i = active.bestForFold(j)
+        if (i >= 0 && active.logFreq[i] >= ln(2000f)) return TextUtil.matchCase(active.words[i], a)
+        // Juntas y con una letra equivocada: "toda vio" -> "todavía"
+        if (j.length < 7) return null
+        var best: String? = null
+        var need = maxOf(ln(8000f), maxOf(la, lb) - LN3)
+        edits(j) { v, _ ->
+            val k = active.bestForFold(v)
+            if (k >= 0 && active.logFreq[k] >= need) { need = active.logFreq[k]; best = active.words[k] }
+        }
+        return best?.let { TextUtil.matchCase(it, a) }
+    }
+
     /** Si [lower] es rarísima y hay una palabra a una letra de distancia 1000 veces más común, la da. */
     private fun rareNeighbor(lower: String, lang: String): String? {
         val active = dicts.firstOrNull { it.lang == lang } ?: return null
@@ -252,6 +293,24 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             if (i >= 0 && active.logFreq[i] >= bestLf && active.words[i].lowercase() != lower) {
                 bestLf = active.logFreq[i]
                 best = active.words[i]
+            }
+        }
+        if (best != null || own > ln(100f)) return best
+        // Dos vocales equivocadas en una palabra rarísima: "hule" -> "hola" (2000 veces más común)
+        val vowels = "aeiou"
+        val chars = tf.toCharArray()
+        val pos = chars.indices.filter { chars[it] in vowels }
+        var need = own + ln(2000f)
+        for (x in pos.indices) for (y in x + 1 until pos.size) {
+            val p1 = pos[x]
+            val p2 = pos[y]
+            for (v1 in vowels) for (v2 in vowels) {
+                if (v1 == chars[p1] || v2 == chars[p2]) continue
+                val cc = chars.copyOf()
+                cc[p1] = v1
+                cc[p2] = v2
+                val i = active.bestForFold(String(cc))
+                if (i >= 0 && active.logFreq[i] >= need) { need = active.logFreq[i]; best = active.words[i] }
             }
         }
         return best

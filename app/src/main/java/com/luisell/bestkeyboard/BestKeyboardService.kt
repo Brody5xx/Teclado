@@ -468,9 +468,26 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         if (base < 0) base = 0
         spellErrors = ArrayList()
-        for (m in Regex("[\\p{L}'’]+").findAll(text)) {
-            val r = try { eng.spellCheck(m.value, lang, 5, strict = true) } catch (_: Exception) { null } ?: continue
-            if (r.misspelled) spellErrors.add(SpellErr(base + m.range.first, base + m.range.last + 1, m.value, r.suggestions, r.maybe))
+        val found = Regex("[\\p{L}'’]+").findAll(text).toList()
+        var k = 0
+        while (k < found.size) {
+            val m = found[k]
+            // ¿Palabra partida en dos? ("toda vio" -> "todavía")
+            if (k + 1 < found.size) {
+                val n = found[k + 1]
+                val gap = text.substring(m.range.last + 1, n.range.first)
+                if (gap == " ") {
+                    val j = try { eng.joinedWord(m.value, n.value, lang) } catch (_: Exception) { null }
+                    if (j != null) {
+                        spellErrors.add(SpellErr(base + m.range.first, base + n.range.last + 1, m.value + " " + n.value, listOf(j), true))
+                        k += 2
+                        continue
+                    }
+                }
+            }
+            val r = try { eng.spellCheck(m.value, lang, 5, strict = true) } catch (_: Exception) { null }
+            if (r != null && r.misspelled) spellErrors.add(SpellErr(base + m.range.first, base + m.range.last + 1, m.value, r.suggestions, r.maybe))
+            k++
         }
         val bar = sBar ?: return
         spellOn = true

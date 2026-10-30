@@ -48,6 +48,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_VOICE = 6
         const val TOOL_SCAN = 7
         const val TOOL_SPELL = 8
+        const val TOOL_MENU = 9
         private const val LONG_PRESS_MS = 350L
         private const val REPEAT_START_MS = 400L
     }
@@ -255,9 +256,15 @@ class KeyboardView(context: Context) : View(context) {
         return null
     }
 
+    /** Botón ▦ de la esquina: muestra las herramientas aunque haya sugerencias (como Gboard). */
+    private var forceTools = false
+    private val menuW get() = 48f * d
+    private val showingSuggestions get() = hasSuggestions && !forceTools
+
     private fun stripHit(x: Float): Int {
-        if (hasSuggestions) {
-            val slot = (x / (width / 3f)).toInt().coerceIn(0, 2)
+        if (showingSuggestions) {
+            if (x < menuW) return TOOL_MENU
+            val slot = ((x - menuW) / ((width - menuW) / 3f)).toInt().coerceIn(0, 2)
             return if (slots[slot] != null) 10 + slot else -1
         }
         return toolHit(x)
@@ -318,6 +325,7 @@ class KeyboardView(context: Context) : View(context) {
         }
         val key = findKey(x, y) ?: return
         activeKey = key
+        if (forceTools) { forceTools = false; invalidate(0, 0, width, stripH.toInt() + 1) }
         listener?.onKeyFeedback()
         // ¿Podría empezar un trazo? (solo desde una letra)
         gestureCandidate = swipeEnabled && key.code == 0 && key.label.length == 1 && key.label[0].isLetter()
@@ -412,7 +420,11 @@ class KeyboardView(context: Context) : View(context) {
             stripPressed = -1
             invalidate()
             if (commit) {
-                if (action >= 10) listener?.onSuggestion(action - 10) else listener?.onToolbar(action)
+                when {
+                    action == TOOL_MENU -> { forceTools = true; invalidate() }
+                    action >= 10 -> listener?.onSuggestion(action - 10)
+                    else -> { forceTools = false; listener?.onToolbar(action) }
+                }
             }
             return
         }
@@ -643,7 +655,7 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun drawStrip(c: Canvas, p: Palette) {
-        if (hasSuggestions) { drawSuggestions(c, p); return }
+        if (showingSuggestions) { drawSuggestions(c, p); return }
         val cy = stripH / 2f
         val s = stripH * 0.22f
         // Orden en pantalla: ajustes, emojis, portapapeles, tema ... esconder
@@ -740,10 +752,25 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun drawSuggestions(c: Canvas, p: Palette) {
-        val cellW = width / 3f
+        val cellW = (width - menuW) / 3f
         val cy = stripH / 2f
+        // Botón ▦ (4 cuadritos) para abrir las herramientas
+        val mx = menuW / 2f + 2f * d
+        if (stripPressed == TOOL_MENU) {
+            fill.color = p.keyPressed
+            c.drawCircle(mx, cy, stripH * 0.4f, fill)
+        }
+        fill.color = p.text
+        val q = 5.5f * d
+        val g = 1.8f * d
+        for (gx0 in intArrayOf(-1, 1)) for (gy0 in intArrayOf(-1, 1)) {
+            val l = if (gx0 < 0) mx - g / 2 - q else mx + g / 2
+            val t = if (gy0 < 0) cy - g / 2 - q else cy + g / 2
+            tmp.set(l, t, l + q, t + q)
+            c.drawRoundRect(tmp, 1.6f * d, 1.6f * d, fill)
+        }
         for (i in 0..2) {
-            val left = i * cellW
+            val left = menuW + i * cellW
             if (stripPressed == 10 + i) {
                 fill.color = p.keyPressed
                 tmp.set(left + 4f * d, 4f * d, left + cellW - 4f * d, stripH - 4f * d)

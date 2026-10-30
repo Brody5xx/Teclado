@@ -93,9 +93,13 @@ class WordEngineReport {
         }
 
         sb.append("  Revisión a fondo (botón abc✓):\n")
-        for (w in listOf("Hula", "coma", "estas", "cume", "sensor", "cerradura", "hola")) {
+        for (w in listOf("Hula", "Hule", "n", "ok", "y", "coma", "estas", "cume", "sensor", "cerradura", "hola")) {
             val r = eng.spellCheck(w, "es", 5, strict = true)
             sb.append("    $w -> ").append(if (r.misspelled) (if (r.maybe) "¿Quisiste decir? ${r.suggestions}" else "MAL ${r.suggestions}") else "bien").append('\n')
+        }
+
+        for ((x, y) in listOf("Toda" to "vio", "en" to "cima", "con" to "tigo", "si" to "no", "de" to "más", "para" to "que", "mi" to "casa")) {
+            sb.append("    Partida: $x $y -> ${eng.joinedWord(x, y, "es") ?: "(bien)"}\n")
         }
 
         // ---------------------------------------------------------------- Deslizar
