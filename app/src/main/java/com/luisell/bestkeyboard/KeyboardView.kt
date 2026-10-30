@@ -42,6 +42,8 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_HIDE = 2
         const val TOOL_EMOJI = 3
         const val TOOL_CLIP = 4
+        const val TOOL_TRANSLATE = 5
+        const val TOOL_VOICE = 6
         private const val LONG_PRESS_MS = 350L
         private const val REPEAT_START_MS = 400L
     }
@@ -60,6 +62,9 @@ class KeyboardView(context: Context) : View(context) {
     var spaceLabel = ""
         set(v) { if (field != v) { field = v; invalidate() } }
     var showPreview = true
+    /** Ilumina el botón de traducir mientras traduces. */
+    var translateOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
 
     // Barra de sugerencias: [izquierda, centro, derecha]
     private val slots = arrayOfNulls<String>(3)
@@ -208,8 +213,9 @@ class KeyboardView(context: Context) : View(context) {
         x < 54f * d -> TOOL_SETTINGS
         x < 106f * d -> TOOL_EMOJI
         x < 158f * d -> TOOL_CLIP
-        x < 210f * d -> TOOL_THEME
+        x < 210f * d -> TOOL_TRANSLATE
         x > width - 56f * d -> TOOL_HIDE
+        x > width - 108f * d -> TOOL_VOICE
         else -> -1
     }
 
@@ -534,8 +540,9 @@ class KeyboardView(context: Context) : View(context) {
         val cy = stripH / 2f
         val s = stripH * 0.22f
         // Orden en pantalla: ajustes, emojis, portapapeles, tema ... esconder
-        val tools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_THEME, TOOL_HIDE)
-        val xs = floatArrayOf(28f * d, 80f * d, 132f * d, 184f * d, width - 28f * d)
+        // (El cambio claro/oscuro está en los ajustes ⚙)
+        val tools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_VOICE, TOOL_HIDE)
+        val xs = floatArrayOf(28f * d, 80f * d, 132f * d, 184f * d, width - 80f * d, width - 28f * d)
         for (n in tools.indices) {
             val i = tools[n]
             val cx = xs[n]
@@ -579,6 +586,17 @@ class KeyboardView(context: Context) : View(context) {
                     c.drawRoundRect(tmp, s * 0.12f, s * 0.12f, fill)
                     c.drawLine(cx - s * 0.35f, cy - s * 0.05f, cx + s * 0.35f, cy - s * 0.05f, stroke)
                     c.drawLine(cx - s * 0.35f, cy + s * 0.4f, cx + s * 0.2f, cy + s * 0.4f, stroke)
+                }
+                TOOL_TRANSLATE -> {
+                    drawLabel(c, "A文", cx, cy, stripH * 0.36f, if (translateOn) p.accent else p.hint)
+                }
+                TOOL_VOICE -> {
+                    tmp.set(cx - s * 0.38f, cy - s * 0.95f, cx + s * 0.38f, cy + s * 0.25f)
+                    fill.color = p.hint
+                    c.drawRoundRect(tmp, s * 0.38f, s * 0.38f, fill)
+                    tmp.set(cx - s * 0.68f, cy - s * 0.55f, cx + s * 0.68f, cy + s * 0.6f)
+                    c.drawArc(tmp, 0f, 180f, false, stroke)
+                    c.drawLine(cx, cy + s * 0.6f, cx, cy + s * 0.95f, stroke)
                 }
                 TOOL_HIDE -> {
                     path.reset()

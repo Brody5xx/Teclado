@@ -20,6 +20,7 @@ object Prefs {
     const val LEARN = "learn"
     const val CLIP_HISTORY = "clip_history"
     const val CLIP_LAST_SIG = "clip_last_sig"
+    const val TR_SRC = "translate_from"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

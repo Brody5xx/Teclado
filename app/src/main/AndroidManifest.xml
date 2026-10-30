@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Solo vibración. SIN permiso de internet: nada de lo que escribes sale del teléfono. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Micrófono: solo para el dictado por voz, y solo cuando tocas 🎤 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Internet: SOLO para descargar una vez los idiomas de traducción. Lo que escribes no se envía. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Para encontrar el reconocimiento de voz del teléfono (app Google) -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"

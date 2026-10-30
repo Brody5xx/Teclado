@@ -69,6 +69,18 @@ class WordEngineReport {
         val perMs = (System.nanoTime() - t1) / 1_000_000.0 / n
         sb.append("\nVelocidad: %.3f ms por búsqueda (en PC; en el teléfono ~3-5x más)\n".format(perMs))
 
+        sb.append("\n== Dictado por voz ==\n")
+        for (t in listOf(
+            "hola coma cómo estás signo de interrogación",
+            "ya terminé la instalación punto final mañana reviso las cámaras punto final",
+            "el punto de acceso está listo",
+            "llegué al hospital punto y aparte la puerta no abre",
+            "necesito tres cosas dos puntos cable coma conectores y cinta",
+        )) sb.append("  ").append(t).append(" -> ").append(com.luisell.bestkeyboard.words.VoiceText.process(t, "es").replace("\n", "⏎")).append('\n')
+        for (t in listOf("hi comma how are you question mark", "the door is done period new line thanks")) {
+            sb.append("  ").append(t).append(" -> ").append(com.luisell.bestkeyboard.words.VoiceText.process(t, "en").replace("\n", "⏎")).append('\n')
+        }
+
         val out = File("build/reporte-pruebas.txt")
         out.parentFile.mkdirs()
         out.writeText(sb.toString())

@@ -15,7 +15,9 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = buildNumber
-        versionName = "3.1 (build $buildNumber)"
+        versionName = "4.0 (build $buildNumber)"
+        // Solo los procesadores de teléfonos reales: la app pesa menos
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
     // Firma fija: así cada APK nuevo se instala ENCIMA del anterior sin borrar nada
@@ -50,5 +52,7 @@ android {
 }
 
 dependencies {
+    // Traducción dentro del teléfono (Google ML Kit, gratis)
+    implementation("com.google.mlkit:translate:17.0.3")
     testImplementation("junit:junit:4.13.2")
 }

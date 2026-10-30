@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.Bundle
 import android.provider.Settings
@@ -19,6 +20,7 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 
 /** Pantalla de la app: activar el teclado, probarlo y cambiar ajustes. */
 class MainActivity : Activity() {
@@ -29,17 +31,53 @@ class MainActivity : Activity() {
     private lateinit var step2: Button
     private lateinit var col: LinearLayout
     private lateinit var learnedInfo: TextView
+    private lateinit var micBtn: Button
+
+    companion object {
+        const val EXTRA_ASK_MIC = "pedir_micro"
+        private const val REQ_MIC = 7
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs.get(this)
         title = "Best Keyboard"
         setContentView(buildUi())
+        if (intent?.getBooleanExtra(EXTRA_ASK_MIC, false) == true) askMic()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (intent?.getBooleanExtra(EXTRA_ASK_MIC, false) == true) askMic()
+    }
+
+    private fun micGranted() = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+    private fun askMic() {
+        if (micGranted()) { refreshMic(); return }
+        requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQ_MIC)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQ_MIC) return
+        refreshMic()
+        if (micGranted()) {
+            Toast.makeText(this, "¡Listo! Vuelve a donde escribías y toca 🎤 para dictar.", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "Sin el permiso del micrófono no se puede dictar.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun refreshMic() {
+        if (!::micBtn.isInitialized) return
+        micBtn.text = if (micGranted()) "✓ Micrófono permitido" else "🎤 Permitir el micrófono para dictar"
     }
 
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        refreshMic()
         WordStore.load(this) { refreshLearned() }
     }
 
@@ -81,8 +119,8 @@ class MainActivity : Activity() {
         }
         text(
             "Al activarlo, Android muestra un aviso de que el teclado \"podría recopilar lo que escribes\". " +
-                "Ese aviso sale con TODOS los teclados. Best Keyboard no tiene permiso de internet: " +
-                "nada de lo que escribes sale de tu teléfono.", 13f, faded = true,
+                "Ese aviso sale con TODOS los teclados. Lo que escribes NUNCA sale de tu teléfono: el internet " +
+                "solo se usa para descargar una vez los idiomas de traducción.", 13f, faded = true,
         )
         col.addView(EditText(this).apply {
             hint = "Toca aquí para probar el teclado"
@@ -127,6 +165,24 @@ class MainActivity : Activity() {
                 .show()
         }
 
+        section("Dictado por voz 🎤")
+        micBtn = button("🎤 Permitir el micrófono para dictar") { askMic() }
+        text(
+            "Toca 🎤 arriba del teclado y habla. Sigue escuchando hasta que toques el micrófono otra vez. " +
+                "Puedes decir los signos: \"coma\", \"punto final\", \"punto y aparte\", \"dos puntos\", " +
+                "\"signo de interrogación\", \"signo de exclamación\", \"nueva línea\". En inglés: \"comma\", " +
+                "\"period\", \"question mark\", \"new line\". Usa el reconocimiento de voz de Google del teléfono.",
+            13f, faded = true,
+        )
+
+        section("Traducción A文")
+        text(
+            "Toca A文 arriba del teclado. Escribe en la cajita y la traducción aparece sola en la app donde " +
+                "estás escribiendo. Toca ⇄ para cambiar Español ⇄ Inglés. Enter envía la traducción. " +
+                "La primera vez descarga cada idioma (unos 30 MB); después traduce sin internet, dentro del teléfono.",
+            13f, faded = true,
+        )
+
         section("Portapapeles")
         switch("Guardar todo lo que copio (textos e imágenes)", Prefs.CLIP_HISTORY, true)
         text(
@@ -158,13 +214,21 @@ class MainActivity : Activity() {
                 "• En los emojis, mantén presionado uno con personas o manos para elegir el tono de piel.\n" +
                 "• Portapapeles: toca 📋 arriba del teclado. Toca algo para pegarlo; mantenlo presionado para " +
                 "fijarlo arriba 📌 o borrarlo.\n" +
+                "• 🎤 dicta por voz y A文 traduce mientras escribes.\n" +
                 "• Toca 🌐 para cambiar Español / English (las sugerencias usan los dos idiomas a la vez).\n" +
                 "• Mantén presionado 🌐 para cambiar a otro teclado (por ejemplo, Gboard).\n" +
-                "• Arriba del teclado: ⚙ abre esta pantalla, ◐ cambia claro/oscuro, ⌄ esconde el teclado.\n" +
+                "• Arriba del teclado: ⚙ ajustes, 😊 emojis, 📋 portapapeles, A文 traducir, 🎤 dictar, ⌄ esconder.\n" +
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 3")
+        section("Novedades — Versión 4")
+        text(
+            "• Dictado por voz 🎤 en español e inglés, con los signos por voz (coma, punto final...).\n" +
+                "• Traducción A文 como Gboard: escribes en tu idioma y la app recibe la traducción.\n" +
+                "• La traducción funciona dentro del teléfono (Google ML Kit), sin enviar lo que escribes.", 14f,
+        )
+
+        section("Versión 3")
         text(
             "• Panel de emojis 😊 con más de 1 800 emojis en 9 categorías, Recientes y tonos de piel.\n" +
                 "• Portapapeles infinito 📋: guarda todo lo que copias, textos e imágenes, sin límite.\n" +
@@ -189,8 +253,7 @@ class MainActivity : Activity() {
 
         section("Próximamente")
         text(
-            "v4: dictado por voz y traducción\n" +
-                "v5: escanear texto con la cámara\n" +
+            "v5: escanear texto con la cámara\n" +
                 "v6: deslizar el dedo para escribir", 14f,
         )
         return sv

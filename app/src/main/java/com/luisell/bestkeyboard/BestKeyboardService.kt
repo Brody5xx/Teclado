@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
@@ -16,15 +17,21 @@ import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.text.InputType
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputContentInfo
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.Toast
 import android.view.inputmethod.InputMethodManager
 import com.luisell.bestkeyboard.words.TextUtil
+import com.luisell.bestkeyboard.words.VoiceText
 
 /** El servicio del teclado: recibe las teclas y las escribe en la app que estés usando. */
 class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
@@ -81,6 +88,36 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var lastClipSig: String? = null
     private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
 
+    // Dictado por voz (panel 3)
+    private var voicePanel: VoicePanel? = null
+    private var recognizer: SpeechRecognizer? = null
+    private var listening = false
+    private var voiceLang = "es"
+
+    // Traducción
+    private var tBar: TranslateBar? = null
+    private var translating = false
+    private var trans: Translation? = null
+    private var tSrc = "es"
+    private var tDst = "en"
+    private var tSeq = 0
+    private var lastTranslatedSrc = ""
+    private var pendingSend = false
+    private val translateRunnable = Runnable { doTranslate() }
+
+    /** Donde escribe el teclado: la caja de traducción (si estás traduciendo) o la app. */
+    private fun target(): InputConnection? = if (translating) tBar?.connection else currentInputConnection
+    private fun targetInfo(): EditorInfo? = if (translating) tBar?.inputInfo else currentInputEditorInfo
+
+    /** Envía una tecla (borrar, flechas, enter) a donde esté escribiendo el teclado. */
+    private fun sendKey(code: Int) {
+        val c = target() ?: return
+        val t = SystemClock.uptimeMillis()
+        val flags = KeyEvent.FLAG_SOFT_KEYBOARD or KeyEvent.FLAG_KEEP_TOUCH_MODE
+        c.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_DOWN, code, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, flags))
+        c.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_UP, code, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, flags))
+    }
+
     private val panelListener = object : PanelListener {
         override fun onPanelText(text: String) = commitPanelText(text)
         override fun onPanelDelete() = onDeletePress()
@@ -101,6 +138,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         lastClipSig = prefs.getString(Prefs.CLIP_LAST_SIG, null)
         clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         clipboard?.addPrimaryClipChangedListener(clipListener)
+        tSrc = prefs.getString(Prefs.TR_SRC, "es") ?: "es"
+        tDst = if (tSrc == "es") "en" else "es"
     }
 
     override fun onCreateInputView(): View {
@@ -123,10 +162,44 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         cp.visibility = View.GONE
         box.addView(cp, FrameLayout.LayoutParams(-1, -1))
         clipPanel = cp
+        val vp = VoicePanel(this)
+        vp.listener = panelListener
+        vp.actions = object : VoicePanel.Actions {
+            override fun onMicTap() = if (listening) stopVoice("Toca el micrófono para hablar") else startVoice()
+            override fun onVoiceLangTap() {
+                voiceLang = if (voiceLang == "es") "en" else "es"
+                vp.setLang(voiceLang)
+                if (listening) { recognizer?.cancel(); startVoice() }
+            }
+        }
+        vp.visibility = View.GONE
+        box.addView(vp, FrameLayout.LayoutParams(-1, -1))
+        voicePanel = vp
+
+        // Barra de traducción arriba del teclado (escondida hasta que la abras)
+        val tb = TranslateBar(this)
+        tb.visibility = View.GONE
+        tb.actions = object : TranslateBar.Actions {
+            override fun onTranslateClose() { onKeyFeedback(); stopTranslate() }
+            override fun onTranslateSwap() { onKeyFeedback(); swapTranslate() }
+            override fun onTranslateSource(text: String) {
+                handler.removeCallbacks(translateRunnable)
+                handler.postDelayed(translateRunnable, 250)
+                updateAutoCaps()
+                scheduleUpdate()
+            }
+        }
+        tBar = tb
+        translating = false
+        val root = LinearLayout(this)
+        root.orientation = LinearLayout.VERTICAL
+        root.addView(tb, LinearLayout.LayoutParams(-1, -2))
+        root.addView(box, LinearLayout.LayoutParams(-1, -2))
+
         mode = 0
         applySettings()
         rebuild()
-        return box
+        return root
     }
 
     /** Cambia entre teclas, emojis y portapapeles (los paneles usan la misma altura del teclado). */
@@ -147,11 +220,239 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 cp.open()
             } else cp.close()
         }
+        voicePanel?.let { vp ->
+            vp.visibility = if (m == 3) View.VISIBLE else View.GONE
+            if (m == 3) {
+                voiceLang = lang
+                vp.setLang(voiceLang)
+                vp.setPartial("")
+                startVoice()
+            } else if (listening || recognizer != null) {
+                listening = false
+                recognizer?.cancel()
+                vp.setListening(false)
+            }
+        }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
 
+    // ---------------------------------------------------------------- Dictado por voz
+
+    private fun startVoice() {
+        val vp = voicePanel ?: return
+        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            vp.setStatus("Necesito permiso para usar el micrófono. Ábrelo y toca \"Permitir\".")
+            val i = Intent(this, MainActivity::class.java)
+                .putExtra(MainActivity.EXTRA_ASK_MIC, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            try { startActivity(i) } catch (_: Exception) { }
+            return
+        }
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            vp.setStatus("Tu teléfono no tiene reconocimiento de voz. Instala o actualiza la app Google.")
+            return
+        }
+        val r = recognizer ?: SpeechRecognizer.createSpeechRecognizer(this).also {
+            it.setRecognitionListener(voiceListener)
+            recognizer = it
+        }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (voiceLang == "es") "es-US" else "en-US")
+            .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+        listening = true
+        vp.setListening(true)
+        vp.setStatus(if (voiceLang == "es") "Escuchando… habla ahora" else "Listening… speak now")
+        try {
+            r.startListening(intent)
+        } catch (_: Exception) {
+            stopVoice("No se pudo usar el micrófono. Inténtalo de nuevo.")
+        }
+    }
+
+    private fun stopVoice(message: String) {
+        listening = false
+        recognizer?.cancel()
+        voicePanel?.setListening(false)
+        voicePanel?.setStatus(message)
+    }
+
+    private val voiceListener = object : RecognitionListener {
+        override fun onReadyForSpeech(params: android.os.Bundle?) {}
+        override fun onBeginningOfSpeech() {}
+        override fun onRmsChanged(rmsdB: Float) { voicePanel?.setLevel(rmsdB) }
+        override fun onBufferReceived(buffer: ByteArray?) {}
+        override fun onEndOfSpeech() { if (listening) voicePanel?.setStatus("Escribiendo…") }
+        override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
+
+        override fun onError(error: Int) {
+            if (!listening) return
+            when (error) {
+                SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
+                    stopVoice("Toca el micrófono para hablar")
+                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
+                    stopVoice("Falta el permiso del micrófono (ábrelo en los ajustes ⚙).")
+                SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
+                    stopVoice("Sin internet. Para dictar sin conexión, descarga el idioma en la app Google (Voz → Reconocimiento sin conexión).")
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY ->
+                    stopVoice("El micrófono está ocupado. Toca para intentarlo de nuevo.")
+                else -> stopVoice("Toca el micrófono para hablar")
+            }
+        }
+
+        override fun onPartialResults(partialResults: android.os.Bundle?) {
+            val t = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+            if (!t.isNullOrBlank()) voicePanel?.setPartial(t)
+        }
+
+        override fun onResults(results: android.os.Bundle?) {
+            val t = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+            if (!t.isNullOrBlank()) commitVoice(t)
+            voicePanel?.setPartial("")
+            // Sigue escuchando hasta que toques el micrófono o salgas
+            if (listening && mode == 3) handler.post { if (listening && mode == 3) startVoice() }
+        }
+    }
+
+    /** Escribe lo dictado con signos, espacio y mayúscula donde corresponde. */
+    private fun commitVoice(raw: String) {
+        val ic = target() ?: return
+        var t = VoiceText.process(raw, voiceLang)
+        if (t.isEmpty()) return
+        val before = ic.getTextBeforeCursor(64, 0) ?: ""
+        if (TextUtil.isSentenceStart(before, 0) && autoCap) {
+            val i = t.indexOfFirst { it.isLetter() }
+            if (i >= 0) t = t.substring(0, i) + t[i].uppercaseChar() + t.substring(i + 1)
+        }
+        val needsSpace = before.isNotEmpty() && !before[before.length - 1].isWhitespace() &&
+            t[0] !in ".,;:!?…\n"
+        ic.commitText((if (needsSpace) " " else "") + t, 1)
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+    }
+
+    // ---------------------------------------------------------------- Traducción
+
+    private fun startTranslate() {
+        if (isPassword) {
+            Toast.makeText(this, "La traducción no funciona en campos de contraseña.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val tb = tBar ?: return
+        if (mode != 0) showMode(0)
+        tb.clear()
+        tb.setLangs(tSrc, tDst)
+        tb.visibility = View.VISIBLE
+        translating = true
+        kv?.translateOn = true
+        lastTranslatedSrc = ""
+        pendingSend = false
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+        page = Page.LETTERS
+        rebuild()
+        prepareTranslator()
+        updateAutoCaps()
+        scheduleUpdate()
+    }
+
+    private fun prepareTranslator() {
+        trans?.close()
+        val tb = tBar ?: return
+        tb.setStatus("Preparando… (la primera vez descarga el idioma, unos 30 MB)")
+        val t = Translation(tSrc, tDst)
+        trans = t
+        t.prepare(
+            onReady = { if (trans === t) { tb.setStatus(""); doTranslate() } },
+            onError = {
+                if (trans === t) tb.setStatus("No se pudo descargar el idioma. Conéctate a internet una vez para descargarlo.")
+            },
+        )
+    }
+
+    private fun stopTranslate() {
+        if (!translating) return
+        handler.removeCallbacks(translateRunnable)
+        translating = false
+        pendingSend = false
+        tSeq++
+        currentInputConnection?.finishComposingText()
+        trans?.close()
+        trans = null
+        tBar?.let { it.clear(); it.visibility = View.GONE }
+        kv?.translateOn = false
+        lastCorrection = null
+        updateAutoCaps()
+        scheduleUpdate()
+    }
+
+    private fun swapTranslate() {
+        val a = tSrc
+        tSrc = tDst
+        tDst = a
+        prefs.edit().putString(Prefs.TR_SRC, tSrc).apply()
+        tBar?.setLangs(tSrc, tDst)
+        lastTranslatedSrc = ""
+        prepareTranslator()
+    }
+
+    private fun doTranslate() {
+        if (!translating) return
+        val tb = tBar ?: return
+        val text = tb.box.text?.toString() ?: ""
+        val seq = ++tSeq
+        if (text.isBlank()) {
+            currentInputConnection?.setComposingText("", 1)
+            lastTranslatedSrc = text
+            if (pendingSend) sendTranslated()
+            return
+        }
+        val t = trans ?: return
+        if (!t.ready) return
+        t.translate(text,
+            onResult = { r ->
+                if (seq == tSeq && translating) {
+                    currentInputConnection?.setComposingText(r, 1)
+                    lastTranslatedSrc = text
+                    if (pendingSend) sendTranslated()
+                }
+            },
+            onError = { if (seq == tSeq) tb.setStatus("No se pudo traducir. Inténtalo de nuevo.") },
+        )
+    }
+
+    /** Enter mientras traduces: deja la traducción en la app y la envía (como Gboard). */
+    private fun translateEnter() {
+        val text = tBar?.box?.text?.toString() ?: ""
+        if (text == lastTranslatedSrc) {
+            sendTranslated()
+        } else {
+            pendingSend = true
+            handler.removeCallbacks(translateRunnable)
+            doTranslate()
+        }
+    }
+
+    private fun sendTranslated() {
+        pendingSend = false
+        handler.removeCallbacks(translateRunnable)
+        tSeq++
+        currentInputConnection?.finishComposingText()
+        tBar?.clear()
+        lastTranslatedSrc = ""
+        translating = false
+        handleEnter()
+        translating = true
+        updateAutoCaps()
+        scheduleUpdate()
+    }
+
     private fun commitPanelText(text: String) {
-        val ic = currentInputConnection ?: return
+        val ic = target() ?: return
         ic.commitText(text, 1)
         lastCorrection = null
         autoSpace = false
@@ -256,6 +557,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             shift = 0
             manualShift = false
             if (mode != 0) showMode(0)
+            if (translating) stopTranslate()
         }
         lastWasSpace = false
         autoSpace = false
@@ -268,6 +570,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
         if (mode != 0) showMode(0)
+        if (translating) stopTranslate()
         kv?.reset()
         clearSlots()
         WordStore.saveNow()
@@ -275,6 +578,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onDestroy() {
         clipboard?.removePrimaryClipChangedListener(clipListener)
+        recognizer?.destroy()
+        recognizer = null
+        trans?.close()
         ClipStore.onChange = null
         WordStore.saveNow()
         super.onDestroy()
@@ -316,6 +622,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         emojiPanel?.applyPalette(pal)
         clipHistoryOn = prefs.getBoolean(Prefs.CLIP_HISTORY, true)
         clipPanel?.let { it.historyOn = clipHistoryOn; it.applyPalette(pal) }
+        voicePanel?.applyPalette(pal)
+        tBar?.applyPalette(pal)
         colorNavBar(pal)
 
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -386,8 +694,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (shift == 1) setShift(0)
             return
         }
-        val ic = currentInputConnection ?: return
-        val ei = currentInputEditorInfo ?: return
+        val ic = target() ?: return
+        val ei = targetInfo() ?: return
         val caps = ic.getCursorCapsMode(ei.inputType) != 0
         setShift(if (caps) 1 else 0)
     }
@@ -428,7 +736,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun updateSuggestions() {
         val eng = WordStore.engine
-        val ic = currentInputConnection
+        val ic = target()
         if (!suggestOn || !fieldSuggest || eng == null || ic == null || page == Page.NUM) {
             clearSlots(); return
         }
@@ -468,7 +776,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onSuggestion(slot: Int) {
         val w = slotWords.getOrNull(slot) ?: return
-        val ic = currentInputConnection ?: return
+        val ic = target() ?: return
         val before = ic.getTextBeforeCursor(48, 0) ?: ""
         val cur = TextUtil.currentWord(before)
         val prev = TextUtil.previousWord(before, cur.length)
@@ -523,7 +831,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // ---------------------------------------------------------------- Teclas
 
     override fun onKeyText(text: String) {
-        val ic = currentInputConnection ?: return
+        val ic = target() ?: return
         var t = text
         if (page == Page.LETTERS && shift > 0 && t.length == 1) {
             t = Character.toUpperCase(t[0]).toString()
@@ -562,7 +870,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onKeyCode(code: Int) {
-        val ic = currentInputConnection
+        val ic = target()
         if (code != Codes.SHIFT) lastCorrection = null
         when (code) {
             Codes.SPACE -> {
@@ -592,6 +900,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             Codes.ENTER -> {
                 if (ic == null) return
                 autoSpace = false
+                if (translating) { translateEnter(); return }
                 ic.beginBatchEdit()
                 finishWord(ic)
                 ic.endBatchEdit()
@@ -631,19 +940,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun handleEnter() {
-        val ic = currentInputConnection ?: return
-        val ei = currentInputEditorInfo
+        val ic = target() ?: return
+        val ei = targetInfo()
         val action = if (ei != null) enterActionFor(ei) else EditorInfo.IME_ACTION_NONE
         if (action != EditorInfo.IME_ACTION_NONE) {
             ic.performEditorAction(action)
             return
         }
         val multiLine = ei != null && (ei.inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0
-        if (multiLine) ic.commitText("\n", 1) else sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
+        if (multiLine) ic.commitText("\n", 1) else sendKey(KeyEvent.KEYCODE_ENTER)
     }
 
     override fun onDeletePress() {
-        val ic = currentInputConnection ?: return
+        val ic = target() ?: return
         autoSpace = false
         lastWasSpace = false
         val lc = lastCorrection
@@ -666,13 +975,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 return
             }
         }
-        sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+        sendKey(KeyEvent.KEYCODE_DEL)
     }
 
     override fun onCursorMove(steps: Int) {
-        if (currentInputConnection == null) return
+        if (target() == null) return
         val key = if (steps > 0) KeyEvent.KEYCODE_DPAD_RIGHT else KeyEvent.KEYCODE_DPAD_LEFT
-        repeat(kotlin.math.abs(steps)) { sendDownUpKeyEvents(key) }
+        repeat(kotlin.math.abs(steps)) { sendKey(key) }
         lastWasSpace = false
         autoSpace = false
         lastCorrection = null
@@ -693,6 +1002,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_HIDE -> requestHideSelf(0)
             KeyboardView.TOOL_EMOJI -> showMode(1)
             KeyboardView.TOOL_CLIP -> showMode(2)
+            KeyboardView.TOOL_VOICE -> showMode(3)
+            KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
         }
     }
 
