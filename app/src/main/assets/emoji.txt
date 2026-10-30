@@ -1,0 +1,1914 @@
+0	😀		grinning
+0	😃		smiley
+0	😄		smile
+0	😁		grin
+0	😆		laughing
+0	😅		sweat smile
+0	🤣		rolling on the floor laughing
+0	😂		joy
+0	🙂		slightly smiling face
+0	🙃		upside down face
+0	🫠		melting face
+0	😉		wink
+0	😊		blush
+0	😇		innocent
+0	🥰		smiling face with 3 hearts
+0	😍		heart eyes
+0	🤩		star-struck
+0	😘		kissing heart
+0	😗		kissing
+0	☺️		relaxed
+0	😚		kissing closed eyes
+0	😙		kissing smiling eyes
+0	🥲		smiling face with tear
+0	😋		yum
+0	😛		stuck out tongue
+0	😜		stuck out tongue winking eye
+0	🤪		zany face
+0	😝		stuck out tongue closed eyes
+0	🤑		money mouth face
+0	🤗		hugging face
+0	🤭		face with hand over mouth
+0	🫢		face with open eyes and hand over mouth
+0	🫣		face with peeking eye
+0	🤫		shushing face
+0	🤔		thinking face
+0	🫡		saluting face
+0	🤐		zipper mouth face
+0	🤨		face with raised eyebrow
+0	😐		neutral face
+0	😑		expressionless
+0	😶		no mouth
+0	🫥		dotted line face
+0	😶‍🌫️		face in clouds
+0	😏		smirk
+0	😒		unamused
+0	🙄		face with rolling eyes
+0	😬		grimacing
+0	😮‍💨		face exhaling
+0	🤥		lying face
+0	🫨		shaking face
+0	🙂‍↔️		head shaking horizontally
+0	🙂‍↕️		head shaking vertically
+0	😌		relieved
+0	😔		pensive
+0	😪		sleepy
+0	🤤		drooling face
+0	😴		sleeping
+0	🫩		face with bags under eyes
+0	😷		mask
+0	🤒		face with thermometer
+0	🤕		face with head bandage
+0	🤢		nauseated face
+0	🤮		face vomiting
+0	🤧		sneezing face
+0	🥵		hot face
+0	🥶		cold face
+0	🥴		woozy face
+0	😵		dizzy face
+0	😵‍💫		face with spiral eyes
+0	🤯		exploding head
+0	🤠		face with cowboy hat
+0	🥳		partying face
+0	🥸		disguised face
+0	😎		sunglasses
+0	🤓		nerd face
+0	🧐		face with monocle
+0	😕		confused
+0	🫤		face with diagonal mouth
+0	😟		worried
+0	🙁		slightly frowning face
+0	☹️		white frowning face
+0	😮		open mouth
+0	😯		hushed
+0	😲		astonished
+0	😳		flushed
+0	🫪		distorted face
+0	🥺		pleading face
+0	🥹		face holding back tears
+0	😦		frowning
+0	😧		anguished
+0	😨		fearful
+0	😰		cold sweat
+0	😥		disappointed relieved
+0	😢		cry
+0	😭		sob
+0	😱		scream
+0	😖		confounded
+0	😣		persevere
+0	😞		disappointed
+0	😓		sweat
+0	😩		weary
+0	😫		tired face
+0	🥱		yawning face
+0	😤		triumph
+0	😡		rage
+0	😠		angry
+0	🤬		face with symbols on mouth
+0	😈		smiling imp
+0	👿		imp
+0	💀		skull
+0	☠️		skull and crossbones
+0	💩		hankey
+0	🤡		clown face
+0	👹		japanese ogre
+0	👺		japanese goblin
+0	👻		ghost
+0	👽		alien
+0	👾		space invader
+0	🤖		robot face
+0	😺		smiley cat
+0	😸		smile cat
+0	😹		joy cat
+0	😻		heart eyes cat
+0	😼		smirk cat
+0	😽		kissing cat
+0	🙀		scream cat
+0	😿		crying cat face
+0	😾		pouting cat
+0	🙈		see no evil
+0	🙉		hear no evil
+0	🙊		speak no evil
+0	💌		love letter
+0	💘		cupid
+0	💝		gift heart
+0	💖		sparkling heart
+0	💗		heartpulse
+0	💓		heartbeat
+0	💞		revolving hearts
+0	💕		two hearts
+0	💟		heart decoration
+0	❣️		heavy heart exclamation mark ornament
+0	💔		broken heart
+0	❤️‍🔥		heart on fire
+0	❤️‍🩹		mending heart
+0	❤️		heart
+0	🩷		pink heart
+0	🧡		orange heart
+0	💛		yellow heart
+0	💚		green heart
+0	💙		blue heart
+0	🩵		light blue heart
+0	💜		purple heart
+0	🤎		brown heart
+0	🖤		black heart
+0	🩶		grey heart
+0	🤍		white heart
+0	💋		kiss
+0	💯		100
+0	💢		anger
+0	🫯		fight cloud
+0	💥		boom
+0	💫		dizzy
+0	💦		sweat drops
+0	💨		dash
+0	🕳️		hole
+0	💬		speech balloon
+0	👁️‍🗨️		eye-in-speech-bubble
+0	🗨️		left speech bubble
+0	🗯️		right anger bubble
+0	💭		thought balloon
+0	💤		zzz
+1	👋	👋🏻 👋🏼 👋🏽 👋🏾 👋🏿	wave
+1	🤚	🤚🏻 🤚🏼 🤚🏽 🤚🏾 🤚🏿	raised back of hand
+1	🖐️	🖐🏻 🖐🏼 🖐🏽 🖐🏾 🖐🏿	raised hand with fingers splayed
+1	✋	✋🏻 ✋🏼 ✋🏽 ✋🏾 ✋🏿	hand
+1	🖖	🖖🏻 🖖🏼 🖖🏽 🖖🏾 🖖🏿	spock-hand
+1	🫱	🫱🏻 🫱🏼 🫱🏽 🫱🏾 🫱🏿	rightwards hand
+1	🫲	🫲🏻 🫲🏼 🫲🏽 🫲🏾 🫲🏿	leftwards hand
+1	🫳	🫳🏻 🫳🏼 🫳🏽 🫳🏾 🫳🏿	palm down hand
+1	🫴	🫴🏻 🫴🏼 🫴🏽 🫴🏾 🫴🏿	palm up hand
+1	🫷	🫷🏻 🫷🏼 🫷🏽 🫷🏾 🫷🏿	leftwards pushing hand
+1	🫸	🫸🏻 🫸🏼 🫸🏽 🫸🏾 🫸🏿	rightwards pushing hand
+1	👌	👌🏻 👌🏼 👌🏽 👌🏾 👌🏿	ok hand
+1	🤌	🤌🏻 🤌🏼 🤌🏽 🤌🏾 🤌🏿	pinched fingers
+1	🤏	🤏🏻 🤏🏼 🤏🏽 🤏🏾 🤏🏿	pinching hand
+1	✌️	✌🏻 ✌🏼 ✌🏽 ✌🏾 ✌🏿	v
+1	🤞	🤞🏻 🤞🏼 🤞🏽 🤞🏾 🤞🏿	crossed fingers
+1	🫰	🫰🏻 🫰🏼 🫰🏽 🫰🏾 🫰🏿	hand with index finger and thumb crossed
+1	🤟	🤟🏻 🤟🏼 🤟🏽 🤟🏾 🤟🏿	i love you hand sign
+1	🤘	🤘🏻 🤘🏼 🤘🏽 🤘🏾 🤘🏿	the horns
+1	🤙	🤙🏻 🤙🏼 🤙🏽 🤙🏾 🤙🏿	call me hand
+1	👈	👈🏻 👈🏼 👈🏽 👈🏾 👈🏿	point left
+1	👉	👉🏻 👉🏼 👉🏽 👉🏾 👉🏿	point right
+1	👆	👆🏻 👆🏼 👆🏽 👆🏾 👆🏿	point up 2
+1	🖕	🖕🏻 🖕🏼 🖕🏽 🖕🏾 🖕🏿	middle finger
+1	👇	👇🏻 👇🏼 👇🏽 👇🏾 👇🏿	point down
+1	☝️	☝🏻 ☝🏼 ☝🏽 ☝🏾 ☝🏿	point up
+1	🫵	🫵🏻 🫵🏼 🫵🏽 🫵🏾 🫵🏿	index pointing at the viewer
+1	👍	👍🏻 👍🏼 👍🏽 👍🏾 👍🏿	+1
+1	👎	👎🏻 👎🏼 👎🏽 👎🏾 👎🏿	-1
+1	✊	✊🏻 ✊🏼 ✊🏽 ✊🏾 ✊🏿	fist
+1	👊	👊🏻 👊🏼 👊🏽 👊🏾 👊🏿	facepunch
+1	🤛	🤛🏻 🤛🏼 🤛🏽 🤛🏾 🤛🏿	left-facing fist
+1	🤜	🤜🏻 🤜🏼 🤜🏽 🤜🏾 🤜🏿	right-facing fist
+1	👏	👏🏻 👏🏼 👏🏽 👏🏾 👏🏿	clap
+1	🙌	🙌🏻 🙌🏼 🙌🏽 🙌🏾 🙌🏿	raised hands
+1	🫶	🫶🏻 🫶🏼 🫶🏽 🫶🏾 🫶🏿	heart hands
+1	👐	👐🏻 👐🏼 👐🏽 👐🏾 👐🏿	open hands
+1	🤲	🤲🏻 🤲🏼 🤲🏽 🤲🏾 🤲🏿	palms up together
+1	🤝	🤝🏻 🤝🏼 🤝🏽 🤝🏾 🤝🏿	handshake
+1	🙏	🙏🏻 🙏🏼 🙏🏽 🙏🏾 🙏🏿	pray
+1	✍️	✍🏻 ✍🏼 ✍🏽 ✍🏾 ✍🏿	writing hand
+1	💅	💅🏻 💅🏼 💅🏽 💅🏾 💅🏿	nail care
+1	🤳	🤳🏻 🤳🏼 🤳🏽 🤳🏾 🤳🏿	selfie
+1	💪	💪🏻 💪🏼 💪🏽 💪🏾 💪🏿	muscle
+1	🦾		mechanical arm
+1	🦿		mechanical leg
+1	🦵	🦵🏻 🦵🏼 🦵🏽 🦵🏾 🦵🏿	leg
+1	🦶	🦶🏻 🦶🏼 🦶🏽 🦶🏾 🦶🏿	foot
+1	👂	👂🏻 👂🏼 👂🏽 👂🏾 👂🏿	ear
+1	🦻	🦻🏻 🦻🏼 🦻🏽 🦻🏾 🦻🏿	ear with hearing aid
+1	👃	👃🏻 👃🏼 👃🏽 👃🏾 👃🏿	nose
+1	🧠		brain
+1	🫀		anatomical heart
+1	🫁		lungs
+1	🦷		tooth
+1	🦴		bone
+1	👀		eyes
+1	👁️		eye
+1	👅		tongue
+1	👄		lips
+1	🫦		biting lip
+1	👶	👶🏻 👶🏼 👶🏽 👶🏾 👶🏿	baby
+1	🧒	🧒🏻 🧒🏼 🧒🏽 🧒🏾 🧒🏿	child
+1	👦	👦🏻 👦🏼 👦🏽 👦🏾 👦🏿	boy
+1	👧	👧🏻 👧🏼 👧🏽 👧🏾 👧🏿	girl
+1	🧑	🧑🏻 🧑🏼 🧑🏽 🧑🏾 🧑🏿	adult
+1	👱	👱🏻 👱🏼 👱🏽 👱🏾 👱🏿	person with blond hair
+1	👨	👨🏻 👨🏼 👨🏽 👨🏾 👨🏿	man
+1	🧔	🧔🏻 🧔🏼 🧔🏽 🧔🏾 🧔🏿	bearded person
+1	🧔‍♂️	🧔🏻‍♂️ 🧔🏼‍♂️ 🧔🏽‍♂️ 🧔🏾‍♂️ 🧔🏿‍♂️	man with beard
+1	🧔‍♀️	🧔🏻‍♀️ 🧔🏼‍♀️ 🧔🏽‍♀️ 🧔🏾‍♀️ 🧔🏿‍♀️	woman with beard
+1	👨‍🦰	👨🏻‍🦰 👨🏼‍🦰 👨🏽‍🦰 👨🏾‍🦰 👨🏿‍🦰	red haired man
+1	👨‍🦱	👨🏻‍🦱 👨🏼‍🦱 👨🏽‍🦱 👨🏾‍🦱 👨🏿‍🦱	curly haired man
+1	👨‍🦳	👨🏻‍🦳 👨🏼‍🦳 👨🏽‍🦳 👨🏾‍🦳 👨🏿‍🦳	white haired man
+1	👨‍🦲	👨🏻‍🦲 👨🏼‍🦲 👨🏽‍🦲 👨🏾‍🦲 👨🏿‍🦲	bald man
+1	👩	👩🏻 👩🏼 👩🏽 👩🏾 👩🏿	woman
+1	👩‍🦰	👩🏻‍🦰 👩🏼‍🦰 👩🏽‍🦰 👩🏾‍🦰 👩🏿‍🦰	red haired woman
+1	🧑‍🦰	🧑🏻‍🦰 🧑🏼‍🦰 🧑🏽‍🦰 🧑🏾‍🦰 🧑🏿‍🦰	red haired person
+1	👩‍🦱	👩🏻‍🦱 👩🏼‍🦱 👩🏽‍🦱 👩🏾‍🦱 👩🏿‍🦱	curly haired woman
+1	🧑‍🦱	🧑🏻‍🦱 🧑🏼‍🦱 🧑🏽‍🦱 🧑🏾‍🦱 🧑🏿‍🦱	curly haired person
+1	👩‍🦳	👩🏻‍🦳 👩🏼‍🦳 👩🏽‍🦳 👩🏾‍🦳 👩🏿‍🦳	white haired woman
+1	🧑‍🦳	🧑🏻‍🦳 🧑🏼‍🦳 🧑🏽‍🦳 🧑🏾‍🦳 🧑🏿‍🦳	white haired person
+1	👩‍🦲	👩🏻‍🦲 👩🏼‍🦲 👩🏽‍🦲 👩🏾‍🦲 👩🏿‍🦲	bald woman
+1	🧑‍🦲	🧑🏻‍🦲 🧑🏼‍🦲 🧑🏽‍🦲 🧑🏾‍🦲 🧑🏿‍🦲	bald person
+1	👱‍♀️	👱🏻‍♀️ 👱🏼‍♀️ 👱🏽‍♀️ 👱🏾‍♀️ 👱🏿‍♀️	blond-haired-woman
+1	👱‍♂️	👱🏻‍♂️ 👱🏼‍♂️ 👱🏽‍♂️ 👱🏾‍♂️ 👱🏿‍♂️	blond-haired-man
+1	🧓	🧓🏻 🧓🏼 🧓🏽 🧓🏾 🧓🏿	older adult
+1	👴	👴🏻 👴🏼 👴🏽 👴🏾 👴🏿	older man
+1	👵	👵🏻 👵🏼 👵🏽 👵🏾 👵🏿	older woman
+1	🙍	🙍🏻 🙍🏼 🙍🏽 🙍🏾 🙍🏿	person frowning
+1	🙍‍♂️	🙍🏻‍♂️ 🙍🏼‍♂️ 🙍🏽‍♂️ 🙍🏾‍♂️ 🙍🏿‍♂️	man-frowning
+1	🙍‍♀️	🙍🏻‍♀️ 🙍🏼‍♀️ 🙍🏽‍♀️ 🙍🏾‍♀️ 🙍🏿‍♀️	woman-frowning
+1	🙎	🙎🏻 🙎🏼 🙎🏽 🙎🏾 🙎🏿	person with pouting face
+1	🙎‍♂️	🙎🏻‍♂️ 🙎🏼‍♂️ 🙎🏽‍♂️ 🙎🏾‍♂️ 🙎🏿‍♂️	man-pouting
+1	🙎‍♀️	🙎🏻‍♀️ 🙎🏼‍♀️ 🙎🏽‍♀️ 🙎🏾‍♀️ 🙎🏿‍♀️	woman-pouting
+1	🙅	🙅🏻 🙅🏼 🙅🏽 🙅🏾 🙅🏿	no good
+1	🙅‍♂️	🙅🏻‍♂️ 🙅🏼‍♂️ 🙅🏽‍♂️ 🙅🏾‍♂️ 🙅🏿‍♂️	man-gesturing-no
+1	🙅‍♀️	🙅🏻‍♀️ 🙅🏼‍♀️ 🙅🏽‍♀️ 🙅🏾‍♀️ 🙅🏿‍♀️	woman-gesturing-no
+1	🙆	🙆🏻 🙆🏼 🙆🏽 🙆🏾 🙆🏿	ok woman
+1	🙆‍♂️	🙆🏻‍♂️ 🙆🏼‍♂️ 🙆🏽‍♂️ 🙆🏾‍♂️ 🙆🏿‍♂️	man-gesturing-ok
+1	🙆‍♀️	🙆🏻‍♀️ 🙆🏼‍♀️ 🙆🏽‍♀️ 🙆🏾‍♀️ 🙆🏿‍♀️	woman-gesturing-ok
+1	💁	💁🏻 💁🏼 💁🏽 💁🏾 💁🏿	information desk person
+1	💁‍♂️	💁🏻‍♂️ 💁🏼‍♂️ 💁🏽‍♂️ 💁🏾‍♂️ 💁🏿‍♂️	man-tipping-hand
+1	💁‍♀️	💁🏻‍♀️ 💁🏼‍♀️ 💁🏽‍♀️ 💁🏾‍♀️ 💁🏿‍♀️	woman-tipping-hand
+1	🙋	🙋🏻 🙋🏼 🙋🏽 🙋🏾 🙋🏿	raising hand
+1	🙋‍♂️	🙋🏻‍♂️ 🙋🏼‍♂️ 🙋🏽‍♂️ 🙋🏾‍♂️ 🙋🏿‍♂️	man-raising-hand
+1	🙋‍♀️	🙋🏻‍♀️ 🙋🏼‍♀️ 🙋🏽‍♀️ 🙋🏾‍♀️ 🙋🏿‍♀️	woman-raising-hand
+1	🧏	🧏🏻 🧏🏼 🧏🏽 🧏🏾 🧏🏿	deaf person
+1	🧏‍♂️	🧏🏻‍♂️ 🧏🏼‍♂️ 🧏🏽‍♂️ 🧏🏾‍♂️ 🧏🏿‍♂️	deaf man
+1	🧏‍♀️	🧏🏻‍♀️ 🧏🏼‍♀️ 🧏🏽‍♀️ 🧏🏾‍♀️ 🧏🏿‍♀️	deaf woman
+1	🙇	🙇🏻 🙇🏼 🙇🏽 🙇🏾 🙇🏿	bow
+1	🙇‍♂️	🙇🏻‍♂️ 🙇🏼‍♂️ 🙇🏽‍♂️ 🙇🏾‍♂️ 🙇🏿‍♂️	man-bowing
+1	🙇‍♀️	🙇🏻‍♀️ 🙇🏼‍♀️ 🙇🏽‍♀️ 🙇🏾‍♀️ 🙇🏿‍♀️	woman-bowing
+1	🤦	🤦🏻 🤦🏼 🤦🏽 🤦🏾 🤦🏿	face palm
+1	🤦‍♂️	🤦🏻‍♂️ 🤦🏼‍♂️ 🤦🏽‍♂️ 🤦🏾‍♂️ 🤦🏿‍♂️	man-facepalming
+1	🤦‍♀️	🤦🏻‍♀️ 🤦🏼‍♀️ 🤦🏽‍♀️ 🤦🏾‍♀️ 🤦🏿‍♀️	woman-facepalming
+1	🤷	🤷🏻 🤷🏼 🤷🏽 🤷🏾 🤷🏿	shrug
+1	🤷‍♂️	🤷🏻‍♂️ 🤷🏼‍♂️ 🤷🏽‍♂️ 🤷🏾‍♂️ 🤷🏿‍♂️	man-shrugging
+1	🤷‍♀️	🤷🏻‍♀️ 🤷🏼‍♀️ 🤷🏽‍♀️ 🤷🏾‍♀️ 🤷🏿‍♀️	woman-shrugging
+1	🧑‍⚕️	🧑🏻‍⚕️ 🧑🏼‍⚕️ 🧑🏽‍⚕️ 🧑🏾‍⚕️ 🧑🏿‍⚕️	health worker
+1	👨‍⚕️	👨🏻‍⚕️ 👨🏼‍⚕️ 👨🏽‍⚕️ 👨🏾‍⚕️ 👨🏿‍⚕️	male-doctor
+1	👩‍⚕️	👩🏻‍⚕️ 👩🏼‍⚕️ 👩🏽‍⚕️ 👩🏾‍⚕️ 👩🏿‍⚕️	female-doctor
+1	🧑‍🎓	🧑🏻‍🎓 🧑🏼‍🎓 🧑🏽‍🎓 🧑🏾‍🎓 🧑🏿‍🎓	student
+1	👨‍🎓	👨🏻‍🎓 👨🏼‍🎓 👨🏽‍🎓 👨🏾‍🎓 👨🏿‍🎓	male-student
+1	👩‍🎓	👩🏻‍🎓 👩🏼‍🎓 👩🏽‍🎓 👩🏾‍🎓 👩🏿‍🎓	female-student
+1	🧑‍🏫	🧑🏻‍🏫 🧑🏼‍🏫 🧑🏽‍🏫 🧑🏾‍🏫 🧑🏿‍🏫	teacher
+1	👨‍🏫	👨🏻‍🏫 👨🏼‍🏫 👨🏽‍🏫 👨🏾‍🏫 👨🏿‍🏫	male-teacher
+1	👩‍🏫	👩🏻‍🏫 👩🏼‍🏫 👩🏽‍🏫 👩🏾‍🏫 👩🏿‍🏫	female-teacher
+1	🧑‍⚖️	🧑🏻‍⚖️ 🧑🏼‍⚖️ 🧑🏽‍⚖️ 🧑🏾‍⚖️ 🧑🏿‍⚖️	judge
+1	👨‍⚖️	👨🏻‍⚖️ 👨🏼‍⚖️ 👨🏽‍⚖️ 👨🏾‍⚖️ 👨🏿‍⚖️	male-judge
+1	👩‍⚖️	👩🏻‍⚖️ 👩🏼‍⚖️ 👩🏽‍⚖️ 👩🏾‍⚖️ 👩🏿‍⚖️	female-judge
+1	🧑‍🌾	🧑🏻‍🌾 🧑🏼‍🌾 🧑🏽‍🌾 🧑🏾‍🌾 🧑🏿‍🌾	farmer
+1	👨‍🌾	👨🏻‍🌾 👨🏼‍🌾 👨🏽‍🌾 👨🏾‍🌾 👨🏿‍🌾	male-farmer
+1	👩‍🌾	👩🏻‍🌾 👩🏼‍🌾 👩🏽‍🌾 👩🏾‍🌾 👩🏿‍🌾	female-farmer
+1	🧑‍🍳	🧑🏻‍🍳 🧑🏼‍🍳 🧑🏽‍🍳 🧑🏾‍🍳 🧑🏿‍🍳	cook
+1	👨‍🍳	👨🏻‍🍳 👨🏼‍🍳 👨🏽‍🍳 👨🏾‍🍳 👨🏿‍🍳	male-cook
+1	👩‍🍳	👩🏻‍🍳 👩🏼‍🍳 👩🏽‍🍳 👩🏾‍🍳 👩🏿‍🍳	female-cook
+1	🧑‍🔧	🧑🏻‍🔧 🧑🏼‍🔧 🧑🏽‍🔧 🧑🏾‍🔧 🧑🏿‍🔧	mechanic
+1	👨‍🔧	👨🏻‍🔧 👨🏼‍🔧 👨🏽‍🔧 👨🏾‍🔧 👨🏿‍🔧	male-mechanic
+1	👩‍🔧	👩🏻‍🔧 👩🏼‍🔧 👩🏽‍🔧 👩🏾‍🔧 👩🏿‍🔧	female-mechanic
+1	🧑‍🏭	🧑🏻‍🏭 🧑🏼‍🏭 🧑🏽‍🏭 🧑🏾‍🏭 🧑🏿‍🏭	factory worker
+1	👨‍🏭	👨🏻‍🏭 👨🏼‍🏭 👨🏽‍🏭 👨🏾‍🏭 👨🏿‍🏭	male-factory-worker
+1	👩‍🏭	👩🏻‍🏭 👩🏼‍🏭 👩🏽‍🏭 👩🏾‍🏭 👩🏿‍🏭	female-factory-worker
+1	🧑‍💼	🧑🏻‍💼 🧑🏼‍💼 🧑🏽‍💼 🧑🏾‍💼 🧑🏿‍💼	office worker
+1	👨‍💼	👨🏻‍💼 👨🏼‍💼 👨🏽‍💼 👨🏾‍💼 👨🏿‍💼	male-office-worker
+1	👩‍💼	👩🏻‍💼 👩🏼‍💼 👩🏽‍💼 👩🏾‍💼 👩🏿‍💼	female-office-worker
+1	🧑‍🔬	🧑🏻‍🔬 🧑🏼‍🔬 🧑🏽‍🔬 🧑🏾‍🔬 🧑🏿‍🔬	scientist
+1	👨‍🔬	👨🏻‍🔬 👨🏼‍🔬 👨🏽‍🔬 👨🏾‍🔬 👨🏿‍🔬	male-scientist
+1	👩‍🔬	👩🏻‍🔬 👩🏼‍🔬 👩🏽‍🔬 👩🏾‍🔬 👩🏿‍🔬	female-scientist
+1	🧑‍💻	🧑🏻‍💻 🧑🏼‍💻 🧑🏽‍💻 🧑🏾‍💻 🧑🏿‍💻	technologist
+1	👨‍💻	👨🏻‍💻 👨🏼‍💻 👨🏽‍💻 👨🏾‍💻 👨🏿‍💻	male-technologist
+1	👩‍💻	👩🏻‍💻 👩🏼‍💻 👩🏽‍💻 👩🏾‍💻 👩🏿‍💻	female-technologist
+1	🧑‍🎤	🧑🏻‍🎤 🧑🏼‍🎤 🧑🏽‍🎤 🧑🏾‍🎤 🧑🏿‍🎤	singer
+1	👨‍🎤	👨🏻‍🎤 👨🏼‍🎤 👨🏽‍🎤 👨🏾‍🎤 👨🏿‍🎤	male-singer
+1	👩‍🎤	👩🏻‍🎤 👩🏼‍🎤 👩🏽‍🎤 👩🏾‍🎤 👩🏿‍🎤	female-singer
+1	🧑‍🎨	🧑🏻‍🎨 🧑🏼‍🎨 🧑🏽‍🎨 🧑🏾‍🎨 🧑🏿‍🎨	artist
+1	👨‍🎨	👨🏻‍🎨 👨🏼‍🎨 👨🏽‍🎨 👨🏾‍🎨 👨🏿‍🎨	male-artist
+1	👩‍🎨	👩🏻‍🎨 👩🏼‍🎨 👩🏽‍🎨 👩🏾‍🎨 👩🏿‍🎨	female-artist
+1	🧑‍✈️	🧑🏻‍✈️ 🧑🏼‍✈️ 🧑🏽‍✈️ 🧑🏾‍✈️ 🧑🏿‍✈️	pilot
+1	👨‍✈️	👨🏻‍✈️ 👨🏼‍✈️ 👨🏽‍✈️ 👨🏾‍✈️ 👨🏿‍✈️	male-pilot
+1	👩‍✈️	👩🏻‍✈️ 👩🏼‍✈️ 👩🏽‍✈️ 👩🏾‍✈️ 👩🏿‍✈️	female-pilot
+1	🧑‍🚀	🧑🏻‍🚀 🧑🏼‍🚀 🧑🏽‍🚀 🧑🏾‍🚀 🧑🏿‍🚀	astronaut
+1	👨‍🚀	👨🏻‍🚀 👨🏼‍🚀 👨🏽‍🚀 👨🏾‍🚀 👨🏿‍🚀	male-astronaut
+1	👩‍🚀	👩🏻‍🚀 👩🏼‍🚀 👩🏽‍🚀 👩🏾‍🚀 👩🏿‍🚀	female-astronaut
+1	🧑‍🚒	🧑🏻‍🚒 🧑🏼‍🚒 🧑🏽‍🚒 🧑🏾‍🚒 🧑🏿‍🚒	firefighter
+1	👨‍🚒	👨🏻‍🚒 👨🏼‍🚒 👨🏽‍🚒 👨🏾‍🚒 👨🏿‍🚒	male-firefighter
+1	👩‍🚒	👩🏻‍🚒 👩🏼‍🚒 👩🏽‍🚒 👩🏾‍🚒 👩🏿‍🚒	female-firefighter
+1	👮	👮🏻 👮🏼 👮🏽 👮🏾 👮🏿	cop
+1	👮‍♂️	👮🏻‍♂️ 👮🏼‍♂️ 👮🏽‍♂️ 👮🏾‍♂️ 👮🏿‍♂️	male-police-officer
+1	👮‍♀️	👮🏻‍♀️ 👮🏼‍♀️ 👮🏽‍♀️ 👮🏾‍♀️ 👮🏿‍♀️	female-police-officer
+1	🕵️	🕵🏻 🕵🏼 🕵🏽 🕵🏾 🕵🏿	sleuth or spy
+1	🕵️‍♂️	🕵🏻‍♂️ 🕵🏼‍♂️ 🕵🏽‍♂️ 🕵🏾‍♂️ 🕵🏿‍♂️	male-detective
+1	🕵️‍♀️	🕵🏻‍♀️ 🕵🏼‍♀️ 🕵🏽‍♀️ 🕵🏾‍♀️ 🕵🏿‍♀️	female-detective
+1	💂	💂🏻 💂🏼 💂🏽 💂🏾 💂🏿	guardsman
+1	💂‍♂️	💂🏻‍♂️ 💂🏼‍♂️ 💂🏽‍♂️ 💂🏾‍♂️ 💂🏿‍♂️	male-guard
+1	💂‍♀️	💂🏻‍♀️ 💂🏼‍♀️ 💂🏽‍♀️ 💂🏾‍♀️ 💂🏿‍♀️	female-guard
+1	🥷	🥷🏻 🥷🏼 🥷🏽 🥷🏾 🥷🏿	ninja
+1	👷	👷🏻 👷🏼 👷🏽 👷🏾 👷🏿	construction worker
+1	👷‍♂️	👷🏻‍♂️ 👷🏼‍♂️ 👷🏽‍♂️ 👷🏾‍♂️ 👷🏿‍♂️	male-construction-worker
+1	👷‍♀️	👷🏻‍♀️ 👷🏼‍♀️ 👷🏽‍♀️ 👷🏾‍♀️ 👷🏿‍♀️	female-construction-worker
+1	🫅	🫅🏻 🫅🏼 🫅🏽 🫅🏾 🫅🏿	person with crown
+1	🤴	🤴🏻 🤴🏼 🤴🏽 🤴🏾 🤴🏿	prince
+1	👸	👸🏻 👸🏼 👸🏽 👸🏾 👸🏿	princess
+1	👳	👳🏻 👳🏼 👳🏽 👳🏾 👳🏿	man with turban
+1	👳‍♂️	👳🏻‍♂️ 👳🏼‍♂️ 👳🏽‍♂️ 👳🏾‍♂️ 👳🏿‍♂️	man-wearing-turban
+1	👳‍♀️	👳🏻‍♀️ 👳🏼‍♀️ 👳🏽‍♀️ 👳🏾‍♀️ 👳🏿‍♀️	woman-wearing-turban
+1	👲	👲🏻 👲🏼 👲🏽 👲🏾 👲🏿	man with gua pi mao
+1	🧕	🧕🏻 🧕🏼 🧕🏽 🧕🏾 🧕🏿	person with headscarf
+1	🤵	🤵🏻 🤵🏼 🤵🏽 🤵🏾 🤵🏿	person in tuxedo
+1	🤵‍♂️	🤵🏻‍♂️ 🤵🏼‍♂️ 🤵🏽‍♂️ 🤵🏾‍♂️ 🤵🏿‍♂️	man in tuxedo
+1	🤵‍♀️	🤵🏻‍♀️ 🤵🏼‍♀️ 🤵🏽‍♀️ 🤵🏾‍♀️ 🤵🏿‍♀️	woman in tuxedo
+1	👰	👰🏻 👰🏼 👰🏽 👰🏾 👰🏿	bride with veil
+1	👰‍♂️	👰🏻‍♂️ 👰🏼‍♂️ 👰🏽‍♂️ 👰🏾‍♂️ 👰🏿‍♂️	man with veil
+1	👰‍♀️	👰🏻‍♀️ 👰🏼‍♀️ 👰🏽‍♀️ 👰🏾‍♀️ 👰🏿‍♀️	woman with veil
+1	🤰	🤰🏻 🤰🏼 🤰🏽 🤰🏾 🤰🏿	pregnant woman
+1	🫃	🫃🏻 🫃🏼 🫃🏽 🫃🏾 🫃🏿	pregnant man
+1	🫄	🫄🏻 🫄🏼 🫄🏽 🫄🏾 🫄🏿	pregnant person
+1	🤱	🤱🏻 🤱🏼 🤱🏽 🤱🏾 🤱🏿	breast-feeding
+1	👩‍🍼	👩🏻‍🍼 👩🏼‍🍼 👩🏽‍🍼 👩🏾‍🍼 👩🏿‍🍼	woman feeding baby
+1	👨‍🍼	👨🏻‍🍼 👨🏼‍🍼 👨🏽‍🍼 👨🏾‍🍼 👨🏿‍🍼	man feeding baby
+1	🧑‍🍼	🧑🏻‍🍼 🧑🏼‍🍼 🧑🏽‍🍼 🧑🏾‍🍼 🧑🏿‍🍼	person feeding baby
+1	👼	👼🏻 👼🏼 👼🏽 👼🏾 👼🏿	angel
+1	🎅	🎅🏻 🎅🏼 🎅🏽 🎅🏾 🎅🏿	santa
+1	🤶	🤶🏻 🤶🏼 🤶🏽 🤶🏾 🤶🏿	mrs claus
+1	🧑‍🎄	🧑🏻‍🎄 🧑🏼‍🎄 🧑🏽‍🎄 🧑🏾‍🎄 🧑🏿‍🎄	mx claus
+1	🦸	🦸🏻 🦸🏼 🦸🏽 🦸🏾 🦸🏿	superhero
+1	🦸‍♂️	🦸🏻‍♂️ 🦸🏼‍♂️ 🦸🏽‍♂️ 🦸🏾‍♂️ 🦸🏿‍♂️	male superhero
+1	🦸‍♀️	🦸🏻‍♀️ 🦸🏼‍♀️ 🦸🏽‍♀️ 🦸🏾‍♀️ 🦸🏿‍♀️	female superhero
+1	🦹	🦹🏻 🦹🏼 🦹🏽 🦹🏾 🦹🏿	supervillain
+1	🦹‍♂️	🦹🏻‍♂️ 🦹🏼‍♂️ 🦹🏽‍♂️ 🦹🏾‍♂️ 🦹🏿‍♂️	male supervillain
+1	🦹‍♀️	🦹🏻‍♀️ 🦹🏼‍♀️ 🦹🏽‍♀️ 🦹🏾‍♀️ 🦹🏿‍♀️	female supervillain
+1	🧙	🧙🏻 🧙🏼 🧙🏽 🧙🏾 🧙🏿	mage
+1	🧙‍♂️	🧙🏻‍♂️ 🧙🏼‍♂️ 🧙🏽‍♂️ 🧙🏾‍♂️ 🧙🏿‍♂️	male mage
+1	🧙‍♀️	🧙🏻‍♀️ 🧙🏼‍♀️ 🧙🏽‍♀️ 🧙🏾‍♀️ 🧙🏿‍♀️	female mage
+1	🧚	🧚🏻 🧚🏼 🧚🏽 🧚🏾 🧚🏿	fairy
+1	🧚‍♂️	🧚🏻‍♂️ 🧚🏼‍♂️ 🧚🏽‍♂️ 🧚🏾‍♂️ 🧚🏿‍♂️	male fairy
+1	🧚‍♀️	🧚🏻‍♀️ 🧚🏼‍♀️ 🧚🏽‍♀️ 🧚🏾‍♀️ 🧚🏿‍♀️	female fairy
+1	🧛	🧛🏻 🧛🏼 🧛🏽 🧛🏾 🧛🏿	vampire
+1	🧛‍♂️	🧛🏻‍♂️ 🧛🏼‍♂️ 🧛🏽‍♂️ 🧛🏾‍♂️ 🧛🏿‍♂️	male vampire
+1	🧛‍♀️	🧛🏻‍♀️ 🧛🏼‍♀️ 🧛🏽‍♀️ 🧛🏾‍♀️ 🧛🏿‍♀️	female vampire
+1	🧜	🧜🏻 🧜🏼 🧜🏽 🧜🏾 🧜🏿	merperson
+1	🧜‍♂️	🧜🏻‍♂️ 🧜🏼‍♂️ 🧜🏽‍♂️ 🧜🏾‍♂️ 🧜🏿‍♂️	merman
+1	🧜‍♀️	🧜🏻‍♀️ 🧜🏼‍♀️ 🧜🏽‍♀️ 🧜🏾‍♀️ 🧜🏿‍♀️	mermaid
+1	🧝	🧝🏻 🧝🏼 🧝🏽 🧝🏾 🧝🏿	elf
+1	🧝‍♂️	🧝🏻‍♂️ 🧝🏼‍♂️ 🧝🏽‍♂️ 🧝🏾‍♂️ 🧝🏿‍♂️	male elf
+1	🧝‍♀️	🧝🏻‍♀️ 🧝🏼‍♀️ 🧝🏽‍♀️ 🧝🏾‍♀️ 🧝🏿‍♀️	female elf
+1	🧞		genie
+1	🧞‍♂️		male genie
+1	🧞‍♀️		female genie
+1	🧟		zombie
+1	🧟‍♂️		male zombie
+1	🧟‍♀️		female zombie
+1	🧌		troll
+1	🫈		hairy creature
+1	💆	💆🏻 💆🏼 💆🏽 💆🏾 💆🏿	massage
+1	💆‍♂️	💆🏻‍♂️ 💆🏼‍♂️ 💆🏽‍♂️ 💆🏾‍♂️ 💆🏿‍♂️	man-getting-massage
+1	💆‍♀️	💆🏻‍♀️ 💆🏼‍♀️ 💆🏽‍♀️ 💆🏾‍♀️ 💆🏿‍♀️	woman-getting-massage
+1	💇	💇🏻 💇🏼 💇🏽 💇🏾 💇🏿	haircut
+1	💇‍♂️	💇🏻‍♂️ 💇🏼‍♂️ 💇🏽‍♂️ 💇🏾‍♂️ 💇🏿‍♂️	man-getting-haircut
+1	💇‍♀️	💇🏻‍♀️ 💇🏼‍♀️ 💇🏽‍♀️ 💇🏾‍♀️ 💇🏿‍♀️	woman-getting-haircut
+1	🚶	🚶🏻 🚶🏼 🚶🏽 🚶🏾 🚶🏿	walking
+1	🚶‍♂️	🚶🏻‍♂️ 🚶🏼‍♂️ 🚶🏽‍♂️ 🚶🏾‍♂️ 🚶🏿‍♂️	man-walking
+1	🚶‍♀️	🚶🏻‍♀️ 🚶🏼‍♀️ 🚶🏽‍♀️ 🚶🏾‍♀️ 🚶🏿‍♀️	woman-walking
+1	🚶‍➡️	🚶🏻‍➡️ 🚶🏼‍➡️ 🚶🏽‍➡️ 🚶🏾‍➡️ 🚶🏿‍➡️	person walking facing right
+1	🚶‍♀️‍➡️	🚶🏻‍♀️‍➡️ 🚶🏼‍♀️‍➡️ 🚶🏽‍♀️‍➡️ 🚶🏾‍♀️‍➡️ 🚶🏿‍♀️‍➡️	woman walking facing right
+1	🚶‍♂️‍➡️	🚶🏻‍♂️‍➡️ 🚶🏼‍♂️‍➡️ 🚶🏽‍♂️‍➡️ 🚶🏾‍♂️‍➡️ 🚶🏿‍♂️‍➡️	man walking facing right
+1	🧍	🧍🏻 🧍🏼 🧍🏽 🧍🏾 🧍🏿	standing person
+1	🧍‍♂️	🧍🏻‍♂️ 🧍🏼‍♂️ 🧍🏽‍♂️ 🧍🏾‍♂️ 🧍🏿‍♂️	man standing
+1	🧍‍♀️	🧍🏻‍♀️ 🧍🏼‍♀️ 🧍🏽‍♀️ 🧍🏾‍♀️ 🧍🏿‍♀️	woman standing
+1	🧎	🧎🏻 🧎🏼 🧎🏽 🧎🏾 🧎🏿	kneeling person
+1	🧎‍♂️	🧎🏻‍♂️ 🧎🏼‍♂️ 🧎🏽‍♂️ 🧎🏾‍♂️ 🧎🏿‍♂️	man kneeling
+1	🧎‍♀️	🧎🏻‍♀️ 🧎🏼‍♀️ 🧎🏽‍♀️ 🧎🏾‍♀️ 🧎🏿‍♀️	woman kneeling
+1	🧎‍➡️	🧎🏻‍➡️ 🧎🏼‍➡️ 🧎🏽‍➡️ 🧎🏾‍➡️ 🧎🏿‍➡️	person kneeling facing right
+1	🧎‍♀️‍➡️	🧎🏻‍♀️‍➡️ 🧎🏼‍♀️‍➡️ 🧎🏽‍♀️‍➡️ 🧎🏾‍♀️‍➡️ 🧎🏿‍♀️‍➡️	woman kneeling facing right
+1	🧎‍♂️‍➡️	🧎🏻‍♂️‍➡️ 🧎🏼‍♂️‍➡️ 🧎🏽‍♂️‍➡️ 🧎🏾‍♂️‍➡️ 🧎🏿‍♂️‍➡️	man kneeling facing right
+1	🧑‍🦯	🧑🏻‍🦯 🧑🏼‍🦯 🧑🏽‍🦯 🧑🏾‍🦯 🧑🏿‍🦯	person with probing cane
+1	🧑‍🦯‍➡️	🧑🏻‍🦯‍➡️ 🧑🏼‍🦯‍➡️ 🧑🏽‍🦯‍➡️ 🧑🏾‍🦯‍➡️ 🧑🏿‍🦯‍➡️	person with white cane facing right
+1	👨‍🦯	👨🏻‍🦯 👨🏼‍🦯 👨🏽‍🦯 👨🏾‍🦯 👨🏿‍🦯	man with probing cane
+1	👨‍🦯‍➡️	👨🏻‍🦯‍➡️ 👨🏼‍🦯‍➡️ 👨🏽‍🦯‍➡️ 👨🏾‍🦯‍➡️ 👨🏿‍🦯‍➡️	man with white cane facing right
+1	👩‍🦯	👩🏻‍🦯 👩🏼‍🦯 👩🏽‍🦯 👩🏾‍🦯 👩🏿‍🦯	woman with probing cane
+1	👩‍🦯‍➡️	👩🏻‍🦯‍➡️ 👩🏼‍🦯‍➡️ 👩🏽‍🦯‍➡️ 👩🏾‍🦯‍➡️ 👩🏿‍🦯‍➡️	woman with white cane facing right
+1	🧑‍🦼	🧑🏻‍🦼 🧑🏼‍🦼 🧑🏽‍🦼 🧑🏾‍🦼 🧑🏿‍🦼	person in motorized wheelchair
+1	🧑‍🦼‍➡️	🧑🏻‍🦼‍➡️ 🧑🏼‍🦼‍➡️ 🧑🏽‍🦼‍➡️ 🧑🏾‍🦼‍➡️ 🧑🏿‍🦼‍➡️	person in motorized wheelchair facing right
+1	👨‍🦼	👨🏻‍🦼 👨🏼‍🦼 👨🏽‍🦼 👨🏾‍🦼 👨🏿‍🦼	man in motorized wheelchair
+1	👨‍🦼‍➡️	👨🏻‍🦼‍➡️ 👨🏼‍🦼‍➡️ 👨🏽‍🦼‍➡️ 👨🏾‍🦼‍➡️ 👨🏿‍🦼‍➡️	man in motorized wheelchair facing right
+1	👩‍🦼	👩🏻‍🦼 👩🏼‍🦼 👩🏽‍🦼 👩🏾‍🦼 👩🏿‍🦼	woman in motorized wheelchair
+1	👩‍🦼‍➡️	👩🏻‍🦼‍➡️ 👩🏼‍🦼‍➡️ 👩🏽‍🦼‍➡️ 👩🏾‍🦼‍➡️ 👩🏿‍🦼‍➡️	woman in motorized wheelchair facing right
+1	🧑‍🦽	🧑🏻‍🦽 🧑🏼‍🦽 🧑🏽‍🦽 🧑🏾‍🦽 🧑🏿‍🦽	person in manual wheelchair
+1	🧑‍🦽‍➡️	🧑🏻‍🦽‍➡️ 🧑🏼‍🦽‍➡️ 🧑🏽‍🦽‍➡️ 🧑🏾‍🦽‍➡️ 🧑🏿‍🦽‍➡️	person in manual wheelchair facing right
+1	👨‍🦽	👨🏻‍🦽 👨🏼‍🦽 👨🏽‍🦽 👨🏾‍🦽 👨🏿‍🦽	man in manual wheelchair
+1	👨‍🦽‍➡️	👨🏻‍🦽‍➡️ 👨🏼‍🦽‍➡️ 👨🏽‍🦽‍➡️ 👨🏾‍🦽‍➡️ 👨🏿‍🦽‍➡️	man in manual wheelchair facing right
+1	👩‍🦽	👩🏻‍🦽 👩🏼‍🦽 👩🏽‍🦽 👩🏾‍🦽 👩🏿‍🦽	woman in manual wheelchair
+1	👩‍🦽‍➡️	👩🏻‍🦽‍➡️ 👩🏼‍🦽‍➡️ 👩🏽‍🦽‍➡️ 👩🏾‍🦽‍➡️ 👩🏿‍🦽‍➡️	woman in manual wheelchair facing right
+1	🏃	🏃🏻 🏃🏼 🏃🏽 🏃🏾 🏃🏿	runner
+1	🏃‍♂️	🏃🏻‍♂️ 🏃🏼‍♂️ 🏃🏽‍♂️ 🏃🏾‍♂️ 🏃🏿‍♂️	man-running
+1	🏃‍♀️	🏃🏻‍♀️ 🏃🏼‍♀️ 🏃🏽‍♀️ 🏃🏾‍♀️ 🏃🏿‍♀️	woman-running
+1	🏃‍➡️	🏃🏻‍➡️ 🏃🏼‍➡️ 🏃🏽‍➡️ 🏃🏾‍➡️ 🏃🏿‍➡️	person running facing right
+1	🏃‍♀️‍➡️	🏃🏻‍♀️‍➡️ 🏃🏼‍♀️‍➡️ 🏃🏽‍♀️‍➡️ 🏃🏾‍♀️‍➡️ 🏃🏿‍♀️‍➡️	woman running facing right
+1	🏃‍♂️‍➡️	🏃🏻‍♂️‍➡️ 🏃🏼‍♂️‍➡️ 🏃🏽‍♂️‍➡️ 🏃🏾‍♂️‍➡️ 🏃🏿‍♂️‍➡️	man running facing right
+1	🧑‍🩰	🧑🏻‍🩰 🧑🏼‍🩰 🧑🏽‍🩰 🧑🏾‍🩰 🧑🏿‍🩰	ballet dancer
+1	💃	💃🏻 💃🏼 💃🏽 💃🏾 💃🏿	dancer
+1	🕺	🕺🏻 🕺🏼 🕺🏽 🕺🏾 🕺🏿	man dancing
+1	🕴️	🕴🏻 🕴🏼 🕴🏽 🕴🏾 🕴🏿	man in business suit levitating
+1	👯	👯🏻 👯🏼 👯🏽 👯🏾 👯🏿	dancers
+1	👯‍♂️	👯🏻‍♂️ 👯🏼‍♂️ 👯🏽‍♂️ 👯🏾‍♂️ 👯🏿‍♂️	men-with-bunny-ears-partying
+1	👯‍♀️	👯🏻‍♀️ 👯🏼‍♀️ 👯🏽‍♀️ 👯🏾‍♀️ 👯🏿‍♀️	women-with-bunny-ears-partying
+1	🧖	🧖🏻 🧖🏼 🧖🏽 🧖🏾 🧖🏿	person in steamy room
+1	🧖‍♂️	🧖🏻‍♂️ 🧖🏼‍♂️ 🧖🏽‍♂️ 🧖🏾‍♂️ 🧖🏿‍♂️	man in steamy room
+1	🧖‍♀️	🧖🏻‍♀️ 🧖🏼‍♀️ 🧖🏽‍♀️ 🧖🏾‍♀️ 🧖🏿‍♀️	woman in steamy room
+1	🧗	🧗🏻 🧗🏼 🧗🏽 🧗🏾 🧗🏿	person climbing
+1	🧗‍♂️	🧗🏻‍♂️ 🧗🏼‍♂️ 🧗🏽‍♂️ 🧗🏾‍♂️ 🧗🏿‍♂️	man climbing
+1	🧗‍♀️	🧗🏻‍♀️ 🧗🏼‍♀️ 🧗🏽‍♀️ 🧗🏾‍♀️ 🧗🏿‍♀️	woman climbing
+1	🤺		fencer
+1	🏇	🏇🏻 🏇🏼 🏇🏽 🏇🏾 🏇🏿	horse racing
+1	⛷️		skier
+1	🏂	🏂🏻 🏂🏼 🏂🏽 🏂🏾 🏂🏿	snowboarder
+1	🏌️	🏌🏻 🏌🏼 🏌🏽 🏌🏾 🏌🏿	golfer
+1	🏌️‍♂️	🏌🏻‍♂️ 🏌🏼‍♂️ 🏌🏽‍♂️ 🏌🏾‍♂️ 🏌🏿‍♂️	man-golfing
+1	🏌️‍♀️	🏌🏻‍♀️ 🏌🏼‍♀️ 🏌🏽‍♀️ 🏌🏾‍♀️ 🏌🏿‍♀️	woman-golfing
+1	🏄	🏄🏻 🏄🏼 🏄🏽 🏄🏾 🏄🏿	surfer
+1	🏄‍♂️	🏄🏻‍♂️ 🏄🏼‍♂️ 🏄🏽‍♂️ 🏄🏾‍♂️ 🏄🏿‍♂️	man-surfing
+1	🏄‍♀️	🏄🏻‍♀️ 🏄🏼‍♀️ 🏄🏽‍♀️ 🏄🏾‍♀️ 🏄🏿‍♀️	woman-surfing
+1	🚣	🚣🏻 🚣🏼 🚣🏽 🚣🏾 🚣🏿	rowboat
+1	🚣‍♂️	🚣🏻‍♂️ 🚣🏼‍♂️ 🚣🏽‍♂️ 🚣🏾‍♂️ 🚣🏿‍♂️	man-rowing-boat
+1	🚣‍♀️	🚣🏻‍♀️ 🚣🏼‍♀️ 🚣🏽‍♀️ 🚣🏾‍♀️ 🚣🏿‍♀️	woman-rowing-boat
+1	🏊	🏊🏻 🏊🏼 🏊🏽 🏊🏾 🏊🏿	swimmer
+1	🏊‍♂️	🏊🏻‍♂️ 🏊🏼‍♂️ 🏊🏽‍♂️ 🏊🏾‍♂️ 🏊🏿‍♂️	man-swimming
+1	🏊‍♀️	🏊🏻‍♀️ 🏊🏼‍♀️ 🏊🏽‍♀️ 🏊🏾‍♀️ 🏊🏿‍♀️	woman-swimming
+1	⛹️	⛹🏻 ⛹🏼 ⛹🏽 ⛹🏾 ⛹🏿	person with ball
+1	⛹️‍♂️	⛹🏻‍♂️ ⛹🏼‍♂️ ⛹🏽‍♂️ ⛹🏾‍♂️ ⛹🏿‍♂️	man-bouncing-ball
+1	⛹️‍♀️	⛹🏻‍♀️ ⛹🏼‍♀️ ⛹🏽‍♀️ ⛹🏾‍♀️ ⛹🏿‍♀️	woman-bouncing-ball
+1	🏋️	🏋🏻 🏋🏼 🏋🏽 🏋🏾 🏋🏿	weight lifter
+1	🏋️‍♂️	🏋🏻‍♂️ 🏋🏼‍♂️ 🏋🏽‍♂️ 🏋🏾‍♂️ 🏋🏿‍♂️	man-lifting-weights
+1	🏋️‍♀️	🏋🏻‍♀️ 🏋🏼‍♀️ 🏋🏽‍♀️ 🏋🏾‍♀️ 🏋🏿‍♀️	woman-lifting-weights
+1	🚴	🚴🏻 🚴🏼 🚴🏽 🚴🏾 🚴🏿	bicyclist
+1	🚴‍♂️	🚴🏻‍♂️ 🚴🏼‍♂️ 🚴🏽‍♂️ 🚴🏾‍♂️ 🚴🏿‍♂️	man-biking
+1	🚴‍♀️	🚴🏻‍♀️ 🚴🏼‍♀️ 🚴🏽‍♀️ 🚴🏾‍♀️ 🚴🏿‍♀️	woman-biking
+1	🚵	🚵🏻 🚵🏼 🚵🏽 🚵🏾 🚵🏿	mountain bicyclist
+1	🚵‍♂️	🚵🏻‍♂️ 🚵🏼‍♂️ 🚵🏽‍♂️ 🚵🏾‍♂️ 🚵🏿‍♂️	man-mountain-biking
+1	🚵‍♀️	🚵🏻‍♀️ 🚵🏼‍♀️ 🚵🏽‍♀️ 🚵🏾‍♀️ 🚵🏿‍♀️	woman-mountain-biking
+1	🤸	🤸🏻 🤸🏼 🤸🏽 🤸🏾 🤸🏿	person doing cartwheel
+1	🤸‍♂️	🤸🏻‍♂️ 🤸🏼‍♂️ 🤸🏽‍♂️ 🤸🏾‍♂️ 🤸🏿‍♂️	man-cartwheeling
+1	🤸‍♀️	🤸🏻‍♀️ 🤸🏼‍♀️ 🤸🏽‍♀️ 🤸🏾‍♀️ 🤸🏿‍♀️	woman-cartwheeling
+1	🤼	🤼🏻 🤼🏼 🤼🏽 🤼🏾 🤼🏿	wrestlers
+1	🤼‍♂️	🤼🏻‍♂️ 🤼🏼‍♂️ 🤼🏽‍♂️ 🤼🏾‍♂️ 🤼🏿‍♂️	man-wrestling
+1	🤼‍♀️	🤼🏻‍♀️ 🤼🏼‍♀️ 🤼🏽‍♀️ 🤼🏾‍♀️ 🤼🏿‍♀️	woman-wrestling
+1	🤽	🤽🏻 🤽🏼 🤽🏽 🤽🏾 🤽🏿	water polo
+1	🤽‍♂️	🤽🏻‍♂️ 🤽🏼‍♂️ 🤽🏽‍♂️ 🤽🏾‍♂️ 🤽🏿‍♂️	man-playing-water-polo
+1	🤽‍♀️	🤽🏻‍♀️ 🤽🏼‍♀️ 🤽🏽‍♀️ 🤽🏾‍♀️ 🤽🏿‍♀️	woman-playing-water-polo
+1	🤾	🤾🏻 🤾🏼 🤾🏽 🤾🏾 🤾🏿	handball
+1	🤾‍♂️	🤾🏻‍♂️ 🤾🏼‍♂️ 🤾🏽‍♂️ 🤾🏾‍♂️ 🤾🏿‍♂️	man-playing-handball
+1	🤾‍♀️	🤾🏻‍♀️ 🤾🏼‍♀️ 🤾🏽‍♀️ 🤾🏾‍♀️ 🤾🏿‍♀️	woman-playing-handball
+1	🤹	🤹🏻 🤹🏼 🤹🏽 🤹🏾 🤹🏿	juggling
+1	🤹‍♂️	🤹🏻‍♂️ 🤹🏼‍♂️ 🤹🏽‍♂️ 🤹🏾‍♂️ 🤹🏿‍♂️	man-juggling
+1	🤹‍♀️	🤹🏻‍♀️ 🤹🏼‍♀️ 🤹🏽‍♀️ 🤹🏾‍♀️ 🤹🏿‍♀️	woman-juggling
+1	🧘	🧘🏻 🧘🏼 🧘🏽 🧘🏾 🧘🏿	person in lotus position
+1	🧘‍♂️	🧘🏻‍♂️ 🧘🏼‍♂️ 🧘🏽‍♂️ 🧘🏾‍♂️ 🧘🏿‍♂️	man in lotus position
+1	🧘‍♀️	🧘🏻‍♀️ 🧘🏼‍♀️ 🧘🏽‍♀️ 🧘🏾‍♀️ 🧘🏿‍♀️	woman in lotus position
+1	🛀	🛀🏻 🛀🏼 🛀🏽 🛀🏾 🛀🏿	bath
+1	🛌	🛌🏻 🛌🏼 🛌🏽 🛌🏾 🛌🏿	sleeping accommodation
+1	🧑‍🤝‍🧑	🧑🏻‍🤝‍🧑🏻 🧑🏼‍🤝‍🧑🏼 🧑🏽‍🤝‍🧑🏽 🧑🏾‍🤝‍🧑🏾 🧑🏿‍🤝‍🧑🏿	people holding hands
+1	👭	👭🏻 👭🏼 👭🏽 👭🏾 👭🏿	two women holding hands
+1	👫	👫🏻 👫🏼 👫🏽 👫🏾 👫🏿	man and woman holding hands
+1	👬	👬🏻 👬🏼 👬🏽 👬🏾 👬🏿	two men holding hands
+1	💏	💏🏻 💏🏼 💏🏽 💏🏾 💏🏿	couplekiss
+1	👩‍❤️‍💋‍👨	👩🏻‍❤️‍💋‍👨🏻 👩🏼‍❤️‍💋‍👨🏼 👩🏽‍❤️‍💋‍👨🏽 👩🏾‍❤️‍💋‍👨🏾 👩🏿‍❤️‍💋‍👨🏿	woman-kiss-man
+1	👨‍❤️‍💋‍👨	👨🏻‍❤️‍💋‍👨🏻 👨🏼‍❤️‍💋‍👨🏼 👨🏽‍❤️‍💋‍👨🏽 👨🏾‍❤️‍💋‍👨🏾 👨🏿‍❤️‍💋‍👨🏿	man-kiss-man
+1	👩‍❤️‍💋‍👩	👩🏻‍❤️‍💋‍👩🏻 👩🏼‍❤️‍💋‍👩🏼 👩🏽‍❤️‍💋‍👩🏽 👩🏾‍❤️‍💋‍👩🏾 👩🏿‍❤️‍💋‍👩🏿	woman-kiss-woman
+1	💑	💑🏻 💑🏼 💑🏽 💑🏾 💑🏿	couple with heart
+1	👩‍❤️‍👨	👩🏻‍❤️‍👨🏻 👩🏼‍❤️‍👨🏼 👩🏽‍❤️‍👨🏽 👩🏾‍❤️‍👨🏾 👩🏿‍❤️‍👨🏿	woman-heart-man
+1	👨‍❤️‍👨	👨🏻‍❤️‍👨🏻 👨🏼‍❤️‍👨🏼 👨🏽‍❤️‍👨🏽 👨🏾‍❤️‍👨🏾 👨🏿‍❤️‍👨🏿	man-heart-man
+1	👩‍❤️‍👩	👩🏻‍❤️‍👩🏻 👩🏼‍❤️‍👩🏼 👩🏽‍❤️‍👩🏽 👩🏾‍❤️‍👩🏾 👩🏿‍❤️‍👩🏿	woman-heart-woman
+1	👨‍👩‍👦		man-woman-boy
+1	👨‍👩‍👧		man-woman-girl
+1	👨‍👩‍👧‍👦		man-woman-girl-boy
+1	👨‍👩‍👦‍👦		man-woman-boy-boy
+1	👨‍👩‍👧‍👧		man-woman-girl-girl
+1	👨‍👨‍👦		man-man-boy
+1	👨‍👨‍👧		man-man-girl
+1	👨‍👨‍👧‍👦		man-man-girl-boy
+1	👨‍👨‍👦‍👦		man-man-boy-boy
+1	👨‍👨‍👧‍👧		man-man-girl-girl
+1	👩‍👩‍👦		woman-woman-boy
+1	👩‍👩‍👧		woman-woman-girl
+1	👩‍👩‍👧‍👦		woman-woman-girl-boy
+1	👩‍👩‍👦‍👦		woman-woman-boy-boy
+1	👩‍👩‍👧‍👧		woman-woman-girl-girl
+1	👨‍👦		man-boy
+1	👨‍👦‍👦		man-boy-boy
+1	👨‍👧		man-girl
+1	👨‍👧‍👦		man-girl-boy
+1	👨‍👧‍👧		man-girl-girl
+1	👩‍👦		woman-boy
+1	👩‍👦‍👦		woman-boy-boy
+1	👩‍👧		woman-girl
+1	👩‍👧‍👦		woman-girl-boy
+1	👩‍👧‍👧		woman-girl-girl
+1	🗣️		speaking head in silhouette
+1	👤		bust in silhouette
+1	👥		busts in silhouette
+1	🫂		people hugging
+1	👪		family
+1	🧑‍🧑‍🧒		family adult adult child
+1	🧑‍🧑‍🧒‍🧒		family adult adult child child
+1	🧑‍🧒		family adult child
+1	🧑‍🧒‍🧒		family adult child child
+1	👣		footprints
+1	🫆		fingerprint
+2	🐵		monkey face
+2	🐒		monkey
+2	🦍		gorilla
+2	🦧		orangutan
+2	🐶		dog
+2	🐕		dog2
+2	🦮		guide dog
+2	🐕‍🦺		service dog
+2	🐩		poodle
+2	🐺		wolf
+2	🦊		fox face
+2	🦝		raccoon
+2	🐱		cat
+2	🐈		cat2
+2	🐈‍⬛		black cat
+2	🦁		lion face
+2	🐯		tiger
+2	🐅		tiger2
+2	🐆		leopard
+2	🐴		horse
+2	🫎		moose
+2	🫏		donkey
+2	🐎		racehorse
+2	🦄		unicorn face
+2	🦓		zebra face
+2	🦌		deer
+2	🦬		bison
+2	🐮		cow
+2	🐂		ox
+2	🐃		water buffalo
+2	🐄		cow2
+2	🐷		pig
+2	🐖		pig2
+2	🐗		boar
+2	🐽		pig nose
+2	🐏		ram
+2	🐑		sheep
+2	🐐		goat
+2	🐪		dromedary camel
+2	🐫		camel
+2	🦙		llama
+2	🦒		giraffe face
+2	🐘		elephant
+2	🦣		mammoth
+2	🦏		rhinoceros
+2	🦛		hippopotamus
+2	🐭		mouse
+2	🐁		mouse2
+2	🐀		rat
+2	🐹		hamster
+2	🐰		rabbit
+2	🐇		rabbit2
+2	🐿️		chipmunk
+2	🦫		beaver
+2	🦔		hedgehog
+2	🦇		bat
+2	🐻		bear
+2	🐻‍❄️		polar bear
+2	🐨		koala
+2	🐼		panda face
+2	🦥		sloth
+2	🦦		otter
+2	🦨		skunk
+2	🦘		kangaroo
+2	🦡		badger
+2	🐾		feet
+2	🦃		turkey
+2	🐔		chicken
+2	🐓		rooster
+2	🐣		hatching chick
+2	🐤		baby chick
+2	🐥		hatched chick
+2	🐦		bird
+2	🐧		penguin
+2	🕊️		dove of peace
+2	🦅		eagle
+2	🦆		duck
+2	🦢		swan
+2	🦉		owl
+2	🦤		dodo
+2	🪶		feather
+2	🦩		flamingo
+2	🦚		peacock
+2	🦜		parrot
+2	🪽		wing
+2	🐦‍⬛		black bird
+2	🪿		goose
+2	🐦‍🔥		phoenix
+2	🐸		frog
+2	🐊		crocodile
+2	🐢		turtle
+2	🦎		lizard
+2	🐍		snake
+2	🐲		dragon face
+2	🐉		dragon
+2	🦕		sauropod
+2	🦖		t-rex
+2	🐳		whale
+2	🐋		whale2
+2	🐬		dolphin
+2	🫍		orca
+2	🦭		seal
+2	🐟		fish
+2	🐠		tropical fish
+2	🐡		blowfish
+2	🦈		shark
+2	🐙		octopus
+2	🐚		shell
+2	🪸		coral
+2	🪼		jellyfish
+2	🦀		crab
+2	🦞		lobster
+2	🦐		shrimp
+2	🦑		squid
+2	🦪		oyster
+2	🐌		snail
+2	🦋		butterfly
+2	🐛		bug
+2	🐜		ant
+2	🐝		bee
+2	🪲		beetle
+2	🐞		ladybug
+2	🦗		cricket
+2	🪳		cockroach
+2	🕷️		spider
+2	🕸️		spider web
+2	🦂		scorpion
+2	🦟		mosquito
+2	🪰		fly
+2	🪱		worm
+2	🦠		microbe
+2	💐		bouquet
+2	🌸		cherry blossom
+2	💮		white flower
+2	🪷		lotus
+2	🏵️		rosette
+2	🌹		rose
+2	🥀		wilted flower
+2	🌺		hibiscus
+2	🌻		sunflower
+2	🌼		blossom
+2	🌷		tulip
+2	🪻		hyacinth
+2	🌱		seedling
+2	🪴		potted plant
+2	🌲		evergreen tree
+2	🌳		deciduous tree
+2	🌴		palm tree
+2	🌵		cactus
+2	🌾		ear of rice
+2	🌿		herb
+2	☘️		shamrock
+2	🍀		four leaf clover
+2	🍁		maple leaf
+2	🍂		fallen leaf
+2	🍃		leaves
+2	🪹		empty nest
+2	🪺		nest with eggs
+2	🍄		mushroom
+2	🪾		leafless tree
+3	🍇		grapes
+3	🍈		melon
+3	🍉		watermelon
+3	🍊		tangerine
+3	🍋		lemon
+3	🍋‍🟩		lime
+3	🍌		banana
+3	🍍		pineapple
+3	🥭		mango
+3	🍎		apple
+3	🍏		green apple
+3	🍐		pear
+3	🍑		peach
+3	🍒		cherries
+3	🍓		strawberry
+3	🫐		blueberries
+3	🥝		kiwifruit
+3	🍅		tomato
+3	🫒		olive
+3	🥥		coconut
+3	🥑		avocado
+3	🍆		eggplant
+3	🥔		potato
+3	🥕		carrot
+3	🌽		corn
+3	🌶️		hot pepper
+3	🫑		bell pepper
+3	🥒		cucumber
+3	🥬		leafy green
+3	🥦		broccoli
+3	🧄		garlic
+3	🧅		onion
+3	🥜		peanuts
+3	🫘		beans
+3	🌰		chestnut
+3	🫚		ginger root
+3	🫛		pea pod
+3	🍄‍🟫		brown mushroom
+3	🫜		root vegetable
+3	🍞		bread
+3	🥐		croissant
+3	🥖		baguette bread
+3	🫓		flatbread
+3	🥨		pretzel
+3	🥯		bagel
+3	🥞		pancakes
+3	🧇		waffle
+3	🧀		cheese wedge
+3	🍖		meat on bone
+3	🍗		poultry leg
+3	🥩		cut of meat
+3	🥓		bacon
+3	🍔		hamburger
+3	🍟		fries
+3	🍕		pizza
+3	🌭		hotdog
+3	🥪		sandwich
+3	🌮		taco
+3	🌯		burrito
+3	🫔		tamale
+3	🥙		stuffed flatbread
+3	🧆		falafel
+3	🥚		egg
+3	🍳		fried egg
+3	🥘		shallow pan of food
+3	🍲		stew
+3	🫕		fondue
+3	🥣		bowl with spoon
+3	🥗		green salad
+3	🍿		popcorn
+3	🧈		butter
+3	🧂		salt
+3	🥫		canned food
+3	🍱		bento
+3	🍘		rice cracker
+3	🍙		rice ball
+3	🍚		rice
+3	🍛		curry
+3	🍜		ramen
+3	🍝		spaghetti
+3	🍠		sweet potato
+3	🍢		oden
+3	🍣		sushi
+3	🍤		fried shrimp
+3	🍥		fish cake
+3	🥮		moon cake
+3	🍡		dango
+3	🥟		dumpling
+3	🥠		fortune cookie
+3	🥡		takeout box
+3	🍦		icecream
+3	🍧		shaved ice
+3	🍨		ice cream
+3	🍩		doughnut
+3	🍪		cookie
+3	🎂		birthday
+3	🍰		cake
+3	🧁		cupcake
+3	🥧		pie
+3	🍫		chocolate bar
+3	🍬		candy
+3	🍭		lollipop
+3	🍮		custard
+3	🍯		honey pot
+3	🍼		baby bottle
+3	🥛		glass of milk
+3	☕		coffee
+3	🫖		teapot
+3	🍵		tea
+3	🍶		sake
+3	🍾		champagne
+3	🍷		wine glass
+3	🍸		cocktail
+3	🍹		tropical drink
+3	🍺		beer
+3	🍻		beers
+3	🥂		clinking glasses
+3	🥃		tumbler glass
+3	🫗		pouring liquid
+3	🥤		cup with straw
+3	🧋		bubble tea
+3	🧃		beverage box
+3	🧉		mate drink
+3	🧊		ice cube
+3	🥢		chopsticks
+3	🍽️		knife fork plate
+3	🍴		fork and knife
+3	🥄		spoon
+3	🔪		hocho
+3	🫙		jar
+3	🏺		amphora
+4	🌍		earth africa
+4	🌎		earth americas
+4	🌏		earth asia
+4	🌐		globe with meridians
+4	🗺️		world map
+4	🗾		japan
+4	🧭		compass
+4	🏔️		snow capped mountain
+4	⛰️		mountain
+4	🛘		landslide
+4	🌋		volcano
+4	🗻		mount fuji
+4	🏕️		camping
+4	🏖️		beach with umbrella
+4	🏜️		desert
+4	🏝️		desert island
+4	🏞️		national park
+4	🏟️		stadium
+4	🏛️		classical building
+4	🏗️		building construction
+4	🧱		bricks
+4	🪨		rock
+4	🪵		wood
+4	🛖		hut
+4	🏘️		house buildings
+4	🏚️		derelict house building
+4	🏠		house
+4	🏡		house with garden
+4	🏢		office
+4	🏣		post office
+4	🏤		european post office
+4	🏥		hospital
+4	🏦		bank
+4	🏨		hotel
+4	🏩		love hotel
+4	🏪		convenience store
+4	🏫		school
+4	🏬		department store
+4	🏭		factory
+4	🏯		japanese castle
+4	🏰		european castle
+4	💒		wedding
+4	🗼		tokyo tower
+4	🗽		statue of liberty
+4	⛪		church
+4	🕌		mosque
+4	🛕		hindu temple
+4	🕍		synagogue
+4	⛩️		shinto shrine
+4	🕋		kaaba
+4	⛲		fountain
+4	⛺		tent
+4	🌁		foggy
+4	🌃		night with stars
+4	🏙️		cityscape
+4	🌄		sunrise over mountains
+4	🌅		sunrise
+4	🌆		city sunset
+4	🌇		city sunrise
+4	🌉		bridge at night
+4	♨️		hotsprings
+4	🎠		carousel horse
+4	🛝		playground slide
+4	🎡		ferris wheel
+4	🎢		roller coaster
+4	💈		barber
+4	🎪		circus tent
+4	🚂		steam locomotive
+4	🚃		railway car
+4	🚄		bullettrain side
+4	🚅		bullettrain front
+4	🚆		train2
+4	🚇		metro
+4	🚈		light rail
+4	🚉		station
+4	🚊		tram
+4	🚝		monorail
+4	🚞		mountain railway
+4	🚋		train
+4	🚌		bus
+4	🚍		oncoming bus
+4	🚎		trolleybus
+4	🚐		minibus
+4	🚑		ambulance
+4	🚒		fire engine
+4	🚓		police car
+4	🚔		oncoming police car
+4	🚕		taxi
+4	🚖		oncoming taxi
+4	🚗		car
+4	🚘		oncoming automobile
+4	🚙		blue car
+4	🛻		pickup truck
+4	🚚		truck
+4	🚛		articulated lorry
+4	🚜		tractor
+4	🏎️		racing car
+4	🏍️		racing motorcycle
+4	🛵		motor scooter
+4	🦽		manual wheelchair
+4	🦼		motorized wheelchair
+4	🛺		auto rickshaw
+4	🚲		bike
+4	🛴		scooter
+4	🛹		skateboard
+4	🛼		roller skate
+4	🚏		busstop
+4	🛣️		motorway
+4	🛤️		railway track
+4	🛢️		oil drum
+4	⛽		fuelpump
+4	🛞		wheel
+4	🚨		rotating light
+4	🚥		traffic light
+4	🚦		vertical traffic light
+4	🛑		octagonal sign
+4	🚧		construction
+4	⚓		anchor
+4	🛟		ring buoy
+4	⛵		boat
+4	🛶		canoe
+4	🚤		speedboat
+4	🛳️		passenger ship
+4	⛴️		ferry
+4	🛥️		motor boat
+4	🚢		ship
+4	✈️		airplane
+4	🛩️		small airplane
+4	🛫		airplane departure
+4	🛬		airplane arriving
+4	🪂		parachute
+4	💺		seat
+4	🚁		helicopter
+4	🚟		suspension railway
+4	🚠		mountain cableway
+4	🚡		aerial tramway
+4	🛰️		satellite
+4	🚀		rocket
+4	🛸		flying saucer
+4	🛎️		bellhop bell
+4	🧳		luggage
+4	⌛		hourglass
+4	⏳		hourglass flowing sand
+4	⌚		watch
+4	⏰		alarm clock
+4	⏱️		stopwatch
+4	⏲️		timer clock
+4	🕰️		mantelpiece clock
+4	🕛		clock12
+4	🕧		clock1230
+4	🕐		clock1
+4	🕜		clock130
+4	🕑		clock2
+4	🕝		clock230
+4	🕒		clock3
+4	🕞		clock330
+4	🕓		clock4
+4	🕟		clock430
+4	🕔		clock5
+4	🕠		clock530
+4	🕕		clock6
+4	🕡		clock630
+4	🕖		clock7
+4	🕢		clock730
+4	🕗		clock8
+4	🕣		clock830
+4	🕘		clock9
+4	🕤		clock930
+4	🕙		clock10
+4	🕥		clock1030
+4	🕚		clock11
+4	🕦		clock1130
+4	🌑		new moon
+4	🌒		waxing crescent moon
+4	🌓		first quarter moon
+4	🌔		moon
+4	🌕		full moon
+4	🌖		waning gibbous moon
+4	🌗		last quarter moon
+4	🌘		waning crescent moon
+4	🌙		crescent moon
+4	🌚		new moon with face
+4	🌛		first quarter moon with face
+4	🌜		last quarter moon with face
+4	🌡️		thermometer
+4	☀️		sunny
+4	🌝		full moon with face
+4	🌞		sun with face
+4	🪐		ringed planet
+4	⭐		star
+4	🌟		star2
+4	🌠		stars
+4	🌌		milky way
+4	☁️		cloud
+4	⛅		partly sunny
+4	⛈️		thunder cloud and rain
+4	🌤️		mostly sunny
+4	🌥️		barely sunny
+4	🌦️		partly sunny rain
+4	🌧️		rain cloud
+4	🌨️		snow cloud
+4	🌩️		lightning
+4	🌪️		tornado
+4	🌫️		fog
+4	🌬️		wind blowing face
+4	🌀		cyclone
+4	🌈		rainbow
+4	🌂		closed umbrella
+4	☂️		umbrella
+4	☔		umbrella with rain drops
+4	⛱️		umbrella on ground
+4	⚡		zap
+4	❄️		snowflake
+4	☃️		snowman
+4	⛄		snowman without snow
+4	☄️		comet
+4	🔥		fire
+4	💧		droplet
+4	🌊		ocean
+5	🎃		jack o lantern
+5	🎄		christmas tree
+5	🎆		fireworks
+5	🎇		sparkler
+5	🧨		firecracker
+5	✨		sparkles
+5	🎈		balloon
+5	🎉		tada
+5	🎊		confetti ball
+5	🎋		tanabata tree
+5	🎍		bamboo
+5	🎎		dolls
+5	🎏		flags
+5	🎐		wind chime
+5	🎑		rice scene
+5	🧧		red envelope
+5	🎀		ribbon
+5	🎁		gift
+5	🎗️		reminder ribbon
+5	🎟️		admission tickets
+5	🎫		ticket
+5	🎖️		medal
+5	🏆		trophy
+5	🏅		sports medal
+5	🥇		first place medal
+5	🥈		second place medal
+5	🥉		third place medal
+5	⚽		soccer
+5	⚾		baseball
+5	🥎		softball
+5	🏀		basketball
+5	🏐		volleyball
+5	🏈		football
+5	🏉		rugby football
+5	🎾		tennis
+5	🥏		flying disc
+5	🎳		bowling
+5	🏏		cricket bat and ball
+5	🏑		field hockey stick and ball
+5	🏒		ice hockey stick and puck
+5	🥍		lacrosse
+5	🏓		table tennis paddle and ball
+5	🏸		badminton racquet and shuttlecock
+5	🥊		boxing glove
+5	🥋		martial arts uniform
+5	🥅		goal net
+5	⛳		golf
+5	⛸️		ice skate
+5	🎣		fishing pole and fish
+5	🤿		diving mask
+5	🎽		running shirt with sash
+5	🎿		ski
+5	🛷		sled
+5	🥌		curling stone
+5	🎯		dart
+5	🪀		yo-yo
+5	🪁		kite
+5	🔫		gun
+5	🎱		8ball
+5	🔮		crystal ball
+5	🪄		magic wand
+5	🎮		video game
+5	🕹️		joystick
+5	🎰		slot machine
+5	🎲		game die
+5	🧩		jigsaw
+5	🧸		teddy bear
+5	🪅		pinata
+5	🪩		mirror ball
+5	🪆		nesting dolls
+5	♠️		spades
+5	♥️		hearts
+5	♦️		diamonds
+5	♣️		clubs
+5	♟️		chess pawn
+5	🃏		black joker
+5	🀄		mahjong
+5	🎴		flower playing cards
+5	🎭		performing arts
+5	🖼️		frame with picture
+5	🎨		art
+5	🧵		thread
+5	🪡		sewing needle
+5	🧶		yarn
+5	🪢		knot
+6	👓		eyeglasses
+6	🕶️		dark sunglasses
+6	🥽		goggles
+6	🥼		lab coat
+6	🦺		safety vest
+6	👔		necktie
+6	👕		shirt
+6	👖		jeans
+6	🧣		scarf
+6	🧤		gloves
+6	🧥		coat
+6	🧦		socks
+6	👗		dress
+6	👘		kimono
+6	🥻		sari
+6	🩱		one-piece swimsuit
+6	🩲		briefs
+6	🩳		shorts
+6	👙		bikini
+6	👚		womans clothes
+6	🪭		folding hand fan
+6	👛		purse
+6	👜		handbag
+6	👝		pouch
+6	🛍️		shopping bags
+6	🎒		school satchel
+6	🩴		thong sandal
+6	👞		mans shoe
+6	👟		athletic shoe
+6	🥾		hiking boot
+6	🥿		womans flat shoe
+6	👠		high heel
+6	👡		sandal
+6	🩰		ballet shoes
+6	👢		boot
+6	🪮		hair pick
+6	👑		crown
+6	👒		womans hat
+6	🎩		tophat
+6	🎓		mortar board
+6	🧢		billed cap
+6	🪖		military helmet
+6	⛑️		helmet with white cross
+6	📿		prayer beads
+6	💄		lipstick
+6	💍		ring
+6	💎		gem
+6	🔇		mute
+6	🔈		speaker
+6	🔉		sound
+6	🔊		loud sound
+6	📢		loudspeaker
+6	📣		mega
+6	📯		postal horn
+6	🔔		bell
+6	🔕		no bell
+6	🎼		musical score
+6	🎵		musical note
+6	🎶		notes
+6	🎙️		studio microphone
+6	🎚️		level slider
+6	🎛️		control knobs
+6	🎤		microphone
+6	🎧		headphones
+6	📻		radio
+6	🎷		saxophone
+6	🎺		trumpet
+6	🪊		trombone
+6	🪗		accordion
+6	🎸		guitar
+6	🎹		musical keyboard
+6	🎻		violin
+6	🪕		banjo
+6	🥁		drum with drumsticks
+6	🪘		long drum
+6	🪇		maracas
+6	🪈		flute
+6	🪉		harp
+6	📱		iphone
+6	📲		calling
+6	☎️		phone
+6	📞		telephone receiver
+6	📟		pager
+6	📠		fax
+6	🔋		battery
+6	🪫		low battery
+6	🔌		electric plug
+6	💻		computer
+6	🖥️		desktop computer
+6	🖨️		printer
+6	⌨️		keyboard
+6	🖱️		three button mouse
+6	🖲️		trackball
+6	💽		minidisc
+6	💾		floppy disk
+6	💿		cd
+6	📀		dvd
+6	🧮		abacus
+6	🎥		movie camera
+6	🎞️		film frames
+6	📽️		film projector
+6	🎬		clapper
+6	📺		tv
+6	📷		camera
+6	📸		camera with flash
+6	📹		video camera
+6	📼		vhs
+6	🔍		mag
+6	🔎		mag right
+6	🕯️		candle
+6	💡		bulb
+6	🔦		flashlight
+6	🏮		izakaya lantern
+6	🪔		diya lamp
+6	📔		notebook with decorative cover
+6	📕		closed book
+6	📖		book
+6	📗		green book
+6	📘		blue book
+6	📙		orange book
+6	📚		books
+6	📓		notebook
+6	📒		ledger
+6	📃		page with curl
+6	📜		scroll
+6	📄		page facing up
+6	📰		newspaper
+6	🗞️		rolled up newspaper
+6	📑		bookmark tabs
+6	🔖		bookmark
+6	🏷️		label
+6	🪙		coin
+6	💰		moneybag
+6	🪎		treasure chest
+6	💴		yen
+6	💵		dollar
+6	💶		euro
+6	💷		pound
+6	💸		money with wings
+6	💳		credit card
+6	🧾		receipt
+6	💹		chart
+6	✉️		email
+6	📧		e-mail
+6	📨		incoming envelope
+6	📩		envelope with arrow
+6	📤		outbox tray
+6	📥		inbox tray
+6	📦		package
+6	📫		mailbox
+6	📪		mailbox closed
+6	📬		mailbox with mail
+6	📭		mailbox with no mail
+6	📮		postbox
+6	🗳️		ballot box with ballot
+6	✏️		pencil2
+6	✒️		black nib
+6	🖋️		lower left fountain pen
+6	🖊️		lower left ballpoint pen
+6	🖌️		lower left paintbrush
+6	🖍️		lower left crayon
+6	📝		memo
+6	💼		briefcase
+6	📁		file folder
+6	📂		open file folder
+6	🗂️		card index dividers
+6	📅		date
+6	📆		calendar
+6	🗒️		spiral note pad
+6	🗓️		spiral calendar pad
+6	📇		card index
+6	📈		chart with upwards trend
+6	📉		chart with downwards trend
+6	📊		bar chart
+6	📋		clipboard
+6	📌		pushpin
+6	📍		round pushpin
+6	📎		paperclip
+6	🖇️		linked paperclips
+6	📏		straight ruler
+6	📐		triangular ruler
+6	✂️		scissors
+6	🗃️		card file box
+6	🗄️		file cabinet
+6	🗑️		wastebasket
+6	🔒		lock
+6	🔓		unlock
+6	🔏		lock with ink pen
+6	🔐		closed lock with key
+6	🔑		key
+6	🗝️		old key
+6	🔨		hammer
+6	🪓		axe
+6	⛏️		pick
+6	⚒️		hammer and pick
+6	🛠️		hammer and wrench
+6	🗡️		dagger knife
+6	⚔️		crossed swords
+6	💣		bomb
+6	🪃		boomerang
+6	🏹		bow and arrow
+6	🛡️		shield
+6	🪚		carpentry saw
+6	🔧		wrench
+6	🪛		screwdriver
+6	🔩		nut and bolt
+6	⚙️		gear
+6	🗜️		compression
+6	⚖️		scales
+6	🦯		probing cane
+6	🔗		link
+6	⛓️‍💥		broken chain
+6	⛓️		chains
+6	🪝		hook
+6	🧰		toolbox
+6	🧲		magnet
+6	🪜		ladder
+6	🪏		shovel
+6	⚗️		alembic
+6	🧪		test tube
+6	🧫		petri dish
+6	🧬		dna
+6	🔬		microscope
+6	🔭		telescope
+6	📡		satellite antenna
+6	💉		syringe
+6	🩸		drop of blood
+6	💊		pill
+6	🩹		adhesive bandage
+6	🩼		crutch
+6	🩺		stethoscope
+6	🩻		x-ray
+6	🚪		door
+6	🛗		elevator
+6	🪞		mirror
+6	🪟		window
+6	🛏️		bed
+6	🛋️		couch and lamp
+6	🪑		chair
+6	🚽		toilet
+6	🪠		plunger
+6	🚿		shower
+6	🛁		bathtub
+6	🪤		mouse trap
+6	🪒		razor
+6	🧴		lotion bottle
+6	🧷		safety pin
+6	🧹		broom
+6	🧺		basket
+6	🧻		roll of paper
+6	🪣		bucket
+6	🧼		soap
+6	🫧		bubbles
+6	🪥		toothbrush
+6	🧽		sponge
+6	🧯		fire extinguisher
+6	🛒		shopping trolley
+6	🚬		smoking
+6	⚰️		coffin
+6	🪦		headstone
+6	⚱️		funeral urn
+6	🧿		nazar amulet
+6	🪬		hamsa
+6	🗿		moyai
+6	🪧		placard
+6	🪪		identification card
+7	🏧		atm
+7	🚮		put litter in its place
+7	🚰		potable water
+7	♿		wheelchair
+7	🚹		mens
+7	🚺		womens
+7	🚻		restroom
+7	🚼		baby symbol
+7	🚾		wc
+7	🛂		passport control
+7	🛃		customs
+7	🛄		baggage claim
+7	🛅		left luggage
+7	⚠️		warning
+7	🚸		children crossing
+7	⛔		no entry
+7	🚫		no entry sign
+7	🚳		no bicycles
+7	🚭		no smoking
+7	🚯		do not litter
+7	🚱		non-potable water
+7	🚷		no pedestrians
+7	📵		no mobile phones
+7	🔞		underage
+7	☢️		radioactive sign
+7	☣️		biohazard sign
+7	⬆️		arrow up
+7	↗️		arrow upper right
+7	➡️		arrow right
+7	↘️		arrow lower right
+7	⬇️		arrow down
+7	↙️		arrow lower left
+7	⬅️		arrow left
+7	↖️		arrow upper left
+7	↕️		arrow up down
+7	↔️		left right arrow
+7	↩️		leftwards arrow with hook
+7	↪️		arrow right hook
+7	⤴️		arrow heading up
+7	⤵️		arrow heading down
+7	🔃		arrows clockwise
+7	🔄		arrows counterclockwise
+7	🔙		back
+7	🔚		end
+7	🔛		on
+7	🔜		soon
+7	🔝		top
+7	🛐		place of worship
+7	⚛️		atom symbol
+7	🕉️		om symbol
+7	✡️		star of david
+7	☸️		wheel of dharma
+7	☯️		yin yang
+7	✝️		latin cross
+7	☦️		orthodox cross
+7	☪️		star and crescent
+7	☮️		peace symbol
+7	🕎		menorah with nine branches
+7	🔯		six pointed star
+7	🪯		khanda
+7	♈		aries
+7	♉		taurus
+7	♊		gemini
+7	♋		cancer
+7	♌		leo
+7	♍		virgo
+7	♎		libra
+7	♏		scorpius
+7	♐		sagittarius
+7	♑		capricorn
+7	♒		aquarius
+7	♓		pisces
+7	⛎		ophiuchus
+7	🔀		twisted rightwards arrows
+7	🔁		repeat
+7	🔂		repeat one
+7	▶️		arrow forward
+7	⏩		fast forward
+7	⏭️		black right pointing double triangle with vertical bar
+7	⏯️		black right pointing triangle with double vertical bar
+7	◀️		arrow backward
+7	⏪		rewind
+7	⏮️		black left pointing double triangle with vertical bar
+7	🔼		arrow up small
+7	⏫		arrow double up
+7	🔽		arrow down small
+7	⏬		arrow double down
+7	⏸️		double vertical bar
+7	⏹️		black square for stop
+7	⏺️		black circle for record
+7	⏏️		eject
+7	🎦		cinema
+7	🔅		low brightness
+7	🔆		high brightness
+7	📶		signal strength
+7	🛜		wireless
+7	📳		vibration mode
+7	📴		mobile phone off
+7	♀️		female sign
+7	♂️		male sign
+7	⚧️		transgender symbol
+7	✖️		heavy multiplication x
+7	➕		heavy plus sign
+7	➖		heavy minus sign
+7	➗		heavy division sign
+7	🟰		heavy equals sign
+7	♾️		infinity
+7	‼️		bangbang
+7	⁉️		interrobang
+7	❓		question
+7	❔		grey question
+7	❕		grey exclamation
+7	❗		exclamation
+7	〰️		wavy dash
+7	💱		currency exchange
+7	💲		heavy dollar sign
+7	⚕️		medical symbol
+7	♻️		recycle
+7	⚜️		fleur de lis
+7	🔱		trident
+7	📛		name badge
+7	🔰		beginner
+7	⭕		o
+7	✅		white check mark
+7	☑️		ballot box with check
+7	✔️		heavy check mark
+7	❌		x
+7	❎		negative squared cross mark
+7	➰		curly loop
+7	➿		loop
+7	〽️		part alternation mark
+7	✳️		eight spoked asterisk
+7	✴️		eight pointed black star
+7	❇️		sparkle
+7	©️		copyright
+7	®️		registered
+7	™️		tm
+7	🫟		splatter
+7	#️⃣		hash
+7	*️⃣		keycap star
+7	0️⃣		zero
+7	1️⃣		one
+7	2️⃣		two
+7	3️⃣		three
+7	4️⃣		four
+7	5️⃣		five
+7	6️⃣		six
+7	7️⃣		seven
+7	8️⃣		eight
+7	9️⃣		nine
+7	🔟		keycap ten
+7	🔠		capital abcd
+7	🔡		abcd
+7	🔢		1234
+7	🔣		symbols
+7	🔤		abc
+7	🅰️		a
+7	🆎		ab
+7	🅱️		b
+7	🆑		cl
+7	🆒		cool
+7	🆓		free
+7	ℹ️		information source
+7	🆔		id
+7	Ⓜ️		m
+7	🆕		new
+7	🆖		ng
+7	🅾️		o2
+7	🆗		ok
+7	🅿️		parking
+7	🆘		sos
+7	🆙		up
+7	🆚		vs
+7	🈁		koko
+7	🈂️		sa
+7	🈷️		u6708
+7	🈶		u6709
+7	🈯		u6307
+7	🉐		ideograph advantage
+7	🈹		u5272
+7	🈚		u7121
+7	🈲		u7981
+7	🉑		accept
+7	🈸		u7533
+7	🈴		u5408
+7	🈳		u7a7a
+7	㊗️		congratulations
+7	㊙️		secret
+7	🈺		u55b6
+7	🈵		u6e80
+7	🔴		red circle
+7	🟠		large orange circle
+7	🟡		large yellow circle
+7	🟢		large green circle
+7	🔵		large blue circle
+7	🟣		large purple circle
+7	🟤		large brown circle
+7	⚫		black circle
+7	⚪		white circle
+7	🟥		large red square
+7	🟧		large orange square
+7	🟨		large yellow square
+7	🟩		large green square
+7	🟦		large blue square
+7	🟪		large purple square
+7	🟫		large brown square
+7	⬛		black large square
+7	⬜		white large square
+7	◼️		black medium square
+7	◻️		white medium square
+7	◾		black medium small square
+7	◽		white medium small square
+7	▪️		black small square
+7	▫️		white small square
+7	🔶		large orange diamond
+7	🔷		large blue diamond
+7	🔸		small orange diamond
+7	🔹		small blue diamond
+7	🔺		small red triangle
+7	🔻		small red triangle down
+7	💠		diamond shape with a dot inside
+7	🔘		radio button
+7	🔳		white square button
+7	🔲		black square button
+8	🏁		checkered flag
+8	🚩		triangular flag on post
+8	🎌		crossed flags
+8	🏴		waving black flag
+8	🏳️		waving white flag
+8	🏳️‍🌈		rainbow-flag
+8	🏳️‍⚧️		transgender flag
+8	🏴‍☠️		pirate flag
+8	🇦🇨		flag-ac
+8	🇦🇩		flag-ad
+8	🇦🇪		flag-ae
+8	🇦🇫		flag-af
+8	🇦🇬		flag-ag
+8	🇦🇮		flag-ai
+8	🇦🇱		flag-al
+8	🇦🇲		flag-am
+8	🇦🇴		flag-ao
+8	🇦🇶		flag-aq
+8	🇦🇷		flag-ar
+8	🇦🇸		flag-as
+8	🇦🇹		flag-at
+8	🇦🇺		flag-au
+8	🇦🇼		flag-aw
+8	🇦🇽		flag-ax
+8	🇦🇿		flag-az
+8	🇧🇦		flag-ba
+8	🇧🇧		flag-bb
+8	🇧🇩		flag-bd
+8	🇧🇪		flag-be
+8	🇧🇫		flag-bf
+8	🇧🇬		flag-bg
+8	🇧🇭		flag-bh
+8	🇧🇮		flag-bi
+8	🇧🇯		flag-bj
+8	🇧🇱		flag-bl
+8	🇧🇲		flag-bm
+8	🇧🇳		flag-bn
+8	🇧🇴		flag-bo
+8	🇧🇶		flag-bq
+8	🇧🇷		flag-br
+8	🇧🇸		flag-bs
+8	🇧🇹		flag-bt
+8	🇧🇻		flag-bv
+8	🇧🇼		flag-bw
+8	🇧🇾		flag-by
+8	🇧🇿		flag-bz
+8	🇨🇦		flag-ca
+8	🇨🇨		flag-cc
+8	🇨🇩		flag-cd
+8	🇨🇫		flag-cf
+8	🇨🇬		flag-cg
+8	🇨🇭		flag-ch
+8	🇨🇮		flag-ci
+8	🇨🇰		flag-ck
+8	🇨🇱		flag-cl
+8	🇨🇲		flag-cm
+8	🇨🇳		cn
+8	🇨🇴		flag-co
+8	🇨🇵		flag-cp
+8	🇨🇶		flag-sark
+8	🇨🇷		flag-cr
+8	🇨🇺		flag-cu
+8	🇨🇻		flag-cv
+8	🇨🇼		flag-cw
+8	🇨🇽		flag-cx
+8	🇨🇾		flag-cy
+8	🇨🇿		flag-cz
+8	🇩🇪		de
+8	🇩🇬		flag-dg
+8	🇩🇯		flag-dj
+8	🇩🇰		flag-dk
+8	🇩🇲		flag-dm
+8	🇩🇴		flag-do
+8	🇩🇿		flag-dz
+8	🇪🇦		flag-ea
+8	🇪🇨		flag-ec
+8	🇪🇪		flag-ee
+8	🇪🇬		flag-eg
+8	🇪🇭		flag-eh
+8	🇪🇷		flag-er
+8	🇪🇸		es
+8	🇪🇹		flag-et
+8	🇪🇺		flag-eu
+8	🇫🇮		flag-fi
+8	🇫🇯		flag-fj
+8	🇫🇰		flag-fk
+8	🇫🇲		flag-fm
+8	🇫🇴		flag-fo
+8	🇫🇷		fr
+8	🇬🇦		flag-ga
+8	🇬🇧		gb
+8	🇬🇩		flag-gd
+8	🇬🇪		flag-ge
+8	🇬🇫		flag-gf
+8	🇬🇬		flag-gg
+8	🇬🇭		flag-gh
+8	🇬🇮		flag-gi
+8	🇬🇱		flag-gl
+8	🇬🇲		flag-gm
+8	🇬🇳		flag-gn
+8	🇬🇵		flag-gp
+8	🇬🇶		flag-gq
+8	🇬🇷		flag-gr
+8	🇬🇸		flag-gs
+8	🇬🇹		flag-gt
+8	🇬🇺		flag-gu
+8	🇬🇼		flag-gw
+8	🇬🇾		flag-gy
+8	🇭🇰		flag-hk
+8	🇭🇲		flag-hm
+8	🇭🇳		flag-hn
+8	🇭🇷		flag-hr
+8	🇭🇹		flag-ht
+8	🇭🇺		flag-hu
+8	🇮🇨		flag-ic
+8	🇮🇩		flag-id
+8	🇮🇪		flag-ie
+8	🇮🇱		flag-il
+8	🇮🇲		flag-im
+8	🇮🇳		flag-in
+8	🇮🇴		flag-io
+8	🇮🇶		flag-iq
+8	🇮🇷		flag-ir
+8	🇮🇸		flag-is
+8	🇮🇹		it
+8	🇯🇪		flag-je
+8	🇯🇲		flag-jm
+8	🇯🇴		flag-jo
+8	🇯🇵		jp
+8	🇰🇪		flag-ke
+8	🇰🇬		flag-kg
+8	🇰🇭		flag-kh
+8	🇰🇮		flag-ki
+8	🇰🇲		flag-km
+8	🇰🇳		flag-kn
+8	🇰🇵		flag-kp
+8	🇰🇷		kr
+8	🇰🇼		flag-kw
+8	🇰🇾		flag-ky
+8	🇰🇿		flag-kz
+8	🇱🇦		flag-la
+8	🇱🇧		flag-lb
+8	🇱🇨		flag-lc
+8	🇱🇮		flag-li
+8	🇱🇰		flag-lk
+8	🇱🇷		flag-lr
+8	🇱🇸		flag-ls
+8	🇱🇹		flag-lt
+8	🇱🇺		flag-lu
+8	🇱🇻		flag-lv
+8	🇱🇾		flag-ly
+8	🇲🇦		flag-ma
+8	🇲🇨		flag-mc
+8	🇲🇩		flag-md
+8	🇲🇪		flag-me
+8	🇲🇫		flag-mf
+8	🇲🇬		flag-mg
+8	🇲🇭		flag-mh
+8	🇲🇰		flag-mk
+8	🇲🇱		flag-ml
+8	🇲🇲		flag-mm
+8	🇲🇳		flag-mn
+8	🇲🇴		flag-mo
+8	🇲🇵		flag-mp
+8	🇲🇶		flag-mq
+8	🇲🇷		flag-mr
+8	🇲🇸		flag-ms
+8	🇲🇹		flag-mt
+8	🇲🇺		flag-mu
+8	🇲🇻		flag-mv
+8	🇲🇼		flag-mw
+8	🇲🇽		flag-mx
+8	🇲🇾		flag-my
+8	🇲🇿		flag-mz
+8	🇳🇦		flag-na
+8	🇳🇨		flag-nc
+8	🇳🇪		flag-ne
+8	🇳🇫		flag-nf
+8	🇳🇬		flag-ng
+8	🇳🇮		flag-ni
+8	🇳🇱		flag-nl
+8	🇳🇴		flag-no
+8	🇳🇵		flag-np
+8	🇳🇷		flag-nr
+8	🇳🇺		flag-nu
+8	🇳🇿		flag-nz
+8	🇴🇲		flag-om
+8	🇵🇦		flag-pa
+8	🇵🇪		flag-pe
+8	🇵🇫		flag-pf
+8	🇵🇬		flag-pg
+8	🇵🇭		flag-ph
+8	🇵🇰		flag-pk
+8	🇵🇱		flag-pl
+8	🇵🇲		flag-pm
+8	🇵🇳		flag-pn
+8	🇵🇷		flag-pr
+8	🇵🇸		flag-ps
+8	🇵🇹		flag-pt
+8	🇵🇼		flag-pw
+8	🇵🇾		flag-py
+8	🇶🇦		flag-qa
+8	🇷🇪		flag-re
+8	🇷🇴		flag-ro
+8	🇷🇸		flag-rs
+8	🇷🇺		ru
+8	🇷🇼		flag-rw
+8	🇸🇦		flag-sa
+8	🇸🇧		flag-sb
+8	🇸🇨		flag-sc
+8	🇸🇩		flag-sd
+8	🇸🇪		flag-se
+8	🇸🇬		flag-sg
+8	🇸🇭		flag-sh
+8	🇸🇮		flag-si
+8	🇸🇯		flag-sj
+8	🇸🇰		flag-sk
+8	🇸🇱		flag-sl
+8	🇸🇲		flag-sm
+8	🇸🇳		flag-sn
+8	🇸🇴		flag-so
+8	🇸🇷		flag-sr
+8	🇸🇸		flag-ss
+8	🇸🇹		flag-st
+8	🇸🇻		flag-sv
+8	🇸🇽		flag-sx
+8	🇸🇾		flag-sy
+8	🇸🇿		flag-sz
+8	🇹🇦		flag-ta
+8	🇹🇨		flag-tc
+8	🇹🇩		flag-td
+8	🇹🇫		flag-tf
+8	🇹🇬		flag-tg
+8	🇹🇭		flag-th
+8	🇹🇯		flag-tj
+8	🇹🇰		flag-tk
+8	🇹🇱		flag-tl
+8	🇹🇲		flag-tm
+8	🇹🇳		flag-tn
+8	🇹🇴		flag-to
+8	🇹🇷		flag-tr
+8	🇹🇹		flag-tt
+8	🇹🇻		flag-tv
+8	🇹🇼		flag-tw
+8	🇹🇿		flag-tz
+8	🇺🇦		flag-ua
+8	🇺🇬		flag-ug
+8	🇺🇲		flag-um
+8	🇺🇳		flag-un
+8	🇺🇸		us
+8	🇺🇾		flag-uy
+8	🇺🇿		flag-uz
+8	🇻🇦		flag-va
+8	🇻🇨		flag-vc
+8	🇻🇪		flag-ve
+8	🇻🇬		flag-vg
+8	🇻🇮		flag-vi
+8	🇻🇳		flag-vn
+8	🇻🇺		flag-vu
+8	🇼🇫		flag-wf
+8	🇼🇸		flag-ws
+8	🇽🇰		flag-xk
+8	🇾🇪		flag-ye
+8	🇾🇹		flag-yt
+8	🇿🇦		flag-za
+8	🇿🇲		flag-zm
+8	🇿🇼		flag-zw
+8	🏴󠁧󠁢󠁥󠁮󠁧󠁿		flag-england
+8	🏴󠁧󠁢󠁳󠁣󠁴󠁿		flag-scotland
+8	🏴󠁧󠁢󠁷󠁬󠁳󠁿		flag-wales

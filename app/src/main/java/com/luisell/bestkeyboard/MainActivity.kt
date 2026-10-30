@@ -127,6 +127,21 @@ class MainActivity : Activity() {
                 .show()
         }
 
+        section("Portapapeles")
+        switch("Guardar todo lo que copio (textos e imágenes)", Prefs.CLIP_HISTORY, true)
+        text(
+            "No tiene límite: guarda todo lo que copies hasta que lo borres. Se guarda solo en tu " +
+                "teléfono. Las contraseñas que las apps marcan como privadas no se guardan.", 13f, faded = true,
+        )
+        button("Borrar el historial del portapapeles (menos lo fijado)") {
+            AlertDialog.Builder(this)
+                .setTitle("¿Borrar el portapapeles?")
+                .setMessage("Se borrará todo lo copiado, menos lo que fijaste con 📌.")
+                .setPositiveButton("Borrar") { _, _ -> ClipStore.load(this) { ClipStore.clearUnpinned() } }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+
         section("Escritura")
         switch("Mayúscula automática al empezar una oración", Prefs.AUTOCAP, true)
         switch("Doble espacio pone un punto", Prefs.DOUBLE_SPACE, true)
@@ -139,13 +154,26 @@ class MainActivity : Activity() {
                 "• Desliza el dedo sobre la barra espaciadora para mover el cursor.\n" +
                 "• Toca una sugerencia de arriba para escribirla. La del centro en negrita es la corrección.\n" +
                 "• Si la palabra que escribiste sale entre comillas “así”, tócala para que el teclado la aprenda.\n" +
+                "• Emojis: toca 😊 arriba del teclado, o mantén presionada la coma.\n" +
+                "• En los emojis, mantén presionado uno con personas o manos para elegir el tono de piel.\n" +
+                "• Portapapeles: toca 📋 arriba del teclado. Toca algo para pegarlo; mantenlo presionado para " +
+                "fijarlo arriba 📌 o borrarlo.\n" +
                 "• Toca 🌐 para cambiar Español / English (las sugerencias usan los dos idiomas a la vez).\n" +
                 "• Mantén presionado 🌐 para cambiar a otro teclado (por ejemplo, Gboard).\n" +
                 "• Arriba del teclado: ⚙ abre esta pantalla, ◐ cambia claro/oscuro, ⌄ esconde el teclado.\n" +
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 2")
+        section("Novedades — Versión 3")
+        text(
+            "• Panel de emojis 😊 con más de 1 800 emojis en 9 categorías, Recientes y tonos de piel.\n" +
+                "• Portapapeles infinito 📋: guarda todo lo que copias, textos e imágenes, sin límite.\n" +
+                "• Pega imágenes directo en las apps que lo permiten (WhatsApp, Gmail, Messages...). " +
+                "Si una app no lo permite, la imagen queda copiada para pegarla con mantener presionado → Pegar.\n" +
+                "• Fija 📌 lo que usas siempre (direcciones, números de ticket...) para tenerlo arriba.", 14f,
+        )
+
+        section("Versión 2")
         text(
             "• Sugerencias de palabras en español e inglés al mismo tiempo (casi 100 000 palabras).\n" +
                 "• Autocorrector: arregla dedazos y pone los acentos solo (tambien → también, " +
@@ -161,8 +189,7 @@ class MainActivity : Activity() {
 
         section("Próximamente")
         text(
-            "v3: emojis y portapapeles infinito con imágenes\n" +
-                "v4: dictado por voz y traducción\n" +
+            "v4: dictado por voz y traducción\n" +
                 "v5: escanear texto con la cámara\n" +
                 "v6: deslizar el dedo para escribir", 14f,
         )

@@ -20,3 +20,5 @@ Las versiones nuevas se instalan encima de la anterior sin perder tus ajustes.
 ## Créditos
 Diccionarios de frecuencia: [FrequencyWords](https://github.com/hermitdave/FrequencyWords) de Hermit Dave
 (subtítulos de OpenSubtitles 2018), licencia CC-BY-SA 4.0. Se generan con `tools/make_dicts.py`.
+Lista de emojis: [emoji-data](https://github.com/iamcal/emoji-data) de Cal Henderson, licencia MIT.
+Se genera con `tools/make_emoji.py`.

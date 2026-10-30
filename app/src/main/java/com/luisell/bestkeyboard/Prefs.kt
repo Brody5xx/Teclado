@@ -18,6 +18,8 @@ object Prefs {
     const val SUGGEST = "suggest"
     const val AUTOCORRECT = "autocorrect"
     const val LEARN = "learn"
+    const val CLIP_HISTORY = "clip_history"
+    const val CLIP_LAST_SIG = "clip_last_sig"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

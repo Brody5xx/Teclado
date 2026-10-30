@@ -40,6 +40,8 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_SETTINGS = 0
         const val TOOL_THEME = 1
         const val TOOL_HIDE = 2
+        const val TOOL_EMOJI = 3
+        const val TOOL_CLIP = 4
         private const val LONG_PRESS_MS = 350L
         private const val REPEAT_START_MS = 400L
     }
@@ -203,8 +205,10 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun toolHit(x: Float): Int = when {
-        x < 52f * d -> TOOL_SETTINGS
-        x < 100f * d -> TOOL_THEME
+        x < 54f * d -> TOOL_SETTINGS
+        x < 106f * d -> TOOL_EMOJI
+        x < 158f * d -> TOOL_CLIP
+        x < 210f * d -> TOOL_THEME
         x > width - 56f * d -> TOOL_HIDE
         else -> -1
     }
@@ -259,7 +263,7 @@ class KeyboardView(context: Context) : View(context) {
                 handler.postDelayed(repeatRunnable, REPEAT_START_MS)
             }
             Codes.SHIFT -> listener?.onKeyCode(Codes.SHIFT)
-            else -> if (key.alts.isNotEmpty() || key.code == Codes.LANG) {
+            else -> if (key.alts.isNotEmpty() || key.code == Codes.LANG || key.emojiKey) {
                 handler.postDelayed(longPressRunnable, LONG_PRESS_MS)
             }
         }
@@ -340,6 +344,12 @@ class KeyboardView(context: Context) : View(context) {
             listener?.onLongPressGlobe()
             return
         }
+        if (key.emojiKey) {
+            // Mantener la coma abre los emojis (como en Gboard)
+            listener?.onKeyFeedback()
+            listener?.onToolbar(TOOL_EMOJI)
+            return
+        }
         if (key.alts.isEmpty()) return
         val list = key.alts.map { if (shift > 0) upper(it) else it }
         altCellW = max(key.rect.width(), 34f * d)
@@ -411,7 +421,12 @@ class KeyboardView(context: Context) : View(context) {
         val s = keyH * 0.19f
         val fg = if (k.code == Codes.ENTER) p.onAccent else p.text
         when (k.code) {
-            0 -> drawLabel(c, display(k.label), cx, cy, if (k.label.length > 1) keyH * 0.3f else keyH * 0.42f, fg)
+            0 -> {
+                drawLabel(c, display(k.label), cx, cy, if (k.label.length > 1) keyH * 0.3f else keyH * 0.42f, fg)
+                if (k.emojiKey) {
+                    drawLabel(c, "☺", k.rect.right - keyH * 0.2f, k.rect.top + keyH * 0.2f, keyH * 0.24f, p.hint)
+                }
+            }
             Codes.SPACE -> drawLabel(c, spaceLabel, cx, cy, keyH * 0.26f, p.hint)
             Codes.SHIFT -> drawShift(c, cx, cy, s, fg)
             Codes.DELETE -> drawDelete(c, cx, cy, s, fg)
@@ -518,9 +533,12 @@ class KeyboardView(context: Context) : View(context) {
         if (hasSuggestions) { drawSuggestions(c, p); return }
         val cy = stripH / 2f
         val s = stripH * 0.22f
-        val xs = floatArrayOf(28f * d, 76f * d, width - 28f * d)
-        for (i in 0..2) {
-            val cx = xs[i]
+        // Orden en pantalla: ajustes, emojis, portapapeles, tema ... esconder
+        val tools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_THEME, TOOL_HIDE)
+        val xs = floatArrayOf(28f * d, 80f * d, 132f * d, 184f * d, width - 28f * d)
+        for (n in tools.indices) {
+            val i = tools[n]
+            val cx = xs[n]
             if (stripPressed == i) {
                 fill.color = p.keyPressed
                 c.drawCircle(cx, cy, stripH * 0.4f, fill)
@@ -543,6 +561,24 @@ class KeyboardView(context: Context) : View(context) {
                     tmp.set(cx - r, cy - r, cx + r, cy + r)
                     fill.color = p.hint
                     c.drawArc(tmp, 90f, 180f, true, fill)
+                }
+                TOOL_EMOJI -> {
+                    val r = s * 0.9f
+                    c.drawCircle(cx, cy, r, stroke)
+                    fill.color = p.hint
+                    c.drawCircle(cx - r * 0.35f, cy - r * 0.25f, r * 0.12f, fill)
+                    c.drawCircle(cx + r * 0.35f, cy - r * 0.25f, r * 0.12f, fill)
+                    tmp.set(cx - r * 0.5f, cy - r * 0.3f, cx + r * 0.5f, cy + r * 0.55f)
+                    c.drawArc(tmp, 20f, 140f, false, stroke)
+                }
+                TOOL_CLIP -> {
+                    tmp.set(cx - s * 0.7f, cy - s * 0.75f, cx + s * 0.7f, cy + s * 0.95f)
+                    c.drawRoundRect(tmp, s * 0.2f, s * 0.2f, stroke)
+                    tmp.set(cx - s * 0.35f, cy - s * 0.98f, cx + s * 0.35f, cy - s * 0.55f)
+                    fill.color = p.hint
+                    c.drawRoundRect(tmp, s * 0.12f, s * 0.12f, fill)
+                    c.drawLine(cx - s * 0.35f, cy - s * 0.05f, cx + s * 0.35f, cy - s * 0.05f, stroke)
+                    c.drawLine(cx - s * 0.35f, cy + s * 0.4f, cx + s * 0.2f, cy + s * 0.4f, stroke)
                 }
                 TOOL_HIDE -> {
                     path.reset()

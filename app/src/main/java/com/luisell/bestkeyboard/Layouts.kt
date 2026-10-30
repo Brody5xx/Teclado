@@ -22,6 +22,8 @@ class Key(
     val weight: Float,
     val alts: List<String>,
     val special: Boolean = false,
+    /** Mantener presionada abre los emojis (la coma). */
+    val emojiKey: Boolean = false,
 ) {
     val cell = RectF()
     val rect = RectF()
@@ -60,7 +62,7 @@ object Layouts {
         val commaKey = when (comma) {
             "@" -> ch("@", ",")
             "/" -> ch("/", ",:")
-            else -> ch(",", ";:")
+            else -> Key(",", 0, ",", 1f, emptyList(), emojiKey = true)
         }
         return listOf(
             sp(modeLabel, modeCode, 1.5f),

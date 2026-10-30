@@ -22,6 +22,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Comparte SOLO la imagen que pegas desde el portapapeles (permiso temporal) -->
+        <provider
+            android:name=".ClipProvider"
+            android:authorities="com.luisell.bestkeyboard.clips"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <service
             android:name=".BestKeyboardService"
             android:exported="true"

@@ -1,5 +1,8 @@
 package com.luisell.bestkeyboard
 
+import android.content.ClipData
+import android.content.ClipDescription
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -17,6 +20,9 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputContentInfo
+import android.widget.FrameLayout
+import android.widget.Toast
 import android.view.inputmethod.InputMethodManager
 import com.luisell.bestkeyboard.words.TextUtil
 
@@ -66,6 +72,22 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var lastCorrection: Triple<String, String, String>? = null
     private val updateRunnable = Runnable { updateSuggestions() }
 
+    // Paneles: 0 = teclas, 1 = emojis, 2 = portapapeles
+    private var mode = 0
+    private var emojiPanel: EmojiPanel? = null
+    private var clipPanel: ClipPanel? = null
+    private var clipboard: ClipboardManager? = null
+    private var clipHistoryOn = true
+    private var lastClipSig: String? = null
+    private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
+
+    private val panelListener = object : PanelListener {
+        override fun onPanelText(text: String) = commitPanelText(text)
+        override fun onPanelDelete() = onDeletePress()
+        override fun onPanelBack() = showMode(0)
+        override fun onPanelFeedback() = onKeyFeedback()
+    }
+
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs.get(this)
@@ -73,15 +95,130 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         audio = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         WordStore.load(this) { scheduleUpdate() }
+        EmojiData.load(this)
+        ClipStore.load(this)
+        ClipStore.onChange = { if (mode == 2) clipPanel?.refresh() }
+        lastClipSig = prefs.getString(Prefs.CLIP_LAST_SIG, null)
+        clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        clipboard?.addPrimaryClipChangedListener(clipListener)
     }
 
     override fun onCreateInputView(): View {
         val v = KeyboardView(this)
         v.listener = this
         kv = v
+        val box = FrameLayout(this)
+        box.addView(v, FrameLayout.LayoutParams(-1, -2))
+        val ep = EmojiPanel(this)
+        ep.listener = panelListener
+        ep.visibility = View.GONE
+        box.addView(ep, FrameLayout.LayoutParams(-1, -1))
+        emojiPanel = ep
+        val cp = ClipPanel(this)
+        cp.listener = panelListener
+        cp.actions = object : ClipPanel.Actions {
+            override fun onPasteText(text: String) = commitPanelText(text)
+            override fun onPasteImage(item: ClipItem) = pasteImage(item)
+        }
+        cp.visibility = View.GONE
+        box.addView(cp, FrameLayout.LayoutParams(-1, -1))
+        clipPanel = cp
+        mode = 0
         applySettings()
         rebuild()
-        return v
+        return box
+    }
+
+    /** Cambia entre teclas, emojis y portapapeles (los paneles usan la misma altura del teclado). */
+    private fun showMode(m: Int) {
+        mode = m
+        val v = kv ?: return
+        if (m != 0) { v.reset(); clearSlots() }
+        v.visibility = if (m == 0) View.VISIBLE else View.INVISIBLE
+        emojiPanel?.let { ep ->
+            ep.visibility = if (m == 1) View.VISIBLE else View.GONE
+            if (m == 1) ep.open() else ep.close()
+        }
+        clipPanel?.let { cp ->
+            cp.visibility = if (m == 2) View.VISIBLE else View.GONE
+            if (m == 2) {
+                cp.historyOn = clipHistoryOn
+                captureClip()
+                cp.open()
+            } else cp.close()
+        }
+        if (m == 0) { updateAutoCaps(); scheduleUpdate() }
+    }
+
+    private fun commitPanelText(text: String) {
+        val ic = currentInputConnection ?: return
+        ic.commitText(text, 1)
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+    }
+
+    // ---------------------------------------------------------------- Portapapeles
+
+    /** Guarda en el historial lo que acabas de copiar (texto o imagen). */
+    private fun captureClip() {
+        if (!clipHistoryOn) return
+        val cm = clipboard ?: return
+        val clip = try { cm.primaryClip } catch (_: Exception) { null } ?: return
+        if (clip.itemCount == 0) return
+        val desc = clip.description
+        // Contraseñas y datos marcados como privados no se guardan
+        if (desc.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) == true) return
+        val item = clip.getItemAt(0)
+        val uri = item.uri
+        val ts = if (Build.VERSION.SDK_INT >= 26) desc.timestamp else 0L
+        val sig = "$ts|${item.text?.toString()?.hashCode()}|$uri"
+        if (sig == lastClipSig) return
+        lastClipSig = sig
+        prefs.edit().putString(Prefs.CLIP_LAST_SIG, sig).apply()
+        if (uri != null) {
+            if (uri.authority == ClipStore.AUTHORITY) return // la pusimos nosotros
+            var mime: String? = null
+            for (i in 0 until desc.mimeTypeCount) {
+                val mt = desc.getMimeType(i)
+                if (mt.startsWith("image/")) { mime = mt; break }
+            }
+            if (mime == null) mime = try { contentResolver.getType(uri) } catch (_: Exception) { null }
+            if (mime != null && mime.startsWith("image/")) {
+                ClipStore.addImage(this, uri, mime)
+                return
+            }
+        }
+        val text = item.text?.toString()
+            ?: (if (item.htmlText != null || uri != null) try { item.coerceToText(this)?.toString() } catch (_: Exception) { null } else null)
+            ?: return
+        ClipStore.addText(text)
+    }
+
+    /** Pega una imagen: directo si la app la acepta (WhatsApp, Gmail...), si no, la deja copiada. */
+    private fun pasteImage(item: ClipItem) {
+        val ic = currentInputConnection ?: return
+        val uri = ClipStore.uriOf(item) ?: return
+        val mime = item.mime ?: "image/png"
+        val ei = currentInputEditorInfo
+        if (Build.VERSION.SDK_INT >= 25 && ei != null) {
+            val accepted = ei.contentMimeTypes ?: emptyArray()
+            if (accepted.any { ClipDescription.compareMimeTypes(mime, it) }) {
+                val info = InputContentInfo(uri, ClipDescription("Imagen", arrayOf(mime)), null)
+                val ok = try {
+                    ic.commitContent(info, InputConnection.INPUT_CONTENT_GRANT_READ_URI_PERMISSION, null)
+                } catch (_: Exception) { false }
+                if (ok) return
+            }
+        }
+        try {
+            clipboard?.setPrimaryClip(ClipData.newUri(contentResolver, "Imagen", uri))
+            Toast.makeText(
+                this,
+                "Esta app no recibe imágenes desde el teclado. Ya está copiada: mantén presionado donde escribes y toca Pegar.",
+                Toast.LENGTH_LONG,
+            ).show()
+        } catch (_: Exception) { }
     }
 
     // Sin pantalla completa en horizontal: el teclado se ve igual que en vertical
@@ -118,6 +255,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             page = if (numeric || phone) Page.NUM else Page.LETTERS
             shift = 0
             manualShift = false
+            if (mode != 0) showMode(0)
         }
         lastWasSpace = false
         autoSpace = false
@@ -129,12 +267,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        if (mode != 0) showMode(0)
         kv?.reset()
         clearSlots()
         WordStore.saveNow()
     }
 
     override fun onDestroy() {
+        clipboard?.removePrimaryClipChangedListener(clipListener)
+        ClipStore.onChange = null
         WordStore.saveNow()
         super.onDestroy()
     }
@@ -172,6 +313,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         val pal = if (dark) Palette.DARK else Palette.LIGHT
         v.palette = pal
+        emojiPanel?.applyPalette(pal)
+        clipHistoryOn = prefs.getBoolean(Prefs.CLIP_HISTORY, true)
+        clipPanel?.let { it.historyOn = clipHistoryOn; it.applyPalette(pal) }
         colorNavBar(pal)
 
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -547,6 +691,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 applySettings()
             }
             KeyboardView.TOOL_HIDE -> requestHideSelf(0)
+            KeyboardView.TOOL_EMOJI -> showMode(1)
+            KeyboardView.TOOL_CLIP -> showMode(2)
         }
     }
 
