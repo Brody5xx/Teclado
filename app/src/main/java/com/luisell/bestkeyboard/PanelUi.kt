@@ -75,3 +75,66 @@ object PanelUi {
         }
     }
 }
+
+/**
+ * Contenedor del teclado: las teclas mandan la altura, y los paneles (emojis, portapapeles)
+ * usan EXACTAMENTE esa misma altura, con scroll por dentro.
+ */
+class PanelBox(context: Context, private val keys: View) : android.widget.FrameLayout(context) {
+    init {
+        addView(keys, LayoutParams(-1, -2))
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val w = MeasureSpec.getSize(widthMeasureSpec)
+        keys.measure(
+            MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+        )
+        val h = keys.measuredHeight
+        val exactW = MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY)
+        val exactH = MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY)
+        for (i in 0 until childCount) {
+            val c = getChildAt(i)
+            if (c !== keys) c.measure(exactW, exactH)
+        }
+        setMeasuredDimension(w, h)
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        for (i in 0 until childCount) {
+            val c = getChildAt(i)
+            c.layout(0, 0, c.measuredWidth, c.measuredHeight)
+        }
+    }
+}
+
+/**
+ * Capa que se dibuja encima de un panel (menú o tonos de piel), dentro del mismo teclado.
+ * Tocar fuera la cierra.
+ */
+@SuppressLint("ViewConstructor")
+class PanelOverlay(context: Context, scrim: Int) : android.widget.FrameLayout(context) {
+    init {
+        setBackgroundColor(scrim)
+        isClickable = true
+        visibility = GONE
+        setOnClickListener { hide() }
+    }
+
+    fun show(content: View, lp: LayoutParams) {
+        removeAllViews()
+        // Que los toques sobre el contenido no cierren la capa
+        content.isClickable = true
+        addView(content, lp)
+        visibility = VISIBLE
+        bringToFront()
+    }
+
+    fun hide() {
+        removeAllViews()
+        visibility = GONE
+    }
+
+    val isShowing get() = visibility == VISIBLE
+}

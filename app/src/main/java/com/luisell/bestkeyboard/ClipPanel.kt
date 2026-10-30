@@ -17,13 +17,12 @@ import android.widget.FrameLayout
 import android.widget.GridView
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupWindow
 import android.widget.TextView
 import java.util.concurrent.Executors
 
 /** Panel del portapapeles infinito: textos e imágenes que copiaste, en 2 columnas. */
 @SuppressLint("ViewConstructor")
-class ClipPanel(context: Context) : LinearLayout(context) {
+class ClipPanel(context: Context) : FrameLayout(context) {
 
     interface Actions {
         fun onPasteText(text: String)
@@ -45,7 +44,8 @@ class ClipPanel(context: Context) : LinearLayout(context) {
     private val empty = TextView(context)
     private val abc: TextView
     private val del: TextView
-    private var popup: PopupWindow? = null
+    private val body = LinearLayout(context)
+    private val overlay = PanelOverlay(context, 0x66000000)
     private var confirmClear = false
     private val handler = Handler(Looper.getMainLooper())
 
@@ -82,20 +82,20 @@ class ClipPanel(context: Context) : LinearLayout(context) {
     }
 
     init {
-        orientation = VERTICAL
+        body.orientation = LinearLayout.VERTICAL
 
         val header = LinearLayout(context)
-        header.orientation = HORIZONTAL
+        header.orientation = LinearLayout.HORIZONTAL
         header.gravity = Gravity.CENTER_VERTICAL
         header.setPadding(d(12f), d(4f), d(8f), d(2f))
         title.textSize = 15f
         title.setTypeface(title.typeface, android.graphics.Typeface.BOLD)
-        header.addView(title, LayoutParams(0, -2, 1f))
+        header.addView(title, LinearLayout.LayoutParams(0, -2, 1f))
         clearBtn.textSize = 14f
         clearBtn.setPadding(d(12f), d(8f), d(12f), d(8f))
         clearBtn.setOnClickListener { onClearTap() }
-        header.addView(clearBtn, LayoutParams(-2, -2))
-        addView(header, LayoutParams(-1, d(40f)))
+        header.addView(clearBtn, LinearLayout.LayoutParams(-2, -2))
+        body.addView(header, LinearLayout.LayoutParams(-1, d(40f)))
 
         grid.numColumns = 2
         grid.horizontalSpacing = d(6f)
@@ -106,31 +106,37 @@ class ClipPanel(context: Context) : LinearLayout(context) {
         grid.selector = android.graphics.drawable.ColorDrawable(0)
         grid.adapter = adapter
         grid.setOnItemClickListener { _, _, pos, _ -> paste(items[pos]) }
-        grid.setOnItemLongClickListener { _, v, pos, _ -> showMenu(v, items[pos]); true }
+        grid.setOnItemLongClickListener { _, _, pos, _ -> showMenu(items[pos]); true }
 
         empty.gravity = Gravity.CENTER
         empty.textSize = 15f
         empty.setPadding(d(24f), 0, d(24f), 0)
-        addView(grid, LayoutParams(-1, 0, 1f))
-        addView(empty, LayoutParams(-1, 0, 1f))
+        grid.isVerticalScrollBarEnabled = true
+        grid.isFastScrollEnabled = true
+        grid.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        body.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
+        body.addView(empty, LinearLayout.LayoutParams(-1, 0, 1f))
 
         val bar = LinearLayout(context)
-        bar.orientation = HORIZONTAL
+        bar.orientation = LinearLayout.HORIZONTAL
         bar.gravity = Gravity.CENTER_VERTICAL
         bar.setPadding(d(4f), d(3f), d(4f), d(5f))
         abc = PanelUi.barButton(context, "ABC", palette)
         abc.setOnClickListener { listener?.onPanelFeedback(); listener?.onPanelBack() }
-        bar.addView(abc, LayoutParams(d(54f), d(40f)))
+        bar.addView(abc, LinearLayout.LayoutParams(d(54f), d(40f)))
         val hint = TextView(context)
         hint.text = "Toca para pegar · Mantén para fijar o borrar"
         hint.textSize = 12f
         hint.gravity = Gravity.CENTER
         hint.tag = "hint"
-        bar.addView(hint, LayoutParams(0, d(40f), 1f))
+        bar.addView(hint, LinearLayout.LayoutParams(0, d(40f), 1f))
         del = PanelUi.barButton(context, "⌫", palette)
         PanelUi.makeRepeatingDelete(del) { listener }
-        bar.addView(del, LayoutParams(d(54f), d(40f)))
-        addView(bar, LayoutParams(-1, -2))
+        bar.addView(del, LinearLayout.LayoutParams(d(54f), d(40f)))
+        body.addView(bar, LinearLayout.LayoutParams(-1, -2))
+
+        addView(body, LayoutParams(-1, -1))
+        addView(overlay, LayoutParams(-1, -1))
 
         applyPalette(palette)
     }
@@ -189,16 +195,14 @@ class ClipPanel(context: Context) : LinearLayout(context) {
     }
 
     fun open() {
+        overlay.hide()
         confirmClear = false
         ClipStore.load(context) { refresh() }
         refresh()
         grid.setSelection(0)
     }
 
-    fun close() {
-        popup?.dismiss()
-        popup = null
-    }
+    fun close() = overlay.hide()
 
     fun refresh() {
         items = if (historyOn) ClipStore.ordered() else emptyList()
@@ -234,36 +238,37 @@ class ClipPanel(context: Context) : LinearLayout(context) {
         if (item.isImage) actions?.onPasteImage(item) else item.text?.let { actions?.onPasteText(it) }
     }
 
-    private fun showMenu(anchor: View, item: ClipItem) {
+    /** Menú al mantener presionado: fijar, pegar o borrar (se dibuja dentro del panel). */
+    private fun showMenu(item: ClipItem) {
         listener?.onPanelFeedback()
-        popup?.dismiss()
-        val col = LinearLayout(context)
-        col.orientation = VERTICAL
-        col.setPadding(d(4f), d(4f), d(4f), d(4f))
-        col.background = PanelUi.rounded(palette.popup, d(10f).toFloat())
-        val pw = PopupWindow(col, -2, -2, true)
+        val card = LinearLayout(context)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(d(6f), d(6f), d(6f), d(6f))
+        card.background = PanelUi.rounded(palette.popup, d(12f).toFloat())
+        card.elevation = d(8f).toFloat()
+        val preview = TextView(context)
+        preview.text = if (item.isImage) "🖼  Imagen" else item.text?.trim()
+        preview.maxLines = 2
+        preview.ellipsize = TextUtils.TruncateAt.END
+        preview.textSize = 13f
+        preview.setTextColor(palette.hint)
+        preview.setPadding(d(14f), d(8f), d(14f), d(6f))
+        card.addView(preview, LinearLayout.LayoutParams(-1, -2))
         fun option(label: String, action: () -> Unit) {
             val tv = TextView(context)
             tv.text = label
-            tv.textSize = 15f
+            tv.textSize = 16f
             tv.setTextColor(palette.text)
-            tv.setPadding(d(16f), d(12f), d(24f), d(12f))
-            tv.background = PanelUi.pressable(palette.popup, palette.keyPressed, d(7f).toFloat())
-            tv.setOnClickListener { pw.dismiss(); listener?.onPanelFeedback(); action() }
-            col.addView(tv, LayoutParams(-1, -2))
+            tv.setPadding(d(14f), d(12f), d(14f), d(12f))
+            tv.background = PanelUi.pressable(palette.popup, palette.keyPressed, d(8f).toFloat())
+            tv.setOnClickListener { overlay.hide(); listener?.onPanelFeedback(); action() }
+            card.addView(tv, LinearLayout.LayoutParams(-1, -2))
         }
-        option(if (item.pinned) "📌  Quitar de fijados" else "📌  Fijar arriba") { ClipStore.togglePin(item); refresh() }
-        option("📋  Pegar") { paste(item) }
-        option("🗑  Borrar") { ClipStore.remove(item); refresh() }
-        pw.isOutsideTouchable = true
-        pw.elevation = d(6f).toFloat()
-        col.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED)
-        val loc = IntArray(2)
-        anchor.getLocationInWindow(loc)
-        val x = (loc[0] + anchor.width / 2 - col.measuredWidth / 2).coerceIn(0, maxOf(0, width - col.measuredWidth))
-        val y = (loc[1] + anchor.height / 2 - col.measuredHeight / 2).coerceAtLeast(0)
-        pw.showAtLocation(this, Gravity.NO_GRAVITY, x, y)
-        popup = pw
+        option(if (item.pinned) "📌   Quitar de fijados" else "📌   Fijar arriba") { ClipStore.togglePin(item); refresh() }
+        option("📋   Pegar") { paste(item) }
+        option("🗑   Borrar") { ClipStore.remove(item); refresh() }
+        val lp = LayoutParams(minOf(d(280f), width - d(32f)), -2, Gravity.CENTER)
+        overlay.show(card, lp)
     }
 
     fun applyPalette(p: Palette) {

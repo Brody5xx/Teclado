@@ -107,8 +107,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val v = KeyboardView(this)
         v.listener = this
         kv = v
-        val box = FrameLayout(this)
-        box.addView(v, FrameLayout.LayoutParams(-1, -2))
+        // Las teclas mandan la altura; emojis y portapapeles usan la misma
+        val box = PanelBox(this, v)
         val ep = EmojiPanel(this)
         ep.listener = panelListener
         ep.visibility = View.GONE
