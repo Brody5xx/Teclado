@@ -28,6 +28,23 @@ class Dictionary private constructor(
         }
     }
 
+    /** Solo español: palabras que "suenan igual" (necesito/nesecito, hacer/aser, bien/vien). */
+    private val phonetic = HashMap<String, Int>()
+
+    init {
+        if (lang == "es") {
+            val minLf = ln(100f)
+            for (i in words.indices) {
+                if (logFreq[i] < minLf) continue
+                val k = soundKey(folds[i])
+                val b = phonetic[k]
+                if (b == null || logFreq[i] > logFreq[b]) phonetic[k] = i
+            }
+        }
+    }
+
+    fun bestForSound(fold: String): Int = if (lang == "es") phonetic[soundKey(fold)] ?: -1 else -1
+
     val size get() = words.size
 
     /** Índice de la palabra exacta (sin importar mayúsculas), o -1. */
@@ -54,6 +71,34 @@ class Dictionary private constructor(
     }
 
     companion object {
+        /** Clave de sonido en español: s/c/z, b/v, ll/y, h muda, qu/k, letras dobles. */
+        fun soundKey(f: String): String {
+            val sb = StringBuilder(f.length)
+            var i = 0
+            while (i < f.length) {
+                val c = f[i]
+                val next = if (i + 1 < f.length) f[i + 1] else ' '
+                when {
+                    c == 'c' && next == 'h' -> { sb.append('X'); i++ }
+                    c == 'h' -> Unit
+                    c == 'l' && next == 'l' -> { sb.append('y'); i++ }
+                    c == 'q' && next == 'u' -> { sb.append('k'); i++ }
+                    c == 'c' && (next == 'e' || next == 'i') -> sb.append('s')
+                    c == 'c' || c == 'k' -> sb.append('k')
+                    c == 'z' -> sb.append('s')
+                    c == 'v' || c == 'w' -> sb.append('b')
+                    c == 'g' && (next == 'e' || next == 'i') -> sb.append('j')
+                    c == 'y' && i == f.length - 1 -> sb.append('i')
+                    else -> sb.append(c)
+                }
+                i++
+            }
+            // Letras dobles seguidas cuentan como una (carro ~ caro no, pero sirve para dedazos)
+            val out = StringBuilder(sb.length)
+            for (ch in sb) if (out.isEmpty() || out[out.length - 1] != ch) out.append(ch)
+            return out.toString()
+        }
+
         /** Lee un archivo "palabra<TAB>frecuencia" ya ordenado por forma plegada. */
         fun load(lang: String, input: InputStream): Dictionary {
             val words = ArrayList<String>(52000)

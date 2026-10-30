@@ -30,6 +30,7 @@ class WordEngineReport {
             "cable", "cableado", "fibra", "electrico", "electrica", "hospital", "supermercado",
             "mañna", "nesecito", "ayer", "asi", "dia", "vamoss", "q", "xq", "ok", "jajaja",
             "RUMC", "DVSS", "Mendoza", "Luisell", "acceso", "conexion", "revisar", "cambie",
+            "haser", "vien", "osea", "aveces", "tecnico", "door", "the", "meeting",
         )
         for (w in esCases) sb.append("  $w -> ${eng.correction(w, "es") ?: "(sin cambio)"}\n")
 
@@ -37,6 +38,7 @@ class WordEngineReport {
         val enCases = listOf(
             "i", "im", "dont", "cant", "teh", "recieve", "door", "lock", "camera", "wiring",
             "thier", "wierd", "becuase", "tommorow", "ok", "gonna", "were", "well", "its", "access",
+            "id", "hes", "hola", "gracias",
         )
         for (w in enCases) sb.append("  $w -> ${eng.correction(w, "en") ?: "(sin cambio)"}\n")
 

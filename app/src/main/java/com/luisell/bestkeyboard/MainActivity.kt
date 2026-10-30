@@ -149,7 +149,9 @@ class MainActivity : Activity() {
         text(
             "• Sugerencias de palabras en español e inglés al mismo tiempo (casi 100 000 palabras).\n" +
                 "• Autocorrector: arregla dedazos y pone los acentos solo (tambien → también, " +
-                "manana → mañana, dont → don't, im → I'm).\n" +
+                "manana → mañana, aqui → aquí, dont → don't, im → I'm).\n" +
+                "• Entiende errores de sonido del español: nesecito → necesito, haser → hacer, " +
+                "vien → bien, y palabras pegadas: porfavor → por favor.\n" +
                 "• Borrar justo después de una corrección la deshace.\n" +
                 "• Aprende tus palabras (nombres, siglas, palabras del trabajo) y qué palabra sueles " +
                 "escribir después de otra, para sugerirla antes de que empieces a escribir.\n" +

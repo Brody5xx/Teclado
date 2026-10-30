@@ -36,6 +36,38 @@ def read(path):
     return out
 
 
+TARGET_TOTAL = 100_000_000
+
+
+def normalize(words):
+    """Pone los dos idiomas en la misma escala (como si cada uno tuviera 100 millones de palabras)."""
+    total = sum(words.values())
+    return {w: max(1, round(c * TARGET_TOTAL / total)) for w, c in words.items()}
+
+
+KEEP = {"té", "dé", "sé", "tú", "él", "mí", "sí", "más", "aún", "qué", "cómo", "dónde", "cuándo", "quién"}
+
+
+def drop_misspellings(words, ratio=12):
+    """Quita faltas de ortografía comunes en subtítulos ("tambien") cuando la forma correcta
+    ("también") es al menos [ratio] veces más común. "esta"/"está" se quedan las dos."""
+    best = {}
+    for w, c in words.items():
+        f = fold(w)
+        if f not in best or c > words[best[f]]:
+            best[f] = w
+    out = {}
+    removed = []
+    for w, c in words.items():
+        b = best[fold(w)]
+        if b != w and words[b] >= c * ratio and w not in KEEP:
+            removed.append(w)
+            continue
+        out[w] = c
+    print("  faltas quitadas:", len(removed), "ej.", sorted(removed, key=lambda x: -words[x])[:15])
+    return out
+
+
 def write(words, path):
     rows = sorted(words.items(), key=lambda kv: (fold(kv[0]), -kv[1]))
     with open(path, 'w', encoding='utf-8') as f:
@@ -53,8 +85,10 @@ def spanish(path):
             continue
         if len(w) == 1 and w not in singles:
             continue
+        if w in EN_REMOVE or (w in EN_FRAGMENTS and w not in ("y", "don")):  # restos de inglés ("im", "dont")
+            continue
         words[w] = c
-    return words
+    return drop_misspellings(words)
 
 
 # Formas sin apóstrofo que NO son palabras reales: se quitan para que el autocorrector las arregle
@@ -109,5 +143,5 @@ def english(path):
 
 if __name__ == '__main__':
     es_path, en_path = sys.argv[1], sys.argv[2]
-    write(spanish(es_path), 'app/src/main/assets/dict_es.txt')
-    write(english(en_path), 'app/src/main/assets/dict_en.txt')
+    write(normalize(spanish(es_path)), 'app/src/main/assets/dict_es.txt')
+    write(normalize(english(en_path)), 'app/src/main/assets/dict_en.txt')
