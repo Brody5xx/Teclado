@@ -108,6 +108,32 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         status.visibility = if (text.isEmpty()) GONE else VISIBLE
     }
 
+    /** Borrar hacia atrás dentro de la caja (una letra, o un emoji completo). */
+    fun deleteBack() {
+        val e = box.text ?: return
+        var start = Selection.getSelectionStart(e)
+        var end = Selection.getSelectionEnd(e)
+        if (start < 0 || end < 0) { start = e.length; end = e.length }
+        if (start > end) { val t = start; start = end; end = t }
+        if (start != end) {
+            e.delete(start, end)
+            return
+        }
+        if (start == 0) return
+        val bi = android.icu.text.BreakIterator.getCharacterInstance()
+        bi.setText(e.toString())
+        val prev = bi.preceding(start)
+        e.delete(if (prev == android.icu.text.BreakIterator.DONE) start - 1 else prev, start)
+    }
+
+    /** Mover el cursor dentro de la caja (deslizar sobre la barra espaciadora). */
+    fun moveCursor(steps: Int) {
+        val e = box.text ?: return
+        var pos = Selection.getSelectionEnd(e)
+        if (pos < 0) pos = e.length
+        Selection.setSelection(e, (pos + steps).coerceIn(0, e.length))
+    }
+
     /** Vacía la caja sin traducir. */
     fun clear() {
         silent = true

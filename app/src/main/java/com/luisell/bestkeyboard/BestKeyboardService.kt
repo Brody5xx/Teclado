@@ -111,6 +111,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Envía una tecla (borrar, flechas, enter) a donde esté escribiendo el teclado. */
     private fun sendKey(code: Int) {
+        // La caja del traductor está dentro del teclado: ahí las teclas se aplican directo
+        val tb = tBar
+        if (translating && tb != null) {
+            when (code) {
+                KeyEvent.KEYCODE_DEL -> tb.deleteBack()
+                KeyEvent.KEYCODE_DPAD_LEFT -> tb.moveCursor(-1)
+                KeyEvent.KEYCODE_DPAD_RIGHT -> tb.moveCursor(1)
+            }
+            return
+        }
         val c = target() ?: return
         val t = SystemClock.uptimeMillis()
         val flags = KeyEvent.FLAG_SOFT_KEYBOARD or KeyEvent.FLAG_KEEP_TOUCH_MODE
@@ -982,6 +992,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (target() == null) return
         val key = if (steps > 0) KeyEvent.KEYCODE_DPAD_RIGHT else KeyEvent.KEYCODE_DPAD_LEFT
         repeat(kotlin.math.abs(steps)) { sendKey(key) }
+        if (translating) { updateAutoCaps(); scheduleUpdate() }
         lastWasSpace = false
         autoSpace = false
         lastCorrection = null
