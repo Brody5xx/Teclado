@@ -183,6 +183,14 @@ class MainActivity : Activity() {
             13f, faded = true,
         )
 
+        section("Escanear texto 📷")
+        text(
+            "Toca el botón de escanear (el cuadrito con esquinas) arriba del teclado. Toma una foto o elige una " +
+                "de la galería; el teclado lee el texto dentro del teléfono, sin internet. Revísalo, corrígelo si " +
+                "hace falta y toca Insertar: aparece donde estabas escribiendo. Ideal para números de serie, " +
+                "modelos, direcciones y etiquetas.", 13f, faded = true,
+        )
+
         section("Portapapeles")
         switch("Guardar todo lo que copio (textos e imágenes)", Prefs.CLIP_HISTORY, true)
         text(
@@ -217,11 +225,18 @@ class MainActivity : Activity() {
                 "• 🎤 dicta por voz y A文 traduce mientras escribes.\n" +
                 "• Toca 🌐 para cambiar Español / English (las sugerencias usan los dos idiomas a la vez).\n" +
                 "• Mantén presionado 🌐 para cambiar a otro teclado (por ejemplo, Gboard).\n" +
-                "• Arriba del teclado: ⚙ ajustes, 😊 emojis, 📋 portapapeles, A文 traducir, 🎤 dictar, ⌄ esconder.\n" +
+                "• Arriba del teclado: ⚙ ajustes, 😊 emojis, 📋 portapapeles, A文 traducir, ⛶ escanear, 🎤 dictar, ⌄ esconder.\n" +
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 4")
+        section("Novedades — Versión 5")
+        text(
+            "• Escanear texto con la cámara 📷: foto o galería → el texto se lee dentro del teléfono → lo revisas " +
+                "y se escribe donde estabas.\n" +
+                "• Funciona sin internet y en español e inglés.", 14f,
+        )
+
+        section("Versión 4")
         text(
             "• Dictado por voz 🎤 en español e inglés, con los signos por voz (coma, punto final...).\n" +
                 "• Traducción A文 como Gboard: escribes en tu idioma y la app recibe la traducción.\n" +
@@ -253,8 +268,7 @@ class MainActivity : Activity() {
 
         section("Próximamente")
         text(
-            "v5: escanear texto con la cámara\n" +
-                "v6: deslizar el dedo para escribir", 14f,
+            "v6: deslizar el dedo para escribir", 14f,
         )
         return sv
     }

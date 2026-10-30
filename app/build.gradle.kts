@@ -15,7 +15,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = buildNumber
-        versionName = "4.2 (build $buildNumber)"
+        versionName = "5.0 (build $buildNumber)"
         // Solo los procesadores de teléfonos reales: la app pesa menos
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
@@ -54,5 +54,7 @@ android {
 dependencies {
     // Traducción dentro del teléfono (Google ML Kit, gratis)
     implementation("com.google.mlkit:translate:17.0.3")
+    // Leer texto de fotos dentro del teléfono (Google ML Kit, gratis, sin internet)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
     testImplementation("junit:junit:4.13.2")
 }

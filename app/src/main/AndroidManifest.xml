@@ -32,6 +32,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Escanear texto con la cámara -->
+        <activity
+            android:name=".ScanActivity"
+            android:exported="false"
+            android:label="Escanear texto"
+            android:windowSoftInputMode="stateHidden" />
+
         <!-- Comparte SOLO la imagen que pegas desde el portapapeles (permiso temporal) -->
         <provider
             android:name=".ClipProvider"

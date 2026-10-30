@@ -44,6 +44,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_CLIP = 4
         const val TOOL_TRANSLATE = 5
         const val TOOL_VOICE = 6
+        const val TOOL_SCAN = 7
         private const val LONG_PRESS_MS = 350L
         private const val REPEAT_START_MS = 400L
     }
@@ -216,6 +217,7 @@ class KeyboardView(context: Context) : View(context) {
         x < 210f * d -> TOOL_TRANSLATE
         x > width - 56f * d -> TOOL_HIDE
         x > width - 108f * d -> TOOL_VOICE
+        x < 262f * d -> TOOL_SCAN
         else -> -1
     }
 
@@ -541,8 +543,8 @@ class KeyboardView(context: Context) : View(context) {
         val s = stripH * 0.22f
         // Orden en pantalla: ajustes, emojis, portapapeles, tema ... esconder
         // (El cambio claro/oscuro está en los ajustes ⚙)
-        val tools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_VOICE, TOOL_HIDE)
-        val xs = floatArrayOf(28f * d, 80f * d, 132f * d, 184f * d, width - 80f * d, width - 28f * d)
+        val tools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_VOICE, TOOL_HIDE)
+        val xs = floatArrayOf(28f * d, 80f * d, 132f * d, 184f * d, 236f * d, width - 80f * d, width - 28f * d)
         for (n in tools.indices) {
             val i = tools[n]
             val cx = xs[n]
@@ -589,6 +591,18 @@ class KeyboardView(context: Context) : View(context) {
                 }
                 TOOL_TRANSLATE -> {
                     drawLabel(c, "A文", cx, cy, stripH * 0.36f, if (translateOn) p.accent else p.hint)
+                }
+                TOOL_SCAN -> {
+                    // Marco de escáner: 4 esquinas y una línea en el medio
+                    val r = s * 0.85f
+                    val k = r * 0.45f
+                    for (sx in intArrayOf(-1, 1)) for (sy in intArrayOf(-1, 1)) {
+                        val x0 = cx + sx * r
+                        val y0 = cy + sy * r
+                        c.drawLine(x0, y0, x0 - sx * k, y0, stroke)
+                        c.drawLine(x0, y0, x0, y0 - sy * k, stroke)
+                    }
+                    c.drawLine(cx - r * 0.55f, cy, cx + r * 0.55f, cy, stroke)
                 }
                 TOOL_VOICE -> {
                     tmp.set(cx - s * 0.38f, cy - s * 0.95f, cx + s * 0.38f, cy + s * 0.25f)

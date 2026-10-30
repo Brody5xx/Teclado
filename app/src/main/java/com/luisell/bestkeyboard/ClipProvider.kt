@@ -18,7 +18,15 @@ class ClipProvider : ContentProvider() {
 
     override fun onCreate(): Boolean = true
 
+    /** La foto del escáner: la app de la cámara la escribe aquí (archivo temporal). */
+    private fun scanFile(uri: Uri): File? {
+        if (uri.lastPathSegment != SCAN_PHOTO) return null
+        val ctx = context ?: return null
+        return File(ctx.cacheDir, SCAN_PHOTO)
+    }
+
     private fun fileFor(uri: Uri): File {
+        scanFile(uri)?.let { if (it.exists()) return it else throw FileNotFoundException() }
         val name = uri.lastPathSegment ?: throw FileNotFoundException()
         if (!name.matches(Regex("[A-Za-z0-9._-]+")) || name.startsWith(".")) throw FileNotFoundException()
         val ctx = context ?: throw FileNotFoundException()
@@ -37,14 +45,18 @@ class ClipProvider : ContentProvider() {
         }
     }
 
-    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
-        ParcelFileDescriptor.open(fileFor(uri), ParcelFileDescriptor.MODE_READ_ONLY)
+    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
+        // Solo la foto del escáner se puede escribir; todo lo demás es solo lectura
+        val scan = scanFile(uri)
+        if (scan != null) return ParcelFileDescriptor.open(scan, ParcelFileDescriptor.parseMode(mode))
+        return ParcelFileDescriptor.open(fileFor(uri), ParcelFileDescriptor.MODE_READ_ONLY)
+    }
 
     override fun query(
         uri: Uri, projection: Array<out String>?, selection: String?,
         selectionArgs: Array<out String>?, sortOrder: String?,
     ): Cursor {
-        val f = fileFor(uri)
+        val f = scanFile(uri) ?: fileFor(uri)
         val cols = projection ?: arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)
         val c = MatrixCursor(cols, 1)
         c.addRow(cols.map {
@@ -58,6 +70,10 @@ class ClipProvider : ContentProvider() {
     }
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+
+    companion object {
+        const val SCAN_PHOTO = "scan_photo.jpg"
+    }
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?) = 0
 }

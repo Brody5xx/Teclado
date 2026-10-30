@@ -582,8 +582,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         autoSpace = false
         lastCorrection = null
         rebuild()
+        insertScanned(info)
         updateAutoCaps()
         scheduleUpdate()
+    }
+
+    /** Si vienes de escanear texto con la cámara, lo escribe aquí. */
+    private fun insertScanned(info: EditorInfo) {
+        if (isPassword) return
+        val text = ScanActivity.takePending() ?: return
+        val ic = currentInputConnection ?: return
+        if (info.inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_NULL) return
+        val before = ic.getTextBeforeCursor(1, 0) ?: ""
+        val space = if (before.isNotEmpty() && !before[0].isWhitespace()) " " else ""
+        ic.commitText(space + text, 1)
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
@@ -1023,6 +1035,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_EMOJI -> showMode(1)
             KeyboardView.TOOL_CLIP -> showMode(2)
             KeyboardView.TOOL_VOICE -> showMode(3)
+            KeyboardView.TOOL_SCAN -> {
+                if (translating) stopTranslate()
+                val i = Intent(this, ScanActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                try { startActivity(i) } catch (_: Exception) { }
+            }
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
         }
     }
