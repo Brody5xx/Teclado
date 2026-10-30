@@ -34,6 +34,8 @@ class KeyboardView(context: Context) : View(context) {
         fun onLongPressGlobe()
         fun onKeyFeedback()
         fun onSuggestion(slot: Int)
+        /** Terminaste un trazo de "deslizar para escribir" (puntos en píxeles). */
+        fun onGesture(xs: FloatArray, ys: FloatArray, count: Int)
     }
 
     companion object {
@@ -63,6 +65,50 @@ class KeyboardView(context: Context) : View(context) {
     var spaceLabel = ""
         set(v) { if (field != v) { field = v; invalidate() } }
     var showPreview = true
+    /** Deslizar para escribir (solo en las letras y en campos de texto normales). */
+    var swipeEnabled = false
+
+    // Trazo del dedo al deslizar
+    private var gestureCandidate = false
+    private var gesturing = false
+    private var downY = 0f
+    private var gx = FloatArray(512)
+    private var gy = FloatArray(512)
+    private var gCount = 0
+    private val trail = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val trailPath = Path()
+
+    private fun addGesturePoint(x: Float, y: Float) {
+        if (gCount == gx.size) {
+            gx = gx.copyOf(gx.size * 2)
+            gy = gy.copyOf(gy.size * 2)
+        }
+        gx[gCount] = x
+        gy[gCount] = y
+        gCount++
+    }
+
+    /** Centros de las letras (para el cerebro del deslizar). */
+    fun letterCenters(): List<com.luisell.bestkeyboard.words.GestureDecoder.KeyPos> {
+        val out = ArrayList<com.luisell.bestkeyboard.words.GestureDecoder.KeyPos>()
+        for (row in rows) for (k in row) {
+            if (k.code == 0 && k.label.length == 1 && k.label[0].isLetter()) {
+                out.add(com.luisell.bestkeyboard.words.GestureDecoder.KeyPos(k.label[0].lowercaseChar(), k.rect.centerX(), k.rect.centerY()))
+            }
+        }
+        return out
+    }
+
+    /** Ancho de una tecla de letra. */
+    fun letterWidth(): Float {
+        for (row in rows) for (k in row) if (k.code == 0 && k.label.length == 1 && k.label[0].isLetter()) return k.cell.width()
+        return 0f
+    }
+
     /** Ilumina el botón de traducir mientras traduces. */
     var translateOn = false
         set(v) { if (field != v) { field = v; invalidate() } }
@@ -148,6 +194,8 @@ class KeyboardView(context: Context) : View(context) {
 
     /** Cancela cualquier toque en curso (por ejemplo al cerrar el teclado). */
     fun reset() {
+        gestureCandidate = false
+        if (gesturing) { gesturing = false; gCount = 0 }
         handler.removeCallbacksAndMessages(null)
         activeKey = null
         activeId = -1
@@ -228,6 +276,8 @@ class KeyboardView(context: Context) : View(context) {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> startPointer(e.getPointerId(0), e.getX(0), e.getY(0))
             MotionEvent.ACTION_POINTER_DOWN -> {
+                // Mientras deslizas para escribir, otro dedo no interrumpe
+                if (gesturing) return true
                 // Escritura rápida: si tocas otra tecla antes de soltar, la anterior se escribe ya
                 if (activeId != -1) releasePointer(true)
                 val i = e.actionIndex
@@ -264,6 +314,12 @@ class KeyboardView(context: Context) : View(context) {
         val key = findKey(x, y) ?: return
         activeKey = key
         listener?.onKeyFeedback()
+        // ¿Podría empezar un trazo? (solo desde una letra)
+        gestureCandidate = swipeEnabled && key.code == 0 && key.label.length == 1 && key.label[0].isLetter()
+        gesturing = false
+        gCount = 0
+        downY = y
+        if (gestureCandidate) addGesturePoint(x, y)
         when (key.code) {
             Codes.DELETE -> {
                 listener?.onDeletePress()
@@ -279,8 +335,27 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun movePointer(x: Float, y: Float) {
+        if (gesturing) {
+            val lx = gx[gCount - 1]
+            val ly = gy[gCount - 1]
+            if (abs(x - lx) + abs(y - ly) > 2f * d) addGesturePoint(x, y)
+            invalidate()
+            return
+        }
         val key = activeKey ?: return
         val alts = altKeys
+        if (gestureCandidate && alts == null && !longPressed) {
+            addGesturePoint(x, y)
+            // Si el dedo se aleja de la primera tecla, es un trazo (no un toque)
+            val limit = key.cell.width() * 0.6f
+            if (abs(x - downX) > limit || abs(y - downY) > key.cell.height() * 0.6f) {
+                gesturing = true
+                handler.removeCallbacks(longPressRunnable)
+                activeKey = null
+                invalidate()
+                return
+            }
+        }
         if (alts != null) {
             val sel = ((x - altLeft - altPad) / altCellW).toInt().coerceIn(0, alts.size - 1)
             if (sel != altSel) { altSel = sel; invalidate() }
@@ -317,6 +392,16 @@ class KeyboardView(context: Context) : View(context) {
         handler.removeCallbacks(longPressRunnable)
         handler.removeCallbacks(repeatRunnable)
         activeId = -1
+        if (gesturing) {
+            gesturing = false
+            gestureCandidate = false
+            val n = gCount
+            gCount = 0
+            invalidate()
+            if (commit && n >= 2) listener?.onGesture(gx.copyOf(n), gy.copyOf(n), n)
+            return
+        }
+        gestureCandidate = false
         if (stripPressed >= 0) {
             val action = stripPressed
             stripPressed = -1
@@ -390,9 +475,24 @@ class KeyboardView(context: Context) : View(context) {
         c.drawColor(p.bg)
         drawStrip(c, p)
         for (row in rows) for (k in row) drawKey(c, k, p)
+        if (gesturing && gCount > 1) drawTrail(c, p)
         val ak = activeKey
         if (altKeys != null) drawAlts(c, p)
         else if (ak != null && showPreview && ak.code == 0 && !longPressed) drawPreview(c, ak, p)
+    }
+
+    /** La estela azul del dedo al deslizar (más fina en la cola). */
+    private fun drawTrail(c: Canvas, p: Palette) {
+        trail.color = p.accent
+        val start = maxOf(0, gCount - 60)
+        val segs = gCount - 1 - start
+        for (i in start until gCount - 1) {
+            val f = (i - start + 1).toFloat() / segs.coerceAtLeast(1)
+            trail.strokeWidth = (2f + 5f * f) * d
+            trail.alpha = (80 + 175 * f).toInt()
+            c.drawLine(gx[i], gy[i], gx[i + 1], gy[i + 1], trail)
+        }
+        trail.alpha = 255
     }
 
     private fun st(color: Int) {

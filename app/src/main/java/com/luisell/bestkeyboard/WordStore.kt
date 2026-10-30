@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.luisell.bestkeyboard.words.Dictionary
+import com.luisell.bestkeyboard.words.GestureDecoder
 import com.luisell.bestkeyboard.words.UserData
 import com.luisell.bestkeyboard.words.WordEngine
 import java.io.File
@@ -18,6 +19,9 @@ object WordStore {
     private val main = Handler(Looper.getMainLooper())
 
     @Volatile var engine: WordEngine? = null
+        private set
+    /** Cerebro de "deslizar para escribir" (se prepara justo después de los diccionarios). */
+    @Volatile var gesture: GestureDecoder? = null
         private set
     private var loading = false
     private var userFile: File? = null
@@ -38,6 +42,10 @@ object WordStore {
             val user = UserData()
             try { user.load(file) } catch (_: Exception) { }
             val e = WordEngine(listOf(es, en), user)
+            io.execute {
+                val g = try { GestureDecoder(listOf(es, en), user) } catch (_: Throwable) { null }
+                main.post { gesture = g }
+            }
             main.post {
                 engine = e
                 loading = false

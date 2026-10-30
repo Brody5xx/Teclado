@@ -175,6 +175,7 @@ class MainActivity : Activity() {
 
         section("Sugerencias y autocorrector")
         switch("Mostrar sugerencias de palabras", Prefs.SUGGEST, true)
+        switch("Deslizar el dedo para escribir", Prefs.SWIPE, true)
         switch("Autocorrector (corrige al tocar espacio)", Prefs.AUTOCORRECT, true)
         switch("Aprender mis palabras (nombres, palabras del trabajo)", Prefs.LEARN, true)
         text(
@@ -247,6 +248,8 @@ class MainActivity : Activity() {
                 "• Mantén presionado el punto para ¿ ? ¡ ! y más signos.\n" +
                 "• Toca ⇧ dos veces seguidas para escribir TODO EN MAYÚSCULAS.\n" +
                 "• Desliza el dedo sobre la barra espaciadora para mover el cursor.\n" +
+                "• Desliza el dedo por las letras sin soltarlo para escribir una palabra entera. Si salió otra, " +
+                "toca la correcta arriba; borrar ⌫ justo después quita la palabra entera.\n" +
                 "• Toca una sugerencia de arriba para escribirla. La del centro en negrita es la corrección.\n" +
                 "• Si la palabra que escribiste sale entre comillas “así”, tócala para que el teclado la aprenda.\n" +
                 "• Emojis: toca 😊 arriba del teclado, o mantén presionada la coma.\n" +
@@ -260,7 +263,16 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 5")
+        section("Novedades — Versión 6")
+        text(
+            "• Deslizar para escribir ✍: pasa el dedo por las letras sin soltarlo y se escribe la palabra, " +
+                "en español o inglés. Se ve la estela azul del dedo.\n" +
+                "• Pone el espacio solo entre palabras deslizadas.\n" +
+                "• Arriba salen otras palabras posibles por si no era esa; ⌫ borra la palabra entera.\n" +
+                "• Aprende tus palabras y nombres para adivinarlos mejor con el uso.", 14f,
+        )
+
+        section("Versión 5")
         text(
             "• Escanear texto 📷 dentro del teclado (como Gboard): foto → eliges las palabras con el dedo → " +
                 "Insertar, y se escriben al instante.\n" +
@@ -297,9 +309,10 @@ class MainActivity : Activity() {
                 "• Todo funciona sin internet y lo aprendido se guarda solo en tu teléfono.", 14f,
         )
 
-        section("Próximamente")
+        section("Todas las funciones listas ✅")
         text(
-            "v6: deslizar el dedo para escribir", 14f,
+            "Español e inglés, autocorrector, sugerencias, emojis, temas, vibración, dictado por voz, " +
+                "deslizar para escribir, escanear texto, portapapeles infinito con imágenes y traducción.", 14f,
         )
         return sv
     }

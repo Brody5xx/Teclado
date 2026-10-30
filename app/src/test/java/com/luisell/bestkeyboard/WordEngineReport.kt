@@ -81,6 +81,56 @@ class WordEngineReport {
             sb.append("  ").append(t).append(" -> ").append(com.luisell.bestkeyboard.words.VoiceText.process(t, "en").replace("\n", "⏎")).append('\n')
         }
 
+        // ---------------------------------------------------------------- Deslizar
+        sb.append("\n== Deslizar para escribir (trazos simulados) ==\n")
+        val dec = com.luisell.bestkeyboard.words.GestureDecoder(listOf(es, en), UserData())
+        val kw = 100f
+        val keys = ArrayList<com.luisell.bestkeyboard.words.GestureDecoder.KeyPos>()
+        "qwertyuiop".forEachIndexed { i, c -> keys.add(com.luisell.bestkeyboard.words.GestureDecoder.KeyPos(c, (i + 0.5f) * kw, 0.5f * 125f)) }
+        "asdfghjklñ".forEachIndexed { i, c -> keys.add(com.luisell.bestkeyboard.words.GestureDecoder.KeyPos(c, (i + 0.5f) * kw, 1.5f * 125f)) }
+        "zxcvbnm".forEachIndexed { i, c -> keys.add(com.luisell.bestkeyboard.words.GestureDecoder.KeyPos(c, (2f + i) * kw, 2.5f * 125f)) }
+        val pos = keys.associateBy { it.ch }
+        val rnd = java.util.Random(7)
+        fun synth(word: String): Pair<FloatArray, FloatArray> {
+            val k = com.luisell.bestkeyboard.words.GestureDecoder.keyChars(word)
+            val px = ArrayList<Float>(); val py = ArrayList<Float>()
+            val cx = k.map { pos[it]!!.x + rnd.nextGaussian().toFloat() * 25f }
+            val cy = k.map { pos[it]!!.y + rnd.nextGaussian().toFloat() * 25f }
+            for (i in 0 until k.length - 1) for (t in 0 until 8) {
+                val f = t / 8f
+                px.add(cx[i] + (cx[i + 1] - cx[i]) * f); py.add(cy[i] + (cy[i + 1] - cy[i]) * f)
+            }
+            px.add(cx.last()); py.add(cy.last())
+            // Suavizado (el dedo redondea las esquinas)
+            val sx = FloatArray(px.size); val sy = FloatArray(py.size)
+            for (i in px.indices) {
+                var ax = 0f; var ay = 0f; var n = 0
+                for (j in maxOf(0, i - 2)..minOf(px.size - 1, i + 2)) { ax += px[j]; ay += py[j]; n++ }
+                sx[i] = ax / n; sy[i] = ay / n
+            }
+            sx[0] = px[0]; sy[0] = py[0]; sx[sx.size - 1] = px.last(); sy[sy.size - 1] = py.last()
+            return Pair(sx, sy)
+        }
+        val tests = listOf(
+            "es" to "hola gracias trabajo cámara puerta instalación cable también mañana necesito hospital acceso revisar listo bueno cuando donde quiero tengo tiempo gente estoy mucho porque fibra cerradura llegué jefe cliente edificio problema",
+            "en" to "the door camera access thanks hello work done today please reader cable install tomorrow meeting",
+        )
+        var total = 0; var top1 = 0; var top3 = 0
+        val t2 = System.nanoTime()
+        val fails = ArrayList<String>()
+        for ((lg, list) in tests) for (w in list.split(" ")) repeat(3) {
+            val (x, y) = synth(w)
+            val r = dec.decode(x, y, x.size, keys, kw, lg, null)
+            total++
+            if (r.isNotEmpty() && r[0].equals(w, true)) top1++
+            if (r.take(3).any { it.equals(w, true) }) top3++ else if (fails.size < 10) fails.add("$w→${r.take(3)}")
+        }
+        val gMs = (System.nanoTime() - t2) / 1_000_000.0 / total
+        sb.append("  Acierta a la primera: $top1/$total (${top1 * 100 / total}%)\n")
+        sb.append("  Entre las 3 de arriba: $top3/$total (${top3 * 100 / total}%)\n")
+        sb.append("  Velocidad: %.1f ms por trazo (en PC)\n".format(gMs))
+        sb.append("  Fallos: $fails\n")
+
         val out = File("build/reporte-pruebas.txt")
         out.parentFile.mkdirs()
         out.writeText(sb.toString())

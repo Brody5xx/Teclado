@@ -88,6 +88,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var lastClipSig: String? = null
     private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
 
+    // Deslizar para escribir
+    private var swipeOn = true
+    /** Palabra que acabas de escribir deslizando (y sus alternativas para la barra). */
+    private var gestureWord: String? = null
+    private var gestureAlts: List<String> = emptyList()
+    /** Después de deslizar, la próxima letra o palabra pone un espacio antes (como Gboard). */
+    private var phantomSpace = false
+
     // Escáner dentro del teclado (panel 4)
     private var scanPanel: ScanPanel? = null
     private var panelBox: PanelBox? = null
@@ -527,6 +535,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun commitPanelText(text: String) {
         val ic = target() ?: return
+        gestureWord = null
+        phantomSpace = false
         ic.commitText(text, 1)
         lastCorrection = null
         autoSpace = false
@@ -740,6 +750,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         suggestOn = prefs.getBoolean(Prefs.SUGGEST, true)
         autocorrectOn = prefs.getBoolean(Prefs.AUTOCORRECT, true)
         learnOn = prefs.getBoolean(Prefs.LEARN, true)
+        swipeOn = prefs.getBoolean(Prefs.SWIPE, true)
+        v.swipeEnabled = swipeOn && page == Page.LETTERS && fieldSuggest
 
         val newNumberRow = prefs.getBoolean(Prefs.NUMBER_ROW, true)
         if (newNumberRow != numberRow) {
@@ -772,6 +784,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         v.setRows(rows)
         v.shift = if (page == Page.LETTERS) shift else 0
+        v.swipeEnabled = swipeOn && page == Page.LETTERS && fieldSuggest
     }
 
     private fun setShift(s: Int) {
@@ -837,6 +850,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (after.isNotEmpty() && TextUtil.isWordChar(after[0])) { clearSlots(); return }
 
         val word = TextUtil.currentWord(before)
+        // Recién deslizaste: la barra muestra las otras palabras posibles
+        val gw = gestureWord
+        if (gw != null) {
+            if (word == gw) {
+                val others = gestureAlts.filter { it != gw }
+                showSlots(others.getOrNull(0), gw, others.getOrNull(1), bold = false, typedLeft = false)
+                return
+            }
+            gestureWord = null
+        }
         if (word.isEmpty()) {
             // Predicción: lo que sueles escribir después de la palabra anterior
             val prev = TextUtil.previousWord(before, 0)
@@ -868,6 +891,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onSuggestion(slot: Int) {
         val w = slotWords.getOrNull(slot) ?: return
+        gestureWord = null
+        phantomSpace = false
         val ic = target() ?: return
         val before = ic.getTextBeforeCursor(48, 0) ?: ""
         val cur = TextUtil.currentWord(before)
@@ -924,6 +949,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onKeyText(text: String) {
         val ic = target() ?: return
+        val phantom = phantomSpace
+        phantomSpace = false
+        gestureWord = null
+        if (phantom && text.isNotEmpty() && text[0].isLetterOrDigit()) ic.commitText(" ", 1)
         var t = text
         if (page == Page.LETTERS && shift > 0 && t.length == 1) {
             t = Character.toUpperCase(t[0]).toString()
@@ -963,7 +992,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onKeyCode(code: Int) {
         val ic = target()
-        if (code != Codes.SHIFT) lastCorrection = null
+        if (code != Codes.SHIFT) {
+            lastCorrection = null
+            phantomSpace = false
+            gestureWord = null
+        }
         when (code) {
             Codes.SPACE -> {
                 if (ic == null) return
@@ -1047,6 +1080,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val ic = target() ?: return
         autoSpace = false
         lastWasSpace = false
+        phantomSpace = false
+        // Borrar justo después de deslizar borra la palabra entera
+        val gw = gestureWord
+        gestureWord = null
+        if (gw != null) {
+            val before = ic.getTextBeforeCursor(gw.length, 0)
+            if (before != null && before.toString() == gw) {
+                ic.deleteSurroundingText(gw.length, 0)
+                return
+            }
+        }
         val lc = lastCorrection
         lastCorrection = null
         if (lc != null) {
@@ -1072,6 +1116,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onCursorMove(steps: Int) {
         if (target() == null) return
+        gestureWord = null
+        phantomSpace = false
         val key = if (steps > 0) KeyEvent.KEYCODE_DPAD_RIGHT else KeyEvent.KEYCODE_DPAD_LEFT
         repeat(kotlin.math.abs(steps)) { sendKey(key) }
         if (translating) { updateAutoCaps(); scheduleUpdate() }
@@ -1106,6 +1152,44 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
         }
+    }
+
+    override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) {
+        val v = kv ?: return
+        val ic = target() ?: return
+        val dec = WordStore.gesture ?: return
+        val before = ic.getTextBeforeCursor(48, 0) ?: ""
+        // Si estabas a mitad de una palabra escrita con toques, termínala primero
+        val partial = TextUtil.currentWord(before)
+        val prev = if (partial.isEmpty()) TextUtil.previousWord(before, 0) else partial
+        val found = dec.decode(xs, ys, count, v.letterCenters(), v.letterWidth(), lang, prev)
+        if (found.isEmpty()) return
+        fun cased(w: String) = when {
+            shift == 2 -> w.uppercase()
+            shift == 1 -> w.replaceFirstChar { it.uppercaseChar() }
+            else -> w
+        }
+        val words = found.map { cased(it) }
+        val word = words[0]
+        val last = if (before.isEmpty()) ' ' else before[before.length - 1]
+        val needSpace = before.isNotEmpty() && !last.isWhitespace() && last !in "¿¡(\"'“‘@#/"
+        ic.beginBatchEdit()
+        ic.commitText((if (needSpace) " " else "") + word, 1)
+        ic.endBatchEdit()
+        val eng = WordStore.engine
+        if (eng != null && learnOn && fieldLearn) {
+            eng.user.add(word)
+            if (prev != null) eng.user.addBigram(prev, word)
+            WordStore.scheduleSave()
+        }
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+        gestureWord = word
+        gestureAlts = words
+        phantomSpace = true
+        if (shift == 1) { manualShift = false; setShift(0) }
+        scheduleUpdate()
     }
 
     override fun onLongPressGlobe() {
