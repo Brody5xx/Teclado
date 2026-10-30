@@ -94,6 +94,22 @@ class MainActivity : Activity() {
 
     private lateinit var camBtn: Button
 
+    /** Abre la pantalla de Android donde se elige el corrector ortográfico. */
+    private fun openSpellSettings() {
+        val tries = listOf(
+            Intent().setClassName("com.android.settings", "com.android.settings.Settings\$SpellCheckersSettingsActivity"),
+            Intent("android.settings.SPELL_CHECKER_SETTINGS"),
+            Intent(Settings.ACTION_INPUT_METHOD_SETTINGS),
+        )
+        for (i in tries) {
+            try {
+                startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return
+            } catch (_: Exception) { }
+        }
+        Toast.makeText(this, "Búscalo en Ajustes → Sistema → Idiomas → Corrector ortográfico.", Toast.LENGTH_LONG).show()
+    }
+
     private fun refreshMic() {
         if (::micBtn.isInitialized) {
             micBtn.text = if (micGranted()) "✓ Micrófono permitido" else "🎤 Permitir el micrófono para dictar"
@@ -195,6 +211,19 @@ class MainActivity : Activity() {
                 .show()
         }
 
+        section("Corrector ortográfico ✔")
+        text(
+            "Subraya en rojo las palabras mal escritas en tus apps (Gmail, Mensajes, notas...) en español E " +
+                "inglés. Toca la palabra subrayada para ver las correcciones. Para encenderlo:", 13f, faded = true,
+        )
+        button("1. Abrir los ajustes del corrector ortográfico") { openSpellSettings() }
+        text(
+            "2. Enciende \"Usar corrector ortográfico\" y elige \"Best Keyboard\" como corrector.\n" +
+                "Si el botón no te lleva directo: Ajustes → Sistema → Idiomas (o Teclado) → Corrector ortográfico.",
+            13f, faded = true,
+        )
+        switch("Corrector ortográfico activo", Prefs.SPELL, true)
+
         section("Dictado por voz 🎤")
         micBtn = button("🎤 Permitir el micrófono para dictar") { askMic() }
         text(
@@ -263,7 +292,13 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 6")
+        section("Novedades — Versión 6.1")
+        text(
+            "• Corrector ortográfico ✔ para todo el teléfono: subraya en rojo las palabras mal escritas en " +
+                "español e inglés y te da las correcciones al tocarlas.", 14f,
+        )
+
+        section("Versión 6")
         text(
             "• Deslizar para escribir ✍: pasa el dedo por las letras sin soltarlo y se escribe la palabra, " +
                 "en español o inglés. Se ve la estela azul del dedo.\n" +
@@ -311,7 +346,7 @@ class MainActivity : Activity() {
 
         section("Todas las funciones listas ✅")
         text(
-            "Español e inglés, autocorrector, sugerencias, emojis, temas, vibración, dictado por voz, " +
+            "Español e inglés, autocorrector, corrector ortográfico, sugerencias, emojis, temas, vibración, dictado por voz, " +
                 "deslizar para escribir, escanear texto, portapapeles infinito con imágenes y traducción.", 14f,
         )
         return sv

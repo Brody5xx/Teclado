@@ -172,6 +172,62 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return best
     }
 
+    // ---------------------------------------------------------------- Revisión ortográfica
+
+    /** Resultado de revisar una palabra: si está mal y cómo podría escribirse. */
+    class Spell(val misspelled: Boolean, val suggestions: List<String>)
+
+    /**
+     * Revisa una palabra para el corrector ortográfico de Android (subrayado rojo en las apps).
+     * Acepta palabras en español E inglés, y las que el teclado aprendió de ti.
+     */
+    fun spellCheck(typed: String, lang: String, max: Int = 5): Spell {
+        val ok = Spell(false, emptyList())
+        val w = typed.trim('\'', '’', '"', '“', '”', '¿', '¡', '(', ')')
+        if (w.length < 2 || w.length > 40) return ok
+        if (w.any { it.isDigit() || it == '@' || it == '/' || it == '.' || it == '_' || it == '#' }) return ok
+        val letters = w.filter { it.isLetter() }
+        if (letters.length > 1 && letters.all { it.isUpperCase() }) return ok   // siglas: RUMC, DVSS
+        if (w.drop(1).any { it.isUpperCase() }) return ok                         // iPhone, McDonald
+        val lower = w.lowercase()
+
+        val fix = correction(w, lang)?.let { TextUtil.matchCase(it, w) }
+        val known = isKnown(lower)
+        if (known && (fix == null || fix.equals(w, true) && fix == w)) return ok
+        if (known && fix != null && fix.lowercase() == lower && fix != w) {
+            // Solo la mayúscula especial: "i" -> "I", "i'm" -> "I'm"
+            return Spell(true, listOf(fix))
+        }
+
+        // Varias opciones (la corrección principal primero)
+        val top = TopN(max + 2)
+        if (fix != null && !fix.equals(w, true)) top.offer(fix.lowercase(), fix, 1000f)
+        val tf = TextUtil.fold(lower)
+        for (d in dicts) {
+            val i = d.bestForFold(tf)
+            if (i >= 0 && d.logFreq[i] >= MIN_ACCENT_LF && keepsMarks(lower, d.words[i]))
+                top.offer(d.words[i].lowercase(), d.words[i], 100f + d.logFreq[i] + langBonus(d, lang))
+        }
+        if (tf.length >= 3) {
+            edits(tf) { variant, penalty ->
+                for (d in dicts) {
+                    val i = d.bestForFold(variant)
+                    if (i < 0 || d.logFreq[i] < MIN_EDIT_LF) continue
+                    val key = d.words[i].lowercase()
+                    val marks = if (keepsMarks(lower, d.words[i])) 0f else -2.5f
+                    top.offer(key, d.words[i], d.logFreq[i] + langBonus(d, lang) + penalty + marks + userBonus(key))
+                }
+            }
+            for (d in dicts) {
+                val i = d.bestForSound(tf)
+                if (i >= 0 && d.folds[i] != tf && d.logFreq[i] >= MIN_EDIT_LF)
+                    top.offer(d.words[i].lowercase(), d.words[i], d.logFreq[i] + langBonus(d, lang) - 2.2f)
+            }
+        }
+        val list = top.words().filter { !it.equals(w, true) }.map { TextUtil.matchCase(it, w) }.distinct().take(max)
+        return Spell(true, list)
+    }
+
     /** Genera todas las variantes a una "tecla" de distancia, con su castigo. */
     private inline fun edits(w: String, visit: (String, Float) -> Unit) {
         val n = w.length

@@ -81,6 +81,17 @@ class WordEngineReport {
             sb.append("  ").append(t).append(" -> ").append(com.luisell.bestkeyboard.words.VoiceText.process(t, "en").replace("\n", "⏎")).append('\n')
         }
 
+        // ---------------------------------------------------------------- Corrector ortográfico
+        sb.append("\n== Corrector ortográfico (subrayado rojo) ==\n")
+        for ((lg, w) in listOf(
+            "es" to "tambien", "es" to "nesecito", "es" to "trabjo", "es" to "aqui", "es" to "hola",
+            "es" to "mañana", "es" to "door", "es" to "RUMC", "es" to "Luisell", "es" to "instalacion",
+            "en" to "recieve", "en" to "becuase", "en" to "i", "en" to "camera", "en" to "hola", "en" to "dont",
+        )) {
+            val r = eng.spellCheck(w, lg)
+            sb.append("  [$lg] $w -> ").append(if (r.misspelled) "MAL ${r.suggestions}" else "bien").append('\n')
+        }
+
         // ---------------------------------------------------------------- Deslizar
         sb.append("\n== Deslizar para escribir (trazos simulados) ==\n")
         val dec = com.luisell.bestkeyboard.words.GestureDecoder(listOf(es, en), UserData())
