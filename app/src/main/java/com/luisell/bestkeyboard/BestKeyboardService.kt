@@ -192,6 +192,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         tb.actions = object : TranslateBar.Actions {
             override fun onTranslateClose() { onKeyFeedback(); stopTranslate() }
             override fun onTranslateSwap() { onKeyFeedback(); swapTranslate() }
+            override fun onTranslateCursor() {
+                onKeyFeedback()
+                lastCorrection = null
+                autoSpace = false
+                lastWasSpace = false
+                updateAutoCaps()
+                scheduleUpdate()
+            }
             override fun onTranslateSource(text: String) {
                 handler.removeCallbacks(translateRunnable)
                 handler.postDelayed(translateRunnable, 250)
@@ -358,6 +366,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         tb.visibility = View.VISIBLE
         translating = true
         kv?.translateOn = true
+        tb.startCursor()
         lastTranslatedSrc = ""
         pendingSend = false
         lastCorrection = null

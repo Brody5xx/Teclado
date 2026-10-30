@@ -24,6 +24,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         fun onTranslateClose()
         fun onTranslateSwap()
         fun onTranslateSource(text: String)
+        fun onTranslateCursor()
     }
 
     var actions: Actions? = null
@@ -34,7 +35,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
     private val from = TextView(context)
     private val swap = TextView(context)
     private val to = TextView(context)
-    val box = EditText(context)
+    val box = CursorBox(context)
     private val status = TextView(context)
     private var silent = false
 
@@ -80,6 +81,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         box.showSoftInputOnFocus = false
         box.isFocusable = false
         box.setPadding(d(14f), d(8f), d(14f), d(8f))
+        box.onTapMoved = { actions?.onTranslateCursor() }
         addView(box, LayoutParams(-1, -2).apply { topMargin = d(6f) })
 
         status.textSize = 12f
@@ -134,6 +136,12 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         Selection.setSelection(e, (pos + steps).coerceIn(0, e.length))
     }
 
+    /** Muestra el cursor parpadeando al abrir el traductor. */
+    fun startCursor() {
+        box.text?.let { if (Selection.getSelectionEnd(it) < 0) Selection.setSelection(it, it.length) }
+        box.resetBlink()
+    }
+
     /** Vacía la caja sin traducir. */
     fun clear() {
         silent = true
@@ -154,6 +162,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
             t.background = PanelUi.pressable(p.accent, p.accentPressed, r)
         }
         box.setTextColor(p.text)
+        box.cursorColor = p.accent
         box.setHintTextColor(p.hint)
         val bg = android.graphics.drawable.GradientDrawable()
         bg.setColor(p.key)
@@ -161,5 +170,78 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         bg.setStroke(d(1.5f), p.accent)
         box.background = bg
         status.setTextColor(p.hint)
+    }
+}
+
+/**
+ * Caja de texto del traductor con cursor propio que parpadea (Android no dibuja el cursor
+ * dentro de un teclado) y que deja tocar entre las palabras para escribir ahí.
+ */
+@SuppressLint("ViewConstructor", "AppCompatCustomView", "ClickableViewAccessibility")
+class CursorBox(context: Context) : EditText(context) {
+    /** Se llama cuando tocas la caja para mover el cursor. */
+    var onTapMoved: (() -> Unit)? = null
+    var cursorColor = 0xFF8AB4F8.toInt()
+    private var ready = false
+    private var blinkOn = true
+    private val cursorPaint = android.graphics.Paint()
+    private val blink = object : Runnable {
+        override fun run() {
+            if (!isShown) { blinkOn = true; return }
+            blinkOn = !blinkOn
+            invalidate()
+            postDelayed(this, 500)
+        }
+    }
+
+    init { ready = true }
+
+    /** Enciende el cursor y vuelve a empezar el parpadeo (después de escribir o mover). */
+    fun resetBlink() {
+        if (!ready) return
+        blinkOn = true
+        removeCallbacks(blink)
+        postDelayed(blink, 500)
+        invalidate()
+    }
+
+    override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+        super.onSelectionChanged(selStart, selEnd)
+        if (!ready) return
+        if (selEnd >= 0) bringPointIntoView(selEnd)
+        resetBlink()
+    }
+
+    override fun onDetachedFromWindow() {
+        if (ready) removeCallbacks(blink)
+        super.onDetachedFromWindow()
+    }
+
+    override fun onDraw(canvas: android.graphics.Canvas) {
+        super.onDraw(canvas)
+        if (!ready || !blinkOn) return
+        val l = layout ?: return
+        val e = text ?: return
+        var sel = Selection.getSelectionEnd(e)
+        if (sel < 0) sel = e.length
+        val line = l.getLineForOffset(sel)
+        val x = compoundPaddingLeft + l.getPrimaryHorizontal(sel)
+        val top = extendedPaddingTop + l.getLineTop(line).toFloat()
+        val bottom = extendedPaddingTop + l.getLineBottom(line).toFloat()
+        val w = resources.displayMetrics.density * 2f
+        cursorPaint.color = cursorColor
+        canvas.drawRect(x - w / 2, top + w, x + w / 2, bottom - w, cursorPaint)
+    }
+
+    override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+        if (event.actionMasked == android.view.MotionEvent.ACTION_UP) {
+            val off = getOffsetForPosition(event.x, event.y)
+            val e = text
+            if (off >= 0 && e != null) {
+                Selection.setSelection(e, off.coerceIn(0, e.length))
+                onTapMoved?.invoke()
+            }
+        }
+        return true
     }
 }
