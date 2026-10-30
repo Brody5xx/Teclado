@@ -310,6 +310,11 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         private var selA = -1
         private var selB = -1
         private var anchor = -1
+        /** Qué gotita estás arrastrando: 0 = ninguna, 1 = la del inicio, 2 = la del final. */
+        private var dragHandle = 0
+        private val handleR get() = 11f * dens
+        private val startPt = android.graphics.PointF()
+        private val endPt = android.graphics.PointF()
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         private val dst = RectF()
         private val tmp = RectF()
@@ -365,6 +370,45 @@ class ScanPanel(context: Context) : FrameLayout(context) {
                 paint.color = if (sel) (accent and 0x00FFFFFF) or 0x77000000 else 0x55FFFFFF
                 c.drawRoundRect(tmp, 4f * dens, 4f * dens, paint)
             }
+            drawHandles(c)
+        }
+
+        /** Las dos gotitas azules: al principio y al final de lo elegido. */
+        private fun drawHandles(c: Canvas) {
+            if (selA < 0 || selB < 0 || selA >= words.size || selB >= words.size) return
+            val pad = 2f * dens
+            toScreen(words[selA].box, tmp)
+            startPt.set(tmp.left - pad, tmp.bottom + pad)
+            toScreen(words[selB].box, tmp)
+            endPt.set(tmp.right + pad, tmp.bottom + pad)
+            val r = handleR
+            paint.color = accent
+            // Inicio: gotita colgando hacia la izquierda, con la punta en la esquina de la palabra
+            c.drawCircle(startPt.x - r, startPt.y + r, r, paint)
+            c.drawRect(startPt.x - r, startPt.y, startPt.x, startPt.y + r, paint)
+            // Final: gotita colgando hacia la derecha
+            c.drawCircle(endPt.x + r, endPt.y + r, r, paint)
+            c.drawRect(endPt.x, endPt.y, endPt.x + r, endPt.y + r, paint)
+        }
+
+        /** ¿Tocaste una gotita? (zona generosa para el dedo) */
+        private fun handleAt(x: Float, y: Float): Int {
+            if (selA < 0 || selB < 0) return 0
+            val r = handleR
+            val reach = 30f * dens
+            fun near(cx: Float, cy: Float): Float {
+                val dx = x - cx
+                val dy = y - cy
+                return dx * dx + dy * dy
+            }
+            val ds = near(startPt.x - r, startPt.y + r)
+            val de = near(endPt.x + r, endPt.y + r)
+            val lim = reach * reach
+            return when {
+                ds <= lim && ds <= de -> 1
+                de <= lim -> 2
+                else -> 0
+            }
         }
 
         private fun toScreen(r: RectF, out: RectF) {
@@ -391,10 +435,27 @@ class ScanPanel(context: Context) : FrameLayout(context) {
             if (words.isEmpty()) return true
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
+                    dragHandle = handleAt(e.x, e.y)
+                    if (dragHandle != 0) return true
                     anchor = wordAt(e.x, e.y)
                     if (anchor >= 0) { selA = anchor; selB = anchor; invalidate(); onSelection?.invoke() }
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    if (dragHandle != 0) {
+                        // Mueve la gotita: el otro extremo se queda fijo
+                        val i = wordAt(e.x, e.y - handleR * 2)
+                        if (i >= 0) {
+                            var a = selA
+                            var b = selB
+                            if (dragHandle == 1) a = i else b = i
+                            if (a > b) {
+                                val t = a; a = b; b = t
+                                dragHandle = if (dragHandle == 1) 2 else 1
+                            }
+                            if (a != selA || b != selB) { selA = a; selB = b; invalidate(); onSelection?.invoke() }
+                        }
+                        return true
+                    }
                     if (anchor < 0) anchor = wordAt(e.x, e.y)
                     val i = wordAt(e.x, e.y)
                     if (anchor >= 0 && i >= 0) {
@@ -403,7 +464,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
                         if (a != selA || b != selB) { selA = a; selB = b; invalidate(); onSelection?.invoke() }
                     }
                 }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> anchor = -1
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { anchor = -1; dragHandle = 0 }
             }
             return true
         }
