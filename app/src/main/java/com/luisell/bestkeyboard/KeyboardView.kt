@@ -47,6 +47,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_TRANSLATE = 5
         const val TOOL_VOICE = 6
         const val TOOL_SCAN = 7
+        const val TOOL_SPELL = 8
         private const val LONG_PRESS_MS = 350L
         private const val REPEAT_START_MS = 400L
     }
@@ -108,6 +109,10 @@ class KeyboardView(context: Context) : View(context) {
         for (row in rows) for (k in row) if (k.code == 0 && k.label.length == 1 && k.label[0].isLetter()) return k.cell.width()
         return 0f
     }
+
+    /** Ilumina el botón de revisar mientras revisas la ortografía. */
+    var spellOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
 
     /** Ilumina el botón de traducir mientras traduces. */
     var translateOn = false
@@ -258,15 +263,15 @@ class KeyboardView(context: Context) : View(context) {
         return toolHit(x)
     }
 
-    private fun toolHit(x: Float): Int = when {
-        x < 54f * d -> TOOL_SETTINGS
-        x < 106f * d -> TOOL_EMOJI
-        x < 158f * d -> TOOL_CLIP
-        x < 210f * d -> TOOL_TRANSLATE
-        x > width - 56f * d -> TOOL_HIDE
-        x > width - 108f * d -> TOOL_VOICE
-        x < 262f * d -> TOOL_SCAN
-        else -> -1
+    /** Herramientas de la izquierda (en orden) y su separación según el ancho de la pantalla. */
+    private val leftTools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL)
+    private fun toolStep(): Float = minOf(52f * d, (width - 112f * d) / leftTools.size)
+
+    private fun toolHit(x: Float): Int {
+        if (x > width - 56f * d) return TOOL_HIDE
+        if (x > width - 108f * d) return TOOL_VOICE
+        val i = (x / toolStep()).toInt()
+        return if (i in leftTools.indices) leftTools[i] else -1
     }
 
     // ---------------------------------------------------------------- Toques
@@ -643,8 +648,11 @@ class KeyboardView(context: Context) : View(context) {
         val s = stripH * 0.22f
         // Orden en pantalla: ajustes, emojis, portapapeles, tema ... esconder
         // (El cambio claro/oscuro está en los ajustes ⚙)
-        val tools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_VOICE, TOOL_HIDE)
-        val xs = floatArrayOf(28f * d, 80f * d, 132f * d, 184f * d, 236f * d, width - 80f * d, width - 28f * d)
+        val step = toolStep()
+        val tools = leftTools + intArrayOf(TOOL_VOICE, TOOL_HIDE)
+        val xs = FloatArray(tools.size) { if (it < leftTools.size) step * (it + 0.5f) else 0f }
+        xs[leftTools.size] = width - 80f * d
+        xs[leftTools.size + 1] = width - 28f * d
         for (n in tools.indices) {
             val i = tools[n]
             val cx = xs[n]
@@ -691,6 +699,14 @@ class KeyboardView(context: Context) : View(context) {
                 }
                 TOOL_TRANSLATE -> {
                     drawLabel(c, "A文", cx, cy, stripH * 0.36f, if (translateOn) p.accent else p.hint)
+                }
+                TOOL_SPELL -> {
+                    // "abc" con una palomita: revisar ortografía
+                    val col = if (spellOn) p.accent else p.hint
+                    drawLabel(c, "abc", cx - s * 0.25f, cy - s * 0.25f, stripH * 0.27f, col)
+                    st(col)
+                    c.drawLine(cx - s * 0.1f, cy + s * 0.6f, cx + s * 0.25f, cy + s * 0.95f, stroke)
+                    c.drawLine(cx + s * 0.25f, cy + s * 0.95f, cx + s * 0.95f, cy + s * 0.2f, stroke)
                 }
                 TOOL_SCAN -> {
                     // Marco de escáner: 4 esquinas y una línea en el medio

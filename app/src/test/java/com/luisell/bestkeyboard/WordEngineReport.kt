@@ -92,6 +92,12 @@ class WordEngineReport {
             sb.append("  [$lg] $w -> ").append(if (r.misspelled) "MAL ${r.suggestions}" else "bien").append('\n')
         }
 
+        sb.append("  Revisión a fondo (botón abc✓):\n")
+        for (w in listOf("Hula", "coma", "estas", "cume", "sensor", "cerradura", "hola")) {
+            val r = eng.spellCheck(w, "es", 5, strict = true)
+            sb.append("    $w -> ").append(if (r.misspelled) (if (r.maybe) "¿Quisiste decir? ${r.suggestions}" else "MAL ${r.suggestions}") else "bien").append('\n')
+        }
+
         // ---------------------------------------------------------------- Deslizar
         sb.append("\n== Deslizar para escribir (trazos simulados) ==\n")
         val dec = com.luisell.bestkeyboard.words.GestureDecoder(listOf(es, en), UserData())

@@ -24,6 +24,7 @@ import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputContentInfo
 import android.widget.FrameLayout
@@ -87,6 +88,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var clipHistoryOn = true
     private var lastClipSig: String? = null
     private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
+
+    // Revisar ortografía palabra por palabra
+    private class SpellErr(var start: Int, var end: Int, val word: String, val sugg: List<String>, val maybe: Boolean)
+    private var sBar: SpellBar? = null
+    private var spellErrors = ArrayList<SpellErr>()
+    private var spellIdx = 0
+    private var spellOn = false
+    private var selStart = 0
+    private var selEnd = 0
 
     // Deslizar para escribir
     private var swipeOn = true
@@ -241,8 +251,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         tBar = tb
         translating = false
+        val sb = SpellBar(this)
+        sb.visibility = View.GONE
+        sb.actions = object : SpellBar.Actions {
+            override fun onSpellPick(word: String) { onKeyFeedback(); spellPick(word) }
+            override fun onSpellSkip() { onKeyFeedback(); spellShow(spellIdx + 1) }
+            override fun onSpellLearn() { onKeyFeedback(); spellLearn() }
+            override fun onSpellClose() { onKeyFeedback(); stopSpell() }
+        }
+        sBar = sb
+        spellOn = false
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
+        root.addView(sb, LinearLayout.LayoutParams(-1, -2))
         root.addView(tb, LinearLayout.LayoutParams(-1, -2))
         root.addView(box, LinearLayout.LayoutParams(-1, -2))
 
@@ -413,6 +434,110 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         lastCorrection = null
         autoSpace = false
         lastWasSpace = false
+    }
+
+    // ---------------------------------------------------------------- Revisar ortografía
+
+    /** Revisa todo el texto y empieza a mostrar los errores uno por uno. */
+    private fun startSpell() {
+        if (isPassword || !fieldSuggest) {
+            Toast.makeText(this, "Aquí no se puede revisar la ortografía.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (translating) stopTranslate()
+        if (mode != 0) showMode(0)
+        val ic = currentInputConnection ?: return
+        val eng = WordStore.engine ?: run {
+            Toast.makeText(this, "Un momento, el diccionario se está cargando…", Toast.LENGTH_SHORT).show()
+            return
+        }
+        // Todo el texto del cuadro (o lo que la app deje leer alrededor del cursor)
+        var text: String
+        var base: Int
+        val et = try {
+            ic.getExtractedText(ExtractedTextRequest().apply { hintMaxChars = 50000; hintMaxLines = 2000 }, 0)
+        } catch (_: Exception) { null }
+        if (et?.text != null) {
+            text = et.text.toString()
+            base = et.startOffset
+        } else {
+            val before = ic.getTextBeforeCursor(5000, 0)?.toString() ?: ""
+            val after = ic.getTextAfterCursor(5000, 0)?.toString() ?: ""
+            text = before + after
+            base = minOf(selStart, selEnd) - before.length
+        }
+        if (base < 0) base = 0
+        spellErrors = ArrayList()
+        for (m in Regex("[\\p{L}'’]+").findAll(text)) {
+            val r = try { eng.spellCheck(m.value, lang, 5, strict = true) } catch (_: Exception) { null } ?: continue
+            if (r.misspelled) spellErrors.add(SpellErr(base + m.range.first, base + m.range.last + 1, m.value, r.suggestions, r.maybe))
+        }
+        val bar = sBar ?: return
+        spellOn = true
+        bar.visibility = View.VISIBLE
+        bar.resetButtons()
+        kv?.spellOn = true
+        if (spellErrors.isEmpty()) {
+            bar.message("✅ No encontré errores de ortografía.")
+            handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2500)
+            return
+        }
+        spellShow(0)
+    }
+
+    /** Marca el error número [i] en la app y muestra sus correcciones. */
+    private fun spellShow(i: Int) {
+        val bar = sBar ?: return
+        spellIdx = i
+        if (i >= spellErrors.size) {
+            val last = spellErrors.lastOrNull()
+            if (last != null) currentInputConnection?.setSelection(last.end, last.end)
+            bar.message("✅ Listo, revisaste todo el texto.")
+            spellErrors = ArrayList()
+            handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2000)
+            return
+        }
+        val e = spellErrors[i]
+        currentInputConnection?.setSelection(e.start, e.end)
+        bar.show(i + 1, spellErrors.size, e.word, e.sugg, e.maybe)
+    }
+
+    /** Cambia la palabra marcada por la corrección elegida y pasa a la siguiente. */
+    private fun spellPick(word: String) {
+        val ic = currentInputConnection ?: return
+        val e = spellErrors.getOrNull(spellIdx) ?: return
+        ic.beginBatchEdit()
+        ic.setSelection(e.start, e.end)
+        ic.commitText(word, 1)
+        ic.endBatchEdit()
+        val delta = word.length - (e.end - e.start)
+        for (j in spellIdx + 1 until spellErrors.size) {
+            spellErrors[j].start += delta
+            spellErrors[j].end += delta
+        }
+        WordStore.engine?.let { if (learnOn) { it.user.add(word); WordStore.scheduleSave() } }
+        spellShow(spellIdx + 1)
+    }
+
+    /** "Mi palabra": no la vuelve a marcar nunca (ni las demás iguales de este texto). */
+    private fun spellLearn() {
+        val e = spellErrors.getOrNull(spellIdx) ?: return
+        WordStore.engine?.let { it.user.learn(e.word); WordStore.scheduleSave() }
+        val lower = e.word.lowercase()
+        val keep = ArrayList<SpellErr>()
+        for ((j, x) in spellErrors.withIndex()) if (j <= spellIdx || x.word.lowercase() != lower) keep.add(x)
+        spellErrors = keep
+        spellShow(spellIdx + 1)
+    }
+
+    private fun stopSpell(keepSelection: Boolean = false) {
+        if (!spellOn) return
+        spellOn = false
+        kv?.spellOn = false
+        sBar?.visibility = View.GONE
+        // Quitar la marca: el cursor queda al final de la palabra marcada
+        if (!keepSelection && selStart != selEnd) currentInputConnection?.setSelection(selEnd, selEnd)
+        spellErrors = ArrayList()
     }
 
     // ---------------------------------------------------------------- Traducción
@@ -642,6 +767,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             manualShift = false
             if (mode != 0) showMode(0)
             if (translating) stopTranslate()
+            if (spellOn) stopSpell(keepSelection = true)
         }
         lastWasSpace = false
         autoSpace = false
@@ -672,6 +798,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         super.onFinishInputView(finishingInput)
         if (mode != 0) showMode(0)
         if (translating) stopTranslate()
+        if (spellOn) stopSpell(keepSelection = true)
         kv?.reset()
         clearSlots()
         WordStore.saveNow()
@@ -692,6 +819,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         candidatesStart: Int, candidatesEnd: Int,
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        selStart = newSelStart
+        selEnd = newSelEnd
         updateAutoCaps()
         if (newSelStart != newSelEnd) {
             clearSlots()
@@ -725,6 +854,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         clipPanel?.let { it.historyOn = clipHistoryOn; it.applyPalette(pal) }
         voicePanel?.applyPalette(pal)
         tBar?.applyPalette(pal)
+        sBar?.applyPalette(pal)
         scanPanel?.applyPalette(pal)
         colorNavBar(pal)
 
@@ -948,6 +1078,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // ---------------------------------------------------------------- Teclas
 
     override fun onKeyText(text: String) {
+        if (spellOn) stopSpell()
         val ic = target() ?: return
         val phantom = phantomSpace
         phantomSpace = false
@@ -991,6 +1122,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onKeyCode(code: Int) {
+        if (spellOn && code != Codes.SHIFT) stopSpell()
         val ic = target()
         if (code != Codes.SHIFT) {
             lastCorrection = null
@@ -1077,6 +1209,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDeletePress() {
+        if (spellOn) stopSpell()
         val ic = target() ?: return
         autoSpace = false
         lastWasSpace = false
@@ -1142,6 +1275,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_EMOJI -> showMode(1)
             KeyboardView.TOOL_CLIP -> showMode(2)
             KeyboardView.TOOL_VOICE -> showMode(3)
+            KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell()
             KeyboardView.TOOL_SCAN -> {
                 if (hasPermission(android.Manifest.permission.CAMERA)) {
                     showMode(4)

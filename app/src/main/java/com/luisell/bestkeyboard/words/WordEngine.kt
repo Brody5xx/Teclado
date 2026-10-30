@@ -175,13 +175,13 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     // ---------------------------------------------------------------- Revisión ortográfica
 
     /** Resultado de revisar una palabra: si está mal y cómo podría escribirse. */
-    class Spell(val misspelled: Boolean, val suggestions: List<String>)
+    class Spell(val misspelled: Boolean, val suggestions: List<String>, val maybe: Boolean = false)
 
     /**
      * Revisa una palabra para el corrector ortográfico de Android (subrayado rojo en las apps).
      * Acepta palabras en español E inglés, y las que el teclado aprendió de ti.
      */
-    fun spellCheck(typed: String, lang: String, max: Int = 5): Spell {
+    fun spellCheck(typed: String, lang: String, max: Int = 5, strict: Boolean = false): Spell {
         val ok = Spell(false, emptyList())
         val w = typed.trim('\'', '’', '"', '“', '”', '¿', '¡', '(', ')')
         if (w.length < 2 || w.length > 40) return ok
@@ -193,6 +193,12 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
 
         val fix = correction(w, lang)?.let { TextUtil.matchCase(it, w) }
         val known = isKnown(lower)
+        // Revisión a fondo: palabras que existen pero son MUY raras, cuando hay una casi igual
+        // muchísimo más común (ej. "hula" -> "hola"). Solo en el botón de revisar.
+        if (strict && known && fix == null && !user.isKnown(lower)) {
+            val rare = rareNeighbor(lower, lang)
+            if (rare != null) return Spell(true, listOf(TextUtil.matchCase(rare, w)), maybe = true)
+        }
         if (known && (fix == null || fix.equals(w, true) && fix == w)) return ok
         if (known && fix != null && fix.lowercase() == lower && fix != w) {
             // Solo la mayúscula especial: "i" -> "I", "i'm" -> "I'm"
@@ -226,6 +232,29 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         }
         val list = top.words().filter { !it.equals(w, true) }.map { TextUtil.matchCase(it, w) }.distinct().take(max)
         return Spell(true, list)
+    }
+
+    /** Si [lower] es rarísima y hay una palabra a una letra de distancia 1000 veces más común, la da. */
+    private fun rareNeighbor(lower: String, lang: String): String? {
+        val active = dicts.firstOrNull { it.lang == lang } ?: return null
+        // Qué tan común es en el idioma que estás usando (si no existe ahí, en el otro)
+        var own = Float.NEGATIVE_INFINITY
+        val ai = active.indexOf(lower)
+        if (ai >= 0) own = active.logFreq[ai]
+        else for (d in dicts) { val i = d.indexOf(lower); if (i >= 0 && d.logFreq[i] > own) own = d.logFreq[i] }
+        if (own == Float.NEGATIVE_INFINITY || own > RARE_LF) return null
+        val tf = TextUtil.fold(lower)
+        if (tf.length < 3) return null
+        var best: String? = null
+        var bestLf = own + LN1000
+        edits(tf) { variant, _ ->
+            val i = active.bestForFold(variant)
+            if (i >= 0 && active.logFreq[i] >= bestLf && active.words[i].lowercase() != lower) {
+                bestLf = active.logFreq[i]
+                best = active.words[i]
+            }
+        }
+        return best
     }
 
     /** Genera todas las variantes a una "tecla" de distancia, con su castigo. */
@@ -295,6 +324,8 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     companion object {
         private fun isVowel(c: Char) = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u'
         private val LN3 = ln(3f)
+        private val LN1000 = ln(1000f)
+        private val RARE_LF = ln(150f)
         private val JOINED = mapOf(
             "porfavor" to "por favor", "osea" to "o sea", "aveces" to "a veces",
             "talvez" to "tal vez", "enserio" to "en serio", "apesar" to "a pesar",

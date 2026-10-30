@@ -211,7 +211,16 @@ class MainActivity : Activity() {
                 .show()
         }
 
-        section("Corrector ortográfico ✔")
+        section("Revisar ortografía (botón abc✓)")
+        text(
+            "Toca abc✓ arriba del teclado: revisa TODO lo que escribiste y te lleva error por error. Cada " +
+                "palabra mal escrita se marca en el texto; arriba eliges la corrección (la azul es la mejor), " +
+                "\"Saltar ›\" para dejarla como está, o \"+ Mi palabra\" para que no la vuelva a marcar. " +
+                "Revisa español e inglés a la vez. También avisa de palabras raras que parecen un error " +
+                "(\"¿Quisiste decir…?\", por ejemplo hula → hola).", 13f, faded = true,
+        )
+
+        section("Corrector ortográfico de Android ✔")
         text(
             "Subraya en rojo las palabras mal escritas en tus apps (Gmail, Mensajes, notas...) en español E " +
                 "inglés. Toca la palabra subrayada para ver las correcciones. Para encenderlo:", 13f, faded = true,
@@ -288,14 +297,15 @@ class MainActivity : Activity() {
                 "• 🎤 dicta por voz y A文 traduce mientras escribes.\n" +
                 "• Toca 🌐 para cambiar Español / English (las sugerencias usan los dos idiomas a la vez).\n" +
                 "• Mantén presionado 🌐 para cambiar a otro teclado (por ejemplo, Gboard).\n" +
-                "• Arriba del teclado: ⚙ ajustes, 😊 emojis, 📋 portapapeles, A文 traducir, ⛶ escanear, 🎤 dictar, ⌄ esconder.\n" +
+                "• Arriba del teclado: ⚙ ajustes, 😊 emojis, 📋 portapapeles, A文 traducir, ⛶ escanear, abc✓ revisar ortografía, 🎤 dictar, ⌄ esconder.\n" +
+                "• En los campos de correo (como \"Para\" en Gmail) no salen sugerencias, para no cambiarte una dirección.\n" +
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 6.1")
+        section("Novedades — Versión 6.2")
         text(
-            "• Corrector ortográfico ✔ para todo el teléfono: subraya en rojo las palabras mal escritas en " +
-                "español e inglés y te da las correcciones al tocarlas.", 14f,
+            "• Botón abc✓ para revisar la ortografía de todo el texto, error por error.\n" +
+                "• Corrector ortográfico de Android ✔: subraya en rojo en las apps que lo usan.", 14f,
         )
 
         section("Versión 6")
