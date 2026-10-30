@@ -53,7 +53,20 @@ class ScanActivity : Activity() {
             pending = null
             return if (System.currentTimeMillis() - pendingAt < MAX_AGE_MS) t else null
         }
+
+        @Volatile private var pendingPhoto: Bitmap? = null
+        @Volatile private var pendingPhotoAt = 0L
+
+        /** Foto elegida en la galería: el teclado la abre en su escáner para elegir palabras. */
+        fun takePendingPhoto(): Bitmap? {
+            val b = pendingPhoto ?: return null
+            pendingPhoto = null
+            return if (System.currentTimeMillis() - pendingPhotoAt < MAX_AGE_MS) b else null
+        }
     }
+
+    /** Abierta solo para elegir una foto de la galería (vuelve directo al teclado). */
+    private var galleryMode = false
 
     private lateinit var photo: ImageView
     private lateinit var status: TextView
@@ -70,8 +83,10 @@ class ScanActivity : Activity() {
         super.onCreate(savedInstanceState)
         title = "Escanear texto"
         setContentView(buildUi())
+        galleryMode = intent?.getBooleanExtra(EXTRA_GALLERY, false) == true
+        if (galleryMode) status.text = "Elige una foto…"
         if (savedInstanceState == null) {
-            if (intent?.getBooleanExtra(EXTRA_GALLERY, false) == true) openGallery() else openCamera()
+            if (galleryMode) openGallery() else openCamera()
         }
     }
 
@@ -173,6 +188,25 @@ class ScanActivity : Activity() {
     @Deprecated("Usamos la API clásica para no agregar librerías extra")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (galleryMode) {
+            // Volver al teclado con la foto, para elegir las palabras con las gotitas
+            val uri = if (resultCode == RESULT_OK) data?.data else null
+            if (uri == null) { finish(); return }
+            status.text = "Abriendo la foto…"
+            io.execute {
+                val bmp = loadBitmap(uri, 2000)
+                main.post {
+                    if (bmp != null) {
+                        pendingPhoto = bmp
+                        pendingPhotoAt = System.currentTimeMillis()
+                    } else {
+                        Toast.makeText(this, "No se pudo abrir la foto.", Toast.LENGTH_SHORT).show()
+                    }
+                    finish()
+                }
+            }
+            return
+        }
         if (resultCode != RESULT_OK) return
         when (requestCode) {
             REQ_CAMERA -> {
@@ -211,6 +245,32 @@ class ScanActivity : Activity() {
                 status.text = "No se pudo leer el texto. Inténtalo otra vez."
             }
     }
+
+    /** Abre una foto derecha (según cómo se tomó) y de tamaño razonable. */
+    private fun loadBitmap(uri: Uri, maxSide: Int): Bitmap? = try {
+        val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, o) }
+        var s = 1
+        while (o.outWidth / (s * 2) >= maxSide || o.outHeight / (s * 2) >= maxSide) s *= 2
+        var bmp: Bitmap? = contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = s })
+        }
+        val rot = try {
+            contentResolver.openInputStream(uri)?.use {
+                when (ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                    ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                    ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                    else -> 0f
+                }
+            } ?: 0f
+        } catch (_: Exception) { 0f }
+        val b = bmp
+        if (b != null && rot != 0f) {
+            bmp = Bitmap.createBitmap(b, 0, 0, b.width, b.height, Matrix().apply { postRotate(rot) }, true)
+        }
+        bmp
+    } catch (_: Throwable) { null }
 
     /** Muestra la foto pequeña (girada bien) para que sepas qué se leyó. */
     private fun showPreview(uri: Uri) {

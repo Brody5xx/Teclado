@@ -150,6 +150,14 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         photo.clear()
     }
 
+    /** Abre el escáner directamente con una foto (de la galería), sin cámara. */
+    fun openWithPhoto(bmp: Bitmap) {
+        stopCamera()
+        busy = true
+        resultBar.visibility = GONE
+        showPhoto(bmp)
+    }
+
     private fun startCamera() {
         if (owner != null) return
         val o = PanelLifecycle()

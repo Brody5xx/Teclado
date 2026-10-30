@@ -91,6 +91,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // Escáner dentro del teclado (panel 4)
     private var scanPanel: ScanPanel? = null
     private var panelBox: PanelBox? = null
+    private var scanPhoto: android.graphics.Bitmap? = null
 
     // Dictado por voz (panel 3)
     private var voicePanel: VoicePanel? = null
@@ -277,7 +278,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         scanPanel?.let { sp ->
             val was = sp.visibility == View.VISIBLE
             sp.visibility = if (m == 4) View.VISIBLE else View.GONE
-            if (m == 4) sp.open() else if (was) sp.close()
+            if (m == 4) {
+                val photo = scanPhoto
+                scanPhoto = null
+                if (photo != null) sp.openWithPhoto(photo) else sp.open()
+            } else if (was) sp.close()
             if (m == 4 || was) panelBox?.requestLayout()
         }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
@@ -635,6 +640,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         insertScanned(info)
         updateAutoCaps()
         scheduleUpdate()
+        // Volviste de elegir una foto en la galería: ábrela en el escáner para elegir palabras
+        ScanActivity.takePendingPhoto()?.let { bmp ->
+            scanPhoto = bmp
+            showMode(4)
+        }
     }
 
     /** Si vienes de escanear texto con la cámara, lo escribe aquí. */
