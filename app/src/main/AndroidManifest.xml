@@ -4,6 +4,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Micrófono: solo para el dictado por voz, y solo cuando tocas 🎤 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Cámara: solo para el escáner de texto, y solo cuando tocas el escáner -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Internet: SOLO para descargar una vez los idiomas de traducción. Lo que escribes no se envía. -->
     <uses-permission android:name="android.permission.INTERNET" />
 

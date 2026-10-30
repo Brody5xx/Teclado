@@ -88,6 +88,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var lastClipSig: String? = null
     private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
 
+    // Escáner dentro del teclado (panel 4)
+    private var scanPanel: ScanPanel? = null
+    private var panelBox: PanelBox? = null
+
     // Dictado por voz (panel 3)
     private var voicePanel: VoicePanel? = null
     private var recognizer: SpeechRecognizer? = null
@@ -186,6 +190,25 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         box.addView(vp, FrameLayout.LayoutParams(-1, -1))
         voicePanel = vp
 
+        val sp = ScanPanel(this)
+        sp.visibility = View.GONE
+        sp.actions = object : ScanPanel.Actions {
+            override fun onScanInsert(text: String) { insertText(text); showMode(0) }
+            override fun onScanClose() = showMode(0)
+            override fun onScanFeedback() = onKeyFeedback()
+            override fun onScanGallery() {
+                showMode(0)
+                val i = Intent(this@BestKeyboardService, ScanActivity::class.java)
+                    .putExtra(ScanActivity.EXTRA_GALLERY, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                try { startActivity(i) } catch (_: Exception) { }
+            }
+        }
+        box.addView(sp, FrameLayout.LayoutParams(-1, -1))
+        box.tallPanel = sp
+        scanPanel = sp
+        panelBox = box
+
         // Barra de traducción arriba del teclado (escondida hasta que la abras)
         val tb = TranslateBar(this)
         tb.visibility = View.GONE
@@ -251,7 +274,34 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 vp.setListening(false)
             }
         }
+        scanPanel?.let { sp ->
+            val was = sp.visibility == View.VISIBLE
+            sp.visibility = if (m == 4) View.VISIBLE else View.GONE
+            if (m == 4) sp.open() else if (was) sp.close()
+            if (m == 4 || was) panelBox?.requestLayout()
+        }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
+    }
+
+    /** Escribe un texto (del escáner) con el espacio correcto antes. */
+    private fun insertText(text: String) {
+        val ic = target() ?: return
+        val before = ic.getTextBeforeCursor(1, 0) ?: ""
+        val space = if (before.isNotEmpty() && !before[0].isWhitespace()) " " else ""
+        ic.commitText(space + text, 1)
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+    }
+
+    private fun hasPermission(p: String) = checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED
+
+    /** Abre la app para que des un permiso (micrófono o cámara). */
+    private fun askPermission(extra: String) {
+        val i = Intent(this, MainActivity::class.java)
+            .putExtra(extra, true)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        try { startActivity(i) } catch (_: Exception) { }
     }
 
     // ---------------------------------------------------------------- Dictado por voz
@@ -655,6 +705,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         clipPanel?.let { it.historyOn = clipHistoryOn; it.applyPalette(pal) }
         voicePanel?.applyPalette(pal)
         tBar?.applyPalette(pal)
+        scanPanel?.applyPalette(pal)
         colorNavBar(pal)
 
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -1036,10 +1087,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_CLIP -> showMode(2)
             KeyboardView.TOOL_VOICE -> showMode(3)
             KeyboardView.TOOL_SCAN -> {
-                if (translating) stopTranslate()
-                val i = Intent(this, ScanActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                try { startActivity(i) } catch (_: Exception) { }
+                if (hasPermission(android.Manifest.permission.CAMERA)) {
+                    showMode(4)
+                } else {
+                    Toast.makeText(this, "Dale permiso a la cámara y vuelve a tocar el escáner.", Toast.LENGTH_LONG).show()
+                    askPermission(MainActivity.EXTRA_ASK_CAMERA)
+                }
             }
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
         }

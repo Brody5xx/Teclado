@@ -81,6 +81,9 @@ object PanelUi {
  * usan EXACTAMENTE esa misma altura, con scroll por dentro.
  */
 class PanelBox(context: Context, private val keys: View) : android.widget.FrameLayout(context) {
+    /** Panel que necesita más altura (el escáner): mientras se ve, el teclado crece. */
+    var tallPanel: View? = null
+
     init {
         addView(keys, LayoutParams(-1, -2))
     }
@@ -91,7 +94,11 @@ class PanelBox(context: Context, private val keys: View) : android.widget.FrameL
             MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
             MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
         )
-        val h = keys.measuredHeight
+        var h = keys.measuredHeight
+        val tall = tallPanel
+        if (tall != null && tall.visibility == VISIBLE) {
+            h = maxOf(h, (resources.displayMetrics.heightPixels * 0.58f).toInt())
+        }
         val exactW = MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY)
         val exactH = MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY)
         for (i in 0 until childCount) {

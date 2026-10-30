@@ -1,0 +1,411 @@
+package com.luisell.bestkeyboard
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
+import android.os.Handler
+import android.os.Looper
+import android.text.TextUtils
+import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+
+/**
+ * Escáner DENTRO del teclado (como Gboard): cámara en vivo → foto → las palabras se marcan →
+ * eliges con el dedo → Insertar. El texto se lee dentro del teléfono, sin internet.
+ */
+@SuppressLint("ViewConstructor")
+class ScanPanel(context: Context) : FrameLayout(context) {
+
+    interface Actions {
+        fun onScanInsert(text: String)
+        fun onScanClose()
+        fun onScanGallery()
+        fun onScanFeedback()
+    }
+
+    var actions: Actions? = null
+    private fun d(v: Float) = PanelUi.dp(context, v)
+    private val main = Handler(Looper.getMainLooper())
+    private val mainExecutor = Executor { main.post(it) }
+    private val worker = Executors.newSingleThreadExecutor()
+
+    private val preview = PreviewView(context)
+    private val photo = WordsView(context)
+    private val hint = TextView(context)
+    private val shutter = View(context)
+    private val gallery = TextView(context)
+    private val closeBtn = TextView(context)
+    private val backBtn = TextView(context)
+    private val resultBar = LinearLayout(context)
+    private val resultText = TextView(context)
+    private val insertBtn = TextView(context)
+
+    private var owner: PanelLifecycle? = null
+    private var provider: ProcessCameraProvider? = null
+    private var capture: ImageCapture? = null
+    private var busy = false
+    private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
+
+    init {
+        setBackgroundColor(0xFF000000.toInt())
+        preview.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        preview.scaleType = PreviewView.ScaleType.FILL_CENTER
+        addView(preview, LayoutParams(-1, -1))
+        photo.visibility = GONE
+        photo.onSelection = { updateResult() }
+        addView(photo, LayoutParams(-1, -1))
+
+        fun circle(tv: TextView, label: String, size: Float) {
+            tv.text = label
+            tv.textSize = size
+            tv.gravity = Gravity.CENTER
+            tv.setTextColor(0xFFFFFFFF.toInt())
+            tv.background = PanelUi.pressable(0x99303134.toInt(), 0xCC505257.toInt(), d(24f).toFloat())
+        }
+        circle(closeBtn, "✕", 20f)
+        closeBtn.setOnClickListener { actions?.onScanFeedback(); actions?.onScanClose() }
+        addView(closeBtn, LayoutParams(d(48f), d(48f), Gravity.TOP or Gravity.END).apply { setMargins(0, d(10f), d(10f), 0) })
+        circle(backBtn, "←", 20f)
+        backBtn.visibility = GONE
+        backBtn.setOnClickListener { actions?.onScanFeedback(); retake() }
+        addView(backBtn, LayoutParams(d(48f), d(48f), Gravity.TOP or Gravity.START).apply { setMargins(d(10f), d(10f), 0, 0) })
+
+        hint.textSize = 15f
+        hint.setTextColor(0xFFFFFFFF.toInt())
+        hint.setPadding(d(16f), d(8f), d(16f), d(8f))
+        hint.background = PanelUi.rounded(0xAA202124.toInt(), d(20f).toFloat())
+        addView(hint, LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = d(100f) })
+
+        // Botón de tomar foto (círculo blanco)
+        shutter.background = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.OVAL
+            setColor(0x33FFFFFF)
+            setStroke(d(4f), 0xFFFFFFFF.toInt())
+        }
+        shutter.setOnClickListener { takePhoto() }
+        addView(shutter, LayoutParams(d(72f), d(72f), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = d(18f) })
+
+        circle(gallery, "🖼", 20f)
+        gallery.setOnClickListener { actions?.onScanFeedback(); actions?.onScanGallery() }
+        addView(gallery, LayoutParams(d(52f), d(52f), Gravity.BOTTOM or Gravity.START).apply { setMargins(d(24f), 0, 0, d(28f)) })
+
+        // Barra de resultado: texto elegido + Insertar
+        resultBar.orientation = LinearLayout.HORIZONTAL
+        resultBar.gravity = Gravity.CENTER_VERTICAL
+        resultBar.setPadding(d(16f), d(10f), d(12f), d(10f))
+        resultBar.background = PanelUi.rounded(0xF0202124.toInt(), d(18f).toFloat())
+        resultText.textSize = 16f
+        resultText.setTextColor(0xFFFFFFFF.toInt())
+        resultText.maxLines = 2
+        resultText.ellipsize = TextUtils.TruncateAt.END
+        resultBar.addView(resultText, LinearLayout.LayoutParams(0, -2, 1f))
+        insertBtn.text = "Insertar  ↑"
+        insertBtn.textSize = 16f
+        insertBtn.gravity = Gravity.CENTER
+        insertBtn.setPadding(d(20f), d(12f), d(20f), d(12f))
+        insertBtn.setOnClickListener { insert() }
+        resultBar.addView(insertBtn, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = d(10f) })
+        resultBar.visibility = GONE
+        addView(resultBar, LayoutParams(-1, -2, Gravity.BOTTOM).apply { setMargins(d(8f), 0, d(8f), d(8f)) })
+    }
+
+    fun applyPalette(p: Palette) {
+        insertBtn.setTextColor(p.onAccent)
+        insertBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(24f).toFloat())
+        photo.accent = p.accent
+    }
+
+    // ---------------------------------------------------------------- Cámara
+
+    fun open() {
+        retake()
+        startCamera()
+    }
+
+    fun close() {
+        stopCamera()
+        photo.clear()
+    }
+
+    private fun startCamera() {
+        if (owner != null) return
+        val o = PanelLifecycle()
+        owner = o
+        o.start()
+        val future = ProcessCameraProvider.getInstance(context)
+        future.addListener({
+            if (owner !== o) return@addListener
+            try {
+                val p = future.get()
+                provider = p
+                val pv = Preview.Builder().build()
+                pv.setSurfaceProvider(preview.surfaceProvider)
+                val ic = ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                    .build()
+                capture = ic
+                p.unbindAll()
+                p.bindToLifecycle(o, CameraSelector.DEFAULT_BACK_CAMERA, pv, ic)
+            } catch (_: Exception) {
+                hint.text = "No se pudo abrir la cámara. Usa 🖼 para elegir una foto."
+            }
+        }, mainExecutor)
+    }
+
+    private fun stopCamera() {
+        try { provider?.unbindAll() } catch (_: Exception) { }
+        owner?.stop()
+        owner = null
+        capture = null
+    }
+
+    private fun retake() {
+        busy = false
+        photo.clear()
+        photo.visibility = GONE
+        preview.visibility = VISIBLE
+        resultBar.visibility = GONE
+        backBtn.visibility = GONE
+        shutter.visibility = VISIBLE
+        gallery.visibility = VISIBLE
+        hint.visibility = VISIBLE
+        hint.text = "Toma una foto de las palabras"
+        if (owner == null && isShown) startCamera()
+    }
+
+    private fun takePhoto() {
+        val ic = capture ?: return
+        if (busy) return
+        busy = true
+        actions?.onScanFeedback()
+        hint.text = "Leyendo el texto…"
+        ic.takePicture(worker, object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(image: ImageProxy) {
+                val bmp = try { toBitmap(image) } catch (_: Throwable) { null } finally { image.close() }
+                main.post {
+                    if (bmp == null) { busy = false; hint.text = "No se pudo tomar la foto. Inténtalo otra vez."; return@post }
+                    showPhoto(bmp)
+                }
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                main.post { busy = false; hint.text = "No se pudo tomar la foto. Inténtalo otra vez." }
+            }
+        })
+    }
+
+    /** Foto → imagen derecha y de tamaño razonable (más rápida de leer). */
+    private fun toBitmap(image: ImageProxy): Bitmap {
+        var b = image.toBitmap()
+        val maxSide = 2000f
+        val scale = minOf(1f, maxSide / maxOf(b.width, b.height))
+        val rot = image.imageInfo.rotationDegrees
+        if (scale < 1f || rot != 0) {
+            val m = Matrix()
+            if (scale < 1f) m.postScale(scale, scale)
+            if (rot != 0) m.postRotate(rot.toFloat())
+            b = Bitmap.createBitmap(b, 0, 0, b.width, b.height, m, true)
+        }
+        return b
+    }
+
+    /** Muestra una foto (de la cámara o de la galería) y busca las palabras. */
+    fun showPhoto(bmp: Bitmap) {
+        stopCamera()
+        preview.visibility = GONE
+        shutter.visibility = GONE
+        gallery.visibility = GONE
+        backBtn.visibility = VISIBLE
+        photo.setPhoto(bmp)
+        photo.visibility = VISIBLE
+        hint.visibility = VISIBLE
+        hint.text = "Leyendo el texto…"
+        recognizer.process(InputImage.fromBitmap(bmp, 0))
+            .addOnSuccessListener { result ->
+                val words = ArrayList<WordsView.Word>()
+                var line = 0
+                for (block in result.textBlocks) for (l in block.lines) {
+                    for (e in l.elements) {
+                        val r = e.boundingBox ?: continue
+                        words.add(WordsView.Word(e.text, RectF(r), line))
+                    }
+                    line++
+                }
+                busy = false
+                if (words.isEmpty()) {
+                    hint.text = "No encontré texto. Prueba con más luz o más cerca."
+                    return@addOnSuccessListener
+                }
+                hint.visibility = GONE
+                photo.setWords(words)
+                resultBar.visibility = VISIBLE
+                updateResult()
+            }
+            .addOnFailureListener {
+                busy = false
+                hint.text = "No se pudo leer el texto. Inténtalo otra vez."
+            }
+    }
+
+    private fun updateResult() {
+        val t = photo.selectedText()
+        resultText.text = if (t.isEmpty()) "Desliza el dedo sobre las palabras" else t.replace('\n', ' ')
+        insertBtn.alpha = if (t.isEmpty()) 0.5f else 1f
+    }
+
+    private fun insert() {
+        val t = photo.selectedText()
+        if (t.isEmpty()) return
+        actions?.onScanFeedback()
+        actions?.onScanInsert(t)
+    }
+
+    /** "Vida" mínima que la cámara necesita para saber cuándo encender y apagar. */
+    private class PanelLifecycle : LifecycleOwner {
+        private val registry = LifecycleRegistry(this)
+        override val lifecycle: Lifecycle get() = registry
+        fun start() {
+            registry.currentState = Lifecycle.State.CREATED
+            registry.currentState = Lifecycle.State.RESUMED
+        }
+        fun stop() {
+            registry.currentState = Lifecycle.State.DESTROYED
+        }
+    }
+
+    /**
+     * La foto con las palabras marcadas. Desliza el dedo de una palabra a otra para elegir;
+     * toca una palabra para elegir solo esa.
+     */
+    class WordsView(context: Context) : View(context) {
+        class Word(val text: String, val box: RectF, val line: Int)
+
+        var onSelection: (() -> Unit)? = null
+        var accent = 0xFF8AB4F8.toInt()
+        private var bmp: Bitmap? = null
+        private var words: List<Word> = emptyList()
+        private var selA = -1
+        private var selB = -1
+        private var anchor = -1
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        private val dst = RectF()
+        private val tmp = RectF()
+        private var scale = 1f
+        private var offX = 0f
+        private var offY = 0f
+        private val dens = resources.displayMetrics.density
+
+        fun setPhoto(b: Bitmap) { bmp = b; words = emptyList(); selA = -1; selB = -1; invalidate() }
+
+        fun setWords(w: List<Word>) {
+            words = w
+            // Al principio todo queda elegido; desliza el dedo para elegir menos
+            selA = 0
+            selB = w.size - 1
+            invalidate()
+            onSelection?.invoke()
+        }
+
+        fun clear() { bmp = null; words = emptyList(); selA = -1; selB = -1; invalidate() }
+
+        fun selectedText(): String {
+            if (selA < 0 || selB < 0 || words.isEmpty()) return ""
+            val sb = StringBuilder()
+            for (i in selA..selB) {
+                if (i > selA) sb.append(if (words[i].line != words[i - 1].line) '\n' else ' ')
+                sb.append(words[i].text)
+            }
+            return sb.toString()
+        }
+
+        private fun layoutPhoto() {
+            val b = bmp ?: return
+            scale = minOf(width / b.width.toFloat(), height / b.height.toFloat())
+            offX = (width - b.width * scale) / 2f
+            offY = (height - b.height * scale) / 2f
+        }
+
+        override fun onDraw(c: Canvas) {
+            val b = bmp ?: return
+            layoutPhoto()
+            dst.set(offX, offY, offX + b.width * scale, offY + b.height * scale)
+            paint.color = 0xFF000000.toInt()
+            c.drawBitmap(b, null, dst, paint)
+            if (words.isEmpty()) return
+            paint.color = 0x55000000
+            c.drawRect(dst, paint)
+            val pad = 2f * dens
+            for ((i, w) in words.withIndex()) {
+                toScreen(w.box, tmp)
+                tmp.inset(-pad, -pad)
+                val sel = i in selA..selB
+                paint.color = if (sel) (accent and 0x00FFFFFF) or 0x77000000 else 0x55FFFFFF
+                c.drawRoundRect(tmp, 4f * dens, 4f * dens, paint)
+            }
+        }
+
+        private fun toScreen(r: RectF, out: RectF) {
+            out.set(offX + r.left * scale, offY + r.top * scale, offX + r.right * scale, offY + r.bottom * scale)
+        }
+
+        /** La palabra bajo el dedo (o la más cercana si no tocas ninguna exacta). */
+        private fun wordAt(x: Float, y: Float): Int {
+            var best = -1
+            var bestD = Float.MAX_VALUE
+            for ((i, w) in words.withIndex()) {
+                toScreen(w.box, tmp)
+                if (tmp.contains(x, y)) return i
+                val dx = maxOf(tmp.left - x, 0f, x - tmp.right)
+                val dy = maxOf(tmp.top - y, 0f, y - tmp.bottom)
+                val dd = dx * dx + dy * dy
+                if (dd < bestD) { bestD = dd; best = i }
+            }
+            return if (bestD < (40f * dens) * (40f * dens)) best else -1
+        }
+
+        @SuppressLint("ClickableViewAccessibility")
+        override fun onTouchEvent(e: MotionEvent): Boolean {
+            if (words.isEmpty()) return true
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    anchor = wordAt(e.x, e.y)
+                    if (anchor >= 0) { selA = anchor; selB = anchor; invalidate(); onSelection?.invoke() }
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (anchor < 0) anchor = wordAt(e.x, e.y)
+                    val i = wordAt(e.x, e.y)
+                    if (anchor >= 0 && i >= 0) {
+                        val a = minOf(anchor, i)
+                        val b = maxOf(anchor, i)
+                        if (a != selA || b != selB) { selA = a; selB = b; invalidate(); onSelection?.invoke() }
+                    }
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> anchor = -1
+            }
+            return true
+        }
+    }
+}

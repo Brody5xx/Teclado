@@ -35,7 +35,9 @@ class MainActivity : Activity() {
 
     companion object {
         const val EXTRA_ASK_MIC = "pedir_micro"
+        const val EXTRA_ASK_CAMERA = "pedir_camara"
         private const val REQ_MIC = 7
+        private const val REQ_CAMERA = 8
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,12 +45,24 @@ class MainActivity : Activity() {
         prefs = Prefs.get(this)
         title = "Best Keyboard"
         setContentView(buildUi())
-        if (intent?.getBooleanExtra(EXTRA_ASK_MIC, false) == true) askMic()
+        handleAsk(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        if (intent?.getBooleanExtra(EXTRA_ASK_MIC, false) == true) askMic()
+        handleAsk(intent)
+    }
+
+    private fun handleAsk(i: Intent?) {
+        if (i?.getBooleanExtra(EXTRA_ASK_MIC, false) == true) askMic()
+        if (i?.getBooleanExtra(EXTRA_ASK_CAMERA, false) == true) askCamera()
+    }
+
+    private fun cameraGranted() = checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+    private fun askCamera() {
+        if (cameraGranted()) { refreshMic(); return }
+        requestPermissions(arrayOf(android.Manifest.permission.CAMERA), REQ_CAMERA)
     }
 
     private fun micGranted() = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
@@ -60,6 +74,15 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_CAMERA) {
+            refreshMic()
+            Toast.makeText(
+                this,
+                if (cameraGranted()) "¡Listo! Vuelve a donde escribías y toca el escáner." else "Sin el permiso de la cámara no se puede escanear.",
+                Toast.LENGTH_LONG,
+            ).show()
+            return
+        }
         if (requestCode != REQ_MIC) return
         refreshMic()
         if (micGranted()) {
@@ -69,9 +92,15 @@ class MainActivity : Activity() {
         }
     }
 
+    private lateinit var camBtn: Button
+
     private fun refreshMic() {
-        if (!::micBtn.isInitialized) return
-        micBtn.text = if (micGranted()) "✓ Micrófono permitido" else "🎤 Permitir el micrófono para dictar"
+        if (::micBtn.isInitialized) {
+            micBtn.text = if (micGranted()) "✓ Micrófono permitido" else "🎤 Permitir el micrófono para dictar"
+        }
+        if (::camBtn.isInitialized) {
+            camBtn.text = if (cameraGranted()) "✓ Cámara permitida" else "📷 Permitir la cámara para escanear"
+        }
     }
 
     override fun onResume() {
@@ -184,11 +213,13 @@ class MainActivity : Activity() {
         )
 
         section("Escanear texto 📷")
+        camBtn = button("📷 Permitir la cámara para escanear") { askCamera() }
         text(
-            "Toca el botón de escanear (el cuadrito con esquinas) arriba del teclado. Toma una foto o elige una " +
-                "de la galería; el teclado lee el texto dentro del teléfono, sin internet. Revísalo, corrígelo si " +
-                "hace falta y toca Insertar: aparece donde estabas escribiendo. Ideal para números de serie, " +
-                "modelos, direcciones y etiquetas.", 13f, faded = true,
+            "Toca el escáner (el cuadrito con esquinas) arriba del teclado: la cámara se abre DENTRO del teclado. " +
+                "Toma la foto, las palabras se marcan y quedan todas elegidas; desliza el dedo sobre las palabras " +
+                "para elegir solo las que quieres (o toca una sola). Toca Insertar y se escriben al instante. " +
+                "Con 🖼 eliges una foto de la galería. Todo se lee dentro del teléfono, sin internet.",
+            13f, faded = true,
         )
 
         section("Portapapeles")
@@ -231,8 +262,8 @@ class MainActivity : Activity() {
 
         section("Novedades — Versión 5")
         text(
-            "• Escanear texto con la cámara 📷: foto o galería → el texto se lee dentro del teléfono → lo revisas " +
-                "y se escribe donde estabas.\n" +
+            "• Escanear texto 📷 dentro del teclado (como Gboard): foto → eliges las palabras con el dedo → " +
+                "Insertar, y se escriben al instante.\n" +
                 "• Funciona sin internet y en español e inglés.", 14f,
         )
 

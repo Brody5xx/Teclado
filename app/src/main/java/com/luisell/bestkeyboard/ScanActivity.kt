@@ -38,6 +38,7 @@ import java.util.concurrent.Executors
 class ScanActivity : Activity() {
 
     companion object {
+        const val EXTRA_GALLERY = "galeria"
         private const val REQ_CAMERA = 1
         private const val REQ_GALLERY = 2
         private const val PHOTO = "scan_photo.jpg"
@@ -69,7 +70,9 @@ class ScanActivity : Activity() {
         super.onCreate(savedInstanceState)
         title = "Escanear texto"
         setContentView(buildUi())
-        if (savedInstanceState == null) openCamera()
+        if (savedInstanceState == null) {
+            if (intent?.getBooleanExtra(EXTRA_GALLERY, false) == true) openGallery() else openCamera()
+        }
     }
 
     override fun onDestroy() {
