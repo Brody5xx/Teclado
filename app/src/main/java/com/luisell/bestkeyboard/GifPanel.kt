@@ -36,6 +36,7 @@ class GifPanel(context: Context) : FrameLayout(context) {
         fun onGifPick(file: File)
         fun onGifBack()
         fun onGifSettings()
+        fun onGifSearch()
         fun onGifFeedback()
     }
 
@@ -58,6 +59,7 @@ class GifPanel(context: Context) : FrameLayout(context) {
     private var stickers = false
     private var query = ""
     private val catViews = ArrayList<TextView>()
+    private var searchBtn: IconView? = null
     private val thumbs = ArrayList<ImageView>()
 
     /** Lo que buscas al tocar cada botón (en inglés, GIPHY encuentra más). */
@@ -103,6 +105,12 @@ class GifPanel(context: Context) : FrameLayout(context) {
             }
             head.addView(t, LinearLayout.LayoutParams(-2, d(34f)).apply { leftMargin = d(8f) })
         }
+        // Buscar GIFs (abre la barra de búsqueda con el teclado)
+        val searchBtn = IconView(context, Icons.SEARCH, 7f)
+        searchBtn.setOnClickListener { actions?.onGifFeedback(); actions?.onGifSearch() }
+        this.searchBtn = searchBtn
+        head.addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
+        head.addView(searchBtn, LinearLayout.LayoutParams(d(52f), d(34f)))
         L.bind(gifTab, "GIFs", "GIFs")
         L.bind(stickerTab, "Stickers", "Stickers")
         body.addView(head, LinearLayout.LayoutParams(-1, d(42f)))
@@ -131,6 +139,7 @@ class GifPanel(context: Context) : FrameLayout(context) {
 
         val stack = FrameLayout(context)
         grid.columnCount = 3
+        PanelUi.glowScrollbar(scroll)
         scroll.addView(grid, LayoutParams(-1, -2))
         stack.addView(scroll, LayoutParams(-1, -1))
         status.gravity = Gravity.CENTER
@@ -147,8 +156,16 @@ class GifPanel(context: Context) : FrameLayout(context) {
 
     private fun key() = Prefs.get(context).getString(Prefs.GIPHY_KEY, "")?.trim() ?: ""
 
-    fun open() {
+    fun open(search: String? = null) {
         for ((i, t) in catViews.withIndex()) t.text = L.t(CATS[i].first, CATS[i].second)
+        if (search != null) {
+            // Lo que buscaste en la barra: ninguna categoría encendida
+            query = search
+            catIndex = -1
+        } else if (catIndex < 0) {
+            catIndex = 0
+            query = ""
+        }
         paintTabs()
         paintCats()
         load()
@@ -312,6 +329,7 @@ class GifPanel(context: Context) : FrameLayout(context) {
         setBackgroundColor(p.bg)
         back.color = p.text
         back.background = PanelUi.pressable(p.special, p.keyPressed, d(18f).toFloat())
+        searchBtn?.let { it.color = p.text; it.background = PanelUi.pressable(p.special, p.keyPressed, d(17f).toFloat()) }
         status.setTextColor(p.hint)
         paintTabs()
         paintCats()

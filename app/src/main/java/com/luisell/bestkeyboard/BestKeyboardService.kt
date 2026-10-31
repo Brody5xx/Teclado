@@ -79,6 +79,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // Sugerencias
     private val slotWords = arrayOfNulls<String>(3)
     private var slotTyped = -1
+    /** La casilla de la barra que tiene un emoji sugerido (o -1). */
+    private var emojiSlot = -1
+    private var slotsBold = false
     private var autoSpace = false
     /** Última autocorrección: (lo que escribiste, la corrección, el separador). Borrar la deshace. */
     private var lastCorrection: Triple<String, String, String>? = null
@@ -152,6 +155,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Barra arriba del teclado con el mensaje traducido. */
     private var infoBar: InfoBar? = null
     private var readTrans: Translation? = null
+    /** Buscar emojis o GIFs: 0 no, 1 emojis, 2 GIFs. */
+    private var searching = 0
+    private var searchBar: SearchBar? = null
+    /** Lo que buscaste en la barra, para abrir los GIFs con eso. */
+    private var pendingGifQuery: String? = null
 
     // Sugerencia de captura de pantalla
     private var shot: Screenshots.Shot? = null
@@ -205,11 +213,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Donde escribe el teclado: la caja de traducción (si estás traduciendo) o la app. */
     private fun target(): InputConnection? = when {
+        searching != 0 -> searchBar?.connection
         translating -> tBar?.connection
         codeAsking -> codeBar?.connection
         else -> currentInputConnection
     }
     private fun targetInfo(): EditorInfo? = when {
+        searching != 0 -> searchBar?.inputInfo
         translating -> tBar?.inputInfo
         codeAsking -> codeBar?.inputInfo
         else -> currentInputEditorInfo
@@ -222,6 +232,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             translating -> tBar?.box
             codeAsking -> codeBar?.box
             else -> null
+        }
+        val sb = if (searching != 0) searchBar else null
+        if (sb != null) {
+            when (code) {
+                KeyEvent.KEYCODE_DEL -> sb.deleteBack()
+                KeyEvent.KEYCODE_DPAD_LEFT -> sb.moveCursor(-1)
+                KeyEvent.KEYCODE_DPAD_RIGHT -> sb.moveCursor(1)
+            }
+            return
         }
         if (inner != null) {
             when (code) {
@@ -281,6 +300,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val box = PanelBox(this, v)
         val ep = EmojiPanel(this)
         ep.listener = panelListener
+        ep.actions = object : EmojiPanel.Actions {
+            override fun onEmojiSearch() = startSearch(false)
+            override fun onEmojiGif() = showMode(9)
+        }
         ep.visibility = View.GONE
         box.addView(ep, FrameLayout.LayoutParams(-1, -1))
         emojiPanel = ep
@@ -359,7 +382,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             override fun onMoreFeedback() = onKeyFeedback()
             override fun onToolsChanged(bar: List<Int>, more: List<Int>) {
                 Tools.save(prefs, bar, more)
-                kv?.setBarTools(bar)
+                kv?.setBarTools(bar, more)
             }
         }
         box.addView(more, FrameLayout.LayoutParams(-1, -1))
@@ -411,6 +434,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 } catch (_: Exception) { }
             }
             override fun onGifFeedback() = onKeyFeedback()
+            override fun onGifSearch() = startSearch(true)
         }
         box.addView(gp, FrameLayout.LayoutParams(-1, -1))
         gifPanel = gp
@@ -463,6 +487,28 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
         root.addView(ib, LinearLayout.LayoutParams(-1, -2))
+        val srch = SearchBar(this)
+        srch.visibility = View.GONE
+        srch.actions = object : SearchBar.Actions {
+            override fun onSearchText(text: String) {
+                if (!srch.gifs) srch.showResults(EmojiSearch.search(text))
+                updateAutoCaps()
+                scheduleUpdate()
+            }
+            override fun onSearchClose() {
+                val gif = srch.gifs
+                stopSearch()
+                showMode(if (gif) 9 else 1)
+            }
+            override fun onSearchPick(emoji: String) {
+                currentInputConnection?.commitText(emoji, 1)
+                EmojiData.addRecent(emoji)
+            }
+            override fun onSearchFeedback() = onKeyFeedback()
+        }
+        searchBar = srch
+        searching = 0
+        root.addView(srch, LinearLayout.LayoutParams(-1, -2))
         root.addView(sb, LinearLayout.LayoutParams(-1, -2))
         root.addView(tb, LinearLayout.LayoutParams(-1, -2))
         val cb = CodeBar(this)
@@ -489,6 +535,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         mode = m
         val v = kv ?: return
         if (m != 0) { v.reset(); clearSlots() }
+        if (m != 0 && searching != 0) stopSearch()
         v.visibility = if (m == 0) View.VISIBLE else View.INVISIBLE
         emojiPanel?.let { ep ->
             ep.visibility = if (m == 1) View.VISIBLE else View.GONE
@@ -544,7 +591,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         gifPanel?.let { gp ->
             val was = gp.visibility == View.VISIBLE
             gp.visibility = if (m == 9) View.VISIBLE else View.GONE
-            if (m == 9) gp.open() else if (was) gp.close()
+            if (m == 9) { gp.open(pendingGifQuery); pendingGifQuery = null } else if (was) gp.close()
         }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
@@ -1308,6 +1355,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (shot != null || shotAsk) clearShot()
         if (mode != 0) showMode(0)
         closeInfo()
+        stopSearch()
         if (translating) stopTranslate()
         if (spellOn) stopSpell(keepSelection = true)
         kv?.reset()
@@ -1408,9 +1456,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         calcPanel?.applyPalette(pal)
         gifPanel?.applyPalette(pal)
         infoBar?.applyPalette(pal)
+        searchBar?.applyPalette(pal)
         v.oneHand = when (prefs.getString(Prefs.ONE_HAND, "off")) { "left" -> 1; "right" -> 2; else -> 0 }
         val (barTools, moreTools) = Tools.load(this, prefs)
-        v.setBarTools(barTools)
+        v.setBarTools(barTools, moreTools)
         morePanel?.setTools(barTools, moreTools, Tools.maxBar(this))
         colorNavBar(pal)
 
@@ -1534,6 +1583,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         codeActive = false
         slotWords.fill(null)
         slotTyped = -1
+        emojiSlot = -1
         kv?.clearSuggestions()
     }
 
@@ -1567,6 +1617,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun showSlots(left: String?, center: String?, right: String?, bold: Boolean, typedLeft: Boolean) {
+        emojiSlot = -1
+        slotsBold = bold
         vaultActive = false
         codeActive = false
         slotWords[0] = left
@@ -1584,6 +1636,58 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun updateSuggestions() {
+        updateWordSuggestions()
+        addEmojiSuggestion()
+    }
+
+    /** Pone en la barra un emoji que va con lo que escribes (casa → 🏠, jaja → 😂). */
+    private fun addEmojiSuggestion() {
+        if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || page == Page.NUM) return
+        if (!suggestOn || !fieldSuggest || !prefs.getBoolean(Prefs.EMOJI_SUGGEST, true)) return
+        val ic = target() ?: return
+        val before = ic.getTextBeforeCursor(60, 0) ?: return
+        if (before.isEmpty()) return
+        // Solo justo después de la palabra o de un espacio (no después de un punto o un emoji)
+        val last = before.last()
+        if (!(TextUtil.isWordChar(last) || last == ' ')) return
+        if (last == ' ' && before.length > 1 && !TextUtil.isWordChar(before[before.length - 2])) return
+        val emoji = EmojiSearch.suggest(before) ?: return
+        val slot = when {
+            slotWords.all { it == null } -> 1
+            slotWords[2] == null -> 2
+            slotTyped == 2 -> 0
+            else -> 2
+        }
+        slotWords[slot] = emoji
+        if (slotTyped == slot) slotTyped = -1
+        emojiSlot = slot
+        kv?.setSuggestions(slotWords[0], slotWords[1], slotWords[2], slotsBold && slot != 1, slotTyped == 0)
+    }
+
+    /** Tocaste el emoji sugerido: va después de la palabra, con su espacio. */
+    private fun useEmojiSuggestion(emoji: String) {
+        val ic = target() ?: return
+        val before = ic.getTextBeforeCursor(48, 0) ?: ""
+        val cur = TextUtil.currentWord(before)
+        ic.beginBatchEdit()
+        if (cur.isNotEmpty()) {
+            finishWord(ic)
+            ic.commitText(" $emoji ", 1)
+        } else {
+            ic.commitText("$emoji ", 1)
+        }
+        ic.endBatchEdit()
+        EmojiData.addRecent(emoji)
+        gestureWord = null
+        phantomSpace = false
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = true
+        clearSlots()
+        updateAutoCaps()
+    }
+
+    private fun updateWordSuggestions() {
         if (codeOn) { codeSuggest(); return }
         if (vaultSuggest()) return
         val eng = WordStore.engine
@@ -1637,6 +1741,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onSuggestion(slot: Int) {
         if (codeActive) { useCodeSnippet(slot); return }
+        if (slot == emojiSlot && !vaultActive) {
+            slotWords.getOrNull(slot)?.let { useEmojiSuggestion(it) }
+            return
+        }
         if (vaultActive) {
             // Tocaste uno de "Mis datos": cambia lo escrito por el valor completo
             val v = vaultValues.getOrNull(slot) ?: return
@@ -1797,6 +1905,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             Codes.ENTER -> {
                 if (ic == null) return
                 autoSpace = false
+                if (searching != 0) { searchEnter(); return }
                 if (translating) { translateEnter(); return }
                 if (codeAsking) { codeActions.onCodeAsk(codeBar?.box?.text?.toString() ?: ""); return }
                 if (codeOn) { codeEnter(); return }
@@ -2499,6 +2608,48 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 }
             }, fail)
         }, fail)
+    }
+
+    // ---------------------------------------------------------------- Buscar emojis y GIFs
+
+    private fun startSearch(gif: Boolean) {
+        val bar = searchBar ?: return
+        if (translating) stopTranslate()
+        if (spellOn) stopSpell(keepSelection = true)
+        closeInfo()
+        showMode(0)
+        searching = if (gif) 2 else 1
+        bar.visibility = View.VISIBLE
+        bar.start(gif)
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+        page = Page.LETTERS
+        rebuild()
+        updateAutoCaps()
+        scheduleUpdate()
+    }
+
+    private fun stopSearch() {
+        if (searching == 0) return
+        searching = 0
+        searchBar?.let { it.visibility = View.GONE }
+        lastCorrection = null
+        clearSlots()
+        updateAutoCaps()
+        scheduleUpdate()
+    }
+
+    /** Enter en la búsqueda: en GIFs muestra los resultados; en emojis vuelve al panel. */
+    private fun searchEnter() {
+        val bar = searchBar ?: return
+        val q = bar.text().trim()
+        val gif = bar.gifs
+        stopSearch()
+        if (gif) {
+            pendingGifQuery = q.ifEmpty { null }
+            showMode(9)
+        } else showMode(1)
     }
 
     private fun closeInfo() {

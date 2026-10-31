@@ -8,7 +8,7 @@ import android.os.Looper
 import java.util.concurrent.Executors
 
 /** Un emoji con sus tonos de piel (si tiene). */
-class Emoji(val text: String, val tones: List<String>, val name: String)
+class Emoji(val text: String, val tones: List<String>, val name: String, val es: List<String> = emptyList(), val en: List<String> = emptyList())
 
 /**
  * Carga la lista de emojis en segundo plano y guarda los recientes.
@@ -54,7 +54,8 @@ object EmojiData {
                         if (!paint.hasGlyph(e)) continue
                         val tones = if (parts.size > 2 && parts[2].isNotEmpty())
                             parts[2].split(' ').filter { it.isNotEmpty() && paint.hasGlyph(it) } else emptyList()
-                        cats[cat].add(Emoji(e, tones, if (parts.size > 3) parts[3] else ""))
+                        fun kw(i: Int) = if (parts.size > i && parts[i].isNotEmpty()) parts[i].split('|') else emptyList()
+                        cats[cat].add(Emoji(e, tones, if (parts.size > 3) parts[3] else "", kw(4), kw(5)))
                     }
                 }
             } catch (_: Exception) { }

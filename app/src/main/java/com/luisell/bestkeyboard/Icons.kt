@@ -64,6 +64,7 @@ object Icons {
     const val ONEHAND = 47
     const val CALC = 48
     const val GIF = 49
+    const val SEARCH = 50
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -455,6 +456,11 @@ object Icons {
                 c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
                 for (yy in 0..1) for (xx in 0..2)
                     c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            SEARCH -> {
+                // Lupa
+                c.drawCircle(cx - s * 0.18f, cy - s * 0.18f, s * 0.58f, st)
+                c.drawLine(cx + s * 0.25f, cy + s * 0.25f, cx + s * 0.85f, cy + s * 0.85f, st)
             }
             GIF -> {
                 // Recuadro con la palabra GIF

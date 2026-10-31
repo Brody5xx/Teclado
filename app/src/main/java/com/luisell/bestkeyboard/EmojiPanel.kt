@@ -22,6 +22,12 @@ import android.widget.TextView
 class EmojiPanel(context: Context) : FrameLayout(context) {
 
     var listener: PanelListener? = null
+
+    interface Actions {
+        fun onEmojiSearch()
+        fun onEmojiGif()
+    }
+    var actions: Actions? = null
     private var palette = Palette.DARK
     private var items: List<String> = emptyList()
     /** Dónde empieza cada pestaña dentro de la lista (0 = recientes). */
@@ -34,6 +40,10 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
     private val abc: TextView
     private val del: IconView
     private val overlay = PanelOverlay(context, 0x33000000)
+    private val searchPill = LinearLayout(context)
+    private val searchIcon = IconView(context, Icons.SEARCH, 6.5f)
+    private val searchText = TextView(context)
+    private val gifBtn = TextView(context)
     private fun d(v: Float) = PanelUi.dp(context, v)
 
     private val adapter = object : BaseAdapter() {
@@ -55,14 +65,36 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
     init {
         body.orientation = LinearLayout.VERTICAL
 
+        // Arriba: buscar emojis y el botón de GIFs
+        val top = LinearLayout(context)
+        top.orientation = LinearLayout.HORIZONTAL
+        top.gravity = Gravity.CENTER_VERTICAL
+        top.setPadding(d(6f), d(5f), d(6f), d(2f))
+        searchPill.orientation = LinearLayout.HORIZONTAL
+        searchPill.gravity = Gravity.CENTER_VERTICAL
+        searchPill.setPadding(d(10f), 0, d(10f), 0)
+        searchPill.addView(searchIcon, LinearLayout.LayoutParams(d(24f), d(24f)))
+        L.bind(searchText, "Buscar emojis", "Search emojis")
+        searchText.textSize = 14f
+        searchText.setPadding(d(8f), 0, 0, 0)
+        searchPill.addView(searchText, LinearLayout.LayoutParams(0, -2, 1f))
+        searchPill.setOnClickListener { listener?.onPanelFeedback(); actions?.onEmojiSearch() }
+        top.addView(searchPill, LinearLayout.LayoutParams(0, d(36f), 1f))
+        gifBtn.text = "GIF"
+        gifBtn.textSize = 13f
+        gifBtn.gravity = Gravity.CENTER
+        gifBtn.setTypeface(gifBtn.typeface, android.graphics.Typeface.BOLD)
+        gifBtn.setOnClickListener { listener?.onPanelFeedback(); actions?.onEmojiGif() }
+        top.addView(gifBtn, LinearLayout.LayoutParams(d(58f), d(36f)).apply { leftMargin = d(8f) })
+        body.addView(top, LinearLayout.LayoutParams(-1, -2))
+
         grid.columnWidth = d(42f)
         grid.numColumns = GridView.AUTO_FIT
         grid.stretchMode = GridView.STRETCH_COLUMN_WIDTH
         grid.adapter = adapter
         grid.selector = ColorDrawable(0x33888888)
-        grid.isVerticalScrollBarEnabled = true
-        grid.isFastScrollEnabled = true
-        grid.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        grid.isFastScrollEnabled = false
+        PanelUi.glowScrollbar(grid)
         grid.setPadding(d(2f), d(4f), d(2f), d(4f))
         grid.clipToPadding = false
         grid.setOnItemClickListener { _, _, pos, _ -> pick(items[pos]) }
@@ -205,6 +237,11 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         del.bgColor = p.special
         del.background = PanelUi.pressable(p.special, p.keyPressed, r)
         for (t in tabViews) { t.color = p.hint; t.bgColor = p.bg; t.invalidate() }
+        searchPill.background = PanelUi.pressable(p.key, p.keyPressed, d(18f).toFloat())
+        searchIcon.color = p.hint
+        searchText.setTextColor(p.hint)
+        gifBtn.setTextColor(p.onAccent)
+        gifBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(18f).toFloat())
         val cur = currentTab
         currentTab = -1
         highlight(cur)

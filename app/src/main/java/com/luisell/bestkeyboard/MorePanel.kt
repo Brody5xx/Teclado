@@ -46,7 +46,6 @@ object Tools {
         Info(KeyboardView.TOOL_READ, Icons.READ, "Traducir mensaje", "Translate message", true),
         Info(KeyboardView.TOOL_ONEHAND, Icons.ONEHAND, "Una mano", "One hand", false),
         Info(KeyboardView.TOOL_CALC, Icons.CALC, "Calculadora", "Calculator", true),
-        Info(KeyboardView.TOOL_GIF, Icons.GIF, "GIFs", "GIFs", true),
     )
 
     /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */

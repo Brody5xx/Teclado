@@ -79,6 +79,8 @@ object Prefs {
     const val ONE_HAND = "one_hand"
     /** Llave gratis de GIPHY para buscar GIFs y stickers. */
     const val GIPHY_KEY = "giphy_key"
+    /** Sugerir emojis según lo que escribes (casa → 🏠, jaja → 😂). */
+    const val EMOJI_SUGGEST = "emoji_suggest"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

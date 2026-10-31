@@ -465,10 +465,23 @@ class KeyboardView(context: Context) : View(context) {
     /** Los botones de la barra de arriba, en el orden que elegiste (todos se pueden mover). */
     private var barTools = intArrayOf(TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL, TOOL_EDIT, TOOL_MORE, TOOL_VOICE, TOOL_HIDE)
 
-    fun setBarTools(tools: List<Int>) {
+    /** Los de "Más opciones": se ven deslizando la barra de arriba hacia la izquierda. */
+    private var extraTools = IntArray(0)
+    private var allTools = barTools
+    /** Cuánto deslizaste la barra de arriba (en píxeles). */
+    private var stripScroll = 0f
+    private var stripDown = false
+    private var stripDragging = false
+    private var stripDownScroll = 0f
+
+    fun setBarTools(tools: List<Int>, extra: List<Int> = extraTools.toList()) {
         val n = tools.toIntArray()
-        if (!n.contentEquals(barTools)) {
+        val e = extra.filter { it !in tools }.toIntArray()
+        if (!n.contentEquals(barTools) || !e.contentEquals(extraTools)) {
             barTools = n
+            extraTools = e
+            allTools = n + e
+            stripScroll = stripScroll.coerceIn(0f, maxStripScroll())
             invalidate()
         }
     }
@@ -476,9 +489,11 @@ class KeyboardView(context: Context) : View(context) {
     /** Ancho de cada botón: se reparten a lo ancho de la barra. */
     private fun toolStep(): Float = width.toFloat() / maxOf(1, barTools.size)
 
+    private fun maxStripScroll(): Float = maxOf(0f, allTools.size * toolStep() - width)
+
     private fun toolHit(x: Float): Int {
-        val i = (x / toolStep()).toInt()
-        return if (i in barTools.indices) barTools[i] else -1
+        val i = ((x + stripScroll) / toolStep()).toInt()
+        return if (i in allTools.indices) allTools[i] else -1
     }
 
     // ---------------------------------------------------------------- Toques
@@ -518,7 +533,11 @@ class KeyboardView(context: Context) : View(context) {
         longPressed = false
         spaceDragging = false
         altKeys = null
+        stripDown = false
+        stripDragging = false
         if (y < stripH) {
+            stripDown = true
+            stripDownScroll = stripScroll
             stripPressed = stripHit(x)
             if (stripPressed >= 0) listener?.onKeyFeedback()
             invalidate()
@@ -577,6 +596,16 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun movePointer(x: Float, y: Float) {
+        if (stripDown) {
+            // Deslizar la barra de arriba para ver los demás botones
+            if (!showingSuggestions && !showingShot && maxStripScroll() > 0f && (stripDragging || abs(x - downX) > 10f * d)) {
+                stripDragging = true
+                stripPressed = -1
+                stripScroll = (stripDownScroll - (x - downX)).coerceIn(0f, maxStripScroll())
+                invalidate()
+            }
+            return
+        }
         if (gesturing) {
             val lx = gx[gCount - 1]
             val ly = gy[gCount - 1]
@@ -658,6 +687,10 @@ class KeyboardView(context: Context) : View(context) {
             return
         }
         gestureCandidate = false
+        if (stripDown) {
+            stripDown = false
+            if (stripDragging) { stripDragging = false; stripPressed = -1; invalidate(); return }
+        }
         if (stripPressed >= 0) {
             val action = stripPressed
             stripPressed = -1
@@ -1303,11 +1336,24 @@ class KeyboardView(context: Context) : View(context) {
         val cy = stripH / 2f
         val s = stripH * 0.22f
         val step = toolStep()
-        val tools = barTools
-        val xs = FloatArray(tools.size) { step * (it + 0.5f) }
+        val tools = allTools
+        stripScroll = stripScroll.coerceIn(0f, maxStripScroll())
+        val xs = FloatArray(tools.size) { step * (it + 0.5f) - stripScroll }
+        if (extraTools.isNotEmpty() && stripScroll < 1f) {
+            // Rayita al borde derecho: avisa que hay más botones deslizando
+            fill.color = alphaOf(p.hint, 0.5f)
+            tmp.set(width - 3f * d, cy - stripH * 0.22f, width - 1f * d, cy + stripH * 0.22f)
+            c.drawRoundRect(tmp, d, d, fill)
+        }
         for (n in tools.indices) {
             val i = tools[n]
             val cx = xs[n]
+            if (cx < -step || cx > width + step) continue
+            if (n == barTools.size && n > 0) {
+                // Separador entre la barra y "Más opciones"
+                fill.color = alphaOf(p.hint, 0.35f)
+                c.drawRect(cx - step / 2f - 0.5f * d, cy - stripH * 0.25f, cx - step / 2f + 0.5f * d, cy + stripH * 0.25f, fill)
+            }
             if (stripPressed == i) {
                 fill.color = p.keyPressed
                 c.drawCircle(cx, cy, stripH * 0.4f, fill)

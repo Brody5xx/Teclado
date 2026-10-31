@@ -487,6 +487,12 @@ class MainActivity : UiActivity() {
         ), 13f, faded = true)
         button(tr("Abrir Datos", "Open Data"), primary = true) { startActivity(Intent(this, DataActivity::class.java)) }
 
+        // ---- Emojis
+        card(tr("Emojis", "Emojis"), Icons.EMOJI)
+        switch(tr("Sugerir emojis mientras escribo", "Suggest emojis while I type"), Prefs.EMOJI_SUGGEST, true,
+            tr("Escribe «casa» y sale 🏠, «jajaja» 😂, «te quiero» ❤️, «estoy cansado» 😴. Tócalo y se pone después de la palabra.",
+                "Type «house» and get 🏠, «haha» 😂, «love you» ❤️, «so tired» 😴. Tap it and it goes after the word."))
+
         // ---- Frases rápidas
         card(tr("Frases rápidas", "Quick phrases"), Icons.BUBBLE)
         text(tr(
@@ -537,7 +543,7 @@ class MainActivity : UiActivity() {
         col.addView(gifBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
         button(tr("Guardar llave", "Save key")) {
             prefs.edit().putString(Prefs.GIPHY_KEY, gifBox.text.toString().trim()).apply()
-            toast("Llave guardada. Toca GIFs en el teclado (en ⋯).", "Key saved. Tap GIFs on the keyboard (in ⋯).")
+            toast("Llave guardada. Toca 😀 y luego GIF en el teclado.", "Key saved. Tap 😀 and then GIF on the keyboard.")
         }
         text(tr("Si la app no acepta GIFs desde el teclado, el GIF queda copiado para que lo pegues.",
             "If the app doesn't accept GIFs from the keyboard, the GIF is copied so you can paste it."), 12f, faded = true)
@@ -641,6 +647,18 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.2" to tr(
+            "•  Buscar emojis y GIFs con una barra de búsqueda (escribe «casa», «feliz», «perro»…).\n" +
+                "•  El botón GIF ahora está dentro del panel de emojis.\n" +
+                "•  Sugerencias de emojis según lo que escribes: casa 🏠, jaja 😂, te quiero ❤️.\n" +
+                "•  Barra de scroll fina como un destello de luz (ya no estorba al tocar los emojis de la orilla).\n" +
+                "•  Desliza la barra de arriba para ver los botones de «Más opciones».",
+            "•  Search emojis and GIFs with a search bar (type «house», «happy», «dog»…).\n" +
+                "•  The GIF button is now inside the emoji panel.\n" +
+                "•  Emoji suggestions from what you type: house 🏠, haha 😂, love you ❤️.\n" +
+                "•  Thin scroll bar like a flash of light (it no longer gets in the way of edge emojis).\n" +
+                "•  Swipe the top bar to see the «More options» buttons.",
+        ),
         "9.1" to tr(
             "•  💬 Frases rápidas para reportes del trabajo (español e inglés) y las tuyas.\n" +
                 "•  Traducir mensaje: copia lo que te llegó y tradúcelo al instante.\n" +
