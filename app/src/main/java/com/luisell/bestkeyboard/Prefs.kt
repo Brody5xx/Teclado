@@ -39,6 +39,10 @@ object Prefs {
     const val HACKER = "hacker_keyboard"
     /** Con texto seleccionado, ⇧ cambia lo seleccionado a MAYÚSCULAS / minúsculas / Tipo Título. */
     const val SEL_CAPS = "selection_caps"
+    /** Clave gratis de Google Gemini (para "Más formal" si el teléfono no trae la IA). */
+    const val GEMINI_KEY = "gemini_key"
+    /** Idioma de la pantalla de ajustes: auto / es / en. */
+    const val APP_LANG = "app_lang"
     const val MORE_TOOLS2 = "more_tools_all"
 
     fun get(ctx: Context): SharedPreferences =

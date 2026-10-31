@@ -24,8 +24,9 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import java.util.Locale
 
-/** Pantalla de la app: activar el teclado, probarlo y cambiar ajustes. */
+/** Pantalla de la app: activar el teclado, probarlo y cambiar ajustes (en español o inglés). */
 class MainActivity : Activity() {
 
     private lateinit var prefs: SharedPreferences
@@ -35,6 +36,12 @@ class MainActivity : Activity() {
     private lateinit var col: LinearLayout
     private lateinit var learnedInfo: TextView
     private lateinit var micBtn: TextView
+    private lateinit var photosBtn: TextView
+    private lateinit var camBtn: TextView
+
+    /** Idioma de esta pantalla: el del teléfono, o el que elijas. */
+    private var en = false
+    private fun tr(es: String, en: String) = if (this.en) en else es
 
     companion object {
         // Colores de la pantalla de ajustes (oscuro, futurista)
@@ -59,6 +66,11 @@ class MainActivity : Activity() {
         setTheme(android.R.style.Theme_Material_NoActionBar)
         super.onCreate(savedInstanceState)
         prefs = Prefs.get(this)
+        en = when (prefs.getString(Prefs.APP_LANG, "auto")) {
+            "es" -> false
+            "en" -> true
+            else -> Locale.getDefault().language != "es"
+        }
         title = "Best Keyboard"
         window.statusBarColor = BG
         window.navigationBarColor = BG
@@ -77,13 +89,13 @@ class MainActivity : Activity() {
         if (i?.getBooleanExtra(EXTRA_ASK_PHOTOS, false) == true) askPhotos()
     }
 
-    private lateinit var photosBtn: TextView
+    private fun toast(es: String, en: String) = Toast.makeText(this, tr(es, en), Toast.LENGTH_LONG).show()
 
     private fun askPhotos() {
         if (Screenshots.hasPermission(this)) { refreshMic(); return }
         if (Screenshots.hasPartial(this)) {
             // Dio "solo algunas fotos": hay que cambiarlo a "Permitir todo" en los ajustes de la app
-            Toast.makeText(this, "Toca Permisos → Fotos y videos → \"Permitir todo\".", Toast.LENGTH_LONG).show()
+            toast("Toca Permisos → Fotos y videos → \"Permitir todo\".", "Tap Permissions → Photos and videos → \"Allow all\".")
             try {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName")))
             } catch (_: Exception) { }
@@ -108,34 +120,16 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQ_PHOTOS) {
-            refreshMic()
-            Toast.makeText(
-                this,
-                if (Screenshots.hasPermission(this)) "¡Listo! Toma una captura y abre el teclado." else "Sin ese permiso no puedo sugerir tus capturas.",
-                Toast.LENGTH_LONG,
-            ).show()
-            return
-        }
-        if (requestCode == REQ_CAMERA) {
-            refreshMic()
-            Toast.makeText(
-                this,
-                if (cameraGranted()) "¡Listo! Vuelve a donde escribías y toca el escáner." else "Sin el permiso de la cámara no se puede escanear.",
-                Toast.LENGTH_LONG,
-            ).show()
-            return
-        }
-        if (requestCode != REQ_MIC) return
         refreshMic()
-        if (micGranted()) {
-            Toast.makeText(this, "¡Listo! Vuelve a donde escribías y toca 🎤 para dictar.", Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(this, "Sin el permiso del micrófono no se puede dictar.", Toast.LENGTH_LONG).show()
+        when (requestCode) {
+            REQ_PHOTOS -> if (Screenshots.hasPermission(this)) toast("¡Listo! Toma una captura y abre el teclado.", "Done! Take a screenshot and open the keyboard.")
+                else toast("Sin ese permiso no puedo sugerir tus capturas.", "Without that permission I can't suggest your screenshots.")
+            REQ_CAMERA -> if (cameraGranted()) toast("¡Listo! Vuelve a donde escribías y toca el escáner.", "Done! Go back to where you were typing and tap the scanner.")
+                else toast("Sin el permiso de la cámara no se puede escanear.", "Without the camera permission you can't scan.")
+            REQ_MIC -> if (micGranted()) toast("¡Listo! Vuelve a donde escribías y toca el micrófono para dictar.", "Done! Go back to where you were typing and tap the mic to dictate.")
+                else toast("Sin el permiso del micrófono no se puede dictar.", "Without the microphone permission you can't dictate.")
         }
     }
-
-    private lateinit var camBtn: TextView
 
     /** Abre la pantalla de Android donde se elige el corrector ortográfico. */
     private fun openSpellSettings() {
@@ -150,20 +144,14 @@ class MainActivity : Activity() {
                 return
             } catch (_: Exception) { }
         }
-        Toast.makeText(this, "Búscalo en Ajustes → Sistema → Idiomas → Corrector ortográfico.", Toast.LENGTH_LONG).show()
+        toast("Búscalo en Ajustes → Sistema → Idiomas → Corrector ortográfico.", "Find it in Settings → System → Languages → Spell checker.")
     }
 
     private fun refreshMic() {
-        if (::micBtn.isInitialized) {
-            micBtn.text = if (micGranted()) "✓  Micrófono permitido" else "Permitir el micrófono"
-        }
-        if (::photosBtn.isInitialized) {
-            photosBtn.text = if (Screenshots.hasPermission(this)) "✓  Capturas de pantalla permitidas"
-            else "Permitir ver mis capturas"
-        }
-        if (::camBtn.isInitialized) {
-            camBtn.text = if (cameraGranted()) "✓  Cámara permitida" else "Permitir la cámara"
-        }
+        if (::micBtn.isInitialized) micBtn.text = if (micGranted()) tr("✓  Micrófono permitido", "✓  Microphone allowed") else tr("Permitir el micrófono", "Allow the microphone")
+        if (::photosBtn.isInitialized) photosBtn.text = if (Screenshots.hasPermission(this)) tr("✓  Capturas de pantalla permitidas", "✓  Screenshots allowed")
+            else tr("Permitir ver mis capturas", "Allow seeing my screenshots")
+        if (::camBtn.isInitialized) camBtn.text = if (cameraGranted()) tr("✓  Cámara permitida", "✓  Camera allowed") else tr("Permitir la cámara", "Allow the camera")
     }
 
     override fun onResume() {
@@ -175,8 +163,7 @@ class MainActivity : Activity() {
 
     private fun refreshLearned() {
         if (!::learnedInfo.isInitialized) return
-        val n = WordStore.learnedCount()
-        learnedInfo.text = "Palabras tuyas aprendidas: $n"
+        learnedInfo.text = tr("Palabras tuyas aprendidas: ", "Your learned words: ") + WordStore.learnedCount()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -189,6 +176,15 @@ class MainActivity : Activity() {
 
     /** La columna principal; [col] es la tarjeta donde se van agregando las opciones. */
     private lateinit var root: LinearLayout
+
+    private fun confirm(titleEs: String, titleEn: String, msgEs: String, msgEn: String, action: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle(tr(titleEs, titleEn))
+            .setMessage(tr(msgEs, msgEn))
+            .setPositiveButton(tr("Borrar", "Delete")) { _, _ -> action() }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
+    }
 
     private fun buildUi(): View {
         val sv = ScrollView(this)
@@ -230,21 +226,28 @@ class MainActivity : Activity() {
         meta.addView(pill)
         root.addView(meta, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
 
+        // ---- Idioma de la app
+        card(tr("Idioma", "Language"), Icons.GLOBE)
+        segmented(tr("Idioma de esta pantalla", "Language of this screen"), Prefs.APP_LANG, "auto",
+            listOf("auto" to tr("Del teléfono", "Phone's"), "es" to "Español", "en" to "English")) { recreate() }
+
         // ---- Configuración inicial (tarjeta con borde de color)
-        card("Configuración inicial", Icons.SETTINGS, glow = true)
+        card(tr("Configuración inicial", "Setup"), Icons.SETTINGS, glow = true)
         status = text("", 15f)
-        step1 = button("1. Activar Best Keyboard", primary = true) {
+        step1 = button(tr("1. Activar Best Keyboard", "1. Enable Best Keyboard"), primary = true) {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         }
-        step2 = button("2. Elegir Best Keyboard", primary = true) {
+        step2 = button(tr("2. Elegir Best Keyboard", "2. Choose Best Keyboard"), primary = true) {
             (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker()
         }
-        text(
-            "Android muestra un aviso de que el teclado \"podría recopilar lo que escribes\". Sale con TODOS " +
-                "los teclados. Lo que escribes NUNCA sale de tu teléfono.", 12f, faded = true,
-        )
+        text(tr(
+            "Android muestra un aviso de que el teclado \"podría recopilar lo que escribes\". Sale con TODOS los teclados. " +
+                "Lo que escribes no sale de tu teléfono, salvo cuando tú tocas «Corregir gramática» o «Más formal».",
+            "Android warns that the keyboard \"may collect what you type\". It shows for ALL keyboards. " +
+                "What you type stays on your phone, except when you tap «Fix grammar» or «More formal».",
+        ), 12f, faded = true)
         col.addView(EditText(this).apply {
-            hint = "Toca aquí para probar el teclado"
+            hint = tr("Toca aquí para probar el teclado", "Tap here to try the keyboard")
             minLines = 2
             textSize = 15f
             setTextColor(TEXT)
@@ -254,237 +257,164 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
 
         // ---- Apariencia
-        card("Apariencia", Icons.THEME)
-        segmented("Tema", Prefs.THEME, "auto", listOf("auto" to "Auto", "light" to "Claro", "dark" to "Oscuro"))
-        segmented("Altura de las teclas", Prefs.HEIGHT, "normal", listOf("low" to "Baja", "normal" to "Normal", "high" to "Alta"))
-        switch("Fila de números arriba", Prefs.NUMBER_ROW, true)
-        switch("Letra grande al tocar", Prefs.PREVIEW, true)
-        text("Para cambiar el tamaño: toca ⋯ arriba del teclado → «Cambiar tamaño».", 12f, faded = true)
+        card(tr("Apariencia", "Appearance"), Icons.THEME)
+        segmented(tr("Tema", "Theme"), Prefs.THEME, "auto", listOf("auto" to "Auto", "light" to tr("Claro", "Light"), "dark" to tr("Oscuro", "Dark")))
+        segmented(tr("Altura de las teclas", "Key height"), Prefs.HEIGHT, "normal",
+            listOf("low" to tr("Baja", "Low"), "normal" to "Normal", "high" to tr("Alta", "High")))
+        switch(tr("Fila de números arriba", "Number row on top"), Prefs.NUMBER_ROW, true)
+        switch(tr("Letra grande al tocar", "Big letter on tap"), Prefs.PREVIEW, true)
+        text(tr("Para cambiar el tamaño: toca ⋯ arriba del teclado → «Cambiar tamaño».", "To resize: tap ⋯ above the keyboard → «Resize»."), 12f, faded = true)
 
         // ---- Tacto
-        card("Al tocar una tecla", Icons.EDIT)
-        switch("Vibración", Prefs.VIBRATE, true)
-        segmented("Fuerza de la vibración", Prefs.VIB_STRENGTH, "medium", listOf("soft" to "Suave", "medium" to "Media", "strong" to "Fuerte"))
-        switch("Sonido", Prefs.SOUND, false)
+        card(tr("Al tocar una tecla", "When tapping a key"), Icons.EDIT)
+        switch(tr("Vibración", "Vibration"), Prefs.VIBRATE, true)
+        segmented(tr("Fuerza de la vibración", "Vibration strength"), Prefs.VIB_STRENGTH, "medium",
+            listOf("soft" to tr("Suave", "Soft"), "medium" to tr("Media", "Medium"), "strong" to tr("Fuerte", "Strong")))
+        switch(tr("Sonido", "Sound"), Prefs.SOUND, false)
 
         // ---- Escritura
-        card("Escritura", Icons.SPELL)
-        switch("Mayúscula automática al empezar una oración", Prefs.AUTOCAP, true)
-        switch("Doble espacio pone un punto", Prefs.DOUBLE_SPACE, true)
-        switch("Mayúsculas en lo seleccionado", Prefs.SEL_CAPS, false,
-            "Selecciona un texto y toca ⇧: pasa a MAYÚSCULAS. Toca otra vez para minúsculas y otra para Tipo Título.")
+        card(tr("Escritura", "Typing"), Icons.SPELL)
+        switch(tr("Mayúscula automática al empezar una oración", "Auto-capitalize sentences"), Prefs.AUTOCAP, true)
+        switch(tr("Doble espacio pone un punto", "Double space adds a period"), Prefs.DOUBLE_SPACE, true)
+        switch(tr("Mayúsculas en lo seleccionado", "Uppercase the selection"), Prefs.SEL_CAPS, false,
+            tr("Selecciona un texto y toca ⇧: pasa a MAYÚSCULAS. Otra vez: minúsculas. Otra: Tipo Título.",
+                "Select text and tap ⇧: it becomes UPPERCASE. Again: lowercase. Again: Title Case."))
 
         // ---- Barra espaciadora
-        card("Barra espaciadora", Icons.GLOBE)
-        switch("Deslizar la barra cambia el idioma", Prefs.SPACE_LANG, false,
-            "Se quita el botón 🌐. Desliza rápido para cambiar de idioma; mantén presionado y desliza para mover el cursor.")
+        card(tr("Barra espaciadora", "Space bar"), Icons.GLOBE)
+        switch(tr("Deslizar la barra cambia el idioma", "Swipe the space bar to change language"), Prefs.SPACE_LANG, false,
+            tr("Se quita el botón 🌐. Desliza rápido para cambiar de idioma; mantén presionado y desliza para mover el cursor.",
+                "The 🌐 key goes away. Swipe fast to change language; press, hold and slide to move the cursor."))
 
         // ---- Sugerencias
-        card("Sugerencias y autocorrector", Icons.TRANSLATE)
-        switch("Mostrar sugerencias de palabras", Prefs.SUGGEST, true)
-        switch("Deslizar el dedo para escribir", Prefs.SWIPE, true)
-        switch("Autocorrector", Prefs.AUTOCORRECT, true, "Corrige al tocar espacio. Toca ⌫ justo después para deshacerlo.")
-        switch("Aprender mis palabras", Prefs.LEARN, true, "Nombres, siglas y palabras del trabajo.")
+        card(tr("Sugerencias y autocorrector", "Suggestions and autocorrect"), Icons.TRANSLATE)
+        switch(tr("Mostrar sugerencias de palabras", "Show word suggestions"), Prefs.SUGGEST, true)
+        switch(tr("Deslizar el dedo para escribir", "Swipe typing"), Prefs.SWIPE, true)
+        switch(tr("Autocorrector", "Autocorrect"), Prefs.AUTOCORRECT, true,
+            tr("Corrige al tocar espacio. Toca ⌫ justo después para deshacerlo.", "Fixes words when you tap space. Tap ⌫ right after to undo."))
+        switch(tr("Aprender mis palabras", "Learn my words"), Prefs.LEARN, true, tr("Nombres, siglas y palabras del trabajo.", "Names, acronyms and work words."))
         learnedInfo = text("", 12f, faded = true)
-        button("Borrar las palabras aprendidas") {
-            AlertDialog.Builder(this)
-                .setTitle("¿Borrar lo aprendido?")
-                .setMessage("El teclado olvidará tus palabras y las que sueles escribir juntas.")
-                .setPositiveButton("Borrar") { _, _ ->
-                    WordStore.clearLearned(this)
-                    refreshLearned()
-                }
-                .setNegativeButton("Cancelar", null)
-                .show()
+        button(tr("Borrar las palabras aprendidas", "Delete learned words")) {
+            confirm("¿Borrar lo aprendido?", "Delete what was learned?",
+                "El teclado olvidará tus palabras y las que sueles escribir juntas.", "The keyboard will forget your words and the ones you usually type together.") {
+                WordStore.clearLearned(this)
+                refreshLearned()
+            }
         }
 
         // ---- Ortografía
-        card("Revisar ortografía", Icons.SPELL)
-        text(
-            "Toca el botón de ortografía arriba del teclado: ves todo tu texto con los errores en rojo; toca uno " +
-                "para corregirlo o «Corregir todo».\n\n" +
-                "Si SELECCIONAS un texto antes, se revisa solo eso, palabra por palabra, y aparece «Reescribir formal»: " +
-                "la IA de Google dentro del teléfono (Gemini Nano) lo vuelve más profesional. Solo funciona en " +
-                "teléfonos que tienen esa IA.", 13f, faded = true,
-        )
-        switch("Corrector ortográfico de Android", Prefs.SPELL, true, "Subraya en rojo en las apps que lo usan.")
-        button("Abrir los ajustes del corrector de Android") { openSpellSettings() }
+        card(tr("Revisar ortografía", "Spell check"), Icons.SPELL)
+        text(tr(
+            "Toca el botón de ortografía: se selecciona TODO tu texto y ves los errores en rojo; toca uno para corregirlo " +
+                "o «Corregir todo». Si antes seleccionas solo una parte, se revisa solo esa parte.\n\n" +
+                "Después puedes tocar «Corregir gramática» (gratis, con internet) o «Más formal».",
+            "Tap the spell check button: ALL your text gets selected and mistakes show in red; tap one to fix it " +
+                "or «Fix all». If you select only a part first, only that part is checked.\n\n" +
+                "Then you can tap «Fix grammar» (free, uses internet) or «More formal».",
+        ), 13f, faded = true)
+        switch(tr("Corrector ortográfico de Android", "Android spell checker"), Prefs.SPELL, true,
+            tr("Subraya en rojo en las apps que lo usan.", "Underlines in red in apps that use it."))
+        button(tr("Abrir los ajustes del corrector de Android", "Open Android spell checker settings")) { openSpellSettings() }
+
+        // ---- IA para escribir
+        card(tr("IA para escribir", "AI writing"), Icons.HACKER)
+        text(tr(
+            "«Más formal» usa la IA de Google. Si tu teléfono no la trae por dentro, usa Google Gemini por internet con " +
+                "una clave GRATIS:\n" +
+                "1. Toca «Conseguir mi clave gratis» y entra con tu cuenta de Google.\n" +
+                "2. Toca «Create API key» (Crear clave) y cópiala.\n" +
+                "3. Pégala aquí abajo. ¡Listo!",
+            "«More formal» uses Google's AI. If your phone doesn't have it built in, it uses Google Gemini online with " +
+                "a FREE key:\n" +
+                "1. Tap «Get my free key» and sign in with your Google account.\n" +
+                "2. Tap «Create API key» and copy it.\n" +
+                "3. Paste it below. Done!",
+        ), 13f, faded = true)
+        button(tr("Conseguir mi clave gratis", "Get my free key"), primary = true) {
+            try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://aistudio.google.com/apikey"))) } catch (_: Exception) { }
+        }
+        val keyBox = EditText(this).apply {
+            hint = tr("Pega aquí tu clave (empieza con AIza…)", "Paste your key here (starts with AIza…)")
+            setText(prefs.getString(Prefs.GEMINI_KEY, ""))
+            isSingleLine = true
+            textSize = 14f
+            setTextColor(TEXT)
+            setHintTextColor(SUB)
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+        }
+        col.addView(keyBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        button(tr("Guardar clave", "Save key")) {
+            prefs.edit().putString(Prefs.GEMINI_KEY, keyBox.text.toString().trim()).apply()
+            toast("Clave guardada. Ya puedes usar «Más formal».", "Key saved. You can now use «More formal».")
+        }
+        text(tr("La clave se guarda solo en tu teléfono. El texto se envía a Google solo cuando tocas «Más formal».",
+            "The key is saved only on your phone. Text is sent to Google only when you tap «More formal»."), 12f, faded = true)
 
         // ---- Permisos y herramientas
-        card("Voz, cámara y capturas", Icons.MIC)
-        micBtn = button("Permitir el micrófono") { askMic() }
-        camBtn = button("Permitir la cámara") { askCamera() }
-        photosBtn = button("Permitir ver mis capturas") { askPhotos() }
-        switch("Sugerir mi última captura de pantalla", Prefs.SHOTS, true)
-        text("Dictado: di \"coma\", \"punto final\", \"nueva línea\"… Traducción y escáner funcionan dentro del teléfono.", 12f, faded = true)
+        card(tr("Voz, cámara y capturas", "Voice, camera and screenshots"), Icons.MIC)
+        micBtn = button("") { askMic() }
+        camBtn = button("") { askCamera() }
+        photosBtn = button("") { askPhotos() }
+        switch(tr("Sugerir mi última captura de pantalla", "Suggest my latest screenshot"), Prefs.SHOTS, true)
+        text(tr("Dictado: di \"coma\", \"punto final\", \"nueva línea\"… Traducción y escáner funcionan dentro del teléfono.",
+            "Dictation: say \"comma\", \"period\", \"new line\"… Translation and scanner work on the phone."), 12f, faded = true)
 
         // ---- Portapapeles
-        card("Portapapeles", Icons.CLIP)
-        switch("Guardar todo lo que copio", Prefs.CLIP_HISTORY, true, "Dura 48 horas; lo fijado se queda para siempre. Las contraseñas no se guardan.")
-        button("Borrar el historial (menos lo fijado)") {
-            AlertDialog.Builder(this)
-                .setTitle("¿Borrar el portapapeles?")
-                .setMessage("Se borrará todo lo copiado, menos lo que fijaste.")
-                .setPositiveButton("Borrar") { _, _ -> ClipStore.load(this) { ClipStore.clearUnpinned() } }
-                .setNegativeButton("Cancelar", null)
-                .show()
+        card(tr("Portapapeles", "Clipboard"), Icons.CLIP)
+        switch(tr("Guardar todo lo que copio", "Save everything I copy"), Prefs.CLIP_HISTORY, true,
+            tr("Dura 48 horas; lo fijado se queda para siempre. Las contraseñas no se guardan.", "Lasts 48 hours; pinned items stay forever. Passwords aren't saved."))
+        button(tr("Borrar el historial (menos lo fijado)", "Clear history (except pinned)")) {
+            confirm("¿Borrar el portapapeles?", "Clear the clipboard?",
+                "Se borrará todo lo copiado, menos lo que fijaste.", "Everything copied will be deleted, except pinned items.") {
+                ClipStore.load(this) { ClipStore.clearUnpinned() }
+            }
         }
 
         // ---- Trucos
-        card("Trucos", Icons.IDEA)
-        text(
+        card(tr("Trucos", "Tips"), Icons.IDEA)
+        text(tr(
             "•  Mantén una letra para los acentos (á, é, ñ…) y el punto para ¿ ? ¡ !\n" +
                 "•  ⇧ dos veces = TODO EN MAYÚSCULAS.\n" +
                 "•  Desliza el dedo por las letras para escribir una palabra entera.\n" +
                 "•  Mantén la coma para los emojis.\n" +
                 "•  ⋯ abre «Más opciones»; con el lápiz ✎ acomodas todos los botones.\n" +
-                "•  El hacker 🧑‍💻 cambia a teclado de computadora (Ctrl, Alt, Esc, Tab, F1–F12).\n" +
-                "•  Mantén 🌐 para cambiar a otro teclado.", 13f,
-        )
+                "•  El hacker cambia a teclado de computadora (Ctrl, Alt, Esc, Tab, F1–F12).\n" +
+                "•  Mantén 🌐 para cambiar a otro teclado.",
+            "•  Hold a letter for accents (á, é, ñ…) and the period for ¿ ? ¡ !\n" +
+                "•  ⇧ twice = ALL CAPS.\n" +
+                "•  Slide your finger over the letters to type a whole word.\n" +
+                "•  Hold the comma for emojis.\n" +
+                "•  ⋯ opens «More options»; the pencil ✎ lets you arrange every button.\n" +
+                "•  The hacker switches to a PC keyboard (Ctrl, Alt, Esc, Tab, F1–F12).\n" +
+                "•  Hold 🌐 to switch to another keyboard.",
+        ), 13f)
 
         // ---- Novedades (lo más nuevo visible, lo demás escondido)
-        card("Novedades", Icons.RECENT)
-        subTitle("Versión 7.6")
-        text(
-            "•  Pantalla de ajustes nueva: oscura, minimalista y futurista.\n" +
-                "•  Mayúsculas en lo seleccionado (actívalo en «Escritura»).\n" +
-                "•  Selecciona un texto → ortografía → «Reescribir formal» con la IA del teléfono.", 13f,
-        )
+        card(tr("Novedades", "What's new"), Icons.RECENT)
+        val notes = releaseNotes()
+        subTitle(tr("Versión ", "Version ") + notes[0].first)
+        text(notes[0].second, 13f)
         val older = LinearLayout(this)
         older.orientation = LinearLayout.VERTICAL
         older.visibility = View.GONE
-        val toggle = button("Ver versiones anteriores") {}
+        val toggle = button(tr("Ver versiones anteriores", "See older versions")) {}
         toggle.setOnClickListener {
             val show = older.visibility != View.VISIBLE
             older.visibility = if (show) View.VISIBLE else View.GONE
-            toggle.text = if (show) "Ocultar versiones anteriores" else "Ver versiones anteriores"
+            toggle.text = if (show) tr("Ocultar versiones anteriores", "Hide older versions") else tr("Ver versiones anteriores", "See older versions")
         }
         col.addView(older)
         col = older
-        subTitle("Versión 7.5")
-        text(
-            "• Teclado de computadora (ícono del hacker, en ⋯): Esc, Tab, Ctrl, Alt, Shift, flechas y Fn " +
-                "con F1–F12, Inicio/Fin y RePág/AvPág. Ideal para terminales y código.\n" +
-                "   – Ctrl, Alt y Shift: un toque = solo la próxima tecla (borde azul); dos toques = fijo (azul); tres = apagado.\n" +
-                "   – Mantén una tecla para su otro símbolo (por ejemplo 2 → @).\n" +
-                "• Ortografía de una selección: selecciona palabras y toca el botón de ortografía. " +
-                "Se revisan una por una, incluso tus palabras guardadas (usa «Saltar» para dejarlas).", 13f, faded = true,
-        )
-
-        subTitle("Versión 7.4")
-        text(
-            "• Revisar ortografía como Google Docs: ves todo tu texto con las palabras mal escritas en rojo. " +
-                "Toca una para corregirla, o «Corregir todo».\n" +
-                "• Mejores ideas para palabras muy mal escritas («autografia» → «ortografía»).\n" +
-                "• Si deshaces una corrección, la revisión de ortografía igual la revisa.", 13f, faded = true,
-        )
-
-        subTitle("Versión 7.3")
-        text(
-            "• Ahora puedes mover TODOS los botones de la barra de arriba (también el micrófono y bajar el teclado). " +
-                "En ⋯ → ✎: mantén presionado un botón y arrástralo; un toque lo pasa al otro lado.\n" +
-                "• Botones de «Más opciones» más grandes, como en Gboard; los nombres largos se deslizan para leerlos.", 13f, faded = true,
-        )
-
-        subTitle("Versión 7.2")
-        text(
-            "• Acomoda la barra de arriba a tu manera: toca ⋯ y luego el lápiz ✎. Arrastra las opciones " +
-                "dentro de la barra, o entre la barra y «Más opciones». Un toque las pasa al otro lado.\n" +
-                "• «Más opciones» ya no repite lo que está en la barra de arriba.", 13f, faded = true,
-        )
-
-        subTitle("Versión 7.1")
-        text(
-            "• Botón ⋯ «Más opciones» en la barra de arriba: todas las herramientas con botones grandes " +
-                "(ajustes, tema, siguiente idioma y más).\n" +
-                "• «Cambiar tamaño»: en ⋯, desliza hacia arriba o abajo para hacer el teclado más alto o más bajo.\n" +
-                "• Al mover el cursor con la barra espaciadora, el teclado se oscurece y dice «Desliza».", 13f, faded = true,
-        )
-
-        subTitle("Versión 7.0")
-        text(
-            "• Nueva opción en «Barra espaciadora»: deslizar rápido la barra cambia el idioma y se quita el botón 🌐. " +
-                "Mantenerla presionada y deslizar sigue moviendo el cursor. Viene apagada.", 13f, faded = true,
-        )
-
-        subTitle("Versión 6.8")
-        text(
-            "• Íconos nuevos en todo el teclado: barra de herramientas, emojis, portapapeles, traductor, " +
-                "edición, ortografía y escáner, todos con el mismo estilo de líneas finas.\n" +
-                "• Nuevo botón de herramientas: un pequeño panel de control.\n" +
-                "• La sugerencia de captura de pantalla tiene prioridad sobre las palabras.", 13f, faded = true,
-        )
-
-        subTitle("Versión 6.6")
-        text(
-            "• Los textos del teclado (paneles, botones y mensajes) cambian a inglés o español cuando " +
-                "cambias el idioma con 🌐.\n" +
-                "• La sugerencia de capturas pide el permiso desde el teclado si falta.", 13f, faded = true,
-        )
-
-        subTitle("Versión 6.5")
-        text(
-            "• ‹I› Edición de texto · Text editing: mover el cursor, seleccionar, copiar, cortar y pegar.\n" +
-                "• Sugerencia de tu última captura de pantalla: un toque y se pega (y se guarda en el portapapeles).\n" +
-                "• El portapapeles guarda 2 días; lo fijado 📌 se queda para siempre.", 13f, faded = true,
-        )
-
-        subTitle("Versión 6.2")
-        text(
-            "• Botón abc✓ para revisar la ortografía de todo el texto, error por error.\n" +
-                "• Corrector ortográfico de Android ✔: subraya en rojo en las apps que lo usan.", 13f, faded = true,
-        )
-
-        subTitle("Versión 6")
-        text(
-            "• Deslizar para escribir ✍: pasa el dedo por las letras sin soltarlo y se escribe la palabra, " +
-                "en español o inglés. Se ve la estela azul del dedo.\n" +
-                "• Pone el espacio solo entre palabras deslizadas.\n" +
-                "• Arriba salen otras palabras posibles por si no era esa; ⌫ borra la palabra entera.\n" +
-                "• Aprende tus palabras y nombres para adivinarlos mejor con el uso.", 13f, faded = true,
-        )
-
-        subTitle("Versión 5")
-        text(
-            "• Escanear texto 📷 dentro del teclado (como Gboard): foto → eliges las palabras con el dedo → " +
-                "Insertar, y se escriben al instante.\n" +
-                "• Funciona sin internet y en español e inglés.", 13f, faded = true,
-        )
-
-        subTitle("Versión 4")
-        text(
-            "• Dictado por voz 🎤 en español e inglés, con los signos por voz (coma, punto final...).\n" +
-                "• Traducción A文 como Gboard: escribes en tu idioma y la app recibe la traducción.\n" +
-                "• La traducción funciona dentro del teléfono (Google ML Kit), sin enviar lo que escribes.", 13f, faded = true,
-        )
-
-        subTitle("Versión 3")
-        text(
-            "• Panel de emojis 😊 con más de 1 800 emojis en 9 categorías, Recientes y tonos de piel.\n" +
-                "• Portapapeles infinito 📋: guarda todo lo que copias, textos e imágenes, sin límite.\n" +
-                "• Pega imágenes directo en las apps que lo permiten (WhatsApp, Gmail, Messages...). " +
-                "Si una app no lo permite, la imagen queda copiada para pegarla con mantener presionado → Pegar.\n" +
-                "• Fija 📌 lo que usas siempre (direcciones, números de ticket...) para tenerlo arriba.", 13f, faded = true,
-        )
-
-        subTitle("Versión 2")
-        text(
-            "• Sugerencias de palabras en español e inglés al mismo tiempo (casi 100 000 palabras).\n" +
-                "• Autocorrector: arregla dedazos y pone los acentos solo (tambien → también, " +
-                "manana → mañana, aqui → aquí, dont → don't, im → I'm).\n" +
-                "• Entiende errores de sonido del español: nesecito → necesito, haser → hacer, " +
-                "vien → bien, y palabras pegadas: porfavor → por favor.\n" +
-                "• Borrar justo después de una corrección la deshace.\n" +
-                "• Aprende tus palabras (nombres, siglas, palabras del trabajo) y qué palabra sueles " +
-                "escribir después de otra, para sugerirla antes de que empieces a escribir.\n" +
-                "• Las siglas en MAYÚSCULAS (RUMC, DVSS) y los nombres propios no se corrigen.\n" +
-                "• Todo funciona sin internet y lo aprendido se guarda solo en tu teléfono.", 13f, faded = true,
-        )
-
+        for ((v, body) in notes.drop(1)) {
+            subTitle(tr("Versión ", "Version ") + v)
+            text(body, 13f, faded = true)
+        }
         col = root
 
         val foot = TextView(this)
-        foot.text = "Hecho con ❤ · funciona sin internet"
+        foot.text = tr("Hecho con ❤ · Best Keyboard", "Made with ❤ · Best Keyboard")
         foot.textSize = 12f
         foot.setTextColor(SUB)
         foot.gravity = Gravity.CENTER
@@ -492,20 +422,53 @@ class MainActivity : Activity() {
         return sv
     }
 
+    /** Novedades de cada versión (la primera es la más nueva). */
+    private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "7.7" to tr(
+            "•  Ajustes en español o inglés (según tu teléfono, o elígelo arriba).\n" +
+                "•  El botón de ortografía selecciona todo el texto solo.\n" +
+                "•  «Corregir gramática» gratis (LanguageTool) y «Más formal» con Google Gemini.",
+            "•  Settings in Spanish or English (from your phone, or choose it on top).\n" +
+                "•  The spell check button selects all the text by itself.\n" +
+                "•  Free «Fix grammar» (LanguageTool) and «More formal» with Google Gemini.",
+        ),
+        "7.6" to tr(
+            "•  Pantalla de ajustes nueva: oscura, minimalista y futurista.\n•  Mayúsculas en lo seleccionado.\n•  Reescribir formal con la IA del teléfono.",
+            "•  New settings screen: dark, minimal and futuristic.\n•  Uppercase the selection.\n•  Formal rewrite with the phone's AI.",
+        ),
+        "7.5" to tr(
+            "•  Teclado de computadora (hacker): Esc, Tab, Ctrl, Alt, flechas y F1–F12.\n•  Ortografía de solo lo seleccionado.",
+            "•  PC keyboard (hacker): Esc, Tab, Ctrl, Alt, arrows and F1–F12.\n•  Spell check of just the selection.",
+        ),
+        "7.4" to tr("•  Ortografía como Google Docs: todo el texto con los errores en rojo.", "•  Spell check like Google Docs: all your text with mistakes in red."),
+        "7.3" to tr("•  Todos los botones de la barra se pueden mover.", "•  Every toolbar button can be moved."),
+        "7.2" to tr("•  Acomoda la barra de arriba con el lápiz ✎.", "•  Arrange the top bar with the pencil ✎."),
+        "7.1" to tr("•  «Más opciones» (⋯) y «Cambiar tamaño».", "•  «More options» (⋯) and «Resize»."),
+        "7.0" to tr("•  Deslizar la barra espaciadora para cambiar de idioma.", "•  Swipe the space bar to change language."),
+        "6.8" to tr("•  Íconos nuevos en todo el teclado.", "•  New icons across the keyboard."),
+        "6.6" to tr("•  Los textos del teclado cambian de idioma con 🌐.", "•  Keyboard texts follow the 🌐 language."),
+        "6.5" to tr("•  Edición de texto, sugerencia de capturas, portapapeles de 48 horas.", "•  Text editing, screenshot suggestion, 48-hour clipboard."),
+        "6" to tr("•  Deslizar para escribir.", "•  Swipe typing."),
+        "5" to tr("•  Escanear texto con la cámara.", "•  Scan text with the camera."),
+        "4" to tr("•  Dictado por voz y traducción.", "•  Voice typing and translation."),
+        "3" to tr("•  Emojis y portapapeles con imágenes.", "•  Emojis and clipboard with images."),
+        "2" to tr("•  Sugerencias y autocorrector en español e inglés.", "•  Suggestions and autocorrect in Spanish and English."),
+    )
+
     private fun refreshStatus() {
         if (!::status.isInitialized) return
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         val enabled = imm.enabledInputMethodList.any { it.packageName == packageName }
         val current = Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD) ?: ""
         val selected = current.startsWith("$packageName/")
-        step1.text = if (enabled) "✓ 1. Best Keyboard activado" else "1. Activar Best Keyboard"
-        step2.text = if (selected) "✓ 2. Best Keyboard elegido" else "2. Elegir Best Keyboard"
+        step1.text = if (enabled) tr("✓ 1. Best Keyboard activado", "✓ 1. Best Keyboard enabled") else tr("1. Activar Best Keyboard", "1. Enable Best Keyboard")
+        step2.text = if (selected) tr("✓ 2. Best Keyboard elegido", "✓ 2. Best Keyboard chosen") else tr("2. Elegir Best Keyboard", "2. Choose Best Keyboard")
         step2.isEnabled = enabled
         step2.alpha = if (enabled) 1f else 0.45f
         status.text = when {
-            selected -> "✅ ¡Todo listo! Ya estás usando Best Keyboard."
-            enabled -> "Falta el paso 2: toca el botón y elige Best Keyboard."
-            else -> "Sigue estos 2 pasos para empezar a usar el teclado:"
+            selected -> tr("✅ ¡Todo listo! Ya estás usando Best Keyboard.", "✅ All set! You're using Best Keyboard.")
+            enabled -> tr("Falta el paso 2: toca el botón y elige Best Keyboard.", "Step 2 left: tap the button and choose Best Keyboard.")
+            else -> tr("Sigue estos 2 pasos para empezar a usar el teclado:", "Follow these 2 steps to start using the keyboard:")
         }
     }
 
@@ -632,7 +595,7 @@ class MainActivity : Activity() {
     }
 
     /** Opciones en píldoras, una al lado de la otra (la elegida se ilumina). */
-    private fun segmented(label: String, key: String, def: String, options: List<Pair<String, String>>) {
+    private fun segmented(label: String, key: String, def: String, options: List<Pair<String, String>>, onChange: (() -> Unit)? = null) {
         if (col.childCount > 0) divider()
         val t = TextView(this)
         t.text = label
@@ -658,8 +621,10 @@ class MainActivity : Activity() {
             o.gravity = Gravity.CENTER
             o.setPadding(dp(6), dp(9), dp(6), dp(9))
             o.setOnClickListener {
+                val changed = prefs.getString(key, def) != value
                 prefs.edit().putString(key, value).apply()
                 paint(value)
+                if (changed) onChange?.invoke()
             }
             views.add(value to o)
             bar.addView(o, LinearLayout.LayoutParams(0, -2, 1f))

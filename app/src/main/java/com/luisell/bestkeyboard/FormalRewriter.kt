@@ -44,22 +44,32 @@ object FormalRewriter {
      * [done] recibe las versiones (la mejor primero) o un mensaje de error.
      */
     fun run(ctx: Context, text: String, lang: String, status: (String) -> Unit, done: (List<String>?, String?) -> Unit) {
-        if (text.length > MAX_CHARS) {
-            done(null, L.t("Es mucho texto para la IA. Selecciona un párrafo a la vez.", "Too much text for the AI. Select one paragraph at a time."))
-            return
-        }
-        val r = try { get(ctx, lang) } catch (e: Throwable) {
-            done(null, unavailable()); return
-        }
-        val f = try { r.checkFeatureStatus() } catch (e: Throwable) { done(null, unavailable()); return }
+        val fallback = { cloud(ctx, text, status, done) }
+        if (text.length > MAX_CHARS) { fallback(); return }
+        val r = try { get(ctx, lang) } catch (e: Throwable) { fallback(); return }
+        val f = try { r.checkFeatureStatus() } catch (e: Throwable) { fallback(); return }
         f.addListener({
             val st = try { f.get() } catch (e: Throwable) { FeatureStatus.UNAVAILABLE }
             when (st) {
                 FeatureStatus.AVAILABLE -> infer(r, text, done)
-                FeatureStatus.UNAVAILABLE -> done(null, unavailable())
+                FeatureStatus.UNAVAILABLE -> fallback()
                 else -> download(r, text, status, done)
             }
         }, main)
+    }
+
+    /** El teléfono no trae la IA: se usa Google Gemini por internet con tu clave gratis. */
+    private fun cloud(ctx: Context, text: String, status: (String) -> Unit, done: (List<String>?, String?) -> Unit) {
+        val key = Prefs.get(ctx).getString(Prefs.GEMINI_KEY, "")?.trim().orEmpty()
+        if (key.isEmpty()) {
+            done(null, L.t(
+                "Para «Más formal» necesitas una clave GRATIS de Google Gemini. Abre la app Best Keyboard → «IA para escribir» y sigue los pasos.",
+                "For «More formal» you need a FREE Google Gemini key. Open the Best Keyboard app → «AI writing» and follow the steps.",
+            ))
+            return
+        }
+        status(L.t("Reescribiendo con Gemini…", "Rewriting with Gemini…"))
+        CloudText.formal(text, key, done)
     }
 
     private fun download(r: Rewriter, text: String, status: (String) -> Unit, done: (List<String>?, String?) -> Unit) {

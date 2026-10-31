@@ -36,6 +36,8 @@ class SpellBar(context: Context) : LinearLayout(context) {
         fun onSpellFixAll()
         /** "Reescribir formal" (solo con texto seleccionado). */
         fun onRewrite()
+        /** "Corregir gramática" (con internet, LanguageTool). */
+        fun onGrammar()
         /** Usar la versión formal número [index]. */
         fun onRewriteUse(index: Int)
     }
@@ -51,9 +53,12 @@ class SpellBar(context: Context) : LinearLayout(context) {
     private val title = TextView(context)
     private val fixAll = TextView(context)
     private val rewrite = TextView(context)
-    /** Se muestra "Reescribir formal" (cuando revisas un texto seleccionado). */
+    private val grammar = TextView(context)
+    private val actionsRow = LinearLayout(context)
+    private val actionsScroll = HorizontalScrollView(context)
+    /** Se muestran "Corregir gramática" y "Reescribir formal". */
     var rewriteOn = false
-        set(v) { field = v; rewrite.visibility = if (v) VISIBLE else GONE }
+        set(v) { field = v; showActions(true) }
     private val preview = TextView(context)
     private val previewScroll = object : ScrollView(context) {
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -75,24 +80,30 @@ class SpellBar(context: Context) : LinearLayout(context) {
         row.addView(close, LayoutParams(d(40f), d(36f)))
         title.textSize = 15f
         title.setTypeface(title.typeface, Typeface.BOLD)
-        title.maxLines = 1
+        title.maxLines = 3
         title.ellipsize = TextUtils.TruncateAt.END
         title.setPadding(d(10f), 0, d(8f), 0)
         row.addView(title, LayoutParams(0, -2, 1f))
-        L.bind(fixAll, "Corregir todo", "Fix all")
-        fixAll.textSize = 14f
-        fixAll.gravity = Gravity.CENTER
-        fixAll.setPadding(d(14f), 0, d(14f), 0)
-        fixAll.setOnClickListener { actions?.onSpellFixAll() }
-        row.addView(fixAll, LayoutParams(-2, d(34f)))
-        L.bind(rewrite, "Reescribir formal", "Make formal")
-        rewrite.textSize = 14f
-        rewrite.gravity = Gravity.CENTER
-        rewrite.setPadding(d(14f), 0, d(14f), 0)
-        rewrite.visibility = GONE
-        rewrite.setOnClickListener { actions?.onRewrite() }
-        row.addView(rewrite, LayoutParams(-2, d(34f)).apply { leftMargin = d(6f) })
         addView(row, LayoutParams(-1, -2))
+
+        // Botones: Corregir todo · Corregir gramática · Más formal
+        actionsRow.orientation = HORIZONTAL
+        actionsRow.gravity = Gravity.CENTER_VERTICAL
+        L.bind(fixAll, "Corregir todo", "Fix all")
+        L.bind(grammar, "Corregir gramática", "Fix grammar")
+        L.bind(rewrite, "Más formal", "More formal")
+        for (b in listOf(fixAll, grammar, rewrite)) {
+            b.textSize = 14f
+            b.gravity = Gravity.CENTER
+            b.setPadding(d(14f), 0, d(14f), 0)
+            actionsRow.addView(b, LayoutParams(-2, d(34f)).apply { rightMargin = d(8f) })
+        }
+        fixAll.setOnClickListener { actions?.onSpellFixAll() }
+        grammar.setOnClickListener { actions?.onGrammar() }
+        rewrite.setOnClickListener { actions?.onRewrite() }
+        actionsScroll.isHorizontalScrollBarEnabled = false
+        actionsScroll.addView(actionsRow)
+        addView(actionsScroll, LayoutParams(-1, -2).apply { topMargin = d(6f) })
 
         // Tu texto, con los errores marcados
         preview.textSize = 16f
@@ -122,7 +133,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
         title.text = if (n == 1) L.t("1 palabra por revisar", "1 word to check")
         else L.t("$n palabras por revisar", "$n words to check")
         fixAll.visibility = VISIBLE
-        rewrite.visibility = if (rewriteOn) VISIBLE else GONE
+        showActions(true)
         previewScroll.visibility = VISIBLE
 
         val red = 0xFFE53935.toInt()
@@ -182,19 +193,34 @@ class SpellBar(context: Context) : LinearLayout(context) {
         chips.addView(c, LayoutParams(-2, -2).apply { rightMargin = d(8f) })
     }
 
-    /** Muestra la versión formal [index] de [versions], con botones para usarla. */
-    fun showRewrite(versions: List<String>, index: Int) {
-        title.text = L.t("Versión formal", "Formal version")
-        fixAll.visibility = GONE
-        rewrite.visibility = GONE
+    /** Muestra u oculta la fila de botones (Corregir todo / gramática / formal). */
+    private fun showActions(on: Boolean) {
+        grammar.visibility = if (rewriteOn) VISIBLE else GONE
+        rewrite.visibility = if (rewriteOn) VISIBLE else GONE
+        actionsScroll.visibility = if (on && (rewriteOn || fixAll.visibility == VISIBLE)) VISIBLE else GONE
+    }
+
+    /**
+     * Muestra una versión nueva del texto ([index] de [versions]) para usarla o cancelar.
+     * [changes] = partes cambiadas que se pintan de verde (para "Corregir gramática").
+     */
+    fun showRewrite(versions: List<String>, index: Int, heading: String? = null, changes: List<IntRange> = emptyList()) {
+        title.text = heading ?: L.t("Versión formal", "Formal version")
+        actionsScroll.visibility = GONE
         previewScroll.visibility = VISIBLE
-        preview.text = versions[index]
+        val sp = SpannableString(versions[index])
+        for (r in changes) {
+            if (r.first < 0 || r.last >= sp.length || r.first > r.last) continue
+            sp.setSpan(ForegroundColorSpan(0xFF2E7D32.toInt().let { if (palette.isDark) 0xFF81C995.toInt() else it }), r.first, r.last + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            sp.setSpan(BackgroundColorSpan(0x3334A853), r.first, r.last + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        preview.text = sp
         previewScroll.scrollTo(0, 0)
         chips.removeAllViews()
         chip(L.t("Usar este texto", "Use this text"), true) { actions?.onRewriteUse(index) }
         if (versions.size > 1) {
             chip(L.t("Otra versión (${index + 1}/${versions.size})", "Another version (${index + 1}/${versions.size})"), false) {
-                showRewrite(versions, (index + 1) % versions.size)
+                showRewrite(versions, (index + 1) % versions.size, heading)
             }
         }
         chip(L.t("Cancelar", "Cancel"), false) { actions?.onSpellClose() }
@@ -206,7 +232,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
         title.text = text
         chips.removeAllViews()
         fixAll.visibility = GONE
-        rewrite.visibility = if (showRewrite) VISIBLE else GONE
+        showActions(showRewrite)
         previewScroll.visibility = GONE
     }
 
@@ -223,8 +249,10 @@ class SpellBar(context: Context) : LinearLayout(context) {
         close.background = PanelUi.pressable(p.special, p.keyPressed, r)
         fixAll.setTextColor(p.onAccent)
         fixAll.background = PanelUi.pressable(p.accent, p.accentPressed, r)
-        rewrite.setTextColor(p.accent)
-        rewrite.background = PanelUi.pressable(p.key, p.keyPressed, r)
+        for (b in listOf(grammar, rewrite)) {
+            b.setTextColor(p.accent)
+            b.background = PanelUi.pressable(p.key, p.keyPressed, r)
+        }
         preview.setTextColor(p.text)
         preview.background = PanelUi.rounded(p.key, d(14f).toFloat())
     }

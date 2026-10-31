@@ -340,6 +340,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             override fun onSpellSelect(index: Int) { onKeyFeedback(); spellShow(index) }
             override fun onSpellFixAll() { onKeyFeedback(); spellFixAll() }
             override fun onRewrite() { onKeyFeedback(); startRewrite() }
+            override fun onGrammar() { onKeyFeedback(); startGrammar() }
             override fun onRewriteUse(index: Int) { onKeyFeedback(); useRewrite(index) }
             override fun onSpellLearn() { onKeyFeedback(); spellLearn() }
             override fun onSpellClose() { onKeyFeedback(); stopSpell() }
@@ -626,6 +627,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             base = minOf(selStart, selEnd) - before.length
         }
         if (base < 0) base = 0
+        if (!selection && text.isNotBlank()) {
+            // Sin selección: se selecciona TODO el texto y se revisa completo
+            try { ic.setSelection(base, base + text.length) } catch (_: Exception) { }
+        }
+        val explicit = selection
+        selection = true
         val bar = sBar ?: return
         spellOn = true
         spellErrors = ArrayList()
@@ -660,7 +667,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                         }
                     }
                 }
-                val r = try { eng.spellCheck(m.value, lng, 5, strict = true, ignoreUser = selection) } catch (_: Exception) { null }
+                val r = try { eng.spellCheck(m.value, lng, 5, strict = true, ignoreUser = explicit) } catch (_: Exception) { null }
                 if (r != null && r.misspelled) errs.add(SpellErr(base + m.range.first, base + m.range.last + 1, m.value, r.suggestions, r.maybe))
                 k++
             }
@@ -669,7 +676,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 spellErrors = errs
                 if (errs.isEmpty() && selection) {
                     // Sin errores, pero se queda abierto para poder "Reescribir formal"
-                    bar.message(L.t("✅ Sin errores. ¿Lo hago más formal?", "✅ No mistakes. Make it more formal?"))
+                    bar.message(L.t("✅ Sin errores de ortografía.", "✅ No spelling mistakes."))
                 } else if (errs.isEmpty()) {
                     bar.message(if (selection) L.t("✅ No encontré errores en lo que seleccionaste.", "✅ No mistakes in your selection.")
                         else L.t("✅ No encontré errores de ortografía.", "✅ No spelling mistakes found."))
@@ -686,7 +693,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             // Revisaste lo seleccionado: se queda la opción de "Reescribir formal"
             val end = spellBase + spellText.length
             currentInputConnection?.setSelection(spellBase, end)
-            bar.message(L.t("✅ Listo. ¿Lo hago más formal?", "✅ Done. Make it more formal?"))
+            bar.message(L.t("✅ Ortografía lista.", "✅ Spelling done."))
             return
         }
         if (spellErrors.isEmpty()) {
@@ -1581,6 +1588,28 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     bar.showRewrite(list, 0)
                 }
             })
+    }
+
+    /** "Corregir gramática": manda el texto a LanguageTool y muestra la versión corregida en verde. */
+    private fun startGrammar() {
+        val bar = sBar ?: return
+        if (spellText.isBlank()) return
+        bar.message(L.t("Revisando la gramática…", "Checking grammar…"), showRewrite = false)
+        val token = spellToken
+        CloudText.grammar(spellText, lang) { fixed, err ->
+            if (!spellOn || token != spellToken) return@grammar
+            when {
+                fixed == null -> bar.message(err ?: "", showRewrite = true)
+                fixed.count == 0 -> bar.message(L.t("✅ La gramática está bien.", "✅ Grammar looks good."), showRewrite = true)
+                else -> {
+                    rewrites = listOf(fixed.text)
+                    val n = fixed.count
+                    bar.showRewrite(rewrites, 0,
+                        heading = if (n == 1) L.t("1 arreglo de gramática", "1 grammar fix") else L.t("$n arreglos de gramática", "$n grammar fixes"),
+                        changes = fixed.changes)
+                }
+            }
+        }
     }
 
     /** Cambia el texto seleccionado por la versión formal elegida. */
