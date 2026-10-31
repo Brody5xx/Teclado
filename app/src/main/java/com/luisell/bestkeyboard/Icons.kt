@@ -49,6 +49,8 @@ object Icons {
     const val HACKER = 32
     const val LOCK = 33
     const val MAIL = 34
+    const val EYE = 35
+    const val EYE_OFF = 36
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -364,6 +366,25 @@ object Icons {
                 path.lineTo(cx + a, cy - a)
                 path.lineTo(cx + a, cy - a * 0.1f)
                 c.drawPath(path, st)
+            }
+            EYE, EYE_OFF -> {
+                // Ojito (ver u ocultar la contraseña); tachado = oculta
+                path.reset()
+                path.moveTo(cx - s, cy)
+                path.quadTo(cx, cy - s * 1.15f, cx + s, cy)
+                path.quadTo(cx, cy + s * 1.15f, cx - s, cy)
+                path.close()
+                c.drawPath(path, st)
+                c.drawCircle(cx, cy, s * 0.3f, fl)
+                if (kind == EYE_OFF) {
+                    val p0 = st.color
+                    st.color = bg
+                    st.strokeWidth = st.strokeWidth * 2.2f
+                    c.drawLine(cx - s * 0.8f, cy - s * 0.8f, cx + s * 0.8f, cy + s * 0.8f, st)
+                    st.color = p0
+                    st.strokeWidth = st.strokeWidth / 2.2f
+                    c.drawLine(cx - s * 0.8f, cy - s * 0.8f, cx + s * 0.8f, cy + s * 0.8f, st)
+                }
             }
             MAIL -> {
                 // Sobre de carta

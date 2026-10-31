@@ -291,6 +291,8 @@ class MainActivity : Activity() {
             VaultStore.TEXT to tr("Texto / atajo", "Text / shortcut"),
         )
         val tabViews = ArrayList<TextView>()
+        var eyeView: IconView? = null
+        var shown = false
         fun paint() {
             for ((i, tv) in tabViews.withIndex()) {
                 val on = opts[i].first == kind
@@ -308,6 +310,13 @@ class MainActivity : Activity() {
                 else -> 0
             }
             shortcut.visibility = if (kind == VaultStore.PASSWORD) View.GONE else View.VISIBLE
+            shown = false
+            eyeView?.let { e ->
+                e.visibility = if (kind == VaultStore.PASSWORD) View.VISIBLE else View.GONE
+                e.kind = Icons.EYE_OFF
+                e.color = SUB
+            }
+            value.setPadding(dp(14), dp(12), if (kind == VaultStore.PASSWORD) dp(50) else dp(14), dp(12))
         }
         for ((k, label) in opts) {
             val t = TextView(this)
@@ -320,7 +329,26 @@ class MainActivity : Activity() {
             tabs.addView(t, LinearLayout.LayoutParams(0, -2, 1f))
         }
         box.addView(tabs, LinearLayout.LayoutParams(-1, -2))
-        for (f in listOf(name, value, shortcut)) box.addView(f, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        // La caja del valor con el ojito a la derecha (solo para contraseñas)
+        val valueBox = android.widget.FrameLayout(this)
+        valueBox.addView(value, android.widget.FrameLayout.LayoutParams(-1, -2))
+        val eye = IconView(this, Icons.EYE_OFF, 8f)
+        eye.color = SUB
+        eye.bgColor = BG
+        eye.setOnClickListener {
+            shown = !shown
+            val pos = value.selectionEnd
+            value.inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                if (shown) android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD else android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            value.setSelection(pos.coerceIn(0, value.text.length))
+            eye.kind = if (shown) Icons.EYE else Icons.EYE_OFF
+            eye.color = if (shown) CYAN else SUB
+        }
+        valueBox.addView(eye, android.widget.FrameLayout.LayoutParams(dp(48), dp(48), Gravity.END or Gravity.CENTER_VERTICAL))
+        box.addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        box.addView(valueBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        box.addView(shortcut, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        eyeView = eye
         paint()
         AlertDialog.Builder(this)
             .setTitle(tr("Agregar a Mis datos", "Add to My data"))
@@ -635,6 +663,7 @@ class MainActivity : Activity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "8.1" to tr("•  Ojito 👁 para ver la contraseña mientras la escribes en «Mis datos».", "•  Eye 👁 to see the password while you type it in «My data»."),
         "8.0" to tr(
             "•  «Mis datos» (como Samsung Pass): correos, contraseñas y atajos guardados y cifrados. Escribe 2–3 letras " +
                 "o el atajo y el teclado te los sugiere. Las contraseñas piden huella o PIN.\n" +
