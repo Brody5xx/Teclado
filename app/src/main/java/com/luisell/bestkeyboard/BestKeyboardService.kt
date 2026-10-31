@@ -2162,7 +2162,6 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_EDIT -> showMode(5)
             KeyboardView.TOOL_SHOT -> if (quick != null) useQuick() else useScreenshot()
             KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell()
-            }
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
             KeyboardView.TOOL_MORE -> showMode(6)
             KeyboardView.TOOL_HACKER -> toggleHacker()
