@@ -28,6 +28,8 @@ object Prefs {
     const val SHOT_ASKS = "screenshot_asks"
     /** Deslizar la barra espaciadora cambia el idioma (y se quita el botón 🌐). */
     const val SPACE_LANG = "space_switches_lang"
+    /** Tamaño del teclado elegido con "Cambiar tamaño" (1 = normal). */
+    const val SIZE = "keyboard_size"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

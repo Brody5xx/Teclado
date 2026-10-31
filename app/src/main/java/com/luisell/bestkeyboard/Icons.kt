@@ -41,6 +41,9 @@ object Icons {
     const val HEART = 24
     const val FLAG = 25
     const val DELETE = 26
+    const val MORE = 27
+    const val RESIZE = 28
+    const val GLOBE = 29
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -335,6 +338,34 @@ object Icons {
                 path.quadTo(cx + s * 0.5f, cy + s * 0.35f, cx + s * 0.2f, cy + s * 0.05f)
                 path.quadTo(cx - s * 0.1f, cy - s * 0.3f, cx - s * 0.7f, cy - s * 0.05f)
                 c.drawPath(path, st)
+            }
+            MORE -> {
+                // Tres puntos
+                for (k in -1..1) c.drawCircle(cx + k * s * 0.62f, cy, s * 0.15f, fl)
+            }
+            RESIZE -> {
+                // Marco punteado con una esquina sólida (como Gboard)
+                val a = s * 0.85f
+                val dot = s * 0.09f
+                for (k in 0..3) {
+                    val t = -a + k * a * 0.42f
+                    c.drawCircle(cx + t, cy - a, dot, fl)
+                    c.drawCircle(cx - a, cy + t, dot, fl)
+                    c.drawCircle(cx + a, cy - t, dot, fl)
+                    c.drawCircle(cx - t, cy + a, dot, fl)
+                }
+                path.reset()
+                path.moveTo(cx + a * 0.1f, cy - a)
+                path.lineTo(cx + a, cy - a)
+                path.lineTo(cx + a, cy - a * 0.1f)
+                c.drawPath(path, st)
+            }
+            GLOBE -> {
+                val rr = s * 0.9f
+                c.drawCircle(cx, cy, rr, st)
+                r.set(cx - rr * 0.42f, cy - rr, cx + rr * 0.42f, cy + rr)
+                c.drawOval(r, st)
+                c.drawLine(cx - rr, cy, cx + rr, cy, st)
             }
             DELETE -> {
                 path.reset()

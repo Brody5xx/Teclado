@@ -36,6 +36,8 @@ class KeyboardView(context: Context) : View(context) {
         fun onSuggestion(slot: Int)
         /** Terminaste un trazo de "deslizar para escribir" (puntos en píxeles). */
         fun onGesture(xs: FloatArray, ys: FloatArray, count: Int)
+        /** Terminaste de cambiar el tamaño del teclado ([scale] = 1 es el normal). */
+        fun onResizeDone(scale: Float)
     }
 
     companion object {
@@ -51,6 +53,11 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_MENU = 9
         const val TOOL_EDIT = 20
         const val TOOL_SHOT = 21
+        const val TOOL_RESIZE = 22
+        const val TOOL_LANG = 23
+        const val TOOL_MORE = 24
+        const val MIN_SCALE = 0.72f
+        const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
         /** Cuánto mantener la barra espaciadora para mover el cursor (con la opción de idioma). */
         private const val SPACE_HOLD_MS = 300L
@@ -146,7 +153,10 @@ class KeyboardView(context: Context) : View(context) {
     private var rows: List<List<Key>> = emptyList()
     private val stripH = 46f * d
     private val bottomPad = 6f * d
-    private val keyH get() = keyHeightDp * d
+    /** Tamaño elegido con "Cambiar tamaño" (1 = normal). */
+    var heightScale = 1f
+        set(v) { val n = v.coerceIn(MIN_SCALE, MAX_SCALE); if (field != n) { field = n; requestLayout(); invalidate() } }
+    private val keyH get() = keyHeightDp * heightScale * d
     private val gapX = 5f * d
     private val gapY = 8f * d
     private val radius = 7f * d
@@ -190,10 +200,14 @@ class KeyboardView(context: Context) : View(context) {
     private val longPressRunnable = Runnable { onLongPress() }
     /** Con "deslizar cambia el idioma": si mantienes la barra espaciadora, se activa el cursor. */
     private var spaceHold = false
+    /** Moviendo el cursor con la barra espaciadora: el teclado se oscurece y dice "Desliza". */
+    private var spaceCursor = false
     private val spaceHoldRunnable = Runnable {
         if (activeKey?.code == Codes.SPACE && !spaceDragging) {
             spaceHold = true
+            spaceCursor = true
             listener?.onKeyFeedback()
+            invalidate()
         }
     }
     private val repeatRunnable = object : Runnable {
@@ -224,6 +238,8 @@ class KeyboardView(context: Context) : View(context) {
         stripPressed = -1
         longPressed = false
         spaceDragging = false
+        spaceCursor = false
+        resizing = false
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -304,7 +320,7 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     /** Herramientas de la izquierda (en orden) y su separación según el ancho de la pantalla. */
-    private val leftTools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL, TOOL_EDIT)
+    private val leftTools = intArrayOf(TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL, TOOL_EDIT, TOOL_MORE)
     private fun toolStep(): Float = minOf(52f * d, (width - 112f * d) / leftTools.size)
 
     private fun toolHit(x: Float): Int {
@@ -318,6 +334,7 @@ class KeyboardView(context: Context) : View(context) {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
+        if (resizing) { resizeTouch(e); return true }
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> startPointer(e.getPointerId(0), e.getX(0), e.getY(0))
             MotionEvent.ACTION_POINTER_DOWN -> {
@@ -427,6 +444,7 @@ class KeyboardView(context: Context) : View(context) {
             if (!spaceDragging && abs(x - downX) > 18f * d) {
                 spaceDragging = true
                 spaceLastX = x
+                if (!spaceCursor) { spaceCursor = true; invalidate() }
             }
             if (spaceDragging) {
                 val step = 11f * d
@@ -453,6 +471,7 @@ class KeyboardView(context: Context) : View(context) {
         handler.removeCallbacks(longPressRunnable)
         handler.removeCallbacks(repeatRunnable)
         handler.removeCallbacks(spaceHoldRunnable)
+        if (spaceCursor) { spaceCursor = false; invalidate() }
         activeId = -1
         if (gesturing) {
             gesturing = false
@@ -545,6 +564,102 @@ class KeyboardView(context: Context) : View(context) {
         val ak = activeKey
         if (altKeys != null) drawAlts(c, p)
         else if (ak != null && showPreview && ak.code == 0 && !longPressed) drawPreview(c, ak, p)
+        if (spaceCursor) drawSlideHint(c)
+        if (resizing) drawResize(c, p)
+    }
+
+    /** Mientras mueves el cursor con la barra espaciadora: teclas oscurecidas y "Desliza". */
+    private fun drawSlideHint(c: Canvas) {
+        fill.color = 0x99000000.toInt()
+        c.drawRect(0f, stripH, width.toFloat(), height.toFloat(), fill)
+        text.isFakeBoldText = true
+        drawLabel(c, L.t("Desliza", "Slide"), width / 2f, stripH + (height - stripH) * 0.42f, keyH * 0.5f, 0xFFFFFFFF.toInt())
+        text.isFakeBoldText = false
+    }
+
+    // ---------------------------------------------------------------- Cambiar tamaño
+
+    /** Modo "Cambiar tamaño": arrastra hacia arriba o abajo para hacer el teclado más alto o más bajo. */
+    var resizing = false
+        private set
+    private var resizeStartY = 0f
+    private var resizeStartScale = 1f
+    private var resizeBtn = -1 // 0 = restablecer, 1 = listo
+    private val resetRect = RectF()
+    private val doneRect = RectF()
+
+    fun startResize() {
+        reset()
+        resizing = true
+        invalidate()
+    }
+
+    private fun finishResize() {
+        resizing = false
+        invalidate()
+        listener?.onResizeDone(heightScale)
+    }
+
+    private fun drawResize(c: Canvas, p: Palette) {
+        val w = width.toFloat()
+        val h = height.toFloat()
+        fill.color = 0xAA000000.toInt()
+        c.drawRect(0f, 0f, w, h, fill)
+        // Borde azul y agarradera arriba
+        stroke.color = p.accent
+        stroke.strokeWidth = 2.5f * d
+        tmp.set(2f * d, 2f * d, w - 2f * d, h - 2f * d)
+        c.drawRoundRect(tmp, 10f * d, 10f * d, stroke)
+        fill.color = p.accent
+        tmp.set(w / 2 - 28f * d, 6f * d, w / 2 + 28f * d, 12f * d)
+        c.drawRoundRect(tmp, 3f * d, 3f * d, fill)
+        // Flechas ↕ y texto
+        val cy = h * 0.36f
+        drawLabel(c, "↕", w / 2, cy - keyH * 0.55f, keyH * 0.6f, 0xFFFFFFFF.toInt())
+        drawLabel(c, L.t("Desliza hacia arriba o abajo", "Drag up or down"), w / 2, cy + keyH * 0.15f, keyH * 0.3f, 0xFFFFFFFF.toInt())
+        // Botones
+        val bw = minOf(140f * d, w * 0.38f)
+        val bh = 44f * d
+        val by = h * 0.62f
+        resetRect.set(w / 2 - 8f * d - bw, by, w / 2 - 8f * d, by + bh)
+        doneRect.set(w / 2 + 8f * d, by, w / 2 + 8f * d + bw, by + bh)
+        fill.color = if (resizeBtn == 0) p.keyPressed else p.special
+        c.drawRoundRect(resetRect, bh / 2, bh / 2, fill)
+        fill.color = if (resizeBtn == 1) p.accentPressed else p.accent
+        c.drawRoundRect(doneRect, bh / 2, bh / 2, fill)
+        drawLabel(c, L.t("Restablecer", "Reset"), resetRect.centerX(), resetRect.centerY(), 15f * d, p.text)
+        drawLabel(c, L.t("Listo", "Done"), doneRect.centerX(), doneRect.centerY(), 15f * d, p.onAccent)
+    }
+
+    private fun resizeTouch(e: MotionEvent) {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                resizeBtn = when {
+                    resetRect.contains(e.x, e.y) -> 0
+                    doneRect.contains(e.x, e.y) -> 1
+                    else -> -1
+                }
+                resizeStartY = e.rawY
+                resizeStartScale = heightScale
+                if (resizeBtn >= 0) listener?.onKeyFeedback()
+                invalidate()
+            }
+            MotionEvent.ACTION_MOVE -> if (resizeBtn < 0 && rows.isNotEmpty()) {
+                // Hacia arriba (dedo sube) = más alto. Se usa rawY porque la vista cambia de tamaño.
+                val baseRows = rows.size * keyHeightDp * d
+                heightScale = resizeStartScale + (resizeStartY - e.rawY) / baseRows
+            }
+            MotionEvent.ACTION_UP -> {
+                val b = resizeBtn
+                resizeBtn = -1
+                when (b) {
+                    0 -> if (resetRect.contains(e.x, e.y)) heightScale = 1f
+                    1 -> if (doneRect.contains(e.x, e.y)) finishResize()
+                }
+                invalidate()
+            }
+            MotionEvent.ACTION_CANCEL -> { resizeBtn = -1; invalidate() }
+        }
     }
 
     /** La estela azul del dedo al deslizar (más fina en la cola). */
@@ -733,6 +848,7 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_SCAN -> Icons.SCAN
                 TOOL_VOICE -> Icons.MIC
                 TOOL_HIDE -> Icons.HIDE
+                TOOL_MORE -> Icons.MORE
                 else -> continue
             }
             val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn)

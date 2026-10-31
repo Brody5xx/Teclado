@@ -108,6 +108,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // Edición de texto (panel 5)
     private var editPanel: EditPanel? = null
+    private var morePanel: MorePanel? = null
 
     // Sugerencia de captura de pantalla
     private var shot: Screenshots.Shot? = null
@@ -267,6 +268,23 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         box.addView(ed, FrameLayout.LayoutParams(-1, -1))
         editPanel = ed
+
+        // Panel "Más opciones": todas las herramientas con botones grandes
+        val more = MorePanel(this)
+        more.visibility = View.GONE
+        more.actions = object : MorePanel.Actions {
+            override fun onMoreTool(tool: Int) {
+                when (tool) {
+                    KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_VOICE,
+                    KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN -> onToolbar(tool)
+                    else -> { showMode(0); onToolbar(tool) }
+                }
+            }
+            override fun onMoreBack() = showMode(0)
+            override fun onMoreFeedback() = onKeyFeedback()
+        }
+        box.addView(more, FrameLayout.LayoutParams(-1, -1))
+        morePanel = more
         scanPanel = sp
         panelBox = box
 
@@ -366,6 +384,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             ed.visibility = if (m == 5) View.VISIBLE else View.GONE
             if (m == 5) ed.open()
         }
+        morePanel?.visibility = if (m == 6) View.VISIBLE else View.GONE
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
 
@@ -982,6 +1001,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         tBar?.applyPalette(pal)
         sBar?.applyPalette(pal)
         scanPanel?.applyPalette(pal)
+        editPanel?.applyPalette(pal)
+        morePanel?.applyPalette(pal)
         colorNavBar(pal)
 
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -991,6 +1012,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             else -> 52f
         }
         v.keyHeightDp = if (landscape) base * 0.78f else base
+        if (!v.resizing) v.heightScale = prefs.getFloat(Prefs.SIZE, 1f)
         v.showPreview = prefs.getBoolean(Prefs.PREVIEW, true)
 
         vibrateOn = prefs.getBoolean(Prefs.VIBRATE, true)
@@ -1419,7 +1441,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 }
             }
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
+            KeyboardView.TOOL_MORE -> showMode(6)
+            KeyboardView.TOOL_LANG -> onKeyCode(Codes.LANG)
+            KeyboardView.TOOL_RESIZE -> {
+                showMode(0)
+                kv?.startResize()
+            }
         }
+    }
+
+    override fun onResizeDone(scale: Float) {
+        prefs.edit().putFloat(Prefs.SIZE, scale).apply()
     }
 
     override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) {

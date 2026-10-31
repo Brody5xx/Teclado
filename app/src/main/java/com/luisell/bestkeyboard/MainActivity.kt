@@ -210,6 +210,7 @@ class MainActivity : Activity() {
         radio("Altura de las teclas", Prefs.HEIGHT, "normal", listOf(
             "low" to "Baja", "normal" to "Normal", "high" to "Alta",
         ))
+        text("Para hacer el teclado más alto o más bajo: toca ⋯ arriba del teclado y luego «Cambiar tamaño».", 13f)
         switch("Fila de números arriba", Prefs.NUMBER_ROW, true)
         switch("Mostrar la letra grande al tocar", Prefs.PREVIEW, true)
 
@@ -351,7 +352,15 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 7.0")
+        section("Novedades — Versión 7.1")
+        text(
+            "• Botón ⋯ «Más opciones» en la barra de arriba: todas las herramientas con botones grandes " +
+                "(ajustes, tema, siguiente idioma y más).\n" +
+                "• «Cambiar tamaño»: en ⋯, desliza hacia arriba o abajo para hacer el teclado más alto o más bajo.\n" +
+                "• Al mover el cursor con la barra espaciadora, el teclado se oscurece y dice «Desliza».", 14f,
+        )
+
+        section("Versión 7.0")
         text(
             "• Nueva opción en «Barra espaciadora»: deslizar rápido la barra cambia el idioma y se quita el botón 🌐. " +
                 "Mantenerla presionada y deslizar sigue moviendo el cursor. Viene apagada.", 14f,
