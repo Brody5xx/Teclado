@@ -188,10 +188,6 @@ class KeyboardView(context: Context) : View(context) {
     var floatOn = false
         set(v) { if (field != v) { field = v; invalidate() } }
 
-    /** Teclado flotante encendido (para iluminar su botón). */
-    var floatOn = false
-        set(v) { if (field != v) { field = v; invalidate() } }
-
     /** Modo una mano: 0 normal, 1 teclas a la izquierda, 2 teclas a la derecha. */
     var oneHand = 0
         set(v) { if (field != v) { field = v; if (width > 0) layoutKeys(); invalidate() } }
