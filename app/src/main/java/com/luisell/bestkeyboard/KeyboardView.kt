@@ -65,6 +65,8 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_KEYSIZE = 30
         const val TOOL_SOUND = 31
         const val TOOL_VIB = 32
+        const val TOOL_SHAPE = 33
+        const val TOOL_STYLE = 34
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -77,7 +79,11 @@ class KeyboardView(context: Context) : View(context) {
     private val d = resources.displayMetrics.density
 
     var palette: Palette = Palette.DARK
-        set(v) { field = v; invalidate() }
+        set(v) {
+            field = v
+            text.typeface = if (v.mono) Typeface.MONOSPACE else Typeface.DEFAULT
+            invalidate()
+        }
     var keyHeightDp = 52f
         set(v) { if (field != v) { field = v; requestLayout(); invalidate() } }
     var shift = 0 // 0 = minúsculas, 1 = una mayúscula, 2 = bloqueo de mayúsculas
@@ -192,7 +198,7 @@ class KeyboardView(context: Context) : View(context) {
     var keyShape = "normal"
         set(v) {
             field = v
-            radius = when (v) { "square" -> 3f; "round" -> 13f; "pill" -> 60f; else -> 7f } * d
+            radius = when (v) { "square" -> 3f; "round", "outline" -> 13f; "pill" -> 60f; "circle" -> 200f; else -> 7f } * d
             invalidate()
         }
     /** Tamaño de las letras de las teclas (1 = normal). */
@@ -209,7 +215,50 @@ class KeyboardView(context: Context) : View(context) {
     private class Anim(val key: Key, val start: Long, val x: Float, val y: Float)
     private val anims = ArrayList<Anim>()
     private val animPath = Path()
-    private fun animDur() = when (keyAnim) { "ripple" -> 380L; "glow" -> 420L; else -> 230L }
+    private fun animDur() = when (keyAnim) {
+        "ripple" -> 380L; "glow" -> 420L; "sparks" -> 480L; "bubble" -> 420L; "lift" -> 280L; else -> 230L
+    }
+
+    // ---------------------------------------------------------------- Lluvia de código (tema Hacker)
+
+    private class Drop(var y: Float, var speed: Float, val chars: CharArray)
+    private var drops: Array<Drop> = emptyArray()
+    private var lastRain = 0L
+    private val rainPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = Typeface.MONOSPACE; textAlign = Paint.Align.CENTER }
+    private val rnd = java.util.Random()
+    private val GLYPHS = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾙﾚﾛﾜ0123456789<>{}[]=+*#$%&"
+
+    /** Columnas de letras verdes que caen detrás de las teclas. Solo se mueve mientras el teclado se ve. */
+    private fun drawMatrix(c: Canvas) {
+        val cell = 14f * d
+        val cols = (width / cell).toInt().coerceAtLeast(1)
+        if (drops.size != cols) {
+            drops = Array(cols) {
+                Drop(-rnd.nextFloat() * height, (60f + rnd.nextFloat() * 120f) * d, CharArray(18) { GLYPHS[rnd.nextInt(GLYPHS.length)] })
+            }
+        }
+        val now = SystemClock.uptimeMillis()
+        val dt = if (lastRain == 0L) 0f else ((now - lastRain).coerceAtMost(100L)) / 1000f
+        lastRain = now
+        rainPaint.textSize = 12f * d
+        for ((i, dr) in drops.withIndex()) {
+            dr.y += dr.speed * dt
+            if (dr.y - dr.chars.size * cell > height) {
+                dr.y = -rnd.nextFloat() * height * 0.5f
+                dr.speed = (60f + rnd.nextFloat() * 120f) * d
+            }
+            if (rnd.nextInt(12) == 0) dr.chars[rnd.nextInt(dr.chars.size)] = GLYPHS[rnd.nextInt(GLYPHS.length)]
+            val x = i * cell + cell / 2
+            for (j in dr.chars.indices) {
+                val y = dr.y - j * cell
+                if (y < -cell || y > height + cell) continue
+                val a = if (j == 0) 200 else (150 * (1f - j.toFloat() / dr.chars.size)).toInt()
+                rainPaint.color = if (j == 0) (a shl 24) or 0xCCFFDD else (a shl 24) or 0x00C853
+                c.drawText(dr.chars[j].toString(), x, y, rainPaint)
+            }
+        }
+        if (isShown) postInvalidateDelayed(45)
+    }
 
     // Pinturas creadas una sola vez (nada se crea mientras se dibuja = más fluido)
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -642,6 +691,7 @@ class KeyboardView(context: Context) : View(context) {
             c.drawRect(0f, 0f, width.toFloat(), height.toFloat(), fill)
             fill.shader = null
         } else c.drawColor(p.bg)
+        if (p.effect == "matrix") drawMatrix(c) else lastRain = 0L
         drawStrip(c, p)
         val now = SystemClock.uptimeMillis()
         labelMul = labelScale
@@ -649,14 +699,24 @@ class KeyboardView(context: Context) : View(context) {
             val a = if (anims.isEmpty()) null else anims.firstOrNull { it.key === k }
             if (a == null) { drawKey(c, k, p); continue }
             val t = ((now - a.start).toFloat() / animDur()).coerceIn(0f, 1f)
-            if (keyAnim == "pop") {
+            if (keyAnim == "pop" || keyAnim == "zoom") {
                 // Se hunde un poquito y rebota
-                val sc = if (t < 0.35f) 1f - 0.1f * (t / 0.35f) else {
+                val sc = if (keyAnim == "zoom") {
+                    // Crece un poquito y vuelve
+                    1f + 0.14f * kotlin.math.sin(Math.PI * t).toFloat()
+                } else if (t < 0.35f) 1f - 0.1f * (t / 0.35f) else {
                     val u = (t - 0.35f) / 0.65f - 1f
                     0.9f + 0.1f * (1f + 2.70158f * u * u * u + 1.70158f * u * u)
                 }
                 c.save()
                 c.scale(sc, sc, k.rect.centerX(), k.rect.centerY())
+                drawKey(c, k, p)
+                c.restore()
+            } else if (keyAnim == "lift") {
+                // La tecla salta hacia arriba y baja
+                val dy = -6f * d * kotlin.math.sin(Math.PI * t).toFloat()
+                c.save()
+                c.translate(0f, dy)
                 drawKey(c, k, p)
                 c.restore()
             } else {
@@ -791,6 +851,41 @@ class KeyboardView(context: Context) : View(context) {
         stroke.strokeWidth = 1.8f * d
     }
 
+    /** El fondo de la tecla según la forma elegida (normal, círculo, solo borde, transparente…). */
+    private fun drawKeyBg(c: Canvas, k: Key, bg: Int, pressed: Boolean, p: Palette) {
+        val r = k.rect
+        if (keyShape == "circle" && (k.code == 0 || k.code == Codes.SHIFT || k.code == Codes.DELETE)) {
+            // Teclas redondas (las anchas como espacio se quedan en píldora)
+            val side = minOf(r.width(), r.height())
+            tmp.set(r.centerX() - side / 2, r.centerY() - side / 2, r.centerX() + side / 2, r.centerY() + side / 2)
+        } else tmp.set(r)
+        val solid = k.code == Codes.ENTER || bg == p.accent || bg == p.accentPressed
+        when {
+            keyShape == "flat" && !pressed && !solid -> Unit // sin fondo: solo la letra
+            keyShape == "outline" && !pressed && !solid -> {
+                stroke.color = if (k.special) p.hint else (p.text and 0x00FFFFFF) or 0x55000000
+                stroke.strokeWidth = 1.4f * d
+                c.drawRoundRect(tmp, radius, radius, stroke)
+            }
+            else -> {
+                if (!p.isDark) {
+                    fill.color = p.shadow
+                    tmp.offset(0f, 1f * d)
+                    c.drawRoundRect(tmp, radius, radius, fill)
+                    tmp.offset(0f, -1f * d)
+                }
+                fill.color = bg
+                c.drawRoundRect(tmp, radius, radius, fill)
+            }
+        }
+        // Tema Hacker: borde verde de vidrio (brilla al tocar)
+        if (p.effect == "matrix") {
+            stroke.color = if (pressed) p.accent else 0x5500FF66
+            stroke.strokeWidth = (if (pressed) 2f else 1f) * d
+            c.drawRoundRect(tmp, radius, radius, stroke)
+        }
+    }
+
     /** Onda que sale del dedo, o un brillo alrededor de la tecla. */
     private fun drawKeyAnim(c: Canvas, k: Key, a: Anim, t: Float, p: Palette) {
         if (keyAnim == "ripple") {
@@ -802,6 +897,24 @@ class KeyboardView(context: Context) : View(context) {
             fill.color = (p.accent and 0x00FFFFFF) or (((1f - t) * 0x70).toInt() shl 24)
             c.drawCircle(a.x, a.y, maxR * (0.15f + 0.95f * t), fill)
             c.restore()
+        } else if (keyAnim == "sparks") {
+            // Chispitas que salen del dedo
+            val seed = (a.start % 997).toInt()
+            for (i in 0 until 9) {
+                val ang = (i * 40 + seed * 7) * Math.PI / 180.0
+                val dist = (10f + 26f * t) * d * (0.7f + ((seed + i * 13) % 10) / 20f)
+                val x = a.x + (kotlin.math.cos(ang) * dist).toFloat()
+                val y = a.y + (kotlin.math.sin(ang) * dist).toFloat() - 6f * d * t
+                fill.color = (p.accent and 0x00FFFFFF) or (((1f - t) * 255).toInt() shl 24)
+                c.drawCircle(x, y, (2.6f - 1.6f * t) * d, fill)
+            }
+        } else if (keyAnim == "bubble") {
+            // Un anillo que crece hacia afuera de la tecla
+            stroke.color = (p.accent and 0x00FFFFFF) or (((1f - t) * 220).toInt() shl 24)
+            stroke.strokeWidth = (2.5f - 1.5f * t) * d
+            val grow = 12f * d * t
+            tmp.set(k.rect.left - grow, k.rect.top - grow, k.rect.right + grow, k.rect.bottom + grow)
+            c.drawRoundRect(tmp, radius + grow, radius + grow, stroke)
         } else if (keyAnim == "glow") {
             val alpha = ((1f - t) * 255).toInt()
             fill.color = (p.accent and 0x00FFFFFF) or ((alpha * 0x30 / 255) shl 24)
@@ -831,14 +944,7 @@ class KeyboardView(context: Context) : View(context) {
             k.special -> p.special
             else -> p.key
         }
-        if (!p.isDark) {
-            fill.color = p.shadow
-            tmp.set(k.rect)
-            tmp.offset(0f, 1f * d)
-            c.drawRoundRect(tmp, radius, radius, fill)
-        }
-        fill.color = bg
-        c.drawRoundRect(k.rect, radius, radius, fill)
+        drawKeyBg(c, k, bg, pressed, p)
 
         val cx = k.rect.centerX()
         val cy = k.rect.centerY()
@@ -1006,6 +1112,8 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_KEYSIZE -> Icons.KEYSIZE
                 TOOL_SOUND -> Icons.SPEAKER
                 TOOL_VIB -> Icons.VIBRATE
+                TOOL_SHAPE -> Icons.SHAPES
+                TOOL_STYLE -> Icons.BRUSH
                 else -> continue
             }
             val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn)

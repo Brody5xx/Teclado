@@ -1276,7 +1276,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
         v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f }
         v.keyAnim = prefs.getString(Prefs.KEY_ANIM, "pop") ?: "pop"
-        vibStyle = prefs.getString(Prefs.VIB_STYLE, "system")
+        vibStyle = "system" // la única que funciona en todos los teléfonos (las otras quedan de respaldo)
         vibStrength = prefs.getString(Prefs.VIB_STRENGTH, "medium")
         soundStyle = prefs.getString(Prefs.SOUND_STYLE, "modern")
         soundVol = prefs.getString(Prefs.SOUND_VOL, "medium")
@@ -1797,7 +1797,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 startActivity(i)
             }
             KeyboardView.TOOL_THEME, KeyboardView.TOOL_ANIM, KeyboardView.TOOL_LABEL,
-            KeyboardView.TOOL_KEYSIZE, KeyboardView.TOOL_SOUND, KeyboardView.TOOL_VIB -> {
+            KeyboardView.TOOL_KEYSIZE, KeyboardView.TOOL_SOUND, KeyboardView.TOOL_VIB, KeyboardView.TOOL_SHAPE -> {
                 // Desde la barra de arriba: un toque pasa a la siguiente opción
                 val name = Cycles.step(prefs, action, 1)
                 val title = Tools.info(action)?.label ?: ""
@@ -1822,6 +1822,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_MORE -> showMode(6)
             KeyboardView.TOOL_HACKER -> toggleHacker()
             KeyboardView.TOOL_CODE -> toggleCode()
+            KeyboardView.TOOL_STYLE -> {
+                showMode(0)
+                try {
+                    startActivity(Intent(this, StyleActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                } catch (_: Exception) { }
+            }
             KeyboardView.TOOL_VAULT -> {
                 // Pide la huella y muestra tus correos, contraseñas y textos guardados
                 showMode(0)

@@ -59,6 +59,11 @@
         </service>
 
         <!-- Escanear texto con la cámara -->
+        <!-- "Estilo": temas, colores, formas, animaciones, vibración y sonido -->
+        <activity
+            android:name=".StyleActivity"
+            android:exported="false" />
+
         <!-- "Mis contraseñas": elegir una y confirmar con huella o PIN -->
         <activity
             android:name=".VaultPickActivity"

@@ -61,7 +61,7 @@ object Feedback {
         if ((style == null || style == "system") && view != null) {
             val c = when (strength) {
                 "soft" -> android.view.HapticFeedbackConstants.CLOCK_TICK
-                "strong" -> android.view.HapticFeedbackConstants.VIRTUAL_KEY
+                "strong" -> android.view.HapticFeedbackConstants.LONG_PRESS
                 else -> if (Build.VERSION.SDK_INT >= 27) android.view.HapticFeedbackConstants.KEYBOARD_TAP else android.view.HapticFeedbackConstants.VIRTUAL_KEY
             }
             @Suppress("DEPRECATION")

@@ -37,7 +37,9 @@ object Tools {
         Info(KeyboardView.TOOL_HIDE, Icons.HIDE, "Bajar", "Hide", false),
         Info(KeyboardView.TOOL_RESIZE, Icons.RESIZE, "Tamaño", "Resize", false),
         Info(KeyboardView.TOOL_LANG, Icons.GLOBE, "Idioma", "Language", false),
+        Info(KeyboardView.TOOL_STYLE, Icons.BRUSH, "Estilo", "Style", true),
         Info(KeyboardView.TOOL_THEME, Icons.THEME, "Tema", "Theme", false),
+        Info(KeyboardView.TOOL_SHAPE, Icons.SHAPES, "Forma", "Shape", false),
         Info(KeyboardView.TOOL_ANIM, Icons.RIPPLE, "Efecto", "Effect", false),
         Info(KeyboardView.TOOL_LABEL, Icons.TEXTSIZE, "Letras", "Letters", false),
         Info(KeyboardView.TOOL_KEYSIZE, Icons.KEYSIZE, "Teclas", "Keys", false),
@@ -121,23 +123,27 @@ object Cycles {
 
     fun has(tool: Int) = tool in setOf(
         KeyboardView.TOOL_THEME, KeyboardView.TOOL_ANIM, KeyboardView.TOOL_LABEL,
-        KeyboardView.TOOL_KEYSIZE, KeyboardView.TOOL_SOUND, KeyboardView.TOOL_VIB,
+        KeyboardView.TOOL_KEYSIZE, KeyboardView.TOOL_SOUND, KeyboardView.TOOL_VIB, KeyboardView.TOOL_SHAPE,
     )
 
     fun options(tool: Int): List<Opt> = when (tool) {
         KeyboardView.TOOL_THEME -> themes()
-        KeyboardView.TOOL_ANIM -> listOf(Opt("Ninguno", "None"), Opt("Rebote", "Bounce"), Opt("Onda", "Ripple"), Opt("Brillo", "Glow"))
+        KeyboardView.TOOL_ANIM -> listOf(Opt("Ninguno", "None"), Opt("Rebote", "Bounce"), Opt("Zoom", "Zoom"), Opt("Saltar", "Jump"),
+            Opt("Onda", "Ripple"), Opt("Brillo", "Glow"), Opt("Chispas", "Sparks"), Opt("Burbuja", "Bubble"))
+        KeyboardView.TOOL_SHAPE -> listOf(Opt("Cuadradas", "Square"), Opt("Normal", "Normal"), Opt("Redondas", "Round"),
+            Opt("Píldora", "Pill"), Opt("Círculo", "Circle"), Opt("Solo borde", "Outline"), Opt("Sin fondo", "No background"))
         KeyboardView.TOOL_LABEL -> listOf(Opt("Pequeñas", "Small"), Opt("Normal", "Normal"), Opt("Grandes", "Big"))
         KeyboardView.TOOL_KEYSIZE -> listOf(Opt("Bajas", "Low"), Opt("Normal", "Normal"), Opt("Altas", "Tall"))
         KeyboardView.TOOL_SOUND -> listOf(Opt("Apagado", "Off"), Opt("Moderno", "Modern"), Opt("Clásico", "Classic"))
-        KeyboardView.TOOL_VIB -> listOf(Opt("Apagada", "Off"), Opt("Sistema", "System"), Opt("Moderna", "Modern"), Opt("Fuerte", "Strong"))
+        KeyboardView.TOOL_VIB -> listOf(Opt("Apagada", "Off"), Opt("Suave", "Soft"), Opt("Media", "Medium"), Opt("Fuerte", "Strong"))
         else -> emptyList()
     }
 
-    private val ANIMS = listOf("none", "pop", "ripple", "glow")
+    private val ANIMS = listOf("none", "pop", "zoom", "lift", "ripple", "glow", "sparks", "bubble")
+    private val SHAPES = listOf("square", "normal", "round", "pill", "circle", "outline", "flat")
     private val SIZES = listOf("small", "normal", "big")
     private val HEIGHTS = listOf("low", "normal", "high")
-    private val VIBS = listOf("system", "modern", "classic")
+    private val VIBS = listOf("soft", "medium", "strong")
     private val SOUNDS = listOf("modern", "classic")
 
     fun current(p: android.content.SharedPreferences, tool: Int): Int = when (tool) {
@@ -146,7 +152,8 @@ object Cycles {
         KeyboardView.TOOL_LABEL -> SIZES.indexOf(p.getString(Prefs.LABEL_SIZE, "normal")).coerceAtLeast(0)
         KeyboardView.TOOL_KEYSIZE -> HEIGHTS.indexOf(p.getString(Prefs.HEIGHT, "normal")).coerceAtLeast(0)
         KeyboardView.TOOL_SOUND -> if (!p.getBoolean(Prefs.SOUND, false)) 0 else 1 + SOUNDS.indexOf(p.getString(Prefs.SOUND_STYLE, "modern")).coerceAtLeast(0)
-        KeyboardView.TOOL_VIB -> if (!p.getBoolean(Prefs.VIBRATE, true)) 0 else 1 + VIBS.indexOf(p.getString(Prefs.VIB_STYLE, "system")).coerceAtLeast(0)
+        KeyboardView.TOOL_VIB -> if (!p.getBoolean(Prefs.VIBRATE, true)) 0 else 1 + VIBS.indexOf(p.getString(Prefs.VIB_STRENGTH, "medium")).coerceAtLeast(0)
+        KeyboardView.TOOL_SHAPE -> SHAPES.indexOf(p.getString(Prefs.KEY_SHAPE, "normal")).coerceAtLeast(0)
         else -> 0
     }
 
@@ -162,7 +169,8 @@ object Cycles {
             KeyboardView.TOOL_LABEL -> e.putString(Prefs.LABEL_SIZE, SIZES[i])
             KeyboardView.TOOL_KEYSIZE -> e.putString(Prefs.HEIGHT, HEIGHTS[i])
             KeyboardView.TOOL_SOUND -> if (i == 0) e.putBoolean(Prefs.SOUND, false) else e.putBoolean(Prefs.SOUND, true).putString(Prefs.SOUND_STYLE, SOUNDS[i - 1])
-            KeyboardView.TOOL_VIB -> if (i == 0) e.putBoolean(Prefs.VIBRATE, false) else e.putBoolean(Prefs.VIBRATE, true).putString(Prefs.VIB_STYLE, VIBS[i - 1])
+            KeyboardView.TOOL_VIB -> if (i == 0) e.putBoolean(Prefs.VIBRATE, false) else e.putBoolean(Prefs.VIBRATE, true).putString(Prefs.VIB_STRENGTH, VIBS[i - 1])
+            KeyboardView.TOOL_SHAPE -> e.putString(Prefs.KEY_SHAPE, SHAPES[i])
         }
         e.apply()
         return opts[i].name

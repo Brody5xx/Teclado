@@ -84,6 +84,10 @@ class Palette(
     val popup: Int,
     val shadow: Int,
     val bg2: Int = bg,
+    /** Efecto especial del tema ("matrix" = lluvia de código del tema Hacker). */
+    val effect: String = "",
+    /** Letras tipo código (monoespaciadas). */
+    val mono: Boolean = false,
 ) {
     /** El mismo tema con otro color de acento (Enter, botones encendidos…). */
     fun withAccent(c: Int): Palette {
@@ -99,7 +103,7 @@ class Palette(
         }
         return Palette(isDark, bg, key, keyPressed, special, c or 0xFF000000.toInt(),
             if (isDark) mix(255, 0.3f) else mix(0, 0.2f), if (light) 0xFF101114.toInt() else 0xFFFFFFFF.toInt(),
-            text, hint, popup, shadow, bg2)
+            text, hint, popup, shadow, bg2, effect, mono)
     }
 
     companion object {
@@ -137,6 +141,11 @@ class Palette(
             Palette(true, bg.toInt(), key.toInt(), pressed.toInt(), special.toInt(), accent.toInt(), accentP.toInt(),
                 onAccent.toInt(), text.toInt(), hint.toInt(), special.toInt(), 0x66000000, bg2.toInt())
 
+        private fun light(bg: Long, key: Long, pressed: Long, special: Long, accent: Long, accentP: Long,
+                          text: Long, hint: Long, bg2: Long = bg) =
+            Palette(false, bg.toInt(), key.toInt(), pressed.toInt(), special.toInt(), accent.toInt(), accentP.toInt(),
+                0xFFFFFFFF.toInt(), text.toInt(), hint.toInt(), key.toInt(), 0x33000000, bg2.toInt())
+
         /** Temas para elegir en los ajustes: id → (nombre en español, nombre en inglés, colores). */
         val THEMES: List<Triple<String, Pair<String, String>, Palette?>> = listOf(
             Triple("auto", "Automático" to "Automatic", null),
@@ -155,10 +164,30 @@ class Palette(
             Triple("rose", "Rosa" to "Rose", Palette(false, 0xFFFCE4EC.toInt(), 0xFFFFFFFF.toInt(), 0xFFF8BBD0.toInt(),
                 0xFFF8C8D8.toInt(), 0xFFE91E63.toInt(), 0xFFC2185B.toInt(), 0xFFFFFFFF.toInt(), 0xFF3E2030.toInt(),
                 0xFF8E6A7A.toInt(), 0xFFFFFFFF.toInt(), 0x33000000)),
-            Triple("hacker", "Hacker" to "Hacker",
-                dark(0xFF000000, 0xFF0A140A, 0xFF143014, 0xFF0F1F0F, 0xFF00E676, 0xFF69F0AE, 0xFF000000, 0xFF00E676, 0xFF2E7D32)),
+            // Hacker: teclas de vidrio verde sobre una lluvia de código que cae (como en Matrix)
+            Triple("hacker", "Hacker" to "Hacker", Palette(true, 0xFF000000.toInt(), 0x5500150A, 0xAA00FF66.toInt(),
+                0x66002610, 0xFF00FF66.toInt(), 0xFF7CFFB2.toInt(), 0xFF000000.toInt(), 0xFF3DFF8A.toInt(),
+                0xFF1E9E52.toInt(), 0xEE001A0C.toInt(), 0x00000000, 0xFF000000.toInt(), effect = "matrix", mono = true)),
             Triple("aurora", "Aurora" to "Aurora",
                 dark(0xFF0B1026, 0xFF1C2140, 0xFF2D3463, 0xFF242A52, 0xFF64FFDA, 0xFFA7FFEB, 0xFF002E26, 0xFFF0F4FF, 0xFF9AA3C7, 0xFF2A1240)),
+            Triple("graphite", "Grafito" to "Graphite",
+                dark(0xFF1E1F22, 0xFF35373C, 0xFF4E5157, 0xFF2A2C30, 0xFFE0E0E0, 0xFFFFFFFF, 0xFF111111, 0xFFEDEDED, 0xFF9E9E9E)),
+            Triple("coffee", "Café" to "Coffee",
+                dark(0xFF1E1410, 0xFF33241D, 0xFF4A352B, 0xFF2B1E18, 0xFFD7A86E, 0xFFE9C496, 0xFF2A1A0C, 0xFFF5E9DF, 0xFFB09684)),
+            Triple("fire", "Fuego" to "Fire",
+                dark(0xFF1A0505, 0xFF330D0D, 0xFF551616, 0xFF2A0A0A, 0xFFFF5722, 0xFFFF8A65, 0xFF2A0800, 0xFFFFECE6, 0xFFC08A80, 0xFF2E1300)),
+            Triple("gold", "Oro" to "Gold",
+                dark(0xFF0D0D0D, 0xFF1C1A14, 0xFF2E2A1F, 0xFF16140F, 0xFFFFC107, 0xFFFFD54F, 0xFF241A00, 0xFFFFF3D0, 0xFFB8A577)),
+            Triple("cyberpunk", "Cyberpunk" to "Cyberpunk",
+                dark(0xFF1A0526, 0xFF2D0B40, 0xFF4A1466, 0xFF240833, 0xFFFFEA00, 0xFFFFF176, 0xFF1A0526, 0xFFFF80D0, 0xFFB46FA0, 0xFF06133A)),
+            Triple("sky", "Cielo" to "Sky",
+                light(0xFFE3F2FD, 0xFFFFFFFF, 0xFFBBDEFB, 0xFFC5E1F8, 0xFF1E88E5, 0xFF1565C0, 0xFF0D2A45, 0xFF5B7A96, 0xFFD0E8FF)),
+            Triple("mint", "Menta" to "Mint",
+                light(0xFFE0F7EF, 0xFFFFFFFF, 0xFFB9F0DB, 0xFFC4EEDD, 0xFF00A86B, 0xFF00875A, 0xFF0F3A2A, 0xFF5E8A79)),
+            Triple("lavender", "Lavanda" to "Lavender",
+                light(0xFFEDE7F6, 0xFFFFFFFF, 0xFFD1C4E9, 0xFFDCD2EE, 0xFF7E57C2, 0xFF5E35B1, 0xFF2A1F3D, 0xFF7A6D90, 0xFFF3E5F5)),
+            Triple("peach", "Durazno" to "Peach",
+                light(0xFFFFF0E6, 0xFFFFFFFF, 0xFFFFD6BF, 0xFFFFDCCB, 0xFFFF7043, 0xFFF4511E, 0xFF4A2A1C, 0xFF9A7765)),
         )
 
         /** Los colores del tema elegido ("auto" sigue al teléfono). */
@@ -167,7 +196,8 @@ class Palette(
 
         /** Colores de acento para elegir (además del que trae el tema). */
         val ACCENTS = listOf(
-            0xFF4FD1FF, 0xFF8AB4F8, 0xFFB388FF, 0xFFFF4081, 0xFFFF8A65, 0xFFFFD54F, 0xFF69F0AE, 0xFF00E676, 0xFFFFFFFF,
+            0xFF4FD1FF, 0xFF8AB4F8, 0xFF2979FF, 0xFF7C4DFF, 0xFFB388FF, 0xFFE040FB, 0xFFFF4081, 0xFFFF1744,
+            0xFFFF6D00, 0xFFFF8A65, 0xFFFFD54F, 0xFFC6FF00, 0xFF69F0AE, 0xFF00E676, 0xFF1DE9B6, 0xFFFFFFFF,
         ).map { it.toInt() }
     }
 }

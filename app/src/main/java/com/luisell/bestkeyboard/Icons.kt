@@ -57,6 +57,8 @@ object Icons {
     const val KEYSIZE = 40
     const val SPEAKER = 41
     const val VIBRATE = 42
+    const val SHAPES = 43
+    const val BRUSH = 44
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -391,6 +393,22 @@ object Icons {
                     st.strokeWidth = st.strokeWidth / 2.2f
                     c.drawLine(cx - s * 0.8f, cy - s * 0.8f, cx + s * 0.8f, cy + s * 0.8f, st)
                 }
+            }
+            SHAPES -> {
+                // Un círculo y un cuadrito (formas de las teclas)
+                c.drawCircle(cx - s * 0.32f, cy - s * 0.3f, s * 0.55f, st)
+                r.set(cx - s * 0.05f, cy - s * 0.05f, cx + s * 0.95f, cy + s * 0.95f)
+                c.drawRoundRect(r, s * 0.2f, s * 0.2f, fl)
+            }
+            BRUSH -> {
+                // Pincel (Estilo)
+                c.drawLine(cx + s * 0.9f, cy - s * 0.9f, cx - s * 0.1f, cy + s * 0.1f, st)
+                path.reset()
+                path.moveTo(cx - s * 0.2f, cy + s * 0.0f)
+                path.quadTo(cx - s * 0.95f, cy + s * 0.1f, cx - s * 0.95f, cy + s * 0.95f)
+                path.quadTo(cx - s * 0.1f, cy + s * 0.95f, cx + s * 0.0f, cy + s * 0.2f)
+                path.close()
+                c.drawPath(path, fl)
             }
             RIPPLE -> {
                 // Punto con ondas (efecto al tocar)
