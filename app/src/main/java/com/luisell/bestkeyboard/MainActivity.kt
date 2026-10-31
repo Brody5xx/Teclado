@@ -36,6 +36,7 @@ class MainActivity : Activity() {
     companion object {
         const val EXTRA_ASK_MIC = "pedir_micro"
         const val EXTRA_ASK_CAMERA = "pedir_camara"
+        const val EXTRA_ASK_PHOTOS = "pedir_fotos"
         private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
         private const val REQ_CAMERA = 8
@@ -57,16 +58,22 @@ class MainActivity : Activity() {
     private fun handleAsk(i: Intent?) {
         if (i?.getBooleanExtra(EXTRA_ASK_MIC, false) == true) askMic()
         if (i?.getBooleanExtra(EXTRA_ASK_CAMERA, false) == true) askCamera()
+        if (i?.getBooleanExtra(EXTRA_ASK_PHOTOS, false) == true) askPhotos()
     }
 
     private lateinit var photosBtn: Button
 
     private fun askPhotos() {
         if (Screenshots.hasPermission(this)) { refreshMic(); return }
-        val perms = if (android.os.Build.VERSION.SDK_INT >= 34)
-            arrayOf(Screenshots.permission(), "android.permission.READ_MEDIA_VISUAL_USER_SELECTED")
-        else arrayOf(Screenshots.permission())
-        requestPermissions(perms, REQ_PHOTOS)
+        if (Screenshots.hasPartial(this)) {
+            // Dio "solo algunas fotos": hay que cambiarlo a "Permitir todo" en los ajustes de la app
+            Toast.makeText(this, "Toca Permisos → Fotos y videos → \"Permitir todo\".", Toast.LENGTH_LONG).show()
+            try {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName")))
+            } catch (_: Exception) { }
+            return
+        }
+        requestPermissions(arrayOf(Screenshots.permission()), REQ_PHOTOS)
     }
 
     private fun cameraGranted() = checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -338,7 +345,14 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 6.5")
+        section("Novedades — Versión 6.6")
+        text(
+            "• Los textos del teclado (paneles, botones y mensajes) cambian a inglés o español cuando " +
+                "cambias el idioma con 🌐.\n" +
+                "• La sugerencia de capturas pide el permiso desde el teclado si falta.", 14f,
+        )
+
+        section("Versión 6.5")
         text(
             "• ‹I› Edición de texto · Text editing: mover el cursor, seleccionar, copiar, cortar y pegar.\n" +
                 "• Sugerencia de tu última captura de pantalla: un toque y se pega (y se guarda en el portapapeles).\n" +

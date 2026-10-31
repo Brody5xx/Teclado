@@ -122,7 +122,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         resultText.maxLines = 2
         resultText.ellipsize = TextUtils.TruncateAt.END
         resultBar.addView(resultText, LinearLayout.LayoutParams(0, -2, 1f))
-        insertBtn.text = "Insertar  ↑"
+        L.bind(insertBtn, "Insertar  ↑", "Insert  ↑")
         insertBtn.textSize = 16f
         insertBtn.gravity = Gravity.CENTER
         insertBtn.setPadding(d(20f), d(12f), d(20f), d(12f))
@@ -178,7 +178,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
                 p.unbindAll()
                 p.bindToLifecycle(o, CameraSelector.DEFAULT_BACK_CAMERA, pv, ic)
             } catch (_: Exception) {
-                hint.text = "No se pudo abrir la cámara. Usa 🖼 para elegir una foto."
+                hint.text = L.t("No se pudo abrir la cámara. Usa 🖼 para elegir una foto.", "Couldn't open the camera. Use 🖼 to pick a photo.")
             }
         }, mainExecutor)
     }
@@ -200,7 +200,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         shutter.visibility = VISIBLE
         gallery.visibility = VISIBLE
         hint.visibility = VISIBLE
-        hint.text = "Toma una foto de las palabras"
+        hint.text = L.t("Toma una foto de las palabras", "Take a photo of words to scan")
         if (owner == null && isShown) startCamera()
     }
 
@@ -209,18 +209,18 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         if (busy) return
         busy = true
         actions?.onScanFeedback()
-        hint.text = "Leyendo el texto…"
+        hint.text = L.t("Leyendo el texto…", "Reading the text…")
         ic.takePicture(worker, object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val bmp = try { toBitmap(image) } catch (_: Throwable) { null } finally { image.close() }
                 main.post {
-                    if (bmp == null) { busy = false; hint.text = "No se pudo tomar la foto. Inténtalo otra vez."; return@post }
+                    if (bmp == null) { busy = false; hint.text = L.t("No se pudo tomar la foto. Inténtalo otra vez.", "Couldn't take the photo. Try again."); return@post }
                     showPhoto(bmp)
                 }
             }
 
             override fun onError(exception: ImageCaptureException) {
-                main.post { busy = false; hint.text = "No se pudo tomar la foto. Inténtalo otra vez." }
+                main.post { busy = false; hint.text = L.t("No se pudo tomar la foto. Inténtalo otra vez.", "Couldn't take the photo. Try again.") }
             }
         })
     }
@@ -250,7 +250,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         photo.setPhoto(bmp)
         photo.visibility = VISIBLE
         hint.visibility = VISIBLE
-        hint.text = "Leyendo el texto…"
+        hint.text = L.t("Leyendo el texto…", "Reading the text…")
         recognizer.process(InputImage.fromBitmap(bmp, 0))
             .addOnSuccessListener { result ->
                 val words = ArrayList<WordsView.Word>()
@@ -264,7 +264,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
                 }
                 busy = false
                 if (words.isEmpty()) {
-                    hint.text = "No encontré texto. Prueba con más luz o más cerca."
+                    hint.text = L.t("No encontré texto. Prueba con más luz o más cerca.", "No text found. Try more light or get closer.")
                     return@addOnSuccessListener
                 }
                 hint.visibility = GONE
@@ -274,13 +274,13 @@ class ScanPanel(context: Context) : FrameLayout(context) {
             }
             .addOnFailureListener {
                 busy = false
-                hint.text = "No se pudo leer el texto. Inténtalo otra vez."
+                hint.text = L.t("No se pudo leer el texto. Inténtalo otra vez.", "Couldn't read the text. Try again.")
             }
     }
 
     private fun updateResult() {
         val t = photo.selectedText()
-        resultText.text = if (t.isEmpty()) "Desliza el dedo sobre las palabras" else t.replace('\n', ' ')
+        resultText.text = if (t.isEmpty()) L.t("Desliza el dedo sobre las palabras", "Slide your finger over the words") else t.replace('\n', ' ')
         insertBtn.alpha = if (t.isEmpty()) 0.5f else 1f
     }
 

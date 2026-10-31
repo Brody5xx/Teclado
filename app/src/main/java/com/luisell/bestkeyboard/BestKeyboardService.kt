@@ -111,6 +111,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // Sugerencia de captura de pantalla
     private var shot: Screenshots.Shot? = null
+    /** El botón de arriba está pidiendo el permiso de fotos (en vez de ofrecer una captura). */
+    private var shotAsk = false
     private val shotIo = java.util.concurrent.Executors.newSingleThreadExecutor()
     /** Avisa cuando se guarda una foto nueva (para ofrecer la captura con el teclado abierto). */
     private val mediaObserver = object : android.database.ContentObserver(Handler(Looper.getMainLooper())) {
@@ -194,6 +196,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onCreateInputView(): View {
+        // Los textos de los paneles siguen al idioma del teclado (español / English)
+        L.clearListeners()
+        L.set(prefs.getString(Prefs.LANG, "es") ?: "es")
         val v = KeyboardView(this)
         v.listener = this
         kv = v
@@ -216,7 +221,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val vp = VoicePanel(this)
         vp.listener = panelListener
         vp.actions = object : VoicePanel.Actions {
-            override fun onMicTap() = if (listening) stopVoice("Toca el micrófono para hablar") else startVoice()
+            override fun onMicTap() = if (listening) stopVoice(L.t("Toca el micrófono para hablar", "Tap the mic to speak")) else startVoice()
             override fun onVoiceLangTap() {
                 voiceLang = if (voiceLang == "es") "en" else "es"
                 vp.setLang(voiceLang)
@@ -305,6 +310,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         root.addView(box, LinearLayout.LayoutParams(-1, -2))
 
         mode = 0
+        L.onChange {
+            clipPanel?.refresh()
+            tBar?.applyLang()
+            if (shot != null || shotAsk) checkScreenshot()
+            kv?.invalidate()
+        }
         applySettings()
         rebuild()
         return root
@@ -364,15 +375,27 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun checkScreenshot() {
         if (!prefs.getBoolean(Prefs.SHOTS, true) || isPassword) { clearShot(); return }
         val app = applicationContext
+        if (!Screenshots.hasPermission(app)) {
+            // Sin permiso no se ven las capturas: lo pide con un botón (máximo 3 veces)
+            val asks = prefs.getInt(Prefs.SHOT_ASKS, 0)
+            if (asks < 3 || shotAsk) {
+                if (!shotAsk) prefs.edit().putInt(Prefs.SHOT_ASKS, asks + 1).apply()
+                shot = null
+                shotAsk = true
+                kv?.setChip(null, L.t("Activar sugerencia de capturas", "Turn on screenshot suggestions"))
+            } else clearShot()
+            return
+        }
         val usedId = prefs.getLong(Prefs.SHOT_USED, -1L)
         val px = (48 * resources.displayMetrics.density).toInt()
         shotIo.execute {
             val s = Screenshots.findRecent(app)
-            val thumb = if (s != null && s.id != usedId) Screenshots.thumbnail(app, s, px) else null
+            val thumb = if (s != null && s.id != usedId) Screenshots.thumbnail(app, s, px) else null // puede faltar: se muestra 🖼
             handler.post {
-                if (s != null && s.id != usedId && thumb != null) {
+                if (s != null && s.id != usedId) {
                     shot = s
-                    kv?.setScreenshot(thumb)
+                    shotAsk = false
+                    kv?.setChip(thumb, L.t("Captura de pantalla", "Screenshot"))
                 } else clearShot()
             }
         }
@@ -380,17 +403,23 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun clearShot() {
         shot = null
-        kv?.setScreenshot(null)
+        shotAsk = false
+        kv?.setChip(null, null)
     }
 
     /** Tocaste "Captura de pantalla": se guarda en el portapapeles y se pega aquí. */
     private fun useScreenshot() {
+        if (shotAsk) {
+            clearShot()
+            askPermission(MainActivity.EXTRA_ASK_PHOTOS)
+            return
+        }
         val s = shot ?: return
         prefs.edit().putLong(Prefs.SHOT_USED, s.id).apply()
         clearShot()
         ClipStore.addImage(this, s.uri, s.mime) { item ->
             if (item != null) pasteImage(item)
-            else Toast.makeText(this, "No se pudo abrir la captura.", Toast.LENGTH_SHORT).show()
+            else Toast.makeText(this, L.t("No se pudo abrir la captura.", "Couldn't open the screenshot."), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -420,7 +449,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun startVoice() {
         val vp = voicePanel ?: return
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            vp.setStatus("Necesito permiso para usar el micrófono. Ábrelo y toca \"Permitir\".")
+            vp.setStatus(L.t("Necesito permiso para usar el micrófono. Ábrelo y toca \"Permitir\".", "I need permission to use the mic. Open it and tap \"Allow\"."))
             val i = Intent(this, MainActivity::class.java)
                 .putExtra(MainActivity.EXTRA_ASK_MIC, true)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -428,7 +457,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            vp.setStatus("Tu teléfono no tiene reconocimiento de voz. Instala o actualiza la app Google.")
+            vp.setStatus(L.t("Tu teléfono no tiene reconocimiento de voz. Instala o actualiza la app Google.", "Your phone has no speech recognition. Install or update the Google app."))
             return
         }
         val r = recognizer ?: SpeechRecognizer.createSpeechRecognizer(this).also {
@@ -443,11 +472,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
         listening = true
         vp.setListening(true)
-        vp.setStatus(if (voiceLang == "es") "Escuchando… habla ahora" else "Listening… speak now")
+        vp.setStatus(L.t("Escuchando… habla ahora", "Listening… speak now"))
         try {
             r.startListening(intent)
         } catch (_: Exception) {
-            stopVoice("No se pudo usar el micrófono. Inténtalo de nuevo.")
+            stopVoice(L.t("No se pudo usar el micrófono. Inténtalo de nuevo.", "Couldn't use the mic. Try again."))
         }
     }
 
@@ -463,21 +492,21 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         override fun onBeginningOfSpeech() {}
         override fun onRmsChanged(rmsdB: Float) { voicePanel?.setLevel(rmsdB) }
         override fun onBufferReceived(buffer: ByteArray?) {}
-        override fun onEndOfSpeech() { if (listening) voicePanel?.setStatus("Escribiendo…") }
+        override fun onEndOfSpeech() { if (listening) voicePanel?.setStatus(L.t("Escribiendo…", "Typing…")) }
         override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
 
         override fun onError(error: Int) {
             if (!listening) return
             when (error) {
                 SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
-                    stopVoice("Toca el micrófono para hablar")
+                    stopVoice(L.t("Toca el micrófono para hablar", "Tap the mic to speak"))
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
-                    stopVoice("Falta el permiso del micrófono (ábrelo en los ajustes ⚙).")
+                    stopVoice(L.t("Falta el permiso del micrófono (ábrelo en los ajustes ⚙).", "Mic permission is missing (open settings ⚙)."))
                 SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
-                    stopVoice("Sin internet. Para dictar sin conexión, descarga el idioma en la app Google (Voz → Reconocimiento sin conexión).")
+                    stopVoice(L.t("Sin internet. Para dictar sin conexión, descarga el idioma en la app Google (Voz → Reconocimiento sin conexión).", "No internet. To dictate offline, download the language in the Google app (Voice → Offline speech recognition)."))
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY ->
-                    stopVoice("El micrófono está ocupado. Toca para intentarlo de nuevo.")
-                else -> stopVoice("Toca el micrófono para hablar")
+                    stopVoice(L.t("El micrófono está ocupado. Toca para intentarlo de nuevo.", "The mic is busy. Tap to try again."))
+                else -> stopVoice(L.t("Toca el micrófono para hablar", "Tap the mic to speak"))
             }
         }
 
@@ -518,14 +547,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Revisa todo el texto y empieza a mostrar los errores uno por uno. */
     private fun startSpell() {
         if (isPassword || !fieldSuggest) {
-            Toast.makeText(this, "Aquí no se puede revisar la ortografía.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, L.t("Aquí no se puede revisar la ortografía.", "Spelling can't be checked here."), Toast.LENGTH_SHORT).show()
             return
         }
         if (translating) stopTranslate()
         if (mode != 0) showMode(0)
         val ic = currentInputConnection ?: return
         val eng = WordStore.engine ?: run {
-            Toast.makeText(this, "Un momento, el diccionario se está cargando…", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, L.t("Un momento, el diccionario se está cargando…", "One moment, the dictionary is loading…"), Toast.LENGTH_SHORT).show()
             return
         }
         // Todo el texto del cuadro (o lo que la app deje leer alrededor del cursor)
@@ -572,7 +601,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         bar.resetButtons()
         kv?.spellOn = true
         if (spellErrors.isEmpty()) {
-            bar.message("✅ No encontré errores de ortografía.")
+            bar.message(L.t("✅ No encontré errores de ortografía.", "✅ No spelling mistakes found."))
             handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2500)
             return
         }
@@ -586,7 +615,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (i >= spellErrors.size) {
             val last = spellErrors.lastOrNull()
             if (last != null) currentInputConnection?.setSelection(last.end, last.end)
-            bar.message("✅ Listo, revisaste todo el texto.")
+            bar.message(L.t("✅ Listo, revisaste todo el texto.", "✅ Done, you checked all the text."))
             spellErrors = ArrayList()
             handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2000)
             return
@@ -638,7 +667,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun startTranslate() {
         if (isPassword) {
-            Toast.makeText(this, "La traducción no funciona en campos de contraseña.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, L.t("La traducción no funciona en campos de contraseña.", "Translation doesn't work in password fields."), Toast.LENGTH_SHORT).show()
             return
         }
         val tb = tBar ?: return
@@ -664,13 +693,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun prepareTranslator() {
         trans?.close()
         val tb = tBar ?: return
-        tb.setStatus("Preparando… (la primera vez descarga el idioma, unos 30 MB)")
+        tb.setStatus(L.t("Preparando… (la primera vez descarga el idioma, unos 30 MB)", "Getting ready… (the first time it downloads the language, about 30 MB)"))
         val t = Translation(tSrc, tDst)
         trans = t
         t.prepare(
             onReady = { if (trans === t) { tb.setStatus(""); doTranslate() } },
             onError = {
-                if (trans === t) tb.setStatus("No se pudo descargar el idioma. Conéctate a internet una vez para descargarlo.")
+                if (trans === t) tb.setStatus(L.t("No se pudo descargar el idioma. Conéctate a internet una vez para descargarlo.", "Couldn't download the language. Connect to the internet once to download it."))
             },
         )
     }
@@ -722,7 +751,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     if (pendingSend) sendTranslated()
                 }
             },
-            onError = { if (seq == tSeq) tb.setStatus("No se pudo traducir. Inténtalo de nuevo.") },
+            onError = { if (seq == tSeq) tb.setStatus(L.t("No se pudo traducir. Inténtalo de nuevo.", "Couldn't translate. Try again.")) },
         )
     }
 
@@ -819,7 +848,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             clipboard?.setPrimaryClip(ClipData.newUri(contentResolver, "Imagen", uri))
             Toast.makeText(
                 this,
-                "Esta app no recibe imágenes desde el teclado. Ya está copiada: mantén presionado donde escribes y toca Pegar.",
+                L.t("Esta app no recibe imágenes desde el teclado. Ya está copiada: mantén presionado donde escribes y toca Pegar.", "This app doesn't accept images from the keyboard. It's copied: long-press where you type and tap Paste."),
                 Toast.LENGTH_LONG,
             ).show()
         } catch (_: Exception) { }
@@ -973,6 +1002,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         autoCap = prefs.getBoolean(Prefs.AUTOCAP, true)
         doubleSpace = prefs.getBoolean(Prefs.DOUBLE_SPACE, true)
         lang = prefs.getString(Prefs.LANG, "es") ?: "es"
+        L.set(lang)
         suggestOn = prefs.getBoolean(Prefs.SUGGEST, true)
         autocorrectOn = prefs.getBoolean(Prefs.AUTOCORRECT, true)
         learnOn = prefs.getBoolean(Prefs.LEARN, true)
@@ -1175,7 +1205,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onKeyText(text: String) {
         if (spellOn) stopSpell()
-        if (shot != null) clearShot()
+        if (shot != null || shotAsk) clearShot()
         val ic = target() ?: return
         val phantom = phantomSpace
         phantomSpace = false
@@ -1287,6 +1317,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             Codes.LANG -> {
                 lang = if (lang == "es") "en" else "es"
                 prefs.edit().putString(Prefs.LANG, lang).apply()
+                L.set(lang)
                 kv?.spaceLabel = if (lang == "es") "Español" else "English"
                 scheduleUpdate()
             }
@@ -1379,7 +1410,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (hasPermission(android.Manifest.permission.CAMERA)) {
                     showMode(4)
                 } else {
-                    Toast.makeText(this, "Dale permiso a la cámara y vuelve a tocar el escáner.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, L.t("Dale permiso a la cámara y vuelve a tocar el escáner.", "Allow the camera and tap the scanner again."), Toast.LENGTH_LONG).show()
                     askPermission(MainActivity.EXTRA_ASK_CAMERA)
                 }
             }

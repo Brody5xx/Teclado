@@ -125,7 +125,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         abc.setOnClickListener { listener?.onPanelFeedback(); listener?.onPanelBack() }
         bar.addView(abc, LinearLayout.LayoutParams(d(54f), d(40f)))
         val hint = TextView(context)
-        hint.text = "Toca para pegar · Mantén para fijar o borrar"
+        L.bind(hint, "Toca para pegar · Mantén para fijar o borrar", "Tap to paste · Hold to pin or delete")
         hint.textSize = 12f
         hint.gravity = Gravity.CENTER
         hint.tag = "hint"
@@ -208,14 +208,21 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         items = if (historyOn) ClipStore.ordered() else emptyList()
         adapter.notifyDataSetChanged()
         val n = ClipStore.items.size
-        title.text = if (n == 0) "Portapapeles" else "Portapapeles ($n)"
+        val word = L.t("Portapapeles", "Clipboard")
+        title.text = if (n == 0) word else "$word ($n)"
         val showEmpty = items.isEmpty()
-        empty.text = if (!historyOn) "El historial del portapapeles está apagado.\nPuedes encenderlo en los ajustes (⚙)."
-        else "Todo lo que copies (textos e imágenes) aparecerá aquí.\nDura 2 días; lo que fijes 📌 se queda para siempre."
+        empty.text = if (!historyOn) L.t(
+            "El historial del portapapeles está apagado.\nPuedes encenderlo en los ajustes (⚙).",
+            "Clipboard history is off.\nYou can turn it on in settings (⚙).",
+        )
+        else L.t(
+            "Todo lo que copies (textos e imágenes) aparecerá aquí.\nDura 2 días; lo que fijes 📌 se queda para siempre.",
+            "Everything you copy (text and images) shows up here.\nIt lasts 2 days; what you pin 📌 stays forever.",
+        )
         empty.visibility = if (showEmpty) VISIBLE else GONE
         grid.visibility = if (showEmpty) GONE else VISIBLE
         clearBtn.visibility = if (historyOn && ClipStore.items.any { !it.pinned }) VISIBLE else GONE
-        clearBtn.text = if (confirmClear) "¿Borrar todo?" else "Borrar"
+        clearBtn.text = if (confirmClear) L.t("¿Borrar todo?", "Clear all?") else L.t("Borrar", "Clear")
         clearBtn.setTextColor(if (confirmClear) 0xFFE57373.toInt() else palette.accent)
     }
 
@@ -247,7 +254,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         card.background = PanelUi.rounded(palette.popup, d(12f).toFloat())
         card.elevation = d(8f).toFloat()
         val preview = TextView(context)
-        preview.text = if (item.isImage) "🖼  Imagen" else item.text?.trim()
+        preview.text = if (item.isImage) L.t("🖼  Imagen", "🖼  Image") else item.text?.trim()
         preview.maxLines = 2
         preview.ellipsize = TextUtils.TruncateAt.END
         preview.textSize = 13f
@@ -264,9 +271,11 @@ class ClipPanel(context: Context) : FrameLayout(context) {
             tv.setOnClickListener { overlay.hide(); listener?.onPanelFeedback(); action() }
             card.addView(tv, LinearLayout.LayoutParams(-1, -2))
         }
-        option(if (item.pinned) "📌   Quitar de fijados" else "📌   Fijar arriba") { ClipStore.togglePin(item); refresh() }
-        option("📋   Pegar") { paste(item) }
-        option("🗑   Borrar") { ClipStore.remove(item); refresh() }
+        option(if (item.pinned) L.t("📌   Quitar de fijados", "📌   Unpin") else L.t("📌   Fijar arriba", "📌   Pin to top")) {
+            ClipStore.togglePin(item); refresh()
+        }
+        option(L.t("📋   Pegar", "📋   Paste")) { paste(item) }
+        option(L.t("🗑   Borrar", "🗑   Delete")) { ClipStore.remove(item); refresh() }
         val lp = LayoutParams(minOf(d(280f), width - d(32f)), -2, Gravity.CENTER)
         overlay.show(card, lp)
     }

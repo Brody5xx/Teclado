@@ -265,12 +265,15 @@ class KeyboardView(context: Context) : View(context) {
 
     // Sugerencia de captura de pantalla (botón con la miniatura)
     private var shotThumb: android.graphics.Bitmap? = null
+    private var chipLabel: String? = null
     private val shotRect = RectF()
-    private val showingShot get() = shotThumb != null && !hasSuggestions && !forceTools
+    private val showingShot get() = chipLabel != null && !hasSuggestions && !forceTools
 
-    fun setScreenshot(b: android.graphics.Bitmap?) {
-        if (shotThumb === b) return
-        shotThumb = b
+    /** Botón grande en el centro de la barra (la captura de pantalla, o el aviso del permiso). */
+    fun setChip(thumb: android.graphics.Bitmap?, label: String?) {
+        if (shotThumb === thumb && chipLabel == label) return
+        shotThumb = thumb
+        chipLabel = label
         invalidate(0, 0, width, stripH.toInt() + 1)
     }
 
@@ -800,8 +803,8 @@ class KeyboardView(context: Context) : View(context) {
     /** "🖼 Captura de pantalla": botón con la miniatura de tu última captura. */
     private fun drawShot(c: Canvas, p: Palette) {
         drawMenuButton(c, p)
-        val b = shotThumb ?: return
-        val label = "Captura de pantalla"
+        val label = chipLabel ?: return
+        val b = shotThumb
         text.textSize = stripH * 0.33f
         val tw = text.measureText(label)
         val h = stripH * 0.78f
@@ -815,14 +818,18 @@ class KeyboardView(context: Context) : View(context) {
         val r = h / 2f - 3f * d
         val cx = left + 3f * d + r
         val cy = stripH / 2f
-        c.save()
-        path.reset()
-        path.addCircle(cx, cy, r, Path.Direction.CW)
-        c.clipPath(path)
-        val sc = maxOf(2 * r / b.width, 2 * r / b.height)
-        tmp.set(cx - b.width * sc / 2, cy - b.height * sc / 2, cx + b.width * sc / 2, cy + b.height * sc / 2)
-        c.drawBitmap(b, null, tmp, null)
-        c.restore()
+        if (b != null) {
+            c.save()
+            path.reset()
+            path.addCircle(cx, cy, r, Path.Direction.CW)
+            c.clipPath(path)
+            val sc = maxOf(2 * r / b.width, 2 * r / b.height)
+            tmp.set(cx - b.width * sc / 2, cy - b.height * sc / 2, cx + b.width * sc / 2, cy + b.height * sc / 2)
+            c.drawBitmap(b, null, tmp, null)
+            c.restore()
+        } else {
+            drawLabel(c, "🖼", cx, cy, r * 1.3f, p.text)
+        }
         text.textAlign = Paint.Align.LEFT
         drawLabel(c, label, cx + r + 10f * d, cy, stripH * 0.33f, p.text)
         text.textAlign = Paint.Align.CENTER

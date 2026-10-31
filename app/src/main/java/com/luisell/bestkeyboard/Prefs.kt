@@ -25,6 +25,7 @@ object Prefs {
     const val SPELL = "spell_check"
     const val SHOTS = "suggest_screenshots"
     const val SHOT_USED = "screenshot_used"
+    const val SHOT_ASKS = "screenshot_asks"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

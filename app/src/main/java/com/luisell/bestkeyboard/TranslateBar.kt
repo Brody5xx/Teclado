@@ -73,7 +73,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         row.addView(to, LayoutParams(0, d(36f), 1f).apply { rightMargin = d(8f) })
         addView(row, LayoutParams(-1, -2))
 
-        box.hint = "Escribe aquí para traducir"
+        L.bindHint(box, "Escribe aquí para traducir", "Type here to translate")
         box.textSize = 16f
         box.isSingleLine = false
         box.maxLines = 3
@@ -101,8 +101,10 @@ class TranslateBar(context: Context) : LinearLayout(context) {
     }
 
     fun setLangs(src: String, dst: String) {
-        from.text = if (src == "es") "Español" else "Inglés"
-        to.text = if (dst == "es") "Español" else "Inglés"
+        from.text = if (src == "es") L.t("Español", "Spanish") else L.t("Inglés", "English")
+        to.text = if (dst == "es") L.t("Español", "Spanish") else L.t("Inglés", "English")
+        lastSrc = src
+        lastDst = dst
     }
 
     fun setStatus(text: String) {
@@ -141,6 +143,12 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         box.text?.let { if (Selection.getSelectionEnd(it) < 0) Selection.setSelection(it, it.length) }
         box.resetBlink()
     }
+
+    private var lastSrc = "es"
+    private var lastDst = "en"
+
+    /** Vuelve a poner los nombres de los idiomas (cuando cambias el idioma del teclado). */
+    fun applyLang() = setLangs(lastSrc, lastDst)
 
     /** Vacía la caja sin traducir. */
     fun clear() {

@@ -51,13 +51,13 @@ class SpellBar(context: Context) : LinearLayout(context) {
         title.ellipsize = TextUtils.TruncateAt.END
         title.setPadding(d(8f), 0, d(8f), 0)
         row.addView(title, LayoutParams(0, -2, 1f))
-        learn.text = "+ Mi palabra"
+        L.bind(learn, "+ Mi palabra", "+ My word")
         learn.textSize = 13f
         learn.gravity = Gravity.CENTER
         learn.setPadding(d(10f), 0, d(10f), 0)
         learn.setOnClickListener { actions?.onSpellLearn() }
         row.addView(learn, LayoutParams(-2, d(34f)).apply { rightMargin = d(6f) })
-        skip.text = "Saltar ›"
+        L.bind(skip, "Saltar ›", "Skip ›")
         skip.textSize = 13f
         skip.gravity = Gravity.CENTER
         skip.setPadding(d(12f), 0, d(12f), 0)
@@ -75,11 +75,12 @@ class SpellBar(context: Context) : LinearLayout(context) {
 
     /** Muestra el error número [n] de [total], con sus correcciones. */
     fun show(n: Int, total: Int, word: String, suggestions: List<String>, maybe: Boolean) {
-        title.text = if (maybe) "$n de $total · ¿Quisiste decir…? «$word»" else "$n de $total · Mal escrita: «$word»"
+        title.text = if (maybe) L.t("$n de $total · ¿Quisiste decir…? «$word»", "$n of $total · Did you mean…? «$word»")
+        else L.t("$n de $total · Mal escrita: «$word»", "$n of $total · Misspelled: «$word»")
         chips.removeAllViews()
         if (suggestions.isEmpty()) {
             val t = TextView(context)
-            t.text = "Sin sugerencias: corrígela a mano, sáltala o agrégala"
+            t.text = L.t("Sin sugerencias: corrígela a mano, sáltala o agrégala", "No suggestions: fix it by hand, skip it or add it")
             t.textSize = 13f
             t.setTextColor(palette.hint)
             t.setPadding(d(8f), d(8f), d(8f), d(8f))
