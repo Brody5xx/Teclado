@@ -228,7 +228,12 @@ class KeyboardView(context: Context) : View(context) {
     private val rnd = java.util.Random()
     private val GLYPHS = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾙﾚﾛﾜ0123456789<>{}[]=+*#$%&"
 
-    /** Columnas de letras verdes que caen detrás de las teclas. Solo se mueve mientras el teclado se ve. */
+    private fun blend(c: Int, t: Int, f: Float): Int {
+        fun ch(sh: Int) = (((c shr sh) and 0xFF) + ((((t shr sh) and 0xFF) - ((c shr sh) and 0xFF)) * f)).toInt()
+        return (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+    }
+
+    /** Columnas de letras que caen detrás de las teclas. Solo se mueve mientras el teclado se ve. */
     private fun drawMatrix(c: Canvas) {
         val cell = 14f * d
         val cols = (width / cell).toInt().coerceAtLeast(1)
@@ -253,7 +258,12 @@ class KeyboardView(context: Context) : View(context) {
                 val y = dr.y - j * cell
                 if (y < -cell || y > height + cell) continue
                 val a = if (j == 0) 200 else (150 * (1f - j.toFloat() / dr.chars.size)).toInt()
-                rainPaint.color = if (j == 0) (a shl 24) or 0xCCFFDD else (a shl 24) or 0x00C853
+                val base = if (palette.effect == "matrix-rainbow")
+                    android.graphics.Color.HSVToColor(floatArrayOf((i * 360f / drops.size + now / 40f) % 360f, 0.85f, 1f))
+                else palette.accent
+                // La primera letra de cada columna brilla más (casi blanca)
+                val col = if (j == 0) blend(base, 0xFFFFFF, 0.6f) else base
+                rainPaint.color = (a shl 24) or (col and 0x00FFFFFF)
                 c.drawText(dr.chars[j].toString(), x, y, rainPaint)
             }
         }
@@ -691,7 +701,7 @@ class KeyboardView(context: Context) : View(context) {
             c.drawRect(0f, 0f, width.toFloat(), height.toFloat(), fill)
             fill.shader = null
         } else c.drawColor(p.bg)
-        if (p.effect == "matrix") drawMatrix(c) else lastRain = 0L
+        if (p.effect.startsWith("matrix")) drawMatrix(c) else lastRain = 0L
         drawStrip(c, p)
         val now = SystemClock.uptimeMillis()
         labelMul = labelScale
@@ -879,8 +889,8 @@ class KeyboardView(context: Context) : View(context) {
             }
         }
         // Tema Hacker: borde verde de vidrio (brilla al tocar)
-        if (p.effect == "matrix") {
-            stroke.color = if (pressed) p.accent else 0x5500FF66
+        if (p.effect.startsWith("matrix")) {
+            stroke.color = if (pressed) p.accent else (p.accent and 0x00FFFFFF) or 0x55000000
             stroke.strokeWidth = (if (pressed) 2f else 1f) * d
             c.drawRoundRect(tmp, radius, radius, stroke)
         }

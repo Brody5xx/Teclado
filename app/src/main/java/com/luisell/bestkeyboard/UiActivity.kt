@@ -137,6 +137,48 @@ abstract class UiActivity : Activity() {
         text(tr("El primero (multicolor) usa el color que trae el tema.", "The first one (multicolor) uses the theme's own color."), 12f, faded = true)
     }
 
+    /** Colores del tema Hacker (teclas y lluvia de código). El último es arcoíris. */
+    protected fun hackerSwatches() {
+        divider()
+        val t = TextView(this)
+        t.text = tr("Color del tema Hacker", "Hacker theme color")
+        t.textSize = 15f
+        t.setTextColor(TEXT)
+        col.addView(t, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        val dots = ArrayList<Pair<String, View>>()
+        val cur = (prefs.getString(Prefs.HACKER_COLOR, "") ?: "").ifEmpty { Palette.HACKER_COLORS[0] }
+        fun paint(sel: String) {
+            for ((v, view) in dots) {
+                view.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    if (v == "rainbow") {
+                        colors = intArrayOf(0xFFFF1744.toInt(), 0xFFFFC400.toInt(), 0xFF00E676.toInt(), 0xFF00E5FF.toInt(), 0xFF7C4DFF.toInt(), 0xFFFF1744.toInt())
+                        gradientType = GradientDrawable.SWEEP_GRADIENT
+                    } else setColor(v.toLong(16).toInt())
+                    setStroke(dp(if (v == sel) 3 else 1), if (v == sel) TEXT else LINE)
+                }
+            }
+        }
+        for (v in Palette.HACKER_COLORS) {
+            val dot = View(this)
+            dot.setOnClickListener {
+                // Elegir un color también pone el tema Hacker, para verlo de una vez
+                prefs.edit().putString(Prefs.HACKER_COLOR, v).putString(Prefs.THEME, "hacker").apply()
+                paint(v)
+            }
+            dots.add(v to dot)
+            row.addView(dot, LinearLayout.LayoutParams(dp(30), dp(30)).apply { rightMargin = dp(10) })
+        }
+        paint(cur)
+        val hs = android.widget.HorizontalScrollView(this)
+        hs.isHorizontalScrollBarEnabled = false
+        hs.addView(row)
+        col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(4) })
+        text(tr("Al elegir un color se pone el tema Hacker. El último es arcoíris 🌈.", "Picking a color switches to the Hacker theme. The last one is rainbow 🌈."), 12f, faded = true)
+    }
+
     /** Tarjeta con un mini teclado dibujado con los colores del tema. */
     @SuppressLint("ViewConstructor")
     private class ThemeCard(context: Context, private val pal: Palette?, private val name: String) : View(context) {

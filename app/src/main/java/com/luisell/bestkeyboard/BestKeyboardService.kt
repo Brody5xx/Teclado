@@ -1269,7 +1269,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val theme = prefs.getString(Prefs.THEME, "auto")
         val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
-        var pal = Palette.forTheme(theme, systemDark)
+        var pal = Palette.forTheme(theme, systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
         // Color de acento elegido (si no, el del tema)
         prefs.getString(Prefs.ACCENT, "")?.takeIf { it.isNotEmpty() }?.toLongOrNull(16)?.let { pal = pal.withAccent(it.toInt()) }
         v.palette = pal

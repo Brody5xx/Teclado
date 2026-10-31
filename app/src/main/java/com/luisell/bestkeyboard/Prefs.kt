@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 object Prefs {
     const val THEME = "theme"            // auto / light / dark / midnight / ocean / neon / forest / sunset / rose / hacker / aurora
     const val ACCENT = "accent_color"    // "" = el del tema, o un color como "FF4FD1FF"
+    const val HACKER_COLOR = "hacker_color" // color del tema Hacker: "" (verde), un color, o "rainbow"
     const val KEY_SHAPE = "key_shape"    // square / normal / round / pill
     const val LABEL_SIZE = "label_size"  // small / normal / big
     const val KEY_ANIM = "key_anim"      // none / pop / ripple / glow
@@ -190,9 +191,35 @@ class Palette(
                 light(0xFFFFF0E6, 0xFFFFFFFF, 0xFFFFD6BF, 0xFFFFDCCB, 0xFFFF7043, 0xFFF4511E, 0xFF4A2A1C, 0xFF9A7765)),
         )
 
-        /** Los colores del tema elegido ("auto" sigue al teléfono). */
-        fun forTheme(id: String?, systemDark: Boolean): Palette =
-            THEMES.firstOrNull { it.first == id }?.third ?: if (systemDark) DARK else LIGHT
+        /** Los colores del tema elegido ("auto" sigue al teléfono). [hackerColor] = color del tema Hacker. */
+        fun forTheme(id: String?, systemDark: Boolean, hackerColor: String? = null): Palette {
+            if (id == "hacker" && !hackerColor.isNullOrEmpty()) {
+                if (hackerColor == "rainbow") return hacker(0xFF00E5FF.toInt(), rainbow = true)
+                hackerColor.toLongOrNull(16)?.let { return hacker(it.toInt()) }
+            }
+            return THEMES.firstOrNull { it.first == id }?.third ?: if (systemDark) DARK else LIGHT
+        }
+
+        private fun mix(c: Int, t: Int, f: Float): Int {
+            fun ch(sh: Int) = (((c shr sh) and 0xFF) + ((((t shr sh) and 0xFF) - ((c shr sh) and 0xFF)) * f)).toInt().coerceIn(0, 255)
+            return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+        }
+        private fun alpha(c: Int, a: Int) = (c and 0x00FFFFFF) or (a shl 24)
+
+        /** El tema Hacker en cualquier color: teclas de vidrio y lluvia de código de ese color. */
+        fun hacker(c: Int, rainbow: Boolean = false) = Palette(
+            true, 0xFF000000.toInt(), alpha(mix(c, 0xFF000000.toInt(), 0.88f), 0x66), alpha(c, 0xAA),
+            alpha(mix(c, 0xFF000000.toInt(), 0.82f), 0x88), c or 0xFF000000.toInt(), mix(c, 0xFFFFFFFF.toInt(), 0.45f),
+            0xFF000000.toInt(), mix(c, 0xFFFFFFFF.toInt(), 0.25f), mix(c, 0xFF000000.toInt(), 0.35f),
+            alpha(mix(c, 0xFF000000.toInt(), 0.9f), 0xEE), 0x00000000, 0xFF000000.toInt(),
+            effect = if (rainbow) "matrix-rainbow" else "matrix", mono = true,
+        )
+
+        /** Colores para el tema Hacker (el último es arcoíris). */
+        val HACKER_COLORS = listOf(
+            "FF00FF66", "FF00E5FF", "FF2979FF", "FF7C4DFF", "FFE040FB", "FFFF4081", "FFFF1744", "FFFF6D00",
+            "FFFFC400", "FFC6FF00", "FFFFFFFF", "rainbow",
+        )
 
         /** Colores de acento para elegir (además del que trae el tema). */
         val ACCENTS = listOf(

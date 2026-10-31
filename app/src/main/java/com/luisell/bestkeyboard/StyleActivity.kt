@@ -101,7 +101,7 @@ class StyleActivity : UiActivity() {
     /** Pone en el teclado de muestra lo que elegiste. */
     private fun applyPreview() {
         val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        var pal = Palette.forTheme(prefs.getString(Prefs.THEME, "auto"), systemDark)
+        var pal = Palette.forTheme(prefs.getString(Prefs.THEME, "auto"), systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
         prefs.getString(Prefs.ACCENT, "")?.takeIf { it.isNotEmpty() }?.toLongOrNull(16)?.let { pal = pal.withAccent(it.toInt()) }
         preview.palette = pal
         preview.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
@@ -116,6 +116,7 @@ class StyleActivity : UiActivity() {
         card(tr("Colores", "Colors"), Icons.THEME)
         themeGallery()
         accentSwatches()
+        hackerSwatches()
 
         card(tr("Teclas", "Keys"), Icons.SHAPES)
         chips(tr("Forma", "Shape"), Prefs.KEY_SHAPE, "normal", listOf(

@@ -646,6 +646,12 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "8.8" to tr(
+            "•  «Más opciones» deja solo «Estilo» (lo demás está adentro).\n" +
+                "•  El tema Hacker en 12 colores, incluido arcoíris 🌈 (en Estilo → Colores).",
+            "•  «More options» keeps only «Style» (everything else is inside).\n" +
+                "•  The Hacker theme in 12 colors, including rainbow 🌈 (in Style → Colors).",
+        ),
         "8.7" to tr(
             "•  Pantalla «Estilo» con teclado de muestra que cambia al instante.\n" +
                 "•  20 temas (Grafito, Café, Fuego, Oro, Cyberpunk, Cielo, Menta, Lavanda, Durazno…) y 16 colores de acento.\n" +
