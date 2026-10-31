@@ -39,11 +39,7 @@ class KeyboardView(context: Context) : View(context) {
         fun onGesture(xs: FloatArray, ys: FloatArray, count: Int)
         /** Terminaste de cambiar el tamaño del teclado ([scale] = 1 es el normal). */
         fun onResizeDone(scale: Float)
-        /** Teclado flotante encendido (para iluminar su botón). */
-    var floatOn = false
-        set(v) { if (field != v) { field = v; invalidate() } }
-
-    /** Modo una mano: 0 normal, 1 izquierda, 2 derecha. */
+        /** Modo una mano: 0 normal, 1 izquierda, 2 derecha. */
         fun onOneHand(mode: Int) {}
     }
 
@@ -186,6 +182,10 @@ class KeyboardView(context: Context) : View(context) {
     private val bottomPad = 6f * d
     /** Modo código encendido (para iluminar su botón). */
     var codeOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
+
+    /** Teclado flotante encendido (para iluminar su botón). */
+    var floatOn = false
         set(v) { if (field != v) { field = v; invalidate() } }
 
     /** Teclado flotante encendido (para iluminar su botón). */
