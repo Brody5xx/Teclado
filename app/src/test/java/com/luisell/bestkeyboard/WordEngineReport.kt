@@ -98,6 +98,10 @@ class WordEngineReport {
             sb.append("    $w -> ").append(if (r.misspelled) (if (r.maybe) "¿Quisiste decir? ${r.suggestions}" else "MAL ${r.suggestions}") else "bien").append('\n')
         }
 
+        // Una palabra con error escrita 2 veces NO debe "esconderse" de la revisión
+        user.add("Holr"); user.add("Holr")
+        val hr = eng.spellCheck("Holr", "es", 5, strict = true)
+        sb.append("    Holr (escrita 2 veces) -> ").append(if (hr.misspelled) "MAL ${hr.suggestions}" else "bien (FALLA)").append('\n')
         for ((x, y) in listOf("Toda" to "vio", "en" to "cima", "con" to "tigo", "si" to "no", "de" to "más", "para" to "que", "mi" to "casa")) {
             sb.append("    Partida: $x $y -> ${eng.joinedWord(x, y, "es") ?: "(bien)"}\n")
         }

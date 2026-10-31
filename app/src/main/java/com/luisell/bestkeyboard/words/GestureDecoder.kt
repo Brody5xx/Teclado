@@ -118,7 +118,7 @@ class GestureDecoder(private val dicts: List<Dictionary>, private val user: User
             }
             // Tus palabras aprendidas que no están en el diccionario (nombres, siglas...)
             for (e2 in user.words.values) {
-                if (e2.count < UserData.KNOWN) continue
+                if (!e2.known) continue
                 val k = keyChars(e2.display, buf)
                 if (k.length < 2 || k[0] != s || k[k.length - 1] != e) continue
                 if (dicts.any { it.indexOf(e2.display.lowercase()) >= 0 }) continue

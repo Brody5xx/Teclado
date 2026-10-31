@@ -8,8 +8,14 @@ import java.io.File
  */
 class UserData {
 
-    class Entry(var display: String, var count: Int) {
+    /**
+     * [sure] = la confirmaste tú ("+ Mi palabra", tocarla entre comillas, deshacer una corrección).
+     * [legacy] = guardada por una versión vieja (se respeta como antes).
+     */
+    class Entry(var display: String, var count: Int, var sure: Boolean = false, var legacy: Boolean = false) {
         val fold = TextUtil.fold(display)
+        /** Cuenta como palabra tuya: confirmada, o escrita varias veces. */
+        val known get() = sure || count >= (if (legacy) KNOWN else AUTO_KNOWN)
     }
 
     val words = HashMap<String, Entry>()
@@ -18,8 +24,11 @@ class UserData {
 
     fun count(lower: String): Int = words[lower]?.count ?: 0
 
-    /** Una palabra cuenta como "tuya" cuando la escribiste 2 veces o la confirmaste. */
-    fun isKnown(lower: String): Boolean = count(lower) >= KNOWN
+    /** Una palabra cuenta como "tuya" cuando la confirmaste o la escribiste 4 veces. */
+    fun isKnown(lower: String): Boolean = words[lower]?.known == true
+
+    /** Solo las que confirmaste tú (para la revisión de ortografía a fondo). */
+    fun isSure(lower: String): Boolean = words[lower]?.sure == true
 
     fun entry(lower: String): Entry? = words[lower]
 
@@ -31,7 +40,7 @@ class UserData {
         } else {
             e.count = (e.count + amount).coerceAtMost(100000)
             // Si la escribes con una mayúscula especial (ej. "Luisell"), se recuerda así
-            if (display != key && e.display == key) words[key] = Entry(display, e.count)
+            if (display != key && e.display == key) words[key] = Entry(display, e.count, e.sure, e.legacy)
         }
         dirty = true
         if (words.size > MAX_WORDS) trimWords()
@@ -42,6 +51,7 @@ class UserData {
         val key = display.lowercase()
         val c = count(key)
         if (c < KNOWN) add(display, KNOWN - c) else add(display, 1)
+        words[key]?.sure = true
     }
 
     fun forget(lower: String) {
@@ -80,7 +90,10 @@ class UserData {
     /** Copia el contenido a texto (se llama en el hilo principal, se escribe en otro hilo). */
     fun snapshot(): String {
         val sb = StringBuilder()
-        for ((_, e) in words) sb.append("w\t").append(e.display).append('\t').append(e.count).append('\n')
+        for ((_, e) in words) {
+            sb.append("w\t").append(e.display).append('\t').append(e.count).append('\t')
+                .append(if (e.sure) "1" else if (e.legacy) "L" else "0").append('\n')
+        }
         for ((p, m) in bigrams) for ((n, c) in m) {
             sb.append("b\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
         }
@@ -92,9 +105,10 @@ class UserData {
         file.forEachLine(Charsets.UTF_8) { line ->
             val p = line.split('\t')
             when {
-                p.size == 3 && p[0] == "w" -> {
+                (p.size == 3 || p.size == 4) && p[0] == "w" -> {
                     val c = p[2].toIntOrNull() ?: return@forEachLine
-                    words[p[1].lowercase()] = Entry(p[1], c)
+                    val flag = if (p.size == 4) p[3] else "L" // versión vieja: se respeta como antes
+                    words[p[1].lowercase()] = Entry(p[1], c, sure = flag == "1", legacy = flag == "L")
                 }
                 p.size == 4 && p[0] == "b" -> {
                     val c = p[3].toIntOrNull() ?: return@forEachLine
@@ -106,6 +120,8 @@ class UserData {
 
     companion object {
         const val KNOWN = 2
+        /** Palabras que no están en el diccionario: hay que escribirlas 4 veces para aprenderlas solas. */
+        const val AUTO_KNOWN = 4
         const val MAX_WORDS = 20000
         const val MAX_BIGRAM_KEYS = 15000
     }

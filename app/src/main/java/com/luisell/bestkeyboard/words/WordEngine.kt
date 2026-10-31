@@ -70,7 +70,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             }
         }
         for ((key, e) in user.words) {
-            if (e.count < UserData.KNOWN || !e.fold.startsWith(tf) || inAnyDict(key)) continue
+            if (!e.known || !e.fold.startsWith(tf) || inAnyDict(key)) continue
             var s = 9f + userBonus(key) + bigramBonus(prevLower, key)
             val extra = e.fold.length - tf.length
             s += if (extra == 0) 0.6f else -0.08f * extra
@@ -146,7 +146,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
 
         // 2) Una letra de más, de menos, cambiada o al revés
         val mine = HashMap<String, UserData.Entry>()
-        for (e in user.words.values) if (e.count >= UserData.KNOWN) mine[e.fold] = e
+        for (e in user.words.values) if (e.known) mine[e.fold] = e
         edits(tf) { variant, penalty ->
             for (d in dicts) {
                 val i = d.bestForFold(variant)
@@ -193,7 +193,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         val lower = w.lowercase()
 
         val fix = correction(w, lang)?.let { TextUtil.matchCase(it, w) }
-        val known = isKnown(lower)
+        val known = if (strict) inAnyDict(lower) || user.isSure(lower) else isKnown(lower)
         // Revisión a fondo: palabras que existen pero son MUY raras, cuando hay una casi igual
         // muchísimo más común (ej. "hula" -> "hola"). Solo en el botón de revisar.
         if (strict && known && fix == null && !user.isKnown(lower)) {

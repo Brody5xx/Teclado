@@ -88,5 +88,5 @@ object WordStore {
         engine?.user?.dirty = false
     }
 
-    fun learnedCount(): Int = engine?.user?.words?.count { it.value.count >= UserData.KNOWN } ?: 0
+    fun learnedCount(): Int = engine?.user?.words?.count { it.value.known } ?: 0
 }
