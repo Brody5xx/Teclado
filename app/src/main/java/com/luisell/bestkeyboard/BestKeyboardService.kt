@@ -920,6 +920,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        if (shot != null || shotAsk) clearShot()
         if (mode != 0) showMode(0)
         if (translating) stopTranslate()
         if (spellOn) stopSpell(keepSelection = true)

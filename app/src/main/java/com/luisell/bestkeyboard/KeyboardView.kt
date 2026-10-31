@@ -261,13 +261,13 @@ class KeyboardView(context: Context) : View(context) {
     /** Botón ▦ de la esquina: muestra las herramientas aunque haya sugerencias (como Gboard). */
     private var forceTools = false
     private val menuW get() = 48f * d
-    private val showingSuggestions get() = hasSuggestions && !forceTools
+    private val showingSuggestions get() = hasSuggestions && !forceTools && chipLabel == null
 
     // Sugerencia de captura de pantalla (botón con la miniatura)
     private var shotThumb: android.graphics.Bitmap? = null
     private var chipLabel: String? = null
     private val shotRect = RectF()
-    private val showingShot get() = chipLabel != null && !hasSuggestions && !forceTools
+    private val showingShot get() = chipLabel != null && !forceTools
 
     /** Botón grande en el centro de la barra (la captura de pantalla, o el aviso del permiso). */
     fun setChip(thumb: android.graphics.Bitmap?, label: String?) {
@@ -696,13 +696,17 @@ class KeyboardView(context: Context) : View(context) {
             st(p.hint)
             when (i) {
                 TOOL_SETTINGS -> {
-                    c.drawCircle(cx, cy, s * 0.35f, stroke)
-                    c.drawCircle(cx, cy, s * 0.75f, stroke)
-                    for (t in 0 until 8) {
-                        val a = t * Math.PI / 4
-                        val ca = cos(a).toFloat()
-                        val sa = sin(a).toFloat()
-                        c.drawLine(cx + ca * s * 0.75f, cy + sa * s * 0.75f, cx + ca * s * 1.08f, cy + sa * s * 1.08f, stroke)
+                    // Ajustes: 3 controles deslizantes (moderno y fácil de reconocer)
+                    val w = s * 0.95f
+                    val knobs = floatArrayOf(-0.45f, 0.4f, -0.05f)
+                    for (k in 0..2) {
+                        val y = cy + (k - 1) * s * 0.62f
+                        c.drawLine(cx - w, y, cx + w, y, stroke)
+                        val kx = cx + knobs[k] * w
+                        fill.color = p.bg
+                        c.drawCircle(kx, y, s * 0.3f, fill)
+                        fill.color = p.hint
+                        c.drawCircle(kx, y, s * 0.2f, fill)
                     }
                 }
                 TOOL_THEME -> {
@@ -789,15 +793,23 @@ class KeyboardView(context: Context) : View(context) {
             fill.color = p.keyPressed
             c.drawCircle(mx, cy, stripH * 0.4f, fill)
         }
+        // Destello de 4 puntas (minimalista) + uno pequeño: "herramientas"
         fill.color = p.text
-        val q = 5.5f * d
-        val g = 1.8f * d
-        for (gx0 in intArrayOf(-1, 1)) for (gy0 in intArrayOf(-1, 1)) {
-            val l = if (gx0 < 0) mx - g / 2 - q else mx + g / 2
-            val t = if (gy0 < 0) cy - g / 2 - q else cy + g / 2
-            tmp.set(l, t, l + q, t + q)
-            c.drawRoundRect(tmp, 1.6f * d, 1.6f * d, fill)
-        }
+        sparkle(c, mx - 1.5f * d, cy + 1.5f * d, 8.5f * d)
+        sparkle(c, mx + 7f * d, cy - 7f * d, 3.6f * d)
+    }
+
+    /** Estrella de 4 puntas con lados curvos (estilo moderno). */
+    private fun sparkle(c: Canvas, x: Float, y: Float, r: Float) {
+        val k = r * 0.18f
+        path.reset()
+        path.moveTo(x, y - r)
+        path.quadTo(x + k, y - k, x + r, y)
+        path.quadTo(x + k, y + k, x, y + r)
+        path.quadTo(x - k, y + k, x - r, y)
+        path.quadTo(x - k, y - k, x, y - r)
+        path.close()
+        c.drawPath(path, fill)
     }
 
     /** "🖼 Captura de pantalla": botón con la miniatura de tu última captura. */

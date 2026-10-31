@@ -56,7 +56,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
     private val photo = WordsView(context)
     private val hint = TextView(context)
     private val shutter = View(context)
-    private val gallery = TextView(context)
+    private val gallery = GalleryIcon(context)
     private val closeBtn = TextView(context)
     private val backBtn = TextView(context)
     private val resultBar = LinearLayout(context)
@@ -108,7 +108,6 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         shutter.setOnClickListener { takePhoto() }
         addView(shutter, LayoutParams(d(72f), d(72f), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = d(18f) })
 
-        circle(gallery, "🖼", 20f)
         gallery.setOnClickListener { actions?.onScanFeedback(); actions?.onScanGallery() }
         addView(gallery, LayoutParams(d(52f), d(52f), Gravity.BOTTOM or Gravity.START).apply { setMargins(d(24f), 0, 0, d(28f)) })
 
@@ -289,6 +288,52 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         if (t.isEmpty()) return
         actions?.onScanFeedback()
         actions?.onScanInsert(t)
+    }
+
+    /** Botón moderno de galería: marco de foto con montaña y sol, dibujado a mano (sin emoji). */
+    private class GalleryIcon(context: Context) : View(context) {
+        private val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val r = RectF()
+        private val path = android.graphics.Path()
+        init { isClickable = true }
+
+        override fun onDraw(c: Canvas) {
+            val w = width.toFloat()
+            val h = height.toFloat()
+            val dd = resources.displayMetrics.density
+            // Fondo: círculo de vidrio oscuro con borde fino
+            p.style = Paint.Style.FILL
+            p.color = if (isPressed) 0xCC505257.toInt() else 0x66000000
+            c.drawCircle(w / 2, h / 2, minOf(w, h) / 2, p)
+            p.style = Paint.Style.STROKE
+            p.strokeWidth = 1.2f * dd
+            p.color = 0x66FFFFFF
+            c.drawCircle(w / 2, h / 2, minOf(w, h) / 2 - p.strokeWidth, p)
+            // Marco de la foto
+            val s = minOf(w, h) * 0.24f
+            r.set(w / 2 - s, h / 2 - s * 0.8f, w / 2 + s, h / 2 + s * 0.8f)
+            p.color = 0xFFFFFFFF.toInt()
+            p.strokeWidth = 2f * dd
+            p.strokeJoin = Paint.Join.ROUND
+            c.drawRoundRect(r, s * 0.25f, s * 0.25f, p)
+            // Montañas
+            p.style = Paint.Style.FILL
+            path.reset()
+            path.moveTo(r.left + s * 0.2f, r.bottom - s * 0.2f)
+            path.lineTo(r.left + s * 0.75f, r.top + s * 0.75f)
+            path.lineTo(r.left + s * 1.15f, r.bottom - s * 0.55f)
+            path.lineTo(r.left + s * 1.4f, r.top + s * 1.0f)
+            path.lineTo(r.right - s * 0.2f, r.bottom - s * 0.2f)
+            path.close()
+            c.drawPath(path, p)
+            // Sol
+            c.drawCircle(r.right - s * 0.5f, r.top + s * 0.5f, s * 0.17f, p)
+        }
+
+        override fun drawableStateChanged() {
+            super.drawableStateChanged()
+            invalidate()
+        }
     }
 
     /** "Vida" mínima que la cámara necesita para saber cuándo encender y apagar. */
