@@ -98,37 +98,78 @@ object CloudText {
 
     // ---------------------------------------------------------------- Reescribir formal (Gemini)
 
+    /** Modelos de Gemini a probar, en orden (si uno está ocupado o ya no existe, se usa el siguiente). */
+    private val MODELS = listOf(
+        "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash",
+    )
+
+    /** Saca el mensaje de error que manda Google (para mostrarlo si nada funciona). */
+    private fun googleMessage(body: String): String = try {
+        JSONObject(body).optJSONObject("error")?.optString("message").orEmpty().take(140)
+    } catch (_: Exception) { "" }
+
     /** Reescribe [text] formal y profesional con Google Gemini usando la clave gratis [key]. */
     fun formal(text: String, key: String, done: (List<String>?, String?) -> Unit) {
         io.execute {
-            try {
-                val prompt = "Reescribe el siguiente texto con un tono formal y profesional, corrigiendo la " +
-                    "ortografía y la gramática. Mantén el mismo idioma del texto y el mismo significado; no " +
-                    "agregues información nueva. Responde SOLO con el texto reescrito, sin comillas, sin " +
-                    "títulos y sin explicaciones.\n\nTexto:\n" + text
-                val req = JSONObject().put(
-                    "contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))),
-                ).put("generationConfig", JSONObject().put("temperature", 0.4).put("candidateCount", 1))
-                val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
-                val out = JSONObject(post(url, req.toString(), "application/json", mapOf("x-goog-api-key" to key.trim())))
-                val parts = out.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
-                val sb = StringBuilder()
-                if (parts != null) for (i in 0 until parts.length()) sb.append(parts.optJSONObject(i)?.optString("text") ?: "")
-                val result = sb.toString().trim().trim('"', '“', '”')
-                main.post {
-                    if (result.isEmpty()) done(null, L.t("La IA no dio respuesta. Inténtalo otra vez.", "The AI gave no answer. Try again."))
-                    else done(listOf(result), null)
+            val prompt = "Reescribe el siguiente texto con un tono formal y profesional, corrigiendo la " +
+                "ortografía y la gramática. Mantén el mismo idioma del texto y el mismo significado; no " +
+                "agregues información nueva. Responde SOLO con el texto reescrito, sin comillas, sin " +
+                "títulos y sin explicaciones.\n\nTexto:\n" + text
+            val req = JSONObject().put(
+                "contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))),
+            ).put("generationConfig", JSONObject().put("temperature", 0.4))
+            var lastError: HttpError? = null
+            var network = false
+            for (model in MODELS) {
+                // Dos intentos por modelo si Google dice que está ocupado (503)
+                for (attempt in 0..1) {
+                    try {
+                        val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"
+                        val out = JSONObject(post(url, req.toString(), "application/json", mapOf("x-goog-api-key" to key.trim())))
+                        val parts = out.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
+                        val sb = StringBuilder()
+                        if (parts != null) for (i in 0 until parts.length()) {
+                            val p = parts.optJSONObject(i) ?: continue
+                            if (p.optBoolean("thought", false)) continue // "pensamientos" del modelo, no van
+                            sb.append(p.optString("text"))
+                        }
+                        val result = sb.toString().trim().trim('"', '“', '”')
+                        if (result.isNotEmpty()) {
+                            main.post { done(listOf(result), null) }
+                            return@execute
+                        }
+                        break // respuesta vacía: probar el siguiente modelo
+                    } catch (e: HttpError) {
+                        lastError = e
+                        when (e.code) {
+                            // Clave mala o no permitida: no tiene caso probar otro modelo
+                            401, 403 -> { main.post { done(null, keyProblem(e)) }; return@execute }
+                            400 -> if (e.body.contains("API key", true) || e.body.contains("API_KEY", true)) {
+                                main.post { done(null, keyProblem(e)) }; return@execute
+                            } else break
+                            503, 500 -> if (attempt == 0) { Thread.sleep(1500); continue } else break
+                            else -> break // 404 (modelo ya no existe), 429 (límite de ese modelo)...
+                        }
+                    } catch (e: Exception) {
+                        network = true
+                        break
+                    }
                 }
-            } catch (e: HttpError) {
-                val msg = when (e.code) {
-                    400, 401, 403 -> L.t("La clave de Gemini no funciona. Revísala en los ajustes del teclado.", "The Gemini key doesn't work. Check it in the keyboard settings.")
-                    429 -> L.t("Llegaste al límite gratis de Gemini por ahora. Espera un rato.", "You reached Gemini's free limit for now. Wait a while.")
-                    else -> L.t("Gemini no respondió. Inténtalo otra vez.", "Gemini didn't respond. Try again.")
-                }
-                main.post { done(null, msg) }
-            } catch (e: Exception) {
-                main.post { done(null, noInternet()) }
             }
+            val err = lastError
+            val msg = when {
+                err == null && network -> noInternet()
+                err?.code == 429 -> L.t("Llegaste al límite gratis de Gemini por ahora. Espera un rato.", "You reached Gemini's free limit for now. Wait a while.")
+                err != null -> L.t("Gemini no respondió (error ${err.code}). ", "Gemini didn't respond (error ${err.code}). ") + googleMessage(err.body)
+                else -> L.t("La IA no dio respuesta. Inténtalo otra vez.", "The AI gave no answer. Try again.")
+            }
+            main.post { done(null, msg) }
         }
+    }
+
+    private fun keyProblem(e: HttpError): String {
+        val g = googleMessage(e.body)
+        return L.t("La clave de Gemini no funciona. Revísala en los ajustes del teclado.", "The Gemini key doesn't work. Check it in the keyboard settings.") +
+            (if (g.isNotEmpty()) " ($g)" else "")
     }
 }

@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Para sugerir el código de verificación de tus SMS (solo se lee dentro del teléfono) -->
     <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <!-- Para encontrar el reconocimiento de voz del teléfono (app Google) -->
     <queries>
@@ -26,7 +27,7 @@
     </queries>
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:roundIcon="@drawable/ic_launcher"
         android:label="@string/app_name"
@@ -58,6 +59,13 @@
         </service>
 
         <!-- Escanear texto con la cámara -->
+        <!-- "Mis contraseñas": elegir una y confirmar con huella o PIN -->
+        <activity
+            android:name=".VaultPickActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="" />
+
         <activity
             android:name=".ScanActivity"
             android:exported="false"

@@ -49,6 +49,10 @@ object Prefs {
     const val OTP_SUGGEST = "suggest_codes"
     /** Lo último que ya usaste o descartaste (para no volver a ofrecerlo). */
     const val QUICK_DONE = "quick_done"
+    /** Sugerir mis correos, atajos y contraseñas guardados. */
+    const val VAULT_SUGGEST = "vault_suggest"
+    /** Guardar solo los correos que escribo en campos de correo. */
+    const val VAULT_LEARN = "vault_learn_emails"
     const val MORE_TOOLS2 = "more_tools_all"
 
     fun get(ctx: Context): SharedPreferences =

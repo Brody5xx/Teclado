@@ -39,6 +39,7 @@ class MainActivity : Activity() {
     private lateinit var photosBtn: TextView
     private lateinit var camBtn: TextView
     private lateinit var smsBtn: TextView
+    private lateinit var vaultList: LinearLayout
 
     /** Idioma de esta pantalla: el del teléfono, o el que elijas. */
     private var en = false
@@ -197,9 +198,147 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        refreshVault()
         refreshStatus()
         refreshMic()
         WordStore.load(this) { refreshLearned() }
+    }
+
+    /** Dibuja la lista de "Mis datos" (las contraseñas se ven con puntitos). */
+    private fun refreshVault() {
+        if (!::vaultList.isInitialized) return
+        try { VaultStore.load(this) } catch (_: Exception) { }
+        vaultList.removeAllViews()
+        if (VaultStore.items.isEmpty()) {
+            val t = TextView(this)
+            t.text = tr("Todavía no guardaste nada.", "Nothing saved yet.")
+            t.textSize = 13f
+            t.setTextColor(SUB)
+            t.setPadding(0, dp(12), 0, 0)
+            vaultList.addView(t)
+            return
+        }
+        for (e in VaultStore.items.sortedBy { it.kind }) {
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+            row.setPadding(0, dp(10), 0, dp(10))
+            val iv = IconView(this, when (e.kind) { VaultStore.EMAIL -> Icons.MAIL; VaultStore.PASSWORD -> Icons.LOCK; else -> Icons.CLIP }, 8f)
+            iv.isClickable = false
+            iv.color = CYAN
+            iv.bgColor = CARD
+            row.addView(iv, LinearLayout.LayoutParams(dp(26), dp(26)))
+            val texts = LinearLayout(this)
+            texts.orientation = LinearLayout.VERTICAL
+            texts.setPadding(dp(12), 0, dp(8), 0)
+            val a = TextView(this)
+            a.text = if (e.kind == VaultStore.PASSWORD) e.label.ifBlank { tr("Contraseña", "Password") } else e.value
+            a.textSize = 15f
+            a.setTextColor(TEXT)
+            a.maxLines = 1
+            a.ellipsize = android.text.TextUtils.TruncateAt.END
+            texts.addView(a)
+            val b = TextView(this)
+            val extra = ArrayList<String>()
+            if (e.kind == VaultStore.PASSWORD) extra += "••••••••" else if (e.label.isNotBlank() && e.kind == VaultStore.TEXT) extra += e.label
+            if (e.shortcut.isNotBlank()) extra += tr("atajo: ", "shortcut: ") + e.shortcut
+            b.text = extra.joinToString("  ·  ")
+            b.textSize = 12f
+            b.setTextColor(SUB)
+            if (extra.isNotEmpty()) texts.addView(b)
+            row.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+            val del = IconView(this, Icons.CLOSE, 6f)
+            del.color = SUB
+            del.setOnClickListener {
+                confirm("¿Borrar este dato?", "Delete this item?", "Se borrará de tu teléfono.", "It will be deleted from your phone.") {
+                    VaultStore.remove(this, e.id)
+                    refreshVault()
+                }
+            }
+            row.addView(del, LinearLayout.LayoutParams(dp(36), dp(36)))
+            if (vaultList.childCount > 0) vaultList.addView(View(this).apply { setBackgroundColor(LINE) }, LinearLayout.LayoutParams(-1, dp(1)))
+            vaultList.addView(row, LinearLayout.LayoutParams(-1, -2))
+        }
+    }
+
+    /** Ventanita para agregar un correo, una contraseña o un texto con atajo. */
+    private fun addVaultDialog() {
+        val box = LinearLayout(this)
+        box.orientation = LinearLayout.VERTICAL
+        box.setPadding(dp(20), dp(8), dp(20), dp(4))
+        var kind = VaultStore.EMAIL
+        val tabs = LinearLayout(this)
+        tabs.orientation = LinearLayout.HORIZONTAL
+        tabs.background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(22f) }
+        tabs.setPadding(dp(4), dp(4), dp(4), dp(4))
+        fun field(hint: String, secret: Boolean = false) = EditText(this).apply {
+            this.hint = hint
+            isSingleLine = true
+            textSize = 15f
+            setTextColor(TEXT)
+            setHintTextColor(SUB)
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
+            inputType = if (secret) android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            else android.text.InputType.TYPE_CLASS_TEXT
+        }
+        val name = field(tr("Nombre (ej.: Banco, Trabajo)", "Name (e.g.: Bank, Work)"))
+        val value = field(tr("Correo", "Email"))
+        val shortcut = field(tr("Atajo opcional (ej.: lp)", "Optional shortcut (e.g.: lp)"))
+        val opts = listOf(
+            VaultStore.EMAIL to tr("Correo", "Email"),
+            VaultStore.PASSWORD to tr("Contraseña", "Password"),
+            VaultStore.TEXT to tr("Texto / atajo", "Text / shortcut"),
+        )
+        val tabViews = ArrayList<TextView>()
+        fun paint() {
+            for ((i, tv) in tabViews.withIndex()) {
+                val on = opts[i].first == kind
+                tv.setTextColor(if (on) 0xFF0B0D12.toInt() else SUB)
+                tv.background = if (on) GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(18f) } else null
+            }
+            value.hint = when (kind) {
+                VaultStore.EMAIL -> tr("Correo", "Email")
+                VaultStore.PASSWORD -> tr("Contraseña", "Password")
+                else -> tr("Texto (dirección, teléfono, firma…)", "Text (address, phone, signature…)")
+            }
+            value.inputType = android.text.InputType.TYPE_CLASS_TEXT or when (kind) {
+                VaultStore.PASSWORD -> android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                VaultStore.EMAIL -> android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                else -> 0
+            }
+            shortcut.visibility = if (kind == VaultStore.PASSWORD) View.GONE else View.VISIBLE
+        }
+        for ((k, label) in opts) {
+            val t = TextView(this)
+            t.text = label
+            t.textSize = 13f
+            t.gravity = Gravity.CENTER
+            t.setPadding(dp(4), dp(9), dp(4), dp(9))
+            t.setOnClickListener { kind = k; paint() }
+            tabViews.add(t)
+            tabs.addView(t, LinearLayout.LayoutParams(0, -2, 1f))
+        }
+        box.addView(tabs, LinearLayout.LayoutParams(-1, -2))
+        for (f in listOf(name, value, shortcut)) box.addView(f, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        paint()
+        AlertDialog.Builder(this)
+            .setTitle(tr("Agregar a Mis datos", "Add to My data"))
+            .setView(box)
+            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
+                val v = value.text.toString()
+                if (v.isBlank()) return@setPositiveButton
+                try {
+                    VaultStore.add(this, kind, name.text.toString(), if (kind == VaultStore.PASSWORD) v else v.trim(),
+                        if (kind == VaultStore.PASSWORD) "" else shortcut.text.toString())
+                    toast("Guardado.", "Saved.")
+                } catch (_: Exception) {
+                    toast("No se pudo guardar.", "Couldn't save.")
+                }
+                refreshVault()
+            }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
     }
 
     private fun refreshLearned() {
@@ -406,6 +545,23 @@ class MainActivity : Activity() {
         text(tr("Dictado: di \"coma\", \"punto final\", \"nueva línea\"… Traducción y escáner funcionan dentro del teléfono.",
             "Dictation: say \"comma\", \"period\", \"new line\"… Translation and scanner work on the phone."), 12f, faded = true)
 
+        // ---- Mis datos (como Samsung Pass)
+        card(tr("Mis datos: correos, contraseñas y atajos", "My data: emails, passwords and shortcuts"), Icons.MAIL)
+        text(tr(
+            "Guarda tus correos, contraseñas y textos que usas mucho. Al escribir 2–3 letras (o su atajo), el teclado " +
+                "te los sugiere arriba. Las contraseñas solo salen en campos de contraseña y piden tu huella o PIN. " +
+                "Todo se guarda cifrado y solo en tu teléfono.",
+            "Save your emails, passwords and texts you use a lot. Type 2–3 letters (or the shortcut) and the keyboard " +
+                "suggests them on top. Passwords only show in password fields and ask for your fingerprint or PIN. " +
+                "Everything is encrypted and stays only on your phone.",
+        ), 13f, faded = true)
+        switch(tr("Sugerir mis datos al escribir", "Suggest my data while typing"), Prefs.VAULT_SUGGEST, true)
+        switch(tr("Guardar los correos que escribo", "Save the emails I type"), Prefs.VAULT_LEARN, true,
+            tr("Cuando escribes tu correo en un campo de correo, se guarda solo.", "When you type your email in an email field, it's saved automatically."))
+        vaultList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(vaultList, LinearLayout.LayoutParams(-1, -2))
+        button(tr("+  Agregar", "+  Add"), primary = true) { addVaultDialog() }
+
         // ---- Sugerencias rápidas: copiado y códigos
         card(tr("Copiado y códigos", "Copied text and codes"), Icons.LOCK)
         switch(tr("Sugerir lo que acabo de copiar", "Suggest what I just copied"), Prefs.CLIP_SUGGEST, true,
@@ -479,6 +635,14 @@ class MainActivity : Activity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "8.0" to tr(
+            "•  «Mis datos» (como Samsung Pass): correos, contraseñas y atajos guardados y cifrados. Escribe 2–3 letras " +
+                "o el atajo y el teclado te los sugiere. Las contraseñas piden huella o PIN.\n" +
+                "•  «Más formal» prueba varios modelos de Gemini y dice el error exacto si falla.",
+            "•  «My data» (like Samsung Pass): saved and encrypted emails, passwords and shortcuts. Type 2–3 letters " +
+                "or the shortcut and the keyboard suggests them. Passwords ask for fingerprint or PIN.\n" +
+                "•  «More formal» tries several Gemini models and shows the exact error if it fails.",
+        ),
         "7.9" to tr(
             "•  Sugerencia de lo que copias: «Pegar: …» arriba del teclado.\n" +
                 "•  Códigos de verificación de tus SMS: «Código: 123456», un toque y se pega.",

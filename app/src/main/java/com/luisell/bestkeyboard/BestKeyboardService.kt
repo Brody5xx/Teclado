@@ -147,6 +147,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // Sugerencia rápida: lo que copiaste o el código del SMS (va antes que la captura)
     private var quick: QuickPaste.Item? = null
+    /** Las sugerencias de arriba son de "Mis datos" (y estos son sus valores completos). */
+    private var vaultActive = false
+    private val vaultValues = arrayOfNulls<String>(3)
     private val quickCheck = Runnable { if (isInputViewShown) checkQuick() }
     /** Avisa cuando llega un SMS nuevo (para ofrecer el código con el teclado abierto). */
     private val smsObserver = object : android.database.ContentObserver(Handler(Looper.getMainLooper())) {
@@ -479,7 +482,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun checkQuick() {
         val copyOn = prefs.getBoolean(Prefs.CLIP_SUGGEST, true)
         val codeOn = prefs.getBoolean(Prefs.OTP_SUGGEST, true)
-        if ((!copyOn && !codeOn) || hackerActive) { clearQuick(false); return }
+        if (hackerActive) { clearQuick(false); return }
+        // Campo de contraseña: botón "Mis contraseñas" (si guardaste alguna)
+        if (isPassword) {
+            VaultStore.load(this)
+            if (prefs.getBoolean(Prefs.VAULT_SUGGEST, true) && VaultStore.passwords().isNotEmpty()) {
+                showQuick(QuickPaste.Item("", L.t("Mis contraseñas", "My passwords"), false, "", System.currentTimeMillis(), picker = true))
+                return
+            }
+        }
+        if (!copyOn && !codeOn) { clearQuick(false); return }
         val done = prefs.getString(Prefs.QUICK_DONE, "") ?: ""
         // Lo copiado (se lee aquí, el teclado tiene permiso mientras está abierto)
         var fromClip: QuickPaste.Item? = null
@@ -522,20 +534,38 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             checkScreenshot()
             return
         }
-        kv?.setChip(null, item.label, if (item.isCode) Icons.LOCK else Icons.CLIP)
+        kv?.setChip(null, item.label, if (item.isCode || item.picker) Icons.LOCK else Icons.CLIP)
     }
 
     /** Quita la sugerencia rápida; con [forget] no se vuelve a ofrecer (ya la usaste o seguiste escribiendo). */
     private fun clearQuick(forget: Boolean) {
         val q = quick ?: return
-        if (forget) prefs.edit().putString(Prefs.QUICK_DONE, q.sig).apply()
+        if (forget && q.sig.isNotEmpty()) prefs.edit().putString(Prefs.QUICK_DONE, q.sig).apply()
         quick = null
         kv?.setChip(null, null)
+    }
+
+    /** Al salir de un campo de correo, guarda el correo que escribiste (para sugerirlo después). */
+    private fun learnTypedEmail() {
+        if (commaMode != "@" || isPassword || !prefs.getBoolean(Prefs.VAULT_LEARN, true)) return
+        val ic = currentInputConnection ?: return
+        val t = try { ic.getExtractedText(ExtractedTextRequest(), 0)?.text?.toString()?.trim() } catch (_: Exception) { null } ?: return
+        if (t.length in 6..80 && t.matches(Regex("[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}"))) {
+            try { VaultStore.learnEmail(this, t) } catch (_: Exception) { }
+        }
     }
 
     /** Tocaste la sugerencia: se escribe lo copiado o el código. */
     private fun useQuick() {
         val q = quick ?: return
+        if (q.picker) {
+            // Ventanita para elegir la contraseña (pide huella o PIN antes de escribirla)
+            try {
+                startActivity(Intent(this, VaultPickActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS))
+            } catch (_: Exception) { }
+            return
+        }
         clearQuick(true)
         val ic = target() ?: return
         ic.commitText(q.text, 1)
@@ -1104,6 +1134,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         lastCorrection = null
         rebuild()
         insertScanned(info)
+        VaultStore.load(this)
+        VaultStore.pendingInsert?.let { p ->
+            // Volviste de elegir una contraseña: se escribe aquí
+            VaultStore.pendingInsert = null
+            currentInputConnection?.commitText(p, 1)
+        }
         updateAutoCaps()
         scheduleUpdate()
         checkScreenshot()
@@ -1128,6 +1164,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        learnTypedEmail()
         if (quick != null) clearQuick(false)
         if (shot != null || shotAsk) clearShot()
         if (mode != 0) showMode(0)
@@ -1308,12 +1345,43 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun clearSlots() {
+        vaultActive = false
         slotWords.fill(null)
         slotTyped = -1
         kv?.clearSuggestions()
     }
 
+    /** Lo escrito desde el último espacio (para comparar con "Mis datos"). */
+    private fun vaultToken(): String? {
+        val ic = target() ?: return null
+        val before = ic.getTextBeforeCursor(64, 0)?.toString() ?: return null
+        val i = before.indexOfLast { it.isWhitespace() }
+        return before.substring(i + 1)
+    }
+
+    /** Sugiere tus correos y atajos guardados. Devuelve true si los mostró. */
+    private fun vaultSuggest(): Boolean {
+        if (isPassword || hackerActive || translating || page == Page.NUM || !prefs.getBoolean(Prefs.VAULT_SUGGEST, true)) return false
+        if (VaultStore.items.isEmpty()) return false
+        val token = vaultToken() ?: return false
+        val m = VaultStore.match(token, commaMode == "@")
+        if (m.isEmpty()) return false
+        val order = listOf(1, 0, 2) // el primero en el centro
+        val labels = arrayOfNulls<String>(3)
+        val values = arrayOfNulls<String>(3)
+        for ((i, e) in m.withIndex()) {
+            val slot = order[i]
+            labels[slot] = QuickPaste.preview(e.value)
+            values[slot] = e.value
+        }
+        showSlots(labels[0], labels[1], labels[2], true, false)
+        for (i in 0..2) vaultValues[i] = values[i]
+        vaultActive = true
+        return true
+    }
+
     private fun showSlots(left: String?, center: String?, right: String?, bold: Boolean, typedLeft: Boolean) {
+        vaultActive = false
         slotWords[0] = left
         slotWords[1] = center
         slotWords[2] = right
@@ -1329,6 +1397,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun updateSuggestions() {
+        if (vaultSuggest()) return
         val eng = WordStore.engine
         val ic = target()
         if (!suggestOn || !fieldSuggest || eng == null || ic == null || page == Page.NUM || hackerActive) {
@@ -1379,6 +1448,21 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSuggestion(slot: Int) {
+        if (vaultActive) {
+            // Tocaste uno de "Mis datos": cambia lo escrito por el valor completo
+            val v = vaultValues.getOrNull(slot) ?: return
+            val ic = target() ?: return
+            val token = vaultToken() ?: ""
+            ic.beginBatchEdit()
+            if (token.isNotEmpty()) ic.deleteSurroundingText(token.length, 0)
+            ic.commitText(if (commaMode == "@" || v.contains('@') || v.contains('\n')) v else "$v ", 1)
+            ic.endBatchEdit()
+            vaultActive = false
+            clearSlots()
+            lastCorrection = null
+            updateAutoCaps()
+            return
+        }
         val w = slotWords.getOrNull(slot) ?: return
         gestureWord = null
         phantomSpace = false

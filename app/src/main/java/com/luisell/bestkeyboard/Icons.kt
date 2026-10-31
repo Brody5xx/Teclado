@@ -48,6 +48,7 @@ object Icons {
     const val CHEVRON = 31
     const val HACKER = 32
     const val LOCK = 33
+    const val MAIL = 34
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -362,6 +363,16 @@ object Icons {
                 path.moveTo(cx + a * 0.1f, cy - a)
                 path.lineTo(cx + a, cy - a)
                 path.lineTo(cx + a, cy - a * 0.1f)
+                c.drawPath(path, st)
+            }
+            MAIL -> {
+                // Sobre de carta
+                r.set(cx - s * 0.95f, cy - s * 0.65f, cx + s * 0.95f, cy + s * 0.65f)
+                c.drawRoundRect(r, s * 0.2f, s * 0.2f, st)
+                path.reset()
+                path.moveTo(cx - s * 0.8f, cy - s * 0.45f)
+                path.lineTo(cx, cy + s * 0.1f)
+                path.lineTo(cx + s * 0.8f, cy - s * 0.45f)
                 c.drawPath(path, st)
             }
             LOCK -> {
