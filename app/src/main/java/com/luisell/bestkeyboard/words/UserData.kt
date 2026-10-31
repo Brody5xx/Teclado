@@ -54,6 +54,12 @@ class UserData {
         words[key]?.sure = true
     }
 
+    /** Deshiciste una corrección: no la vuelve a corregir, pero la revisión a fondo sí la revisa. */
+    fun learnSoft(display: String) {
+        val c = count(display.lowercase())
+        if (c < AUTO_KNOWN) add(display, AUTO_KNOWN - c) else add(display, 1)
+    }
+
     fun forget(lower: String) {
         if (words.remove(lower) != null) dirty = true
     }

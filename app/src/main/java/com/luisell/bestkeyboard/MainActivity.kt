@@ -352,7 +352,15 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 7.3")
+        section("Novedades — Versión 7.4")
+        text(
+            "• Revisar ortografía como Google Docs: ves todo tu texto con las palabras mal escritas en rojo. " +
+                "Toca una para corregirla, o «Corregir todo».\n" +
+                "• Mejores ideas para palabras muy mal escritas («autografia» → «ortografía»).\n" +
+                "• Si deshaces una corrección, la revisión de ortografía igual la revisa.", 14f,
+        )
+
+        section("Versión 7.3")
         text(
             "• Ahora puedes mover TODOS los botones de la barra de arriba (también el micrófono y bajar el teclado). " +
                 "En ⋯ → ✎: mantén presionado un botón y arrástralo; un toque lo pasa al otro lado.\n" +

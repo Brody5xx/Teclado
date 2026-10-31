@@ -231,7 +231,23 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
                     top.offer(d.words[i].lowercase(), d.words[i], d.logFreq[i] + langBonus(d, lang) - 2.2f)
             }
         }
-        val list = top.words().filter { !it.equals(w, true) }.map { TextUtil.matchCase(it, w) }.distinct().take(max)
+        var list = top.words().filter { !it.equals(w, true) }.map { TextUtil.matchCase(it, w) }.distinct().take(max)
+        // Revisión a fondo sin ninguna idea: busca palabras a 2 letras de distancia
+        // ("autografia" -> "ortografía"). Más lento, por eso solo aquí.
+        if (strict && list.isEmpty() && tf.length in 5..14) {
+            val seen = HashSet<String>()
+            edits(tf) { v1, p1 ->
+                if (seen.add(v1)) edits(v1) { v2, p2 ->
+                    for (d in dicts) {
+                        val i = d.bestForFold(v2)
+                        if (i < 0 || d.logFreq[i] < MIN_EDIT_LF + 0.7f) continue
+                        val key = d.words[i].lowercase()
+                        top.offer(key, d.words[i], d.logFreq[i] + langBonus(d, lang) + p1 + p2 + userBonus(key))
+                    }
+                }
+            }
+            list = top.words().filter { !it.equals(w, true) }.map { TextUtil.matchCase(it, w) }.distinct().take(max)
+        }
         return Spell(true, list)
     }
 

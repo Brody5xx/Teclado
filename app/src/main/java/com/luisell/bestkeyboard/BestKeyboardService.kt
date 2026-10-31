@@ -94,6 +94,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var sBar: SpellBar? = null
     private var spellErrors = ArrayList<SpellErr>()
     private var spellIdx = 0
+    /** Copia del texto que se está revisando (para mostrarlo con los errores marcados). */
+    private var spellText = ""
+    private var spellBase = 0
+    private var spellToken = 0
+    private val spellWorker = java.util.concurrent.Executors.newSingleThreadExecutor()
     private var spellOn = false
     private var selStart = 0
     private var selEnd = 0
@@ -319,7 +324,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         sb.visibility = View.GONE
         sb.actions = object : SpellBar.Actions {
             override fun onSpellPick(word: String) { onKeyFeedback(); spellPick(word) }
-            override fun onSpellSkip() { onKeyFeedback(); spellShow(spellIdx + 1) }
+            override fun onSpellSkip() { onKeyFeedback(); spellSkip() }
+            override fun onSpellSelect(index: Int) { onKeyFeedback(); spellShow(index) }
+            override fun onSpellFixAll() { onKeyFeedback(); spellFixAll() }
             override fun onSpellLearn() { onKeyFeedback(); spellLearn() }
             override fun onSpellClose() { onKeyFeedback(); stopSpell() }
         }
@@ -599,73 +606,107 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             base = minOf(selStart, selEnd) - before.length
         }
         if (base < 0) base = 0
-        spellErrors = ArrayList()
-        val found = Regex("[\\p{L}'’]+").findAll(text).toList()
-        var k = 0
-        while (k < found.size) {
-            val m = found[k]
-            // ¿Palabra partida en dos? ("toda vio" -> "todavía")
-            if (k + 1 < found.size) {
-                val n = found[k + 1]
-                val gap = text.substring(m.range.last + 1, n.range.first)
-                if (gap == " ") {
-                    val j = try { eng.joinedWord(m.value, n.value, lang) } catch (_: Exception) { null }
-                    if (j != null) {
-                        spellErrors.add(SpellErr(base + m.range.first, base + n.range.last + 1, m.value + " " + n.value, listOf(j), true))
-                        k += 2
-                        continue
-                    }
-                }
-            }
-            val r = try { eng.spellCheck(m.value, lang, 5, strict = true) } catch (_: Exception) { null }
-            if (r != null && r.misspelled) spellErrors.add(SpellErr(base + m.range.first, base + m.range.last + 1, m.value, r.suggestions, r.maybe))
-            k++
-        }
         val bar = sBar ?: return
         spellOn = true
+        spellErrors = ArrayList()
+        spellText = text
+        spellBase = base
         bar.visibility = View.VISIBLE
         bar.resetButtons()
+        bar.message(L.t("Revisando tu texto…", "Checking your text…"))
         kv?.spellOn = true
-        if (spellErrors.isEmpty()) {
-            bar.message(L.t("✅ No encontré errores de ortografía.", "✅ No spelling mistakes found."))
-            handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2500)
-            return
+        val lng = lang
+        val token = ++spellToken
+        // Se revisa en segundo plano para que el teclado no se trabe con textos largos
+        spellWorker.execute {
+            val errs = ArrayList<SpellErr>()
+            val found = Regex("[\\p{L}'’]+").findAll(text).toList()
+            var k = 0
+            while (k < found.size) {
+                val m = found[k]
+                // ¿Palabra partida en dos? ("toda vio" -> "todavía")
+                if (k + 1 < found.size) {
+                    val n = found[k + 1]
+                    val gap = text.substring(m.range.last + 1, n.range.first)
+                    if (gap == " ") {
+                        val j = try { eng.joinedWord(m.value, n.value, lng) } catch (_: Exception) { null }
+                        if (j != null) {
+                            errs.add(SpellErr(base + m.range.first, base + n.range.last + 1, m.value + " " + n.value, listOf(j), true))
+                            k += 2
+                            continue
+                        }
+                    }
+                }
+                val r = try { eng.spellCheck(m.value, lng, 5, strict = true) } catch (_: Exception) { null }
+                if (r != null && r.misspelled) errs.add(SpellErr(base + m.range.first, base + m.range.last + 1, m.value, r.suggestions, r.maybe))
+                k++
+            }
+            handler.post {
+                if (!spellOn || token != spellToken) return@post
+                spellErrors = errs
+                if (errs.isEmpty()) {
+                    bar.message(L.t("✅ No encontré errores de ortografía.", "✅ No spelling mistakes found."))
+                    handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2500)
+                } else spellShow(0)
+            }
         }
-        spellShow(0)
     }
 
-    /** Marca el error número [i] en la app y muestra sus correcciones. */
+    /** Muestra todo el texto con los errores marcados; el número [i] queda elegido (y marcado en la app). */
     private fun spellShow(i: Int) {
         val bar = sBar ?: return
-        spellIdx = i
-        if (i >= spellErrors.size) {
-            val last = spellErrors.lastOrNull()
-            if (last != null) currentInputConnection?.setSelection(last.end, last.end)
+        if (spellErrors.isEmpty()) {
             bar.message(L.t("✅ Listo, revisaste todo el texto.", "✅ Done, you checked all the text."))
-            spellErrors = ArrayList()
             handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2000)
             return
         }
-        val e = spellErrors[i]
+        val idx = i.coerceIn(0, spellErrors.size - 1)
+        spellIdx = idx
+        val e = spellErrors[idx]
         currentInputConnection?.setSelection(e.start, e.end)
-        bar.show(i + 1, spellErrors.size, e.word, e.sugg, e.maybe)
+        val marks = spellErrors.map { SpellBar.Mark(it.start - spellBase, it.end - spellBase, it.maybe) }
+        bar.showAll(spellText, marks, idx, e.sugg)
     }
 
-    /** Cambia la palabra marcada por la corrección elegida y pasa a la siguiente. */
-    private fun spellPick(word: String) {
+    /** Cambia la palabra [e] por [word] en la app y en la copia del texto. */
+    private fun spellReplace(e: SpellErr, word: String) {
         val ic = currentInputConnection ?: return
-        val e = spellErrors.getOrNull(spellIdx) ?: return
-        ic.beginBatchEdit()
         ic.setSelection(e.start, e.end)
         ic.commitText(word, 1)
-        ic.endBatchEdit()
+        val rs = e.start - spellBase
+        val re = e.end - spellBase
+        if (rs >= 0 && re <= spellText.length) spellText = spellText.substring(0, rs) + word + spellText.substring(re)
         val delta = word.length - (e.end - e.start)
-        for (j in spellIdx + 1 until spellErrors.size) {
-            spellErrors[j].start += delta
-            spellErrors[j].end += delta
-        }
+        for (x in spellErrors) if (x !== e && x.start >= e.end) { x.start += delta; x.end += delta }
         WordStore.engine?.let { if (learnOn) { it.user.add(word); WordStore.scheduleSave() } }
-        spellShow(spellIdx + 1)
+    }
+
+    /** Cambia la palabra elegida por la corrección y pasa a la siguiente. */
+    private fun spellPick(word: String) {
+        val e = spellErrors.getOrNull(spellIdx) ?: return
+        val ic = currentInputConnection ?: return
+        ic.beginBatchEdit()
+        spellReplace(e, word)
+        ic.endBatchEdit()
+        spellErrors.remove(e)
+        spellShow(spellIdx)
+    }
+
+    /** "Corregir todo": cambia cada palabra por su primera corrección (las que no tienen ideas se quedan). */
+    private fun spellFixAll() {
+        val ic = currentInputConnection ?: return
+        val fixable = spellErrors.filter { it.sugg.isNotEmpty() }.sortedByDescending { it.start }
+        if (fixable.isEmpty()) return
+        ic.beginBatchEdit()
+        // De atrás hacia adelante, para que las posiciones de las demás no cambien
+        for (e in fixable) spellReplace(e, e.sugg[0])
+        ic.endBatchEdit()
+        spellErrors.removeAll(fixable.toSet())
+        if (spellErrors.isEmpty()) {
+            val end = spellBase + spellText.length
+            ic.setSelection(end, end)
+        }
+        spellShow(0)
     }
 
     /** "Mi palabra": no la vuelve a marcar nunca (ni las demás iguales de este texto). */
@@ -673,10 +714,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val e = spellErrors.getOrNull(spellIdx) ?: return
         WordStore.engine?.let { it.user.learn(e.word); WordStore.scheduleSave() }
         val lower = e.word.lowercase()
-        val keep = ArrayList<SpellErr>()
-        for ((j, x) in spellErrors.withIndex()) if (j <= spellIdx || x.word.lowercase() != lower) keep.add(x)
-        spellErrors = keep
-        spellShow(spellIdx + 1)
+        spellErrors.removeAll { it.word.lowercase() == lower }
+        spellShow(spellIdx)
+    }
+
+    /** "Saltar": la deja como está y pasa a la siguiente. */
+    private fun spellSkip() {
+        val e = spellErrors.getOrNull(spellIdx) ?: return
+        spellErrors.remove(e)
+        spellShow(spellIdx)
     }
 
     private fun stopSpell(keepSelection: Boolean = false) {
@@ -1402,7 +1448,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 ic.endBatchEdit()
                 val eng = WordStore.engine
                 if (eng != null && learnOn && fieldLearn) {
-                    eng.user.learn(typed)
+                    eng.user.learnSoft(typed)
                     WordStore.scheduleSave()
                 }
                 return

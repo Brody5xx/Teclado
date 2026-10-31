@@ -99,6 +99,15 @@ class WordEngineReport {
         }
 
         // Una palabra con error escrita 2 veces NO debe "esconderse" de la revisión
+        for (w in listOf("autografia", "Hpla", "ortografia", "porfavor", "trabajamdo")) {
+            val t0 = System.nanoTime()
+            val r = eng.spellCheck(w, "es", 5, strict = true)
+            val ms = (System.nanoTime() - t0) / 1_000_000
+            sb.append("    ").append(w).append(" -> ").append(if (r.misspelled) "MAL ${r.suggestions}" else "bien").append("  (${ms} ms)\n")
+        }
+        user.learnSoft("Hpla")
+        val hp = eng.spellCheck("Hpla", "es", 5, strict = true)
+        sb.append("    Hpla (deshecha 1 vez) -> ").append(if (hp.misspelled) "MAL ${hp.suggestions}" else "bien (FALLA)").append('\n')
         user.add("Holr"); user.add("Holr")
         val hr = eng.spellCheck("Holr", "es", 5, strict = true)
         sb.append("    Holr (escrita 2 veces) -> ").append(if (hr.misspelled) "MAL ${hr.suggestions}" else "bien (FALLA)").append('\n')
