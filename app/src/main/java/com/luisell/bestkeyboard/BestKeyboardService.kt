@@ -246,6 +246,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         audio = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         WordStore.load(this) { scheduleUpdate() }
         Feedback.init(this)
+        prefs.registerOnSharedPreferenceChangeListener(prefsListener)
         EmojiData.load(this)
         ClipStore.load(this)
         ClipStore.onChange = { if (mode == 2) clipPanel?.refresh() }
@@ -1209,7 +1210,26 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         WordStore.saveNow()
     }
 
+    /** Ajustes que se guardan solos mientras escribes (no son cambios de personalización). */
+    private val quietPrefs = setOf(
+        Prefs.CLIP_LAST_SIG, Prefs.QUICK_DONE, Prefs.SHOT_USED, Prefs.SHOT_ASKS, Prefs.LANG, Prefs.TR_SRC,
+        Prefs.BAR_TOOLS, Prefs.MORE_TOOLS, Prefs.BAR_TOOLS2, Prefs.MORE_TOOLS2, Prefs.SIZE,
+    )
+    private val applyLive = Runnable {
+        if (kv == null) return@Runnable
+        applySettings()
+        rebuild()
+        scheduleUpdate()
+    }
+    /** Cambias algo en los ajustes con el teclado abierto: se aplica al instante (tema, colores, forma…). */
+    private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == null || key in quietPrefs) return@OnSharedPreferenceChangeListener
+        handler.removeCallbacks(applyLive)
+        handler.postDelayed(applyLive, 60)
+    }
+
     override fun onDestroy() {
+        prefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
         clipboard?.removePrimaryClipChangedListener(clipListener)
         try { contentResolver.unregisterContentObserver(mediaObserver) } catch (_: Exception) { }
         try { contentResolver.unregisterContentObserver(smsObserver) } catch (_: Exception) { }
