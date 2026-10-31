@@ -33,6 +33,9 @@ object Prefs {
     /** Herramientas de la barra de arriba y de "Más opciones" (números separados por comas). */
     const val BAR_TOOLS = "bar_tools"
     const val MORE_TOOLS = "more_tools"
+    /** Versión nueva: TODOS los botones (también micrófono, esconder y ⋯) se pueden mover. */
+    const val BAR_TOOLS2 = "bar_tools_all"
+    const val MORE_TOOLS2 = "more_tools_all"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

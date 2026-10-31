@@ -352,7 +352,14 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 7.2")
+        section("Novedades — Versión 7.3")
+        text(
+            "• Ahora puedes mover TODOS los botones de la barra de arriba (también el micrófono y bajar el teclado). " +
+                "En ⋯ → ✎: mantén presionado un botón y arrástralo; un toque lo pasa al otro lado.\n" +
+                "• Botones de «Más opciones» más grandes, como en Gboard; los nombres largos se deslizan para leerlos.", 14f,
+        )
+
+        section("Versión 7.2")
         text(
             "• Acomoda la barra de arriba a tu manera: toca ⋯ y luego el lápiz ✎. Arrastra las opciones " +
                 "dentro de la barra, o entre la barra y «Más opciones». Un toque las pasa al otro lado.\n" +

@@ -319,24 +319,23 @@ class KeyboardView(context: Context) : View(context) {
         return toolHit(x)
     }
 
-    /** Herramientas de la izquierda (en orden) y su separación según el ancho de la pantalla. */
-    private var leftTools = intArrayOf(TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL, TOOL_EDIT, TOOL_MORE)
+    /** Los botones de la barra de arriba, en el orden que elegiste (todos se pueden mover). */
+    private var barTools = intArrayOf(TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL, TOOL_EDIT, TOOL_MORE, TOOL_VOICE, TOOL_HIDE)
 
-    /** Las herramientas de la barra de arriba, en tu orden (el ⋯ siempre va al final). */
     fun setBarTools(tools: List<Int>) {
-        val n = tools.filter { it != TOOL_MORE }.toIntArray() + TOOL_MORE
-        if (!n.contentEquals(leftTools)) {
-            leftTools = n
+        val n = tools.toIntArray()
+        if (!n.contentEquals(barTools)) {
+            barTools = n
             invalidate()
         }
     }
-    private fun toolStep(): Float = minOf(52f * d, (width - 112f * d) / leftTools.size)
+
+    /** Ancho de cada botón: se reparten a lo ancho de la barra. */
+    private fun toolStep(): Float = width.toFloat() / maxOf(1, barTools.size)
 
     private fun toolHit(x: Float): Int {
-        if (x > width - 56f * d) return TOOL_HIDE
-        if (x > width - 108f * d) return TOOL_VOICE
         val i = (x / toolStep()).toInt()
-        return if (i in leftTools.indices) leftTools[i] else -1
+        return if (i in barTools.indices) barTools[i] else -1
     }
 
     // ---------------------------------------------------------------- Toques
@@ -832,13 +831,9 @@ class KeyboardView(context: Context) : View(context) {
         if (showingShot) { drawShot(c, p); return }
         val cy = stripH / 2f
         val s = stripH * 0.22f
-        // Orden en pantalla: ajustes, emojis, portapapeles, tema ... esconder
-        // (El cambio claro/oscuro está en los ajustes ⚙)
         val step = toolStep()
-        val tools = leftTools + intArrayOf(TOOL_VOICE, TOOL_HIDE)
-        val xs = FloatArray(tools.size) { if (it < leftTools.size) step * (it + 0.5f) else 0f }
-        xs[leftTools.size] = width - 80f * d
-        xs[leftTools.size + 1] = width - 28f * d
+        val tools = barTools
+        val xs = FloatArray(tools.size) { step * (it + 0.5f) }
         for (n in tools.indices) {
             val i = tools[n]
             val cx = xs[n]

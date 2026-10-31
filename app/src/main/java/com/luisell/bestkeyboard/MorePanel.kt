@@ -7,6 +7,8 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.os.Handler
+import android.os.Looper
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.MotionEvent
@@ -17,63 +19,92 @@ import android.widget.ScrollView
 import android.widget.TextView
 import kotlin.math.abs
 
-/** Las herramientas que se pueden acomodar entre la barra de arriba y "Más opciones". */
+/** Todos los botones de la barra de arriba. Se pueden acomodar entre la barra y "Más opciones". */
 object Tools {
-    class Info(val tool: Int, val icon: Int, val es: String, val en: String) {
+    class Info(val tool: Int, val icon: Int, val es: String, val en: String, val opens: Boolean) {
         val label get() = L.t(es, en)
     }
 
     val ALL = listOf(
-        Info(KeyboardView.TOOL_EMOJI, Icons.EMOJI, "Emojis", "Emojis"),
-        Info(KeyboardView.TOOL_CLIP, Icons.CLIP, "Portapapeles", "Clipboard"),
-        Info(KeyboardView.TOOL_TRANSLATE, Icons.TRANSLATE, "Traducir", "Translate"),
-        Info(KeyboardView.TOOL_SCAN, Icons.SCAN, "Escanear texto", "Scan text"),
-        Info(KeyboardView.TOOL_SPELL, Icons.SPELL, "Ortografía", "Spell check"),
-        Info(KeyboardView.TOOL_EDIT, Icons.EDIT, "Edición de texto", "Text editing"),
-        Info(KeyboardView.TOOL_RESIZE, Icons.RESIZE, "Cambiar tamaño", "Resize"),
-        Info(KeyboardView.TOOL_LANG, Icons.GLOBE, "Siguiente idioma", "Next language"),
-        Info(KeyboardView.TOOL_THEME, Icons.THEME, "Tema claro / oscuro", "Light / dark theme"),
-        Info(KeyboardView.TOOL_SETTINGS, Icons.SETTINGS, "Ajustes", "Settings"),
+        Info(KeyboardView.TOOL_EMOJI, Icons.EMOJI, "Emojis", "Emojis", true),
+        Info(KeyboardView.TOOL_CLIP, Icons.CLIP, "Portapapeles", "Clipboard", true),
+        Info(KeyboardView.TOOL_TRANSLATE, Icons.TRANSLATE, "Traducir", "Translate", false),
+        Info(KeyboardView.TOOL_SCAN, Icons.SCAN, "Escanear texto", "Scan text", true),
+        Info(KeyboardView.TOOL_SPELL, Icons.SPELL, "Ortografía", "Spell check", false),
+        Info(KeyboardView.TOOL_EDIT, Icons.EDIT, "Edición de texto", "Text editing", true),
+        Info(KeyboardView.TOOL_MORE, Icons.MORE, "Más opciones", "More options", true),
+        Info(KeyboardView.TOOL_VOICE, Icons.MIC, "Micrófono", "Microphone", true),
+        Info(KeyboardView.TOOL_HIDE, Icons.HIDE, "Bajar el teclado", "Hide keyboard", false),
+        Info(KeyboardView.TOOL_RESIZE, Icons.RESIZE, "Cambiar tamaño", "Resize", false),
+        Info(KeyboardView.TOOL_LANG, Icons.GLOBE, "Siguiente idioma", "Next language", false),
+        Info(KeyboardView.TOOL_THEME, Icons.THEME, "Tema claro / oscuro", "Light / dark theme", false),
+        Info(KeyboardView.TOOL_SETTINGS, Icons.SETTINGS, "Ajustes", "Settings", true),
     )
+
+    /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */
+    const val FIXED = KeyboardView.TOOL_MORE
 
     private val DEFAULT_BAR = listOf(
         KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_TRANSLATE,
         KeyboardView.TOOL_SCAN, KeyboardView.TOOL_SPELL, KeyboardView.TOOL_EDIT,
+        KeyboardView.TOOL_MORE, KeyboardView.TOOL_VOICE, KeyboardView.TOOL_HIDE,
     )
 
     fun info(tool: Int): Info? = ALL.firstOrNull { it.tool == tool }
 
-    /** Cuántas herramientas caben en la barra de arriba (además de ⋯, micrófono y esconder). */
+    /** Cuántos botones caben en la barra de arriba. */
     fun maxBar(ctx: Context): Int {
         val dm = ctx.resources.displayMetrics
         val wDp = minOf(dm.widthPixels, dm.heightPixels) / dm.density
-        return (((wDp - 112f) / 40f).toInt() - 1).coerceIn(3, 8)
+        return (wDp / 44f).toInt().coerceIn(5, 10)
     }
 
     private fun parse(s: String?): List<Int> =
         s?.split(',')?.mapNotNull { it.trim().toIntOrNull() }?.filter { info(it) != null }?.distinct() ?: emptyList()
 
+    /** Si sobran botones en la barra, los últimos pasan a "Más opciones" (nunca el ⋯ ni [keep]). */
+    fun trim(bar: MutableList<Int>, more: MutableList<Int>, max: Int, keep: Int = -1) {
+        while (bar.size > max) {
+            val idx = bar.indexOfLast { it != FIXED && it != keep }
+            if (idx < 0) break
+            more.add(0, bar.removeAt(idx))
+        }
+    }
+
     /** (barra de arriba, más opciones), en el orden que elegiste. */
     fun load(ctx: Context, prefs: SharedPreferences): Pair<List<Int>, List<Int>> {
         val max = maxBar(ctx)
-        val saved = prefs.getString(Prefs.BAR_TOOLS, null)
-        val bar = (if (saved == null) DEFAULT_BAR else parse(saved)).take(max)
-        val more = parse(prefs.getString(Prefs.MORE_TOOLS, null)).filter { it !in bar }.toMutableList()
+        val saved = prefs.getString(Prefs.BAR_TOOLS2, null)
+        val bar: MutableList<Int>
+        val more: MutableList<Int>
+        if (saved != null) {
+            bar = parse(saved).toMutableList()
+            more = parse(prefs.getString(Prefs.MORE_TOOLS2, null)).toMutableList()
+        } else {
+            // Versión anterior: el micrófono, esconder y ⋯ estaban fijos a la derecha
+            val old = prefs.getString(Prefs.BAR_TOOLS, null)
+            bar = (if (old == null) DEFAULT_BAR else parse(old).filter { it != FIXED } +
+                listOf(KeyboardView.TOOL_MORE, KeyboardView.TOOL_VOICE, KeyboardView.TOOL_HIDE)).toMutableList()
+            more = parse(prefs.getString(Prefs.MORE_TOOLS, null)).toMutableList()
+        }
+        more.removeAll { it in bar }
+        if (FIXED !in bar) { more.remove(FIXED); bar.add(FIXED) }
         for (t in ALL) if (t.tool !in bar && t.tool !in more) more.add(t.tool)
+        trim(bar, more, max)
         return bar to more
     }
 
     fun save(prefs: SharedPreferences, bar: List<Int>, more: List<Int>) {
         prefs.edit()
-            .putString(Prefs.BAR_TOOLS, bar.joinToString(","))
-            .putString(Prefs.MORE_TOOLS, more.joinToString(","))
+            .putString(Prefs.BAR_TOOLS2, bar.joinToString(","))
+            .putString(Prefs.MORE_TOOLS2, more.joinToString(","))
             .apply()
     }
 }
 
 /**
- * Panel "Más opciones" (como el de Gboard): botones grandes con las herramientas que no están
- * en la barra de arriba. Con el lápiz ✎ puedes acomodarlas arrastrándolas.
+ * Panel "Más opciones" (como el de Gboard): botones grandes con lo que no está en la barra de arriba.
+ * Con el lápiz ✎ puedes acomodar todos los botones arrastrándolos.
  */
 @SuppressLint("ViewConstructor")
 class MorePanel(context: Context) : FrameLayout(context) {
@@ -83,7 +114,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
         fun onMoreTool(tool: Int)
         fun onMoreBack()
         fun onMoreFeedback()
-        /** Acomodaste las herramientas: hay que guardarlas y actualizar la barra. */
+        /** Acomodaste los botones: hay que guardarlos y actualizar la barra. */
         fun onToolsChanged(bar: List<Int>, more: List<Int>)
     }
 
@@ -98,11 +129,12 @@ class MorePanel(context: Context) : FrameLayout(context) {
     private val grid = LinearLayout(context)
     private val scroll = ScrollView(context)
     private val arranger = ToolArranger(context)
-    private val buttons = ArrayList<Pair<LinearLayout, Pair<IconView, TextView>>>()
+    private class Btn(val box: LinearLayout, val icon: IconView, val text: TextView, val chevron: IconView?)
+    private val buttons = ArrayList<Btn>()
 
     private var bar: List<Int> = emptyList()
     private var more: List<Int> = emptyList()
-    private var maxBar = 6
+    private var maxBar = 9
     var editing = false
         private set
 
@@ -136,6 +168,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
 
         val content = FrameLayout(context)
         grid.orientation = LinearLayout.VERTICAL
+        grid.setPadding(0, 0, 0, d(6f))
         scroll.isVerticalScrollBarEnabled = true
         scroll.addView(grid, LayoutParams(-1, -2))
         content.addView(scroll, LayoutParams(-1, -1))
@@ -154,7 +187,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
         applyPalette(palette)
     }
 
-    /** Pone qué herramientas van en la barra y cuáles aquí. */
+    /** Pone qué botones van en la barra y cuáles aquí. */
     fun setTools(bar: List<Int>, more: List<Int>, maxBar: Int) {
         this.bar = bar
         this.more = more
@@ -185,8 +218,8 @@ class MorePanel(context: Context) : FrameLayout(context) {
         buttons.clear()
         if (more.isEmpty()) {
             val t = TextView(context)
-            t.text = L.t("Todas las opciones están en la barra de arriba. Toca ✎ para acomodarlas.",
-                "All options are in the top bar. Tap ✎ to arrange them.")
+            t.text = L.t("Todos los botones están en la barra de arriba. Toca ✎ para acomodarlos.",
+                "All buttons are in the top bar. Tap ✎ to arrange them.")
             t.textSize = 14f
             t.gravity = Gravity.CENTER
             t.setPadding(d(16f), d(24f), d(16f), d(24f))
@@ -200,43 +233,55 @@ class MorePanel(context: Context) : FrameLayout(context) {
             if (n % 2 == 0) {
                 val r = LinearLayout(context)
                 r.orientation = LinearLayout.HORIZONTAL
-                grid.addView(r, LinearLayout.LayoutParams(-1, d(54f)).apply { topMargin = d(8f) })
+                grid.addView(r, LinearLayout.LayoutParams(-1, d(58f)).apply { topMargin = d(10f) })
                 row = r
             }
-            row?.addView(button(info), LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(d(4f), 0, d(4f), 0) })
+            row?.addView(button(info), LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(d(5f), 0, d(5f), 0) })
         }
-        if (more.size % 2 == 1) row?.addView(View(context), LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(d(4f), 0, d(4f), 0) })
+        if (more.size % 2 == 1) row?.addView(View(context), LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(d(5f), 0, d(5f), 0) })
         paintButtons()
     }
 
+    /** Botón grande como en Gboard: ícono, nombre (se desliza si es largo) y › si abre algo. */
     private fun button(info: Tools.Info): LinearLayout {
         val b = LinearLayout(context)
         b.orientation = LinearLayout.HORIZONTAL
         b.gravity = Gravity.CENTER_VERTICAL
-        b.setPadding(d(16f), 0, d(12f), 0)
+        b.setPadding(d(18f), 0, d(12f), 0)
         b.isClickable = true
-        val iv = IconView(context, info.icon, 9f)
+        val iv = IconView(context, info.icon, 10.5f)
         iv.isClickable = false
-        b.addView(iv, LinearLayout.LayoutParams(d(28f), d(28f)))
+        b.addView(iv, LinearLayout.LayoutParams(d(30f), d(30f)))
         val t = TextView(context)
         t.text = info.label
-        t.textSize = 15f
-        t.maxLines = 1
-        t.ellipsize = TextUtils.TruncateAt.END
-        t.setPadding(d(12f), 0, 0, 0)
+        t.textSize = 16f
+        t.isSingleLine = true
+        t.ellipsize = TextUtils.TruncateAt.MARQUEE
+        t.marqueeRepeatLimit = -1
+        t.isHorizontalFadingEdgeEnabled = true
+        t.setPadding(d(14f), 0, d(4f), 0)
         b.addView(t, LinearLayout.LayoutParams(0, -2, 1f))
+        var chev: IconView? = null
+        if (info.opens) {
+            chev = IconView(context, Icons.CHEVRON, 7f)
+            chev.isClickable = false
+            b.addView(chev, LinearLayout.LayoutParams(d(22f), d(22f)))
+        }
         b.setOnClickListener { actions?.onMoreFeedback(); actions?.onMoreTool(info.tool) }
-        buttons.add(b to (iv to t))
+        // "Seleccionado" hace que el texto largo se deslice solo
+        t.post { t.isSelected = true }
+        buttons.add(Btn(b, iv, t, chev))
         return b
     }
 
     private fun paintButtons() {
         val p = palette
-        for ((b, pair) in buttons) {
-            b.background = PanelUi.pressable(p.key, p.keyPressed, d(27f).toFloat())
-            pair.first.color = p.text
-            pair.first.bgColor = p.key
-            pair.second.setTextColor(p.text)
+        for (btn in buttons) {
+            btn.box.background = PanelUi.pressable(p.key, p.keyPressed, d(29f).toFloat())
+            btn.icon.color = p.text
+            btn.icon.bgColor = p.key
+            btn.text.setTextColor(p.text)
+            btn.chevron?.color = p.text
         }
     }
 
@@ -256,8 +301,8 @@ class MorePanel(context: Context) : FrameLayout(context) {
 }
 
 /**
- * Pantalla de "Personalizar": arriba la barra del teclado y abajo "Más opciones".
- * Arrastra cualquier herramienta para cambiarla de lugar (o tócala para pasarla al otro lado).
+ * Pantalla de "Personalizar": arriba la barra del teclado (fija) y abajo "Más opciones" (con scroll).
+ * Mantén presionado un botón y arrástralo; un toque lo pasa al otro lado; desliza para ver más.
  */
 @SuppressLint("ViewConstructor", "ClickableViewAccessibility")
 class ToolArranger(context: Context) : View(context) {
@@ -267,171 +312,214 @@ class ToolArranger(context: Context) : View(context) {
         set(v) { field = v; invalidate() }
 
     private val dd = resources.displayMetrics.density
+    private val h = Handler(Looper.getMainLooper())
     private var bar = ArrayList<Int>()
     private var more = ArrayList<Int>()
-    private var maxBar = 6
+    private var maxBar = 9
 
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val text = Paint(Paint.ANTI_ALIAS_FLAG)
     private val tmp = RectF()
 
-    // Zonas calculadas al dibujar
+    // Zonas
     private val barArea = RectF()
-    private val moreArea = RectF()
-    private val barRects = ArrayList<RectF>()
-    private val moreRects = ArrayList<RectF>()
-    private var cols = 4
+    private var gridTop = 0f
+    private val pillH get() = 52f * dd
+    private val gapY get() = 10f * dd
+    private var scrollY2 = 0f
 
-    // Arrastre
-    private var dragTool = -1
-    private var dragFromBar = false
+    // Toque / arrastre
+    private var pending = -1
+    private var pendingFromBar = false
+    private var dragging = false
+    private var scrolling = false
     private var downX = 0f
     private var downY = 0f
+    private var lastY = 0f
     private var curX = 0f
     private var curY = 0f
-    private var moved = false
+    private var anim = false
+    private val startDrag = Runnable {
+        if (pending >= 0 && !scrolling) {
+            dragging = true
+            onFeedback?.invoke()
+            invalidate()
+        }
+    }
 
     fun set(b: List<Int>, m: List<Int>, max: Int) {
         bar = ArrayList(b)
         more = ArrayList(m)
         maxBar = max
-        dragTool = -1
+        pending = -1
+        dragging = false
+        scrollY2 = 0f
         invalidate()
     }
 
     private fun layoutAreas() {
-        val w = width.toFloat()
-        val h = height.toFloat()
-        val label = 20f * dd
-        val barH = 50f * dd
-        barArea.set(0f, label, w, label + barH)
-        barRects.clear()
-        val slotW = w / maxBar
-        for (i in 0 until maxBar) barRects.add(RectF(i * slotW, barArea.top, (i + 1) * slotW, barArea.bottom))
-        val top = barArea.bottom + 8f * dd + label
-        moreArea.set(0f, top, w, h)
-        cols = if (w / dd > 360f) 4 else 3
-        val n = maxOf(1, Tools.ALL.size)
-        val rows = (n + cols - 1) / cols
-        val tileH = minOf(58f * dd, (h - top - 4f * dd) / rows)
-        val tileW = w / cols
-        moreRects.clear()
-        for (i in 0 until n) {
-            val c = i % cols
-            val r = i / cols
-            moreRects.add(RectF(c * tileW, top + r * tileH, (c + 1) * tileW, top + (r + 1) * tileH))
-        }
+        val label = 22f * dd
+        barArea.set(0f, label, width.toFloat(), label + 52f * dd)
+        gridTop = barArea.bottom + 30f * dd
+    }
+
+    private fun slotW() = width.toFloat() / maxBar
+    private fun pillRect(i: Int, out: RectF) {
+        val w = width / 2f
+        val c = i % 2
+        val r = i / 2
+        val top = gridTop + r * (pillH + gapY) - scrollY2
+        out.set(c * w + 4f * dd, top, (c + 1) * w - 4f * dd, top + pillH)
+    }
+
+    private fun maxScroll(n: Int): Float {
+        val rows = (n + 1) / 2
+        val content = rows * (pillH + gapY)
+        return maxOf(0f, content - (height - gridTop))
     }
 
     override fun onDraw(c: Canvas) {
         val p = palette
         layoutAreas()
-        text.color = p.hint
-        text.textAlign = Paint.Align.LEFT
-        text.textSize = 12f * dd
-        c.drawText(L.t("Barra de arriba — arrastra para acomodar", "Top bar — drag to arrange"), 4f * dd, barArea.top - 6f * dd, text)
-        c.drawText(L.t("Más opciones", "More options"), 4f * dd, moreArea.top - 6f * dd, text)
-        text.textAlign = Paint.Align.CENTER
-
-        // Fondo de la barra
-        fill.color = p.key
-        tmp.set(barArea.left + 2f * dd, barArea.top, barArea.right - 2f * dd, barArea.bottom)
-        c.drawRoundRect(tmp, 14f * dd, 14f * dd, fill)
-
+        anim = false
         val target = dropTarget()
         val HOLE = -2
-        val showBar = bar.filter { it != dragTool || !moved }.toMutableList()
-        val showMore = more.filter { it != dragTool || !moved }.toMutableList()
+        val showBar = bar.filter { it != pending || !dragging }.toMutableList()
+        val showMore = more.filter { it != pending || !dragging }.toMutableList()
         if (target != null) {
             if (target.first) showBar.add(target.second.coerceIn(0, showBar.size), HOLE)
             else showMore.add(target.second.coerceIn(0, showMore.size), HOLE)
         }
 
-        stroke.color = p.hint
-        stroke.strokeWidth = 1.2f * dd
-        for (i in 0 until maxBar) {
-            val r = barRects[i]
-            when (val t = showBar.getOrNull(i)) {
-                null -> c.drawCircle(r.centerX(), r.centerY(), 4f * dd, stroke)
-                HOLE -> drawHole(c, r, p)
-                else -> drawIcon(c, t, r.centerX(), r.centerY(), p.text, p.key)
-            }
-        }
-
+        // "Más opciones" (con scroll, debajo de la barra)
+        c.save()
+        c.clipRect(0f, gridTop - 4f * dd, width.toFloat(), height.toFloat())
         for ((i, t) in showMore.withIndex()) {
-            val r = moreRects.getOrNull(i) ?: break
-            if (t == HOLE) drawHole(c, r, p) else drawTile(c, t, r, p, false)
+            pillRect(i, tmp)
+            if (tmp.bottom < gridTop - pillH || tmp.top > height) continue
+            if (t == HOLE) drawHole(c, RectF(tmp), p) else drawPill(c, t, RectF(tmp), p, false)
         }
         if (showMore.isEmpty()) {
             text.color = p.hint
             text.textSize = 13f * dd
+            text.textAlign = Paint.Align.CENTER
             c.drawText(L.t("Arrastra aquí lo que no quieras en la barra", "Drag here what you don't want in the bar"),
-                width / 2f, moreArea.top + 30f * dd, text)
+                width / 2f, gridTop + 30f * dd, text)
+        }
+        c.restore()
+
+        // Títulos
+        fill.color = p.bg
+        c.drawRect(0f, 0f, width.toFloat(), gridTop - 4f * dd, fill)
+        text.color = p.hint
+        text.textAlign = Paint.Align.LEFT
+        text.textSize = 12f * dd
+        c.drawText(L.t("Barra de arriba — mantén presionado y arrastra", "Top bar — press, hold and drag"), 6f * dd, barArea.top - 7f * dd, text)
+        c.drawText(L.t("Más opciones (un toque lo pasa a la barra)", "More options (tap to move to the bar)"), 6f * dd, gridTop - 10f * dd, text)
+
+        // La barra de arriba
+        fill.color = p.key
+        tmp.set(barArea.left + 2f * dd, barArea.top, barArea.right - 2f * dd, barArea.bottom)
+        c.drawRoundRect(tmp, 16f * dd, 16f * dd, fill)
+        stroke.color = p.hint
+        stroke.strokeWidth = 1.2f * dd
+        val sw = slotW()
+        for (i in 0 until maxBar) {
+            val cx = sw * (i + 0.5f)
+            val cy = barArea.centerY()
+            when (val t = showBar.getOrNull(i)) {
+                null -> c.drawCircle(cx, cy, 3.5f * dd, stroke)
+                HOLE -> {
+                    fill.color = p.accent and 0x55FFFFFF
+                    tmp.set(cx - sw / 2 + 3f * dd, barArea.top + 5f * dd, cx + sw / 2 - 3f * dd, barArea.bottom - 5f * dd)
+                    c.drawRoundRect(tmp, 12f * dd, 12f * dd, fill)
+                }
+                else -> {
+                    if (t == pending && !dragging) {
+                        fill.color = p.keyPressed
+                        c.drawCircle(cx, cy, 19f * dd, fill)
+                    }
+                    Tools.info(t)?.let { Icons.draw(c, it.icon, cx, cy, minOf(10f * dd, sw * 0.24f), p.text, p.key, dd) }
+                }
+            }
         }
 
         // Lo que vas arrastrando, debajo del dedo
-        if (dragTool >= 0 && moved) {
-            val w = (moreRects.firstOrNull()?.width() ?: 90f * dd)
-            val h = (moreRects.firstOrNull()?.height() ?: 56f * dd)
-            tmp.set(curX - w / 2, curY - h / 2, curX + w / 2, curY + h / 2)
-            drawTile(c, dragTool, RectF(tmp), p, true)
+        if (dragging && pending >= 0) {
+            val w = width / 2f - 8f * dd
+            tmp.set(curX - w / 2, curY - pillH / 2, curX + w / 2, curY + pillH / 2)
+            drawPill(c, pending, RectF(tmp), p, true)
         }
+        if (anim) postInvalidateDelayed(33)
     }
 
-    private fun drawHole(c: Canvas, r: RectF?, p: Palette) {
-        r ?: return
+    private fun drawHole(c: Canvas, r: RectF, p: Palette) {
         fill.color = p.accent and 0x55FFFFFF
-        tmp.set(r.left + 4f * dd, r.top + 4f * dd, r.right - 4f * dd, r.bottom - 4f * dd)
-        c.drawRoundRect(tmp, 14f * dd, 14f * dd, fill)
+        c.drawRoundRect(r, r.height() / 2, r.height() / 2, fill)
     }
 
-    private fun drawIcon(c: Canvas, tool: Int, cx: Float, cy: Float, color: Int, bg: Int) {
+    private fun drawPill(c: Canvas, tool: Int, r: RectF, p: Palette, lifted: Boolean) {
         val info = Tools.info(tool) ?: return
-        Icons.draw(c, info.icon, cx, cy, 10f * dd, color, bg, dd)
-    }
-
-    private fun drawTile(c: Canvas, tool: Int, r: RectF, p: Palette, lifted: Boolean) {
-        val info = Tools.info(tool) ?: return
-        fill.color = if (lifted) p.keyPressed else p.key
-        tmp.set(r.left + 4f * dd, r.top + 4f * dd, r.right - 4f * dd, r.bottom - 4f * dd)
-        c.drawRoundRect(tmp, 14f * dd, 14f * dd, fill)
+        val fixed = tool == Tools.FIXED
+        fill.color = if (lifted || (tool == pending && !dragging)) p.keyPressed else p.key
+        c.drawRoundRect(r, r.height() / 2, r.height() / 2, fill)
         if (lifted) {
             stroke.color = p.accent
             stroke.strokeWidth = 2f * dd
-            c.drawRoundRect(tmp, 14f * dd, 14f * dd, stroke)
+            c.drawRoundRect(r, r.height() / 2, r.height() / 2, stroke)
         }
-        val iconY = tmp.top + tmp.height() * 0.38f
-        Icons.draw(c, info.icon, tmp.centerX(), iconY, minOf(9f * dd, tmp.height() * 0.17f), p.text, fill.color, dd)
+        val ix = r.left + 30f * dd
+        Icons.draw(c, info.icon, ix, r.centerY(), 10f * dd, if (fixed) p.hint else p.text, fill.color, dd)
+        // Nombre: si no cabe, se va deslizando para leerlo completo
         text.color = p.text
-        text.textSize = 11f * dd
-        val label = TextUtils.ellipsize(info.label, android.text.TextPaint(text), tmp.width() - 6f * dd, TextUtils.TruncateAt.END).toString()
-        c.drawText(label, tmp.centerX(), tmp.bottom - tmp.height() * 0.16f, text)
+        text.textAlign = Paint.Align.LEFT
+        text.textSize = 15f * dd
+        val tx = ix + 22f * dd
+        val avail = r.right - 16f * dd - tx
+        val label = info.label
+        val tw = text.measureText(label)
+        val by = r.centerY() - (text.ascent() + text.descent()) / 2
+        if (tw <= avail) {
+            c.drawText(label, tx, by, text)
+        } else {
+            val gap = 40f * dd
+            val period = tw + gap
+            val off = ((android.os.SystemClock.uptimeMillis() / 1000f * 30f * dd) % period)
+            c.save()
+            c.clipRect(tx, r.top, tx + avail, r.bottom)
+            c.drawText(label, tx - off, by, text)
+            c.drawText(label, tx - off + period, by, text)
+            c.restore()
+            anim = true
+        }
     }
 
-    /** ¿Dónde caería lo que arrastras? (true = barra, índice) o null si fuera. */
+    /** ¿Dónde caería lo que arrastras? (true = barra, índice) o null. */
     private fun dropTarget(): Pair<Boolean, Int>? {
-        if (dragTool < 0 || !moved) return null
-        if (curY < (barArea.bottom + moreArea.top) / 2) {
-            val count = bar.count { it != dragTool }
-            val i = (curX / (width.toFloat() / maxBar)).toInt().coerceIn(0, minOf(count, maxBar - 1))
+        if (!dragging || pending < 0) return null
+        if (curY < (barArea.bottom + gridTop) / 2) {
+            val count = bar.count { it != pending }
+            val i = (curX / slotW()).toInt().coerceIn(0, minOf(count, maxBar - 1))
             return true to i
         }
-        val count = more.count { it != dragTool }
-        var best = count
-        for ((i, r) in moreRects.withIndex()) {
-            if (i > count) break
-            if (r.contains(curX, curY)) { best = i; break }
-        }
-        return false to best
+        if (pending == Tools.FIXED) return null
+        val count = more.count { it != pending }
+        val row = ((curY - gridTop + scrollY2) / (pillH + gapY)).toInt().coerceAtLeast(0)
+        val col = if (curX < width / 2f) 0 else 1
+        return false to (row * 2 + col).coerceIn(0, count)
     }
 
     private fun hit(x: Float, y: Float): Pair<Int, Boolean>? {
         if (barArea.contains(x, y)) {
-            val i = (x / (width.toFloat() / maxBar)).toInt()
+            val i = (x / slotW()).toInt()
             return bar.getOrNull(i)?.let { it to true }
         }
-        for ((i, r) in moreRects.withIndex()) if (r.contains(x, y)) return more.getOrNull(i)?.let { it to false }
+        if (y < gridTop) return null
+        for (i in more.indices) {
+            pillRect(i, tmp)
+            if (tmp.contains(x, y)) return more[i] to false
+        }
         return null
     }
 
@@ -439,65 +527,85 @@ class ToolArranger(context: Context) : View(context) {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 layoutAreas()
-                val h = hit(e.x, e.y) ?: return true
-                dragTool = h.first
-                dragFromBar = h.second
-                downX = e.x; downY = e.y; curX = e.x; curY = e.y
-                moved = false
+                downX = e.x; downY = e.y; lastY = e.y; curX = e.x; curY = e.y
+                dragging = false
+                scrolling = false
+                val hh = hit(e.x, e.y)
+                pending = hh?.first ?: -1
+                pendingFromBar = hh?.second ?: false
+                if (pending >= 0) h.postDelayed(startDrag, 260L)
                 parent?.requestDisallowInterceptTouchEvent(true)
-                onFeedback?.invoke()
-            }
-            MotionEvent.ACTION_MOVE -> if (dragTool >= 0) {
-                curX = e.x; curY = e.y
-                if (!moved && abs(curX - downX) + abs(curY - downY) > 8f * dd) moved = true
                 invalidate()
             }
-            MotionEvent.ACTION_UP -> if (dragTool >= 0) {
+            MotionEvent.ACTION_MOVE -> {
                 curX = e.x; curY = e.y
-                if (moved) drop(dropTarget()) else toggle()
-                dragTool = -1
-                moved = false
+                if (dragging) {
+                    // Si llevas el botón al borde de abajo, la lista se mueve sola
+                    if (curY > height - 24f * dd) scrollBy2(6f * dd)
+                    else if (curY < gridTop + 10f * dd && curY > barArea.bottom + 10f * dd) scrollBy2(-6f * dd)
+                    invalidate()
+                } else if (!scrolling && abs(curY - downY) + abs(curX - downX) > 10f * dd) {
+                    h.removeCallbacks(startDrag)
+                    scrolling = true
+                    pending = -1
+                    invalidate()
+                }
+                if (scrolling) {
+                    scrollBy2(lastY - e.y)
+                }
+                lastY = e.y
+            }
+            MotionEvent.ACTION_UP -> {
+                h.removeCallbacks(startDrag)
+                curX = e.x; curY = e.y
+                if (dragging) drop(dropTarget())
+                else if (!scrolling && pending >= 0) toggle()
+                pending = -1
+                dragging = false
+                scrolling = false
                 invalidate()
             }
-            MotionEvent.ACTION_CANCEL -> { dragTool = -1; moved = false; invalidate() }
+            MotionEvent.ACTION_CANCEL -> {
+                h.removeCallbacks(startDrag)
+                pending = -1; dragging = false; scrolling = false; invalidate()
+            }
         }
         return true
     }
 
+    private fun scrollBy2(dy: Float) {
+        val n = more.size + (if (dragging) 1 else 0)
+        val ns = (scrollY2 + dy).coerceIn(0f, maxScroll(n))
+        if (ns != scrollY2) { scrollY2 = ns; invalidate() }
+    }
+
     /** Un toque sin arrastrar: lo pasa al otro lado. */
     private fun toggle() {
-        val t = dragTool
-        if (dragFromBar) {
+        val t = pending
+        if (pendingFromBar) {
+            if (t == Tools.FIXED) return
             bar.remove(t)
             more.add(0, t)
         } else {
             more.remove(t)
             bar.add(t)
-            trimBar()
+            Tools.trim(bar, more, maxBar, keep = t)
         }
         changed()
     }
 
     private fun drop(target: Pair<Boolean, Int>?) {
         target ?: return
-        val t = dragTool
+        val t = pending
         bar.remove(t)
         more.remove(t)
         if (target.first) {
             bar.add(target.second.coerceIn(0, bar.size), t)
-            trimBar(keep = t)
+            Tools.trim(bar, more, maxBar, keep = t)
         } else {
             more.add(target.second.coerceIn(0, more.size), t)
         }
         changed()
-    }
-
-    /** Si la barra se llenó de más, la última herramienta pasa a "Más opciones". */
-    private fun trimBar(keep: Int = -1) {
-        while (bar.size > maxBar) {
-            val idx = if (bar.last() == keep) bar.size - 2 else bar.size - 1
-            more.add(0, bar.removeAt(idx))
-        }
     }
 
     private fun changed() {
