@@ -48,6 +48,8 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        // La librería de la IA (ML Kit GenAI) se hizo con un Kotlin más nuevo
+        freeCompilerArgs += listOf("-Xskip-metadata-version-check")
     }
 }
 
