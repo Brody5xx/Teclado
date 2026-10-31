@@ -1582,7 +1582,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             done = { list, err ->
                 if (!spellOn || token != spellToken) return@run
                 if (list == null) {
-                    bar.message(err ?: "", showRewrite = false)
+                    val noKey = prefs.getString(Prefs.GEMINI_KEY, "").isNullOrBlank()
+                    if (noKey) {
+                        bar.messageWithAction(
+                            L.t("«Más formal» necesita tu clave GRATIS de Google Gemini (una sola vez).",
+                                "«More formal» needs your FREE Google Gemini key (just once)."),
+                            L.t("Poner mi clave", "Add my key"),
+                        ) { stopSpell(keepSelection = true); askPermission(MainActivity.EXTRA_SHOW_AI) }
+                    } else bar.message(err ?: "", showRewrite = false)
                 } else {
                     rewrites = list
                     bar.showRewrite(list, 0)

@@ -236,6 +236,13 @@ class SpellBar(context: Context) : LinearLayout(context) {
         previewScroll.visibility = GONE
     }
 
+    /** Mensaje con un botón para resolverlo (por ejemplo "Poner mi clave"). */
+    fun messageWithAction(text: String, action: String, onClick: () -> Unit) {
+        message(text, showRewrite = false)
+        chip(action, true) { onClick() }
+        chip(L.t("Cerrar", "Close"), false) { actions?.onSpellClose() }
+    }
+
     fun resetButtons() {
         fixAll.visibility = VISIBLE
     }

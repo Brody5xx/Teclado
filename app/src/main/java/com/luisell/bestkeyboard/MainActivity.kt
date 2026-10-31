@@ -56,6 +56,8 @@ class MainActivity : Activity() {
         const val EXTRA_ASK_MIC = "pedir_micro"
         const val EXTRA_ASK_CAMERA = "pedir_camara"
         const val EXTRA_ASK_PHOTOS = "pedir_fotos"
+        /** Abrir la app directo en la tarjeta "IA para escribir". */
+        const val EXTRA_SHOW_AI = "ver_ia"
         private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
         private const val REQ_CAMERA = 8
@@ -87,6 +89,10 @@ class MainActivity : Activity() {
         if (i?.getBooleanExtra(EXTRA_ASK_MIC, false) == true) askMic()
         if (i?.getBooleanExtra(EXTRA_ASK_CAMERA, false) == true) askCamera()
         if (i?.getBooleanExtra(EXTRA_ASK_PHOTOS, false) == true) askPhotos()
+        if (i?.getBooleanExtra(EXTRA_SHOW_AI, false) == true) {
+            // Bajar hasta la tarjeta de la IA para pegar la clave
+            scrollView.postDelayed({ aiCard?.let { scrollView.smoothScrollTo(0, maxOf(0, it.top - dp(60))) } }, 250)
+        }
     }
 
     private fun toast(es: String, en: String) = Toast.makeText(this, tr(es, en), Toast.LENGTH_LONG).show()
@@ -176,6 +182,8 @@ class MainActivity : Activity() {
 
     /** La columna principal; [col] es la tarjeta donde se van agregando las opciones. */
     private lateinit var root: LinearLayout
+    private lateinit var scrollView: ScrollView
+    private var aiCard: View? = null
 
     private fun confirm(titleEs: String, titleEn: String, msgEs: String, msgEn: String, action: () -> Unit) {
         AlertDialog.Builder(this)
@@ -188,6 +196,7 @@ class MainActivity : Activity() {
 
     private fun buildUi(): View {
         val sv = ScrollView(this)
+        scrollView = sv
         sv.setBackgroundColor(BG)
         sv.isVerticalScrollBarEnabled = false
         root = LinearLayout(this).apply {
@@ -318,6 +327,7 @@ class MainActivity : Activity() {
 
         // ---- IA para escribir
         card(tr("IA para escribir", "AI writing"), Icons.HACKER)
+        aiCard = col
         text(tr(
             "«Más formal» usa la IA de Google. Si tu teléfono no la trae por dentro, usa Google Gemini por internet con " +
                 "una clave GRATIS:\n" +
