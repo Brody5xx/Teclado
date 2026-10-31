@@ -100,6 +100,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var spellToken = 0
     private val spellWorker = java.util.concurrent.Executors.newSingleThreadExecutor()
     private var spellOn = false
+
+    // Teclado de computadora ("modo hacker")
+    private var hacker = false
+    private var hFn = false
+    /** 0 = apagado, 1 = solo para la próxima tecla, 2 = fijo. */
+    private var hCtrl = 0
+    private var hAlt = 0
+    private var hShift = 0
+    private val hackerActive get() = hacker && page != Page.NUM
     private var selStart = 0
     private var selEnd = 0
 
@@ -590,13 +599,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             Toast.makeText(this, L.t("Un momento, el diccionario se está cargando…", "One moment, the dictionary is loading…"), Toast.LENGTH_SHORT).show()
             return
         }
-        // Todo el texto del cuadro (o lo que la app deje leer alrededor del cursor)
+        // Si seleccionaste palabras, se revisan solo esas (una por una, incluso tus palabras guardadas)
         var text: String
         var base: Int
-        val et = try {
+        var selection = false
+        val selected = if (selStart != selEnd) try { ic.getSelectedText(0)?.toString() } catch (_: Exception) { null } else null
+        val et = if (!selected.isNullOrBlank()) null else try {
             ic.getExtractedText(ExtractedTextRequest().apply { hintMaxChars = 50000; hintMaxLines = 2000 }, 0)
         } catch (_: Exception) { null }
-        if (et?.text != null) {
+        if (!selected.isNullOrBlank()) {
+            text = selected
+            base = minOf(selStart, selEnd)
+            selection = true
+        } else if (et?.text != null) {
             text = et.text.toString()
             base = et.startOffset
         } else {
@@ -637,7 +652,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                         }
                     }
                 }
-                val r = try { eng.spellCheck(m.value, lng, 5, strict = true) } catch (_: Exception) { null }
+                val r = try { eng.spellCheck(m.value, lng, 5, strict = true, ignoreUser = selection) } catch (_: Exception) { null }
                 if (r != null && r.misspelled) errs.add(SpellErr(base + m.range.first, base + m.range.last + 1, m.value, r.suggestions, r.maybe))
                 k++
             }
@@ -645,7 +660,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (!spellOn || token != spellToken) return@post
                 spellErrors = errs
                 if (errs.isEmpty()) {
-                    bar.message(L.t("✅ No encontré errores de ortografía.", "✅ No spelling mistakes found."))
+                    bar.message(if (selection) L.t("✅ No encontré errores en lo que seleccionaste.", "✅ No mistakes in your selection.")
+                        else L.t("✅ No encontré errores de ortografía.", "✅ No spelling mistakes found."))
                     handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2500)
                 } else spellShow(0)
             }
@@ -963,6 +979,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (mode != 0) showMode(0)
             if (translating) stopTranslate()
             if (spellOn) stopSpell(keepSelection = true)
+            hCtrl = 0; hAlt = 0; hShift = 0; hFn = false
         }
         lastWasSpace = false
         autoSpace = false
@@ -1067,7 +1084,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             "high" -> 58f
             else -> 52f
         }
-        v.keyHeightDp = if (landscape) base * 0.78f else base
+        hacker = prefs.getBoolean(Prefs.HACKER, false)
+        v.hackerOn = hacker
+        // El teclado de computadora tiene 5 filas apretadas: teclas un poco más bajitas
+        val hk = if (hacker && page != Page.NUM) 0.86f else 1f
+        v.keyHeightDp = (if (landscape) base * 0.78f else base) * hk
         if (!v.resizing) v.heightScale = prefs.getFloat(Prefs.SIZE, 1f)
         v.showPreview = prefs.getBoolean(Prefs.PREVIEW, true)
 
@@ -1114,6 +1135,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun rebuild() {
         val v = kv ?: return
+        if (hackerActive) {
+            v.setRows(if (hFn) HackerLayouts.fn() else HackerLayouts.main(hShift > 0))
+            v.shift = 0
+            v.swipeEnabled = false
+            updateMods()
+            return
+        }
+        v.setMods(emptySet(), emptySet())
         val rows = when (page) {
             Page.LETTERS -> Layouts.letters(numberRow, commaMode)
             Page.SYM -> Layouts.symbols()
@@ -1127,11 +1156,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun setShift(s: Int) {
         shift = s
-        kv?.shift = if (page == Page.LETTERS) s else 0
+        kv?.shift = if (page == Page.LETTERS && !hackerActive) s else 0
     }
 
     /** Pone mayúscula sola al empezar una oración. */
     private fun updateAutoCaps() {
+        if (hackerActive) return
         if (shift == 2 || manualShift) return
         if (!autoCap || isPassword || page != Page.LETTERS) {
             if (shift == 1) setShift(0)
@@ -1180,7 +1210,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun updateSuggestions() {
         val eng = WordStore.engine
         val ic = target()
-        if (!suggestOn || !fieldSuggest || eng == null || ic == null || page == Page.NUM) {
+        if (!suggestOn || !fieldSuggest || eng == null || ic == null || page == Page.NUM || hackerActive) {
             clearSlots(); return
         }
         val before = ic.getTextBeforeCursor(48, 0) ?: ""
@@ -1287,6 +1317,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onKeyText(text: String) {
         if (spellOn) stopSpell()
+        if (hackerActive) { hackerText(text); return }
         if (shot != null || shotAsk) clearShot()
         val ic = target() ?: return
         val phantom = phantomSpace
@@ -1332,6 +1363,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onKeyCode(code: Int) {
         if (spellOn && code != Codes.SHIFT) stopSpell()
+        if (hackerActive && hackerKey(code)) return
         val ic = target()
         if (code != Codes.SHIFT) {
             lastCorrection = null
@@ -1420,6 +1452,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onDeletePress() {
         if (spellOn) stopSpell()
+        if (hackerActive) { sendKey(KeyEvent.KEYCODE_DEL, hMeta()); hConsume(); return }
         val ic = target() ?: return
         autoSpace = false
         lastWasSpace = false
@@ -1498,12 +1531,109 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
             KeyboardView.TOOL_MORE -> showMode(6)
+            KeyboardView.TOOL_HACKER -> toggleHacker()
             KeyboardView.TOOL_LANG -> onKeyCode(Codes.LANG)
             KeyboardView.TOOL_RESIZE -> {
                 showMode(0)
                 kv?.startResize()
             }
         }
+    }
+
+    // ---------------------------------------------------------------- Teclado de computadora
+
+    /** Enciende o apaga el teclado de computadora ("modo hacker"). */
+    private fun toggleHacker() {
+        hacker = !hacker
+        prefs.edit().putBoolean(Prefs.HACKER, hacker).apply()
+        hCtrl = 0; hAlt = 0; hShift = 0; hFn = false
+        if (mode != 0) showMode(0)
+        if (page != Page.NUM) page = Page.LETTERS
+        applySettings()
+        rebuild()
+        if (hacker) {
+            clearSlots()
+            setShift(0)
+            Toast.makeText(this, L.t("Teclado de computadora: Ctrl, Alt, Esc, Tab, flechas y Fn (F1–F12)",
+                "PC keyboard: Ctrl, Alt, Esc, Tab, arrows and Fn (F1–F12)"), Toast.LENGTH_SHORT).show()
+        } else {
+            updateAutoCaps()
+            scheduleUpdate()
+        }
+    }
+
+    /** Ctrl/Alt/Shift encendidos ahora mismo, como "meta state" de Android. */
+    private fun hMeta(): Int {
+        var m = 0
+        if (hCtrl > 0) m = m or KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON
+        if (hAlt > 0) m = m or KeyEvent.META_ALT_ON or KeyEvent.META_ALT_LEFT_ON
+        if (hShift > 0) m = m or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON
+        return m
+    }
+
+    /** Las teclas encendidas "una vez" se apagan después de usarse (las fijas se quedan). */
+    private fun hConsume() {
+        val shiftWas = hShift
+        if (hCtrl == 1) hCtrl = 0
+        if (hAlt == 1) hAlt = 0
+        if (hShift == 1) hShift = 0
+        if (shiftWas != hShift) rebuild() else updateMods()
+    }
+
+    private fun updateMods() {
+        val once = HashSet<Int>()
+        val locked = HashSet<Int>()
+        fun put(code: Int, st: Int) { if (st == 1) once.add(code) else if (st == 2) locked.add(code) }
+        put(Codes.CTRL, hCtrl)
+        put(Codes.ALT, hAlt)
+        put(Codes.HSHIFT, hShift)
+        if (hFn) locked.add(Codes.FN)
+        kv?.setMods(once, locked)
+    }
+
+    /** Un toque: solo la próxima tecla. Dos toques: fijo. Tres: apagado. */
+    private fun nextModState(cur: Int) = (cur + 1) % 3
+
+    /** Teclas especiales del teclado de computadora. Devuelve true si la manejó. */
+    private fun hackerKey(code: Int): Boolean {
+        when {
+            code == Codes.CTRL -> { hCtrl = nextModState(hCtrl); updateMods() }
+            code == Codes.ALT -> { hAlt = nextModState(hAlt); updateMods() }
+            code == Codes.HSHIFT -> { hShift = nextModState(hShift); rebuild() }
+            code == Codes.FN -> { hFn = !hFn; rebuild() }
+            code == Codes.ENTER -> { sendKey(KeyEvent.KEYCODE_ENTER, hMeta()); hConsume() }
+            code == Codes.SPACE -> {
+                if (hCtrl > 0 || hAlt > 0) sendKey(KeyEvent.KEYCODE_SPACE, hMeta())
+                else target()?.commitText(" ", 1)
+                hConsume()
+            }
+            Codes.isHKey(code) -> { sendKey(Codes.keyCodeOf(code), hMeta()); hConsume() }
+            else -> return false
+        }
+        return true
+    }
+
+    private val keyMap by lazy { KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD) }
+
+    /**
+     * Escribe un carácter. Con Ctrl o Alt se manda como tecla de verdad (Ctrl+C, Alt+B...),
+     * que es lo que entienden las terminales.
+     */
+    private fun hackerText(text: String) {
+        val ic = target() ?: return
+        if ((hCtrl > 0 || hAlt > 0) && text.length == 1) {
+            val events = try { keyMap.getEvents(charArrayOf(text[0])) } catch (_: Exception) { null }
+            val ev = events?.firstOrNull {
+                it.action == KeyEvent.ACTION_DOWN && !KeyEvent.isModifierKey(it.keyCode)
+            }
+            if (ev != null) {
+                sendKey(ev.keyCode, hMeta() or ev.metaState)
+                hConsume()
+                return
+            }
+        }
+        ic.commitText(text, 1)
+        hConsume()
     }
 
     override fun onResizeDone(scale: Float) {

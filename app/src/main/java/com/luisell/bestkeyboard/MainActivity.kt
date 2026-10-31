@@ -352,7 +352,17 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 7.4")
+        section("Novedades — Versión 7.5")
+        text(
+            "• Teclado de computadora (ícono del hacker, en ⋯): Esc, Tab, Ctrl, Alt, Shift, flechas y Fn " +
+                "con F1–F12, Inicio/Fin y RePág/AvPág. Ideal para terminales y código.\n" +
+                "   – Ctrl, Alt y Shift: un toque = solo la próxima tecla (borde azul); dos toques = fijo (azul); tres = apagado.\n" +
+                "   – Mantén una tecla para su otro símbolo (por ejemplo 2 → @).\n" +
+                "• Ortografía de una selección: selecciona palabras y toca el botón de ortografía. " +
+                "Se revisan una por una, incluso tus palabras guardadas (usa «Saltar» para dejarlas).", 14f,
+        )
+
+        section("Versión 7.4")
         text(
             "• Revisar ortografía como Google Docs: ves todo tu texto con las palabras mal escritas en rojo. " +
                 "Toca una para corregirla, o «Corregir todo».\n" +

@@ -39,6 +39,7 @@ object Tools {
         Info(KeyboardView.TOOL_LANG, Icons.GLOBE, "Siguiente idioma", "Next language", false),
         Info(KeyboardView.TOOL_THEME, Icons.THEME, "Tema claro / oscuro", "Light / dark theme", false),
         Info(KeyboardView.TOOL_SETTINGS, Icons.SETTINGS, "Ajustes", "Settings", true),
+        Info(KeyboardView.TOOL_HACKER, Icons.HACKER, "Teclado de computadora", "PC keyboard", false),
     )
 
     /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */

@@ -181,7 +181,11 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
      * Revisa una palabra para el corrector ortográfico de Android (subrayado rojo en las apps).
      * Acepta palabras en español E inglés, y las que el teclado aprendió de ti.
      */
-    fun spellCheck(typed: String, lang: String, max: Int = 5, strict: Boolean = false): Spell {
+    /**
+     * [ignoreUser] = revisar una selección: tus palabras guardadas TAMBIÉN se revisan
+     * (para eso está "Saltar").
+     */
+    fun spellCheck(typed: String, lang: String, max: Int = 5, strict: Boolean = false, ignoreUser: Boolean = false): Spell {
         val ok = Spell(false, emptyList())
         val w = typed.trim('\'', '’', '"', '“', '”', '¿', '¡', '(', ')')
         if (strict && w.length == 1 && w[0].isLetter()) return singleLetter(w, lang)
@@ -193,10 +197,10 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         val lower = w.lowercase()
 
         val fix = correction(w, lang)?.let { TextUtil.matchCase(it, w) }
-        val known = if (strict) inAnyDict(lower) || user.isSure(lower) else isKnown(lower)
+        val known = if (ignoreUser) inAnyDict(lower) else if (strict) inAnyDict(lower) || user.isSure(lower) else isKnown(lower)
         // Revisión a fondo: palabras que existen pero son MUY raras, cuando hay una casi igual
         // muchísimo más común (ej. "hula" -> "hola"). Solo en el botón de revisar.
-        if (strict && known && fix == null && !user.isKnown(lower)) {
+        if (strict && known && fix == null && (ignoreUser || !user.isKnown(lower))) {
             val rare = rareNeighbor(lower, lang)
             if (rare != null) return Spell(true, listOf(TextUtil.matchCase(rare, w)), maybe = true)
         }

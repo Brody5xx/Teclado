@@ -56,6 +56,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_RESIZE = 22
         const val TOOL_LANG = 23
         const val TOOL_MORE = 24
+        const val TOOL_HACKER = 25
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -153,6 +154,18 @@ class KeyboardView(context: Context) : View(context) {
     private var rows: List<List<Key>> = emptyList()
     private val stripH = 46f * d
     private val bottomPad = 6f * d
+    /** Teclado de computadora: Ctrl/Alt/Shift/Fn encendidos (una vez) o fijos (dos toques). */
+    var hackerOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
+    private var modsOnce: Set<Int> = emptySet()
+    private var modsLocked: Set<Int> = emptySet()
+    fun setMods(once: Set<Int>, locked: Set<Int>) {
+        if (once == modsOnce && locked == modsLocked) return
+        modsOnce = once
+        modsLocked = locked
+        invalidate()
+    }
+
     /** Tamaño elegido con "Cambiar tamaño" (1 = normal). */
     var heightScale = 1f
         set(v) { val n = v.coerceIn(MIN_SCALE, MAX_SCALE); if (field != n) { field = n; requestLayout(); invalidate() } }
@@ -210,9 +223,12 @@ class KeyboardView(context: Context) : View(context) {
             invalidate()
         }
     }
+    /** Tecla que se está repitiendo (borrar o una flecha). */
+    private var repeatKey: Key? = null
     private val repeatRunnable = object : Runnable {
         override fun run() {
-            listener?.onDeletePress()
+            val k = repeatKey
+            if (k != null && k.code != Codes.DELETE) listener?.onKeyCode(k.code) else listener?.onDeletePress()
             repeatCount++
             handler.postDelayed(this, if (repeatCount > 12) 30L else 60L)
         }
@@ -393,6 +409,7 @@ class KeyboardView(context: Context) : View(context) {
         if (gestureCandidate) addGesturePoint(x, y)
         when (key.code) {
             Codes.DELETE -> {
+                repeatKey = key
                 listener?.onDeletePress()
                 repeatCount = 0
                 handler.postDelayed(repeatRunnable, REPEAT_START_MS)
@@ -402,7 +419,12 @@ class KeyboardView(context: Context) : View(context) {
                 spaceHold = false
                 if (spaceSwitchesLang) handler.postDelayed(spaceHoldRunnable, SPACE_HOLD_MS)
             }
-            else -> if (key.alts.isNotEmpty() || key.code == Codes.LANG || key.emojiKey) {
+            else -> if (key.repeatable) {
+                repeatKey = key
+                listener?.onKeyCode(key.code)
+                repeatCount = 0
+                handler.postDelayed(repeatRunnable, REPEAT_START_MS)
+            } else if (key.alts.isNotEmpty() || key.code == Codes.LANG || key.emojiKey) {
                 handler.postDelayed(longPressRunnable, LONG_PRESS_MS)
             }
         }
@@ -519,7 +541,7 @@ class KeyboardView(context: Context) : View(context) {
             0 -> key.text?.let { listener?.onKeyText(it) }
             Codes.SPACE -> if (!spaceDragging) listener?.onKeyCode(Codes.SPACE)
             Codes.DELETE, Codes.SHIFT -> Unit
-            else -> listener?.onKeyCode(key.code)
+            else -> if (!key.repeatable) listener?.onKeyCode(key.code)
         }
     }
 
@@ -698,8 +720,11 @@ class KeyboardView(context: Context) : View(context) {
 
     private fun drawKey(c: Canvas, k: Key, p: Palette) {
         val pressed = k === activeKey
+        val modLocked = k.code in modsLocked
+        val modOnce = k.code in modsOnce
         val bg = when {
             k.code == Codes.ENTER -> if (pressed) p.accentPressed else p.accent
+            modLocked -> if (pressed) p.accentPressed else p.accent
             pressed -> p.keyPressed
             k.special -> p.special
             else -> p.key
@@ -716,21 +741,37 @@ class KeyboardView(context: Context) : View(context) {
         val cx = k.rect.centerX()
         val cy = k.rect.centerY()
         val s = keyH * 0.19f
-        val fg = if (k.code == Codes.ENTER) p.onAccent else p.text
+        val fg = if (k.code == Codes.ENTER || modLocked) p.onAccent else if (modOnce) p.accent else p.text
+        if (modOnce) {
+            // Encendido para la próxima tecla: borde azul
+            stroke.color = p.accent
+            stroke.strokeWidth = 2f * d
+            c.drawRoundRect(k.rect, radius, radius, stroke)
+        }
+        k.topHint?.let { drawLabel(c, it, k.rect.right - k.rect.width() * 0.2f, k.rect.top + keyH * 0.2f, keyH * 0.2f, p.hint) }
         when (k.code) {
             0 -> {
-                drawLabel(c, display(k.label), cx, cy, if (k.label.length > 1) keyH * 0.3f else keyH * 0.42f, fg)
+                drawFit(c, display(k.label), cx, cy, if (k.label.length > 1) keyH * 0.3f else keyH * 0.42f, fg, k.rect.width())
                 if (k.emojiKey) {
                     drawLabel(c, "☺", k.rect.right - keyH * 0.2f, k.rect.top + keyH * 0.2f, keyH * 0.24f, p.hint)
                 }
             }
             Codes.SPACE -> drawLabel(c, if (spaceSwitchesLang) "‹  $spaceLabel  ›" else spaceLabel, cx, cy, keyH * 0.26f, p.hint)
             Codes.SHIFT -> drawShift(c, cx, cy, s, fg)
-            Codes.DELETE -> drawDelete(c, cx, cy, s, fg)
+            Codes.DELETE -> drawDelete(c, cx, cy, minOf(s, k.rect.width() * 0.22f), fg)
+            Codes.HSHIFT -> drawShift(c, cx, cy, minOf(s, k.rect.width() * 0.25f), fg)
             Codes.ENTER -> drawEnter(c, cx, cy, s, fg)
             Codes.LANG -> drawGlobe(c, cx, cy, s, fg)
-            else -> drawLabel(c, k.label, cx, cy, keyH * 0.29f, fg)
+            else -> drawFit(c, k.label, cx, cy, if (Codes.isHKey(k.code) && k.label.length == 1) keyH * 0.36f else keyH * 0.29f, fg, k.rect.width())
         }
+    }
+
+    /** Como drawLabel, pero achica el texto si no cabe en la tecla ("PgUp" en teclas angostas). */
+    private fun drawFit(c: Canvas, s: String, cx: Float, cy: Float, size: Float, color: Int, w: Float) {
+        text.textSize = size
+        val tw = text.measureText(s)
+        val max = w * 0.86f
+        drawLabel(c, s, cx, cy, if (tw > max && tw > 0) size * max / tw else size, color)
     }
 
     private fun drawShift(c: Canvas, cx: Float, cyIn: Float, s: Float, color: Int) {
@@ -855,9 +896,10 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_MORE -> Icons.MORE
                 TOOL_RESIZE -> Icons.RESIZE
                 TOOL_LANG -> Icons.GLOBE
+                TOOL_HACKER -> Icons.HACKER
                 else -> continue
             }
-            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn)
+            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             Icons.draw(c, kind, cx, cy, s, if (on) p.accent else p.hint, bgc, d)
         }

@@ -12,6 +12,17 @@ object Codes {
     const val LANG = -6
     const val MODE_SYM2 = -7
     const val SPACE = 32
+
+    // Teclado de computadora ("hacker")
+    const val CTRL = -20
+    const val ALT = -21
+    const val FN = -22
+    const val HSHIFT = -23
+    /** Teclas especiales de computadora: código = HKEY_BASE - KeyEvent.KEYCODE_... */
+    const val HKEY_BASE = -1000
+    fun isHKey(code: Int) = code <= HKEY_BASE
+    fun hkey(keyCode: Int) = HKEY_BASE - keyCode
+    fun keyCodeOf(code: Int) = HKEY_BASE - code
 }
 
 /** Una tecla. `cell` es el área que responde al toque, `rect` es lo que se dibuja. */
@@ -24,6 +35,10 @@ class Key(
     val special: Boolean = false,
     /** Mantener presionada abre los emojis (la coma). */
     val emojiKey: Boolean = false,
+    /** Se repite mientras la mantienes (flechas del teclado de computadora). */
+    val repeatable: Boolean = false,
+    /** Símbolo pequeño arriba a la derecha (lo que sale con Shift). */
+    val topHint: String? = null,
 ) {
     val cell = RectF()
     val rect = RectF()

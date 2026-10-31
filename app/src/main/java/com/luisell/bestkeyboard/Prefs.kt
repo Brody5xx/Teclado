@@ -35,6 +35,8 @@ object Prefs {
     const val MORE_TOOLS = "more_tools"
     /** Versión nueva: TODOS los botones (también micrófono, esconder y ⋯) se pueden mover. */
     const val BAR_TOOLS2 = "bar_tools_all"
+    /** Teclado de computadora ("modo hacker") encendido. */
+    const val HACKER = "hacker_keyboard"
     const val MORE_TOOLS2 = "more_tools_all"
 
     fun get(ctx: Context): SharedPreferences =

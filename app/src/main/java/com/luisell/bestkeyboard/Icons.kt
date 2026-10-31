@@ -46,6 +46,7 @@ object Icons {
     const val GLOBE = 29
     const val PENCIL = 30
     const val CHEVRON = 31
+    const val HACKER = 32
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -361,6 +362,30 @@ object Icons {
                 path.lineTo(cx + a, cy - a)
                 path.lineTo(cx + a, cy - a * 0.1f)
                 c.drawPath(path, st)
+            }
+            HACKER -> {
+                // Hacker con capucha (con hombros) y ">_" en la cara
+                path.reset()
+                path.moveTo(cx - s * 1.0f, cy + s * 1.0f)
+                path.quadTo(cx - s * 0.95f, cy + s * 0.55f, cx - s * 0.62f, cy + s * 0.45f)
+                path.cubicTo(cx - s * 0.85f, cy - s * 0.2f, cx - s * 0.55f, cy - s * 0.85f, cx, cy - s * 1.02f)
+                path.cubicTo(cx + s * 0.55f, cy - s * 0.85f, cx + s * 0.85f, cy - s * 0.2f, cx + s * 0.62f, cy + s * 0.45f)
+                path.quadTo(cx + s * 0.95f, cy + s * 0.55f, cx + s * 1.0f, cy + s * 1.0f)
+                c.drawPath(path, st)
+                // Cara (hueco de la capucha)
+                r.set(cx - s * 0.46f, cy - s * 0.5f, cx + s * 0.46f, cy + s * 0.5f)
+                c.drawOval(r, fl)
+                // >_ en color de fondo
+                val p0 = st.color
+                st.color = bg
+                st.strokeWidth = st.strokeWidth * 0.8f
+                path.reset()
+                path.moveTo(cx - s * 0.26f, cy - s * 0.2f)
+                path.lineTo(cx - s * 0.04f, cy)
+                path.lineTo(cx - s * 0.26f, cy + s * 0.2f)
+                c.drawPath(path, st)
+                c.drawLine(cx + s * 0.04f, cy + s * 0.22f, cx + s * 0.26f, cy + s * 0.22f, st)
+                st.color = p0
             }
             CHEVRON -> {
                 path.reset()
