@@ -320,7 +320,16 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     /** Herramientas de la izquierda (en orden) y su separación según el ancho de la pantalla. */
-    private val leftTools = intArrayOf(TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL, TOOL_EDIT, TOOL_MORE)
+    private var leftTools = intArrayOf(TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL, TOOL_EDIT, TOOL_MORE)
+
+    /** Las herramientas de la barra de arriba, en tu orden (el ⋯ siempre va al final). */
+    fun setBarTools(tools: List<Int>) {
+        val n = tools.filter { it != TOOL_MORE }.toIntArray() + TOOL_MORE
+        if (!n.contentEquals(leftTools)) {
+            leftTools = n
+            invalidate()
+        }
+    }
     private fun toolStep(): Float = minOf(52f * d, (width - 112f * d) / leftTools.size)
 
     private fun toolHit(x: Float): Int {
@@ -849,6 +858,8 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_VOICE -> Icons.MIC
                 TOOL_HIDE -> Icons.HIDE
                 TOOL_MORE -> Icons.MORE
+                TOOL_RESIZE -> Icons.RESIZE
+                TOOL_LANG -> Icons.GLOBE
                 else -> continue
             }
             val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn)

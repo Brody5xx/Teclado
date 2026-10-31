@@ -44,6 +44,7 @@ object Icons {
     const val MORE = 27
     const val RESIZE = 28
     const val GLOBE = 29
+    const val PENCIL = 30
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -359,6 +360,19 @@ object Icons {
                 path.lineTo(cx + a, cy - a)
                 path.lineTo(cx + a, cy - a * 0.1f)
                 c.drawPath(path, st)
+            }
+            PENCIL -> {
+                // Lápiz inclinado
+                val a = s * 0.62f
+                path.reset()
+                path.moveTo(cx - a - s * 0.2f, cy + a + s * 0.2f)
+                path.lineTo(cx - a - s * 0.12f, cy + a - s * 0.32f)
+                path.lineTo(cx + a * 0.55f, cy - a - s * 0.05f)
+                path.lineTo(cx + a + s * 0.05f, cy - a * 0.55f)
+                path.lineTo(cx - a + s * 0.32f, cy + a + s * 0.12f)
+                path.close()
+                c.drawPath(path, st)
+                c.drawLine(cx + a * 0.1f, cy - a * 0.65f, cx + a * 0.65f, cy - a * 0.1f, st)
             }
             GLOBE -> {
                 val rr = s * 0.9f

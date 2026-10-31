@@ -30,6 +30,9 @@ object Prefs {
     const val SPACE_LANG = "space_switches_lang"
     /** Tamaño del teclado elegido con "Cambiar tamaño" (1 = normal). */
     const val SIZE = "keyboard_size"
+    /** Herramientas de la barra de arriba y de "Más opciones" (números separados por comas). */
+    const val BAR_TOOLS = "bar_tools"
+    const val MORE_TOOLS = "more_tools"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

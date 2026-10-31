@@ -282,6 +282,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
             override fun onMoreBack() = showMode(0)
             override fun onMoreFeedback() = onKeyFeedback()
+            override fun onToolsChanged(bar: List<Int>, more: List<Int>) {
+                Tools.save(prefs, bar, more)
+                kv?.setBarTools(bar)
+            }
         }
         box.addView(more, FrameLayout.LayoutParams(-1, -1))
         morePanel = more
@@ -384,7 +388,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             ed.visibility = if (m == 5) View.VISIBLE else View.GONE
             if (m == 5) ed.open()
         }
-        morePanel?.visibility = if (m == 6) View.VISIBLE else View.GONE
+        morePanel?.let { mp ->
+            mp.visibility = if (m == 6) View.VISIBLE else View.GONE
+            if (m == 6) mp.open()
+        }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
 
@@ -1003,6 +1010,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         scanPanel?.applyPalette(pal)
         editPanel?.applyPalette(pal)
         morePanel?.applyPalette(pal)
+        val (barTools, moreTools) = Tools.load(this, prefs)
+        v.setBarTools(barTools)
+        morePanel?.setTools(barTools, moreTools, Tools.maxBar(this))
         colorNavBar(pal)
 
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE

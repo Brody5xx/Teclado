@@ -352,7 +352,14 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 7.1")
+        section("Novedades — Versión 7.2")
+        text(
+            "• Acomoda la barra de arriba a tu manera: toca ⋯ y luego el lápiz ✎. Arrastra las opciones " +
+                "dentro de la barra, o entre la barra y «Más opciones». Un toque las pasa al otro lado.\n" +
+                "• «Más opciones» ya no repite lo que está en la barra de arriba.", 14f,
+        )
+
+        section("Versión 7.1")
         text(
             "• Botón ⋯ «Más opciones» en la barra de arriba: todas las herramientas con botones grandes " +
                 "(ajustes, tema, siguiente idioma y más).\n" +
