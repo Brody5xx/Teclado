@@ -177,13 +177,13 @@ class KeyboardView(context: Context) : View(context) {
     private val bottomPad = 6f * d
     /** Modo código encendido (para iluminar su botón). */
     var codeOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
 
     /** Modo una mano: 0 normal, 1 teclas a la izquierda, 2 teclas a la derecha. */
     var oneHand = 0
         set(v) { if (field != v) { field = v; if (width > 0) layoutKeys(); invalidate() } }
     private val handW get() = if (oneHand == 0) 0f else width * 0.18f
     private val keysLeft get() = if (oneHand == 2) handW else 0f
-        set(v) { if (field != v) { field = v; invalidate() } }
 
     /** Teclado de computadora: Ctrl/Alt/Shift/Fn encendidos (una vez) o fijos (dos toques). */
     var hackerOn = false
