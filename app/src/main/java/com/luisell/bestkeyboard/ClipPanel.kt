@@ -197,7 +197,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
     fun open() {
         overlay.hide()
         confirmClear = false
-        ClipStore.load(context) { refresh() }
+        ClipStore.load(context) { ClipStore.purgeOld(); refresh() }
         refresh()
         grid.setSelection(0)
     }
@@ -211,7 +211,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         title.text = if (n == 0) "Portapapeles" else "Portapapeles ($n)"
         val showEmpty = items.isEmpty()
         empty.text = if (!historyOn) "El historial del portapapeles está apagado.\nPuedes encenderlo en los ajustes (⚙)."
-        else "Todo lo que copies (textos e imágenes) aparecerá aquí.\nNo hay límite: se guarda solo en tu teléfono."
+        else "Todo lo que copies (textos e imágenes) aparecerá aquí.\nDura 2 días; lo que fijes 📌 se queda para siempre."
         empty.visibility = if (showEmpty) VISIBLE else GONE
         grid.visibility = if (showEmpty) GONE else VISIBLE
         clearBtn.visibility = if (historyOn && ClipStore.items.any { !it.pinned }) VISIBLE else GONE

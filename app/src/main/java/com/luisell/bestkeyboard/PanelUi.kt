@@ -145,3 +145,33 @@ class PanelOverlay(context: Context, scrim: Int) : android.widget.FrameLayout(co
 
     val isShowing get() = visibility == VISIBLE
 }
+
+/** Botón que repite su acción mientras lo mantienes presionado (flechas, borrar). */
+@SuppressLint("ClickableViewAccessibility")
+fun makeRepeating(view: View, feedback: () -> Unit, action: () -> Unit) {
+    val h = Handler(Looper.getMainLooper())
+    var count = 0
+    val repeat = object : Runnable {
+        override fun run() {
+            action()
+            count++
+            h.postDelayed(this, if (count > 10) 35L else 70L)
+        }
+    }
+    view.setOnTouchListener { v, e ->
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                v.isPressed = true
+                feedback()
+                action()
+                count = 0
+                h.postDelayed(repeat, 400L)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                v.isPressed = false
+                h.removeCallbacks(repeat)
+            }
+        }
+        true
+    }
+}

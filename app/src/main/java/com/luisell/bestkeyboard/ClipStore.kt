@@ -31,6 +31,8 @@ object ClipStore {
     const val AUTHORITY = "com.luisell.bestkeyboard.clips"
     private const val MAX_TEXT = 200_000
     private const val MAX_IMAGE_BYTES = 30L * 1024 * 1024
+    /** Lo que no está fijado se borra solo después de 2 días (48 horas). */
+    const val KEEP_MS = 48L * 60 * 60 * 1000
 
     private val io = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
@@ -87,7 +89,7 @@ object ClipStore {
                 val w = ArrayList(waiting)
                 waiting.clear()
                 w.forEach { it() }
-                changed()
+                if (!purgeOld()) changed()
                 if (pending.isNotEmpty()) save()
             }
         }
@@ -123,8 +125,21 @@ object ClipStore {
         save()
     }
 
-    /** Copia la imagen a la memoria del teclado (en segundo plano). */
-    fun addImage(ctx: Context, uri: Uri, mimeIn: String?) {
+    /** Borra lo que tiene más de 48 horas (menos lo fijado 📌). Devuelve true si borró algo. */
+    fun purgeOld(): Boolean {
+        val limit = System.currentTimeMillis() - KEEP_MS
+        val old = items.filter { !it.pinned && it.time < limit }
+        if (old.isEmpty()) return false
+        items.removeAll(old.toSet())
+        val d = dir
+        if (d != null) io.execute { for (o in old) o.file?.let { File(d, it).delete() } }
+        changed()
+        save()
+        return true
+    }
+
+    /** Copia la imagen a la memoria del teclado (en segundo plano). [done] recibe el elemento guardado. */
+    fun addImage(ctx: Context, uri: Uri, mimeIn: String?, done: ((ClipItem?) -> Unit)? = null) {
         val app = ctx.applicationContext
         val d = clipsDir(app)
         dir = d
@@ -150,8 +165,8 @@ object ClipStore {
                         out.write(buf, 0, n)
                     }
                     out.toByteArray()
-                } ?: return@execute
-                if (bytes.isEmpty()) return@execute
+                }
+                if (bytes == null || bytes.isEmpty()) { main.post { done?.invoke(null) }; return@execute }
                 val name = "img_$id.$ext"
                 File(d, name).writeBytes(bytes)
                 val item = ClipItem(id, null, name, mime, System.currentTimeMillis(), false, "i:" + sha1(bytes))
@@ -159,8 +174,10 @@ object ClipStore {
                     insert(item)
                     changed()
                     save()
+                    // Si ya existía igual, se usa el que quedó arriba
+                    done?.invoke(items.firstOrNull { it.hash == item.hash } ?: item)
                 }
-            } catch (_: Exception) { }
+            } catch (_: Exception) { main.post { done?.invoke(null) } }
         }
     }
 

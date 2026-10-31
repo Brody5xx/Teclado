@@ -36,6 +36,7 @@ class MainActivity : Activity() {
     companion object {
         const val EXTRA_ASK_MIC = "pedir_micro"
         const val EXTRA_ASK_CAMERA = "pedir_camara"
+        private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
         private const val REQ_CAMERA = 8
     }
@@ -58,6 +59,16 @@ class MainActivity : Activity() {
         if (i?.getBooleanExtra(EXTRA_ASK_CAMERA, false) == true) askCamera()
     }
 
+    private lateinit var photosBtn: Button
+
+    private fun askPhotos() {
+        if (Screenshots.hasPermission(this)) { refreshMic(); return }
+        val perms = if (android.os.Build.VERSION.SDK_INT >= 34)
+            arrayOf(Screenshots.permission(), "android.permission.READ_MEDIA_VISUAL_USER_SELECTED")
+        else arrayOf(Screenshots.permission())
+        requestPermissions(perms, REQ_PHOTOS)
+    }
+
     private fun cameraGranted() = checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
     private fun askCamera() {
@@ -74,6 +85,15 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_PHOTOS) {
+            refreshMic()
+            Toast.makeText(
+                this,
+                if (Screenshots.hasPermission(this)) "¡Listo! Toma una captura y abre el teclado." else "Sin ese permiso no puedo sugerir tus capturas.",
+                Toast.LENGTH_LONG,
+            ).show()
+            return
+        }
         if (requestCode == REQ_CAMERA) {
             refreshMic()
             Toast.makeText(
@@ -113,6 +133,10 @@ class MainActivity : Activity() {
     private fun refreshMic() {
         if (::micBtn.isInitialized) {
             micBtn.text = if (micGranted()) "✓ Micrófono permitido" else "🎤 Permitir el micrófono para dictar"
+        }
+        if (::photosBtn.isInitialized) {
+            photosBtn.text = if (Screenshots.hasPermission(this)) "✓ Fotos permitidas (capturas de pantalla)"
+            else "🖼 Permitir ver mis capturas de pantalla"
         }
         if (::camBtn.isInitialized) {
             camBtn.text = if (cameraGranted()) "✓ Cámara permitida" else "📷 Permitir la cámara para escanear"
@@ -264,8 +288,18 @@ class MainActivity : Activity() {
         section("Portapapeles")
         switch("Guardar todo lo que copio (textos e imágenes)", Prefs.CLIP_HISTORY, true)
         text(
-            "No tiene límite: guarda todo lo que copies hasta que lo borres. Se guarda solo en tu " +
-                "teléfono. Las contraseñas que las apps marcan como privadas no se guardan.", 13f, faded = true,
+            "Lo que copias dura 2 días (48 horas) y después se borra solo. Lo que fijas con 📌 se queda " +
+                "para siempre. Se guarda solo en tu teléfono. Las contraseñas que las apps marcan como " +
+                "privadas no se guardan.", 13f, faded = true,
+        )
+
+        section("Capturas de pantalla 🖼")
+        switch("Sugerir mi última captura de pantalla", Prefs.SHOTS, true)
+        photosBtn = button("🖼 Permitir ver mis capturas de pantalla") { askPhotos() }
+        text(
+            "Cuando tomas una captura, arriba del teclado aparece \"Captura de pantalla\". Tócala y se pega " +
+                "en el chat (WhatsApp, Claude, Gmail...) y también se guarda en tu portapapeles. Se ofrece " +
+                "durante 3 minutos después de tomarla.", 13f, faded = true,
         )
         button("Borrar el historial del portapapeles (menos lo fijado)") {
             AlertDialog.Builder(this)
@@ -297,12 +331,21 @@ class MainActivity : Activity() {
                 "• 🎤 dicta por voz y A文 traduce mientras escribes.\n" +
                 "• Toca 🌐 para cambiar Español / English (las sugerencias usan los dos idiomas a la vez).\n" +
                 "• Mantén presionado 🌐 para cambiar a otro teclado (por ejemplo, Gboard).\n" +
-                "• Arriba del teclado: ⚙ ajustes, 😊 emojis, 📋 portapapeles, A文 traducir, ⛶ escanear, abc✓ revisar ortografía, 🎤 dictar, ⌄ esconder.\n" +
+                "• Arriba del teclado: ⚙ ajustes, 😊 emojis, 📋 portapapeles, A文 traducir, ⛶ escanear, abc✓ revisar ortografía, ‹I› edición de texto, 🎤 dictar, ⌄ esconder.\n" +
+                "• Mientras escribes, toca ▦ a la izquierda para ver estas herramientas.\n" +
+                "• ‹I› Edición de texto: flechas, Seleccionar (las flechas marcan el texto), Todo, Cortar, Copiar, Pegar, Inicio y Fin.\n" +
                 "• En los campos de correo (como \"Para\" en Gmail) no salen sugerencias, para no cambiarte una dirección.\n" +
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 6.2")
+        section("Novedades — Versión 6.5")
+        text(
+            "• ‹I› Edición de texto · Text editing: mover el cursor, seleccionar, copiar, cortar y pegar.\n" +
+                "• Sugerencia de tu última captura de pantalla: un toque y se pega (y se guarda en el portapapeles).\n" +
+                "• El portapapeles guarda 2 días; lo fijado 📌 se queda para siempre.", 14f,
+        )
+
+        section("Versión 6.2")
         text(
             "• Botón abc✓ para revisar la ortografía de todo el texto, error por error.\n" +
                 "• Corrector ortográfico de Android ✔: subraya en rojo en las apps que lo usan.", 14f,

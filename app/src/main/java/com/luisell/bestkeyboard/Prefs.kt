@@ -23,6 +23,8 @@ object Prefs {
     const val TR_SRC = "translate_from"
     const val SWIPE = "swipe"
     const val SPELL = "spell_check"
+    const val SHOTS = "suggest_screenshots"
+    const val SHOT_USED = "screenshot_used"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

@@ -49,6 +49,8 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_SCAN = 7
         const val TOOL_SPELL = 8
         const val TOOL_MENU = 9
+        const val TOOL_EDIT = 20
+        const val TOOL_SHOT = 21
         private const val LONG_PRESS_MS = 350L
         private const val REPEAT_START_MS = 400L
     }
@@ -261,17 +263,32 @@ class KeyboardView(context: Context) : View(context) {
     private val menuW get() = 48f * d
     private val showingSuggestions get() = hasSuggestions && !forceTools
 
+    // Sugerencia de captura de pantalla (botón con la miniatura)
+    private var shotThumb: android.graphics.Bitmap? = null
+    private val shotRect = RectF()
+    private val showingShot get() = shotThumb != null && !hasSuggestions && !forceTools
+
+    fun setScreenshot(b: android.graphics.Bitmap?) {
+        if (shotThumb === b) return
+        shotThumb = b
+        invalidate(0, 0, width, stripH.toInt() + 1)
+    }
+
     private fun stripHit(x: Float): Int {
         if (showingSuggestions) {
             if (x < menuW) return TOOL_MENU
             val slot = ((x - menuW) / ((width - menuW) / 3f)).toInt().coerceIn(0, 2)
             return if (slots[slot] != null) 10 + slot else -1
         }
+        if (showingShot) {
+            if (x < menuW) return TOOL_MENU
+            return if (x >= shotRect.left && x <= shotRect.right) TOOL_SHOT else -1
+        }
         return toolHit(x)
     }
 
     /** Herramientas de la izquierda (en orden) y su separación según el ancho de la pantalla. */
-    private val leftTools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL)
+    private val leftTools = intArrayOf(TOOL_SETTINGS, TOOL_EMOJI, TOOL_CLIP, TOOL_TRANSLATE, TOOL_SCAN, TOOL_SPELL, TOOL_EDIT)
     private fun toolStep(): Float = minOf(52f * d, (width - 112f * d) / leftTools.size)
 
     private fun toolHit(x: Float): Int {
@@ -422,7 +439,7 @@ class KeyboardView(context: Context) : View(context) {
             if (commit) {
                 when {
                     action == TOOL_MENU -> { forceTools = true; invalidate() }
-                    action >= 10 -> listener?.onSuggestion(action - 10)
+                    action in 10..12 -> listener?.onSuggestion(action - 10)
                     else -> { forceTools = false; listener?.onToolbar(action) }
                 }
             }
@@ -656,6 +673,7 @@ class KeyboardView(context: Context) : View(context) {
 
     private fun drawStrip(c: Canvas, p: Palette) {
         if (showingSuggestions) { drawSuggestions(c, p); return }
+        if (showingShot) { drawShot(c, p); return }
         val cy = stripH / 2f
         val s = stripH * 0.22f
         // Orden en pantalla: ajustes, emojis, portapapeles, tema ... esconder
@@ -712,6 +730,15 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_TRANSLATE -> {
                     drawLabel(c, "A文", cx, cy, stripH * 0.36f, if (translateOn) p.accent else p.hint)
                 }
+                TOOL_EDIT -> {
+                    // ‹I›: edición de texto
+                    drawLabel(c, "I", cx, cy, stripH * 0.42f, p.hint)
+                    st(p.hint)
+                    c.drawLine(cx - s * 0.55f, cy, cx - s * 0.95f, cy - s * 0.35f, stroke)
+                    c.drawLine(cx - s * 0.55f, cy, cx - s * 0.95f, cy + s * 0.35f, stroke)
+                    c.drawLine(cx + s * 0.55f, cy, cx + s * 0.95f, cy - s * 0.35f, stroke)
+                    c.drawLine(cx + s * 0.55f, cy, cx + s * 0.95f, cy + s * 0.35f, stroke)
+                }
                 TOOL_SPELL -> {
                     // "abc" con una palomita: revisar ortografía
                     val col = if (spellOn) p.accent else p.hint
@@ -751,10 +778,9 @@ class KeyboardView(context: Context) : View(context) {
         }
     }
 
-    private fun drawSuggestions(c: Canvas, p: Palette) {
-        val cellW = (width - menuW) / 3f
+    /** Botón ▦ de la esquina (4 cuadritos). */
+    private fun drawMenuButton(c: Canvas, p: Palette) {
         val cy = stripH / 2f
-        // Botón ▦ (4 cuadritos) para abrir las herramientas
         val mx = menuW / 2f + 2f * d
         if (stripPressed == TOOL_MENU) {
             fill.color = p.keyPressed
@@ -769,6 +795,44 @@ class KeyboardView(context: Context) : View(context) {
             tmp.set(l, t, l + q, t + q)
             c.drawRoundRect(tmp, 1.6f * d, 1.6f * d, fill)
         }
+    }
+
+    /** "🖼 Captura de pantalla": botón con la miniatura de tu última captura. */
+    private fun drawShot(c: Canvas, p: Palette) {
+        drawMenuButton(c, p)
+        val b = shotThumb ?: return
+        val label = "Captura de pantalla"
+        text.textSize = stripH * 0.33f
+        val tw = text.measureText(label)
+        val h = stripH * 0.78f
+        val w = h + 10f * d + tw + 16f * d
+        val left = (width - w) / 2f
+        val top = (stripH - h) / 2f
+        shotRect.set(left, top, left + w, top + h)
+        fill.color = if (stripPressed == TOOL_SHOT) p.keyPressed else p.key
+        c.drawRoundRect(shotRect, h / 2f, h / 2f, fill)
+        // Miniatura en círculo
+        val r = h / 2f - 3f * d
+        val cx = left + 3f * d + r
+        val cy = stripH / 2f
+        c.save()
+        path.reset()
+        path.addCircle(cx, cy, r, Path.Direction.CW)
+        c.clipPath(path)
+        val sc = maxOf(2 * r / b.width, 2 * r / b.height)
+        tmp.set(cx - b.width * sc / 2, cy - b.height * sc / 2, cx + b.width * sc / 2, cy + b.height * sc / 2)
+        c.drawBitmap(b, null, tmp, null)
+        c.restore()
+        text.textAlign = Paint.Align.LEFT
+        drawLabel(c, label, cx + r + 10f * d, cy, stripH * 0.33f, p.text)
+        text.textAlign = Paint.Align.CENTER
+    }
+
+    private fun drawSuggestions(c: Canvas, p: Palette) {
+        val cellW = (width - menuW) / 3f
+        val cy = stripH / 2f
+        // Botón ▦ (4 cuadritos) para abrir las herramientas
+        drawMenuButton(c, p)
         for (i in 0..2) {
             val left = menuW + i * cellW
             if (stripPressed == 10 + i) {

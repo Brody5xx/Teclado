@@ -7,6 +7,12 @@
     <!-- Cámara: solo para el escáner de texto, y solo cuando tocas el escáner -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Fotos: solo para sugerirte tu última captura de pantalla arriba del teclado -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <!-- Internet: SOLO para descargar una vez los idiomas de traducción. Lo que escribes no se envía. -->
     <uses-permission android:name="android.permission.INTERNET" />
 

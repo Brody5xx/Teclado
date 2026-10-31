@@ -106,6 +106,21 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Después de deslizar, la próxima letra o palabra pone un espacio antes (como Gboard). */
     private var phantomSpace = false
 
+    // Edición de texto (panel 5)
+    private var editPanel: EditPanel? = null
+
+    // Sugerencia de captura de pantalla
+    private var shot: Screenshots.Shot? = null
+    private val shotIo = java.util.concurrent.Executors.newSingleThreadExecutor()
+    /** Avisa cuando se guarda una foto nueva (para ofrecer la captura con el teclado abierto). */
+    private val mediaObserver = object : android.database.ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            handler.removeCallbacks(shotCheck)
+            handler.postDelayed(shotCheck, 900)
+        }
+    }
+    private val shotCheck = Runnable { if (isInputViewShown) checkScreenshot() }
+
     // Escáner dentro del teclado (panel 4)
     private var scanPanel: ScanPanel? = null
     private var panelBox: PanelBox? = null
@@ -133,7 +148,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun targetInfo(): EditorInfo? = if (translating) tBar?.inputInfo else currentInputEditorInfo
 
     /** Envía una tecla (borrar, flechas, enter) a donde esté escribiendo el teclado. */
-    private fun sendKey(code: Int) {
+    private fun sendKey(code: Int, meta: Int = 0) {
         // La caja del traductor está dentro del teclado: ahí las teclas se aplican directo
         val tb = tBar
         if (translating && tb != null) {
@@ -147,8 +162,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val c = target() ?: return
         val t = SystemClock.uptimeMillis()
         val flags = KeyEvent.FLAG_SOFT_KEYBOARD or KeyEvent.FLAG_KEEP_TOUCH_MODE
-        c.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_DOWN, code, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, flags))
-        c.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_UP, code, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, flags))
+        c.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_DOWN, code, 0, meta, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, flags))
+        c.sendKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_UP, code, 0, meta, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, flags))
     }
 
     private val panelListener = object : PanelListener {
@@ -171,6 +186,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         lastClipSig = prefs.getString(Prefs.CLIP_LAST_SIG, null)
         clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         clipboard?.addPrimaryClipChangedListener(clipListener)
+        try {
+            contentResolver.registerContentObserver(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, mediaObserver)
+        } catch (_: Exception) { }
         tSrc = prefs.getString(Prefs.TR_SRC, "es") ?: "es"
         tDst = if (tSrc == "es") "en" else "es"
     }
@@ -225,6 +243,25 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         box.addView(sp, FrameLayout.LayoutParams(-1, -1))
         box.tallPanel = sp
+
+        val ed = EditPanel(this)
+        ed.visibility = View.GONE
+        ed.actions = object : EditPanel.Actions {
+            override fun onEditMove(keyCode: Int, select: Boolean) {
+                val meta = if (select) KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON else 0
+                sendKey(keyCode, meta)
+            }
+            override fun onEditCommand(id: Int) {
+                val tb = tBar
+                if (translating && tb != null) tb.box.onTextContextMenuItem(id)
+                else target()?.performContextMenuAction(id)
+            }
+            override fun onEditDelete() = onDeletePress()
+            override fun onEditBack() = showMode(0)
+            override fun onEditFeedback() = onKeyFeedback()
+        }
+        box.addView(ed, FrameLayout.LayoutParams(-1, -1))
+        editPanel = ed
         scanPanel = sp
         panelBox = box
 
@@ -314,7 +351,47 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             } else if (was) sp.close()
             if (m == 4 || was) panelBox?.requestLayout()
         }
+        editPanel?.let { ed ->
+            ed.visibility = if (m == 5) View.VISIBLE else View.GONE
+            if (m == 5) ed.open()
+        }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
+    }
+
+    // ---------------------------------------------------------------- Capturas de pantalla
+
+    /** Si tomaste una captura hace poco, la ofrece arriba del teclado. */
+    private fun checkScreenshot() {
+        if (!prefs.getBoolean(Prefs.SHOTS, true) || isPassword) { clearShot(); return }
+        val app = applicationContext
+        val usedId = prefs.getLong(Prefs.SHOT_USED, -1L)
+        val px = (48 * resources.displayMetrics.density).toInt()
+        shotIo.execute {
+            val s = Screenshots.findRecent(app)
+            val thumb = if (s != null && s.id != usedId) Screenshots.thumbnail(app, s, px) else null
+            handler.post {
+                if (s != null && s.id != usedId && thumb != null) {
+                    shot = s
+                    kv?.setScreenshot(thumb)
+                } else clearShot()
+            }
+        }
+    }
+
+    private fun clearShot() {
+        shot = null
+        kv?.setScreenshot(null)
+    }
+
+    /** Tocaste "Captura de pantalla": se guarda en el portapapeles y se pega aquí. */
+    private fun useScreenshot() {
+        val s = shot ?: return
+        prefs.edit().putLong(Prefs.SHOT_USED, s.id).apply()
+        clearShot()
+        ClipStore.addImage(this, s.uri, s.mime) { item ->
+            if (item != null) pasteImage(item)
+            else Toast.makeText(this, "No se pudo abrir la captura.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     /** Escribe un texto (del escáner) con el espacio correcto antes. */
@@ -793,6 +870,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         insertScanned(info)
         updateAutoCaps()
         scheduleUpdate()
+        checkScreenshot()
         // Volviste de elegir una foto en la galería: ábrela en el escáner para elegir palabras
         ScanActivity.takePendingPhoto()?.let { bmp ->
             scanPhoto = bmp
@@ -823,6 +901,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onDestroy() {
         clipboard?.removePrimaryClipChangedListener(clipListener)
+        try { contentResolver.unregisterContentObserver(mediaObserver) } catch (_: Exception) { }
         recognizer?.destroy()
         recognizer = null
         trans?.close()
@@ -1096,6 +1175,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onKeyText(text: String) {
         if (spellOn) stopSpell()
+        if (shot != null) clearShot()
         val ic = target() ?: return
         val phantom = phantomSpace
         phantomSpace = false
@@ -1292,6 +1372,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_EMOJI -> showMode(1)
             KeyboardView.TOOL_CLIP -> showMode(2)
             KeyboardView.TOOL_VOICE -> showMode(3)
+            KeyboardView.TOOL_EDIT -> showMode(5)
+            KeyboardView.TOOL_SHOT -> useScreenshot()
             KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell()
             KeyboardView.TOOL_SCAN -> {
                 if (hasPermission(android.Manifest.permission.CAMERA)) {
