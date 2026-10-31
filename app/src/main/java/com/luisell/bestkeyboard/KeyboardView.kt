@@ -473,6 +473,16 @@ class KeyboardView(context: Context) : View(context) {
     private var stripDown = false
     private var stripDragging = false
     private var stripDownScroll = 0f
+    private val stripVelocity = android.view.VelocityTracker.obtain()
+    private val stripFling = android.widget.OverScroller(context, android.view.animation.DecelerateInterpolator(1.6f))
+
+    override fun computeScroll() {
+        if (stripFling.computeScrollOffset()) {
+            stripScroll = stripFling.currX.toFloat().coerceIn(0f, maxStripScroll())
+            invalidate(0, 0, width, stripH.toInt() + 1)
+            postInvalidateOnAnimation()
+        }
+    }
 
     fun setBarTools(tools: List<Int>, extra: List<Int> = extraTools.toList()) {
         val n = tools.toIntArray()
@@ -501,6 +511,9 @@ class KeyboardView(context: Context) : View(context) {
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
         if (resizing) { resizeTouch(e); return true }
+        // Mide la velocidad del dedo (para que la barra de arriba siga deslizando al soltar)
+        if (e.actionMasked == MotionEvent.ACTION_DOWN) stripVelocity.clear()
+        stripVelocity.addMovement(e)
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> startPointer(e.getPointerId(0), e.getX(0), e.getY(0))
             MotionEvent.ACTION_POINTER_DOWN -> {
@@ -537,8 +550,11 @@ class KeyboardView(context: Context) : View(context) {
         stripDragging = false
         if (y < stripH) {
             stripDown = true
+            // Si la barra todavía iba deslizando, el toque solo la frena (no aprieta un botón)
+            val wasFlinging = !stripFling.isFinished
+            stripFling.forceFinished(true)
             stripDownScroll = stripScroll
-            stripPressed = stripHit(x)
+            stripPressed = if (wasFlinging) -1 else stripHit(x)
             if (stripPressed >= 0) listener?.onKeyFeedback()
             invalidate()
             return
@@ -689,7 +705,19 @@ class KeyboardView(context: Context) : View(context) {
         gestureCandidate = false
         if (stripDown) {
             stripDown = false
-            if (stripDragging) { stripDragging = false; stripPressed = -1; invalidate(); return }
+            if (stripDragging) {
+                stripDragging = false
+                stripPressed = -1
+                // Sigue deslizando un poco y se frena suave (como en el teléfono)
+                stripVelocity.computeCurrentVelocity(1000, 8000f * d)
+                val vx = stripVelocity.xVelocity
+                val max = maxStripScroll()
+                if (abs(vx) > 120f * d && max > 0f) {
+                    stripFling.fling(stripScroll.toInt(), 0, (-vx).toInt(), 0, 0, max.toInt(), 0, 0)
+                    postInvalidateOnAnimation()
+                } else invalidate()
+                return
+            }
         }
         if (stripPressed >= 0) {
             val action = stripPressed
