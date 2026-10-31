@@ -39,7 +39,11 @@ class KeyboardView(context: Context) : View(context) {
         fun onGesture(xs: FloatArray, ys: FloatArray, count: Int)
         /** Terminaste de cambiar el tamaño del teclado ([scale] = 1 es el normal). */
         fun onResizeDone(scale: Float)
-        /** Modo una mano: 0 normal, 1 izquierda, 2 derecha. */
+        /** Teclado flotante encendido (para iluminar su botón). */
+    var floatOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
+
+    /** Modo una mano: 0 normal, 1 izquierda, 2 derecha. */
         fun onOneHand(mode: Int) {}
     }
 
@@ -74,6 +78,11 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_ONEHAND = 37
         const val TOOL_CALC = 38
         const val TOOL_GIF = 39
+        const val TOOL_TICKET = 40
+        const val TOOL_REPORT = 41
+        const val TOOL_FORMAL = 42
+        const val TOOL_FLOAT = 43
+        const val TOOL_REVIEW = 44
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -177,6 +186,10 @@ class KeyboardView(context: Context) : View(context) {
     private val bottomPad = 6f * d
     /** Modo código encendido (para iluminar su botón). */
     var codeOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
+
+    /** Teclado flotante encendido (para iluminar su botón). */
+    var floatOn = false
         set(v) { if (field != v) { field = v; invalidate() } }
 
     /** Modo una mano: 0 normal, 1 teclas a la izquierda, 2 teclas a la derecha. */
@@ -1415,9 +1428,14 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_ONEHAND -> Icons.ONEHAND
                 TOOL_CALC -> Icons.CALC
                 TOOL_GIF -> Icons.GIF
+                TOOL_TICKET -> Icons.TICKET
+                TOOL_REPORT -> Icons.REPORT
+                TOOL_FORMAL -> Icons.FORMAL
+                TOOL_FLOAT -> Icons.FLOAT
+                TOOL_REVIEW -> Icons.REVIEW
                 else -> continue
             }
-            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0)
+            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             Icons.draw(c, kind, cx, cy, s, if (on) p.accent else p.hint, bgc, d)
         }

@@ -65,6 +65,11 @@ object Icons {
     const val CALC = 48
     const val GIF = 49
     const val SEARCH = 50
+    const val TICKET = 51
+    const val REPORT = 52
+    const val FORMAL = 53
+    const val FLOAT = 54
+    const val REVIEW = 55
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -456,6 +461,54 @@ object Icons {
                 c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
                 for (yy in 0..1) for (xx in 0..2)
                     c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            TICKET -> {
+                // Tablita con hoja y renglones (ticket de trabajo)
+                r.set(cx - s * 0.75f, cy - s * 0.8f, cx + s * 0.75f, cy + s * 0.98f)
+                c.drawRoundRect(r, s * 0.18f, s * 0.18f, st)
+                r.set(cx - s * 0.32f, cy - s * 0.98f, cx + s * 0.32f, cy - s * 0.62f)
+                c.drawRoundRect(r, s * 0.1f, s * 0.1f, fl)
+                c.drawLine(cx - s * 0.42f, cy - s * 0.2f, cx + s * 0.42f, cy - s * 0.2f, st)
+                c.drawLine(cx - s * 0.42f, cy + s * 0.18f, cx + s * 0.42f, cy + s * 0.18f, st)
+                c.drawLine(cx - s * 0.42f, cy + s * 0.56f, cx + s * 0.1f, cy + s * 0.56f, st)
+            }
+            REPORT -> {
+                // Micrófono pequeño con renglones (dictar reporte)
+                r.set(cx - s * 0.95f, cy - s * 0.85f, cx - s * 0.35f, cy + s * 0.15f)
+                c.drawRoundRect(r, s * 0.3f, s * 0.3f, fl)
+                r.set(cx - s * 1.05f, cy - s * 0.35f, cx - s * 0.25f, cy + s * 0.45f)
+                c.drawArc(r, 0f, 180f, false, st)
+                c.drawLine(cx - s * 0.65f, cy + s * 0.45f, cx - s * 0.65f, cy + s * 0.8f, st)
+                c.drawLine(cx + s * 0.05f, cy - s * 0.55f, cx + s * 0.95f, cy - s * 0.55f, st)
+                c.drawLine(cx + s * 0.05f, cy - s * 0.05f, cx + s * 0.95f, cy - s * 0.05f, st)
+                c.drawLine(cx + s * 0.05f, cy + s * 0.45f, cx + s * 0.7f, cy + s * 0.45f, st)
+            }
+            FORMAL -> {
+                // Destello de 4 puntas (palabras más formales)
+                path.reset()
+                path.moveTo(cx, cy - s)
+                path.quadTo(cx + s * 0.12f, cy - s * 0.12f, cx + s, cy)
+                path.quadTo(cx + s * 0.12f, cy + s * 0.12f, cx, cy + s)
+                path.quadTo(cx - s * 0.12f, cy + s * 0.12f, cx - s, cy)
+                path.quadTo(cx - s * 0.12f, cy - s * 0.12f, cx, cy - s)
+                path.close()
+                c.drawPath(path, fl)
+            }
+            FLOAT -> {
+                // Ventanita flotante con su barrita para moverla
+                r.set(cx - s * 0.95f, cy - s * 0.55f, cx + s * 0.95f, cy + s * 0.85f)
+                c.drawRoundRect(r, s * 0.2f, s * 0.2f, st)
+                c.drawLine(cx - s * 0.35f, cy - s * 0.88f, cx + s * 0.35f, cy - s * 0.88f, st)
+                for (k in 0..2) c.drawCircle(cx - s * 0.5f + k * s * 0.5f, cy + s * 0.15f, s * 0.1f, fl)
+            }
+            REVIEW -> {
+                // Círculo con palomita (revisar antes de enviar)
+                c.drawCircle(cx, cy, s * 0.92f, st)
+                path.reset()
+                path.moveTo(cx - s * 0.45f, cy + s * 0.02f)
+                path.lineTo(cx - s * 0.12f, cy + s * 0.35f)
+                path.lineTo(cx + s * 0.48f, cy - s * 0.32f)
+                c.drawPath(path, st)
             }
             SEARCH -> {
                 // Lupa

@@ -487,6 +487,29 @@ class MainActivity : UiActivity() {
         ), 13f, faded = true)
         button(tr("Abrir Datos", "Open Data"), primary = true) { startActivity(Intent(this, DataActivity::class.java)) }
 
+        // ---- Trabajo: tickets, reportes y escribir más formal
+        card(tr("Escribir como profesional", "Write like a pro"), Icons.TICKET)
+        text(tr(
+            "En la barra de arriba (desliza) o en ⋯ tienes:\n" +
+                "•  📋 Notas → Ticket: escribe rápido con tus palabras y la IA lo vuelve un ticket formal (español o inglés).\n" +
+                "•  🎤 Dictar reporte: cuéntalo hablando y toca «Crear reporte».\n" +
+                "•  ✨ Más formal (palabra): opciones profesionales para una palabra o frase.\n" +
+                "•  ✅ Revisar antes de enviar: ortografía, claridad y tono profesional.\n" +
+                "Usan tu clave gratis de Gemini (tarjeta «IA para escribir»).",
+            "In the top bar (swipe) or in ⋯ you have:\n" +
+                "•  📋 Notes → Ticket: type quickly in your own words and the AI turns it into a formal ticket (Spanish or English).\n" +
+                "•  🎤 Dictate report: say it out loud and tap «Create report».\n" +
+                "•  ✨ Formal words: professional options for a word or phrase.\n" +
+                "•  ✅ Review before sending: spelling, clarity and professional tone.\n" +
+                "They use your free Gemini key (card «AI writing»).",
+        ), 13f, faded = true)
+        switch(tr("Sugerir palabras más formales mientras escribo", "Suggest more formal words while I type"), Prefs.FORMAL_SUGGEST, true,
+            tr("Sin internet. Escribe «arreglé» y sale ✨ reparé; «ya sirve» → ✨ funciona correctamente; «fixed» → ✨ repaired.",
+                "No internet needed. Type «fixed» and get ✨ repaired; «works now» → ✨ is now working properly."))
+        switch(tr("Teclado flotante", "Floating keyboard"), Prefs.FLOAT, false,
+            tr("El teclado se vuelve una ventanita: muévela con la barrita de arriba. El botón de la izquierda lo regresa abajo.",
+                "The keyboard becomes a small window: move it with the bar on top. The left button puts it back at the bottom."))
+
         // ---- Emojis
         card(tr("Emojis", "Emojis"), Icons.EMOJI)
         switch(tr("Sugerir emojis mientras escribo", "Suggest emojis while I type"), Prefs.EMOJI_SUGGEST, true,
@@ -647,6 +670,18 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.6" to tr(
+            "•  📋 Notas → Ticket: tus notas rápidas se vuelven un ticket formal en español o inglés.\n" +
+                "•  🎤 Dictar reporte: hablas con tus palabras y la IA lo escribe ordenado y formal.\n" +
+                "•  ✨ Palabras más formales: sugerencias mientras escribes (arreglé → reparé) y opciones con IA.\n" +
+                "•  ✅ Revisar antes de enviar.\n" +
+                "•  Teclado flotante que puedes mover por la pantalla.",
+            "•  📋 Notes → Ticket: your quick notes become a formal ticket in Spanish or English.\n" +
+                "•  🎤 Dictate report: speak in your own words and the AI writes it neatly and formally.\n" +
+                "•  ✨ More formal words: suggestions while you type (fixed → repaired) and AI options.\n" +
+                "•  ✅ Review before sending.\n" +
+                "•  Floating keyboard you can move around the screen.",
+        ),
         "9.5" to tr("•  La barra de arriba se desliza más fluida: al soltar el dedo sigue un poquito y se frena suave.",
             "•  The top bar scrolls more smoothly: when you lift your finger it keeps going a little and slows down gently."),
         "9.4" to tr("•  Barra de scroll nueva en emojis, GIFs y stickers: un destello de luz blanca, fino y suave, que se apaga solo y no estorba al tocar.",

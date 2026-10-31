@@ -81,6 +81,12 @@ object Prefs {
     const val GIPHY_KEY = "giphy_key"
     /** Sugerir emojis según lo que escribes (casa → 🏠, jaja → 😂). */
     const val EMOJI_SUGGEST = "emoji_suggest"
+    /** Sugerir palabras más formales mientras escribes (arreglé → reparé). */
+    const val FORMAL_SUGGEST = "formal_suggest"
+    /** Teclado flotante y dónde lo dejaste. */
+    const val FLOAT = "float_keyboard"
+    const val FLOAT_X = "float_x"
+    const val FLOAT_Y = "float_y"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

@@ -23,6 +23,7 @@ import android.speech.SpeechRecognizer
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
@@ -81,6 +82,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var slotTyped = -1
     /** La casilla de la barra que tiene un emoji sugerido (o -1). */
     private var emojiSlot = -1
+    /** La casilla con una palabra más formal sugerida (o -1) y qué cambiaría. */
+    private var formalSlot = -1
+    private var formalMatch: FormalWords.Match? = null
     private var slotsBold = false
     private var autoSpace = false
     /** Última autocorrección: (lo que escribiste, la corrección, el separador). Borrar la deshace. */
@@ -325,6 +329,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 vp.setLang(voiceLang)
                 if (listening) { recognizer?.cancel(); startVoice() }
             }
+            override fun onReportTap() {
+                when {
+                    !reportMode -> {
+                        reportMode = true
+                        reportBuf.setLength(0)
+                        vp.setReport(true, false)
+                        vp.setPartial("")
+                        if (!listening) startVoice()
+                        vp.setStatus(L.t("Habla con tus palabras. Al terminar toca «Crear reporte».", "Speak in your own words. When done tap «Create report»."))
+                    }
+                    reportBuf.isBlank() -> { reportMode = false; vp.setReport(false, false) }
+                    else -> finishReport()
+                }
+            }
         }
         vp.visibility = View.GONE
         box.addView(vp, FrameLayout.LayoutParams(-1, -1))
@@ -374,7 +392,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 when (tool) {
                     KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_VOICE,
                     KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN, KeyboardView.TOOL_PHRASES,
-                    KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF -> onToolbar(tool)
+                    KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT -> onToolbar(tool)
                     else -> { showMode(0); onToolbar(tool) }
                 }
             }
@@ -525,9 +543,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (shot != null || shotAsk) checkScreenshot()
             kv?.invalidate()
         }
+        // Todo va dentro de un marco: normal abajo, o como ventanita flotante
+        val handle = makeFloatHandle()
+        handle.visibility = View.GONE
+        root.addView(handle, 0, LinearLayout.LayoutParams(-1, -2))
+        floatHandle = handle
+        val frame = FrameLayout(this)
+        frame.addView(root, FrameLayout.LayoutParams(-1, -2, android.view.Gravity.BOTTOM))
+        frame.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> if (floating) clampFloat(false) }
+        floatFrame = frame
+        floatRoot = root
         applySettings()
         rebuild()
-        return root
+        return frame
     }
 
     /** Cambia entre teclas, emojis y portapapeles (los paneles usan la misma altura del teclado). */
@@ -555,8 +583,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 voiceLang = lang
                 vp.setLang(voiceLang)
                 vp.setPartial("")
+                reportMode = false
+                reportBuf.setLength(0)
+                vp.setReport(false, false)
                 startVoice()
             } else if (listening || recognizer != null) {
+                reportMode = false
                 listening = false
                 recognizer?.cancel()
                 vp.setListening(false)
@@ -859,16 +891,41 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
         override fun onPartialResults(partialResults: android.os.Bundle?) {
             val t = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-            if (!t.isNullOrBlank()) voicePanel?.setPartial(t)
+            if (!t.isNullOrBlank()) voicePanel?.setPartial(if (reportMode) (reportBuf.toString() + " " + t).trim() else t)
         }
 
         override fun onResults(results: android.os.Bundle?) {
             val t = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-            if (!t.isNullOrBlank()) commitVoice(t)
-            voicePanel?.setPartial("")
+            if (reportMode) {
+                // Modo reporte: se junta todo lo que dices y al final la IA lo escribe formal
+                if (!t.isNullOrBlank()) reportBuf.append(' ').append(t.trim())
+                voicePanel?.setPartial(reportBuf.toString().trim())
+                voicePanel?.setReport(true, reportBuf.isNotBlank())
+            } else {
+                if (!t.isNullOrBlank()) commitVoice(t)
+                voicePanel?.setPartial("")
+            }
             // Sigue escuchando hasta que toques el micrófono o salgas
             if (listening && mode == 3) handler.post { if (listening && mode == 3) startVoice() }
         }
+    }
+
+    private var reportMode = false
+    private val reportBuf = StringBuilder()
+
+    /** Terminaste de dictar el reporte: la IA lo convierte en ticket formal. */
+    private fun finishReport() {
+        val notes = reportBuf.toString().trim()
+        reportMode = false
+        reportBuf.setLength(0)
+        listening = false
+        recognizer?.cancel()
+        showMode(0)
+        if (notes.isEmpty()) return
+        aiSource = notes
+        aiBase = -1
+        aiLen = -1
+        runTicket(lang)
     }
 
     /** Escribe lo dictado con signos, espacio y mayúscula donde corresponde. */
@@ -1276,6 +1333,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         applySettings()
+        // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
+        if (prefs.getBoolean(Prefs.FLOAT, false)) handler.post { applyFloat() }
 
         val type = info.inputType
         val cls = type and InputType.TYPE_MASK_CLASS
@@ -1369,6 +1428,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private val quietPrefs = setOf(
         Prefs.CLIP_LAST_SIG, Prefs.QUICK_DONE, Prefs.SHOT_USED, Prefs.SHOT_ASKS, Prefs.LANG, Prefs.TR_SRC,
         Prefs.BAR_TOOLS, Prefs.MORE_TOOLS, Prefs.BAR_TOOLS2, Prefs.MORE_TOOLS2, Prefs.SIZE, Prefs.LAST_FIELD,
+        Prefs.FLOAT_X, Prefs.FLOAT_Y,
     )
     private val applyLive = Runnable {
         if (kv == null) return@Runnable
@@ -1457,6 +1517,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         gifPanel?.applyPalette(pal)
         infoBar?.applyPalette(pal)
         searchBar?.applyPalette(pal)
+        if (floatFrame != null && prefs.getBoolean(Prefs.FLOAT, false) != floating) applyFloat()
+        else if (floating) floatRoot?.background?.let { (it as? android.graphics.drawable.GradientDrawable)?.setColor(pal.bg) }
         v.oneHand = when (prefs.getString(Prefs.ONE_HAND, "off")) { "left" -> 1; "right" -> 2; else -> 0 }
         val (barTools, moreTools) = Tools.load(this, prefs)
         v.setBarTools(barTools, moreTools)
@@ -1584,6 +1646,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         slotWords.fill(null)
         slotTyped = -1
         emojiSlot = -1
+        formalSlot = -1
         kv?.clearSuggestions()
     }
 
@@ -1618,6 +1681,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun showSlots(left: String?, center: String?, right: String?, bold: Boolean, typedLeft: Boolean) {
         emojiSlot = -1
+        formalSlot = -1
         slotsBold = bold
         vaultActive = false
         codeActive = false
@@ -1637,7 +1701,45 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun updateSuggestions() {
         updateWordSuggestions()
+        addFormalSuggestion()
         addEmojiSuggestion()
+    }
+
+    /** Si escribiste algo informal ("arreglé", "ya sirve"), sugiere la forma formal con ✨. */
+    private fun addFormalSuggestion() {
+        formalSlot = -1
+        if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || page == Page.NUM) return
+        if (!suggestOn || !fieldSuggest || !prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)) return
+        val ic = target() ?: return
+        val before = ic.getTextBeforeCursor(80, 0) ?: return
+        val m = FormalWords.match(before) ?: return
+        val slot = when {
+            slotWords.all { it == null } -> 1
+            slotTyped != 0 -> 0
+            else -> 2
+        }
+        slotWords[slot] = "✨ " + m.replacement.trim()
+        if (slotTyped == slot) slotTyped = -1
+        formalSlot = slot
+        formalMatch = m
+        kv?.setSuggestions(slotWords[0], slotWords[1], slotWords[2], slotsBold && slot != 1, slotTyped == 0)
+    }
+
+    private fun useFormalSuggestion() {
+        val m = formalMatch ?: return
+        val ic = target() ?: return
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(m.deleteLen, 0)
+        ic.commitText(if (m.replacement.endsWith(" ")) m.replacement else m.replacement + " ", 1)
+        ic.endBatchEdit()
+        gestureWord = null
+        phantomSpace = false
+        lastCorrection = null
+        autoSpace = true
+        lastWasSpace = true
+        clearSlots()
+        updateAutoCaps()
+        scheduleUpdate()
     }
 
     /** Pone en la barra un emoji que va con lo que escribes (casa → 🏠, jaja → 😂). */
@@ -1654,9 +1756,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val emoji = EmojiSearch.suggest(before) ?: return
         val slot = when {
             slotWords.all { it == null } -> 1
-            slotWords[2] == null -> 2
-            slotTyped == 2 -> 0
-            else -> 2
+            else -> listOf(2, 0).firstOrNull { it != formalSlot && it != slotTyped } ?: return
         }
         slotWords[slot] = emoji
         if (slotTyped == slot) slotTyped = -1
@@ -1741,6 +1841,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onSuggestion(slot: Int) {
         if (codeActive) { useCodeSnippet(slot); return }
+        if (slot == formalSlot && !vaultActive) { useFormalSuggestion(); return }
         if (slot == emojiSlot && !vaultActive) {
             slotWords.getOrNull(slot)?.let { useEmojiSuggestion(it) }
             return
@@ -2066,6 +2167,22 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_CALC -> showMode(8)
             KeyboardView.TOOL_GIF -> showMode(9)
             KeyboardView.TOOL_READ -> readMessage()
+            KeyboardView.TOOL_TICKET -> startTicket()
+            KeyboardView.TOOL_REVIEW -> startReview()
+            KeyboardView.TOOL_FORMAL -> startFormalWord()
+            KeyboardView.TOOL_REPORT -> {
+                showMode(3)
+                voicePanel?.let { vp ->
+                    reportMode = true
+                    reportBuf.setLength(0)
+                    vp.setReport(true, false)
+                    vp.setStatus(L.t("Habla con tus palabras. Al terminar toca «Crear reporte».", "Speak in your own words. When done tap «Create report»."))
+                }
+            }
+            KeyboardView.TOOL_FLOAT -> {
+                prefs.edit().putBoolean(Prefs.FLOAT, !prefs.getBoolean(Prefs.FLOAT, false)).apply()
+                applyFloat()
+            }
             KeyboardView.TOOL_ONEHAND -> {
                 // Un toque: a la derecha (para el pulgar derecho); otro toque: normal
                 val now = kv?.oneHand ?: 0
@@ -2608,6 +2725,371 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 }
             }, fail)
         }, fail)
+    }
+
+    // ---------------------------------------------------------------- IA para el trabajo
+
+    /** El texto con el que trabaja la IA y dónde está (-1 = no reemplaza, solo escribe). */
+    private var aiSource = ""
+    private var aiBase = -1
+    private var aiLen = -1
+    private var aiSeq = 0
+
+    private fun aiKey(title: String): String? {
+        val k = prefs.getString(Prefs.GEMINI_KEY, "")?.trim() ?: ""
+        if (k.isNotEmpty()) return k
+        infoBar?.show(title, L.t(
+            "Esto usa Google Gemini y necesita tu clave gratis. Ponla en Ajustes → «IA para escribir».",
+            "This uses Google Gemini and needs your free key. Add it in Settings → «AI writing»."),
+            listOf(L.t("Poner mi clave", "Add my key") to {
+                closeInfo()
+                try {
+                    startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_SHOW_AI, true)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                } catch (_: Exception) { }
+            }, L.t("Cerrar", "Close") to { closeInfo() }))
+        return null
+    }
+
+    /** Lo seleccionado o, si no hay selección, todo el texto de la caja (texto, inicio, largo). */
+    private fun grabField(): Triple<String, Int, Int>? {
+        val ic = currentInputConnection ?: return null
+        val selected = if (selStart != selEnd) try { ic.getSelectedText(0)?.toString() } catch (_: Exception) { null } else null
+        if (!selected.isNullOrBlank()) return Triple(selected, minOf(selStart, selEnd), selected.length)
+        val et = try {
+            ic.getExtractedText(ExtractedTextRequest().apply { hintMaxChars = 20000; hintMaxLines = 500 }, 0)
+        } catch (_: Exception) { null }
+        if (et?.text != null) return Triple(et.text.toString(), maxOf(0, et.startOffset), et.text.length)
+        val before = ic.getTextBeforeCursor(5000, 0)?.toString() ?: ""
+        val after = ic.getTextAfterCursor(5000, 0)?.toString() ?: ""
+        return Triple(before + after, maxOf(0, minOf(selStart, selEnd) - before.length), before.length + after.length)
+    }
+
+    /** Pone [text] en lugar del texto original (o lo escribe donde está el cursor). */
+    private fun aiPut(text: String) {
+        val ic = currentInputConnection ?: return
+        ic.beginBatchEdit()
+        if (aiBase >= 0 && aiLen >= 0) ic.setSelection(aiBase, aiBase + aiLen)
+        ic.commitText(text, 1)
+        ic.endBatchEdit()
+        aiBase = -1
+        aiLen = -1
+        lastCorrection = null
+        closeInfo()
+    }
+
+    private fun aiCopy(text: String) {
+        try { clipboard?.setPrimaryClip(ClipData.newPlainText("Best Keyboard", text)) } catch (_: Exception) { }
+        Toast.makeText(this, L.t("Copiado", "Copied"), Toast.LENGTH_SHORT).show()
+    }
+
+    private fun langName(l: String) = if (l == "en") "English" else "Spanish"
+
+    /** Notas → Ticket: lo que escribiste rápido se vuelve un reporte formal y detallado. */
+    private fun startTicket() {
+        if (isPassword) return
+        showMode(0)
+        val f = grabField()
+        if (f == null || f.first.isBlank()) {
+            infoBar?.show(L.t("Notas → Ticket", "Notes → Ticket"), L.t(
+                "Escribe tus notas rápido y con tus palabras (por ejemplo: «cambie maglock puerta 3 rumc ya sirve») y vuelve a tocar este botón.",
+                "Type your notes quickly in your own words (e.g. «swapped maglock door 3 works now») and tap this button again."),
+                listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        aiSource = f.first
+        aiBase = f.second
+        aiLen = f.third
+        runTicket(lang)
+    }
+
+    private fun runTicket(outLang: String) {
+        val title = if (outLang == "en") L.t("Ticket en inglés", "Ticket in English") else L.t("Ticket en español", "Ticket in Spanish")
+        val key = aiKey(title) ?: return
+        val bar = infoBar ?: return
+        val my = ++aiSeq
+        bar.show(title, L.t("Escribiendo el ticket…", "Writing the ticket…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+        val prompt = "You help a low-voltage field technician (access control, card readers, maglocks, door automation, " +
+            "IP cameras, NVR, fiber optics, Cat 6 cabling) write work tickets for coworkers and supervisors.\n" +
+            "Turn the rough notes below into a clear, professional and detailed work ticket written in ${langName(outLang)}.\n" +
+            "Rules:\n- Keep every fact (sites, door numbers, rooms, times, names, part names). Do not invent facts.\n" +
+            "- Expand abbreviations and fix spelling.\n- First person, past tense, short clear sentences, in a logical order " +
+            "(arrival, work done, tests, result, pending items).\n- Plain text only. No markdown, no asterisks, no title.\n" +
+            "- Answer with the ticket text only.\n\nNotes:\n" + aiSource
+        CloudText.ask(prompt, key) { list, err ->
+            if (my != aiSeq) return@ask
+            val out = list?.firstOrNull()?.replace("**", "")?.trim()
+            if (out.isNullOrEmpty()) {
+                bar.show(title, err ?: L.t("No se pudo crear el ticket.", "Couldn't create the ticket."),
+                    listOf(L.t("Reintentar", "Retry") to { runTicket(outLang) }, L.t("Cerrar", "Close") to { closeInfo() }))
+                return@ask
+            }
+            val other = if (outLang == "en") "es" else "en"
+            bar.show(title, out, listOf(
+                (if (aiLen >= 0) L.t("Reemplazar", "Replace") else L.t("Escribir", "Type it")) to { aiPut(out) },
+                (if (other == "en") "In English" else "En español") to { runTicket(other) },
+                L.t("Copiar", "Copy") to { aiCopy(out) },
+                L.t("Cerrar", "Close") to { closeInfo() },
+            ))
+        }
+    }
+
+    /** Revisar antes de enviar: ortografía, claridad y tono profesional. */
+    private fun startReview() {
+        if (isPassword) return
+        showMode(0)
+        val title = L.t("Revisar antes de enviar", "Review before sending")
+        val f = grabField()
+        if (f == null || f.first.isBlank()) {
+            infoBar?.show(title, L.t("Escribe tu mensaje y toca este botón antes de enviarlo.", "Type your message and tap this button before sending it."),
+                listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        val key = aiKey(title) ?: return
+        val bar = infoBar ?: return
+        aiSource = f.first
+        aiBase = f.second
+        aiLen = f.third
+        val my = ++aiSeq
+        bar.show(title, L.t("Revisando…", "Reviewing…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+        val notesLang = if (L.english) "English" else "Spanish"
+        val prompt = "Review this message before it is sent. Correct spelling, grammar and punctuation and make it clear and " +
+            "professional, but keep the same language, meaning, tone and a similar length. Do not add new information.\n" +
+            "Answer exactly in this format:\nTEXT:\n<the improved message>\nNOTES:\n<at most 3 very short notes in $notesLang " +
+            "about what you changed, one per line, starting with - >\n\nMessage:\n" + aiSource
+        CloudText.ask(prompt, key) { list, err ->
+            if (my != aiSeq) return@ask
+            val raw = list?.firstOrNull()?.replace("**", "")?.trim()
+            if (raw.isNullOrEmpty()) {
+                bar.show(title, err ?: L.t("No se pudo revisar.", "Couldn't review."),
+                    listOf(L.t("Reintentar", "Retry") to { startReview() }, L.t("Cerrar", "Close") to { closeInfo() }))
+                return@ask
+            }
+            val ti = raw.indexOf("TEXT:")
+            val ni = raw.indexOf("NOTES:")
+            val fixed = when {
+                ti >= 0 && ni > ti -> raw.substring(ti + 5, ni).trim()
+                ti >= 0 -> raw.substring(ti + 5).trim()
+                else -> raw
+            }
+            val notes = if (ni >= 0) raw.substring(ni + 6).trim() else ""
+            val same = fixed.trim() == aiSource.trim()
+            val body = if (same) L.t("✅ Tu mensaje está bien. Puedes enviarlo.", "✅ Your message looks good. You can send it.")
+                else fixed + (if (notes.isNotEmpty()) "\n\n💡 " + notes.replace("\n", "\n💡 ").replace("💡 - ", "💡 ") else "")
+            val buttons = ArrayList<Pair<String, () -> Unit>>()
+            if (!same) {
+                buttons.add(L.t("Usar este", "Use this") to { aiPut(fixed) })
+                buttons.add(L.t("Copiar", "Copy") to { aiCopy(fixed) })
+            }
+            buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+            bar.show(title, body, buttons)
+        }
+    }
+
+    /** Más formal (palabra): opciones más profesionales para lo seleccionado o la palabra donde está el cursor. */
+    private fun startFormalWord() {
+        if (isPassword) return
+        showMode(0)
+        val ic = currentInputConnection ?: return
+        val title = L.t("Palabras más formales", "More formal words")
+        var word: String? = if (selStart != selEnd) try { ic.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null } else null
+        var base = minOf(selStart, selEnd)
+        var len = word?.length ?: 0
+        if (word.isNullOrEmpty()) {
+            // La palabra donde está el cursor (o la última que escribiste)
+            val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
+            val after = ic.getTextAfterCursor(40, 0)?.toString() ?: ""
+            var b = before.length
+            while (b > 0 && before[b - 1] == ' ') b--
+            var a = b
+            while (a > 0 && TextUtil.isWordChar(before[a - 1])) a--
+            var e = 0
+            if (b == before.length) while (e < after.length && TextUtil.isWordChar(after[e])) e++
+            word = before.substring(a, b) + after.substring(0, e)
+            base = selStart - (before.length - a)
+            len = word.length
+        }
+        if (word.isNullOrBlank()) {
+            infoBar?.show(title, L.t("Selecciona una palabra o frase (o deja el cursor en ella) y toca este botón.",
+                "Select a word or phrase (or put the cursor on it) and tap this button."), listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        val key = aiKey(title) ?: return
+        val bar = infoBar ?: return
+        val ctx = (ic.getTextBeforeCursor(160, 0)?.toString() ?: "") + (ic.getTextAfterCursor(80, 0)?.toString() ?: "")
+        val my = ++aiSeq
+        val target = word
+        bar.show(title, L.t("Buscando opciones para «$target»…", "Finding options for «$target»…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+        val prompt = "Give 5 more formal and professional ways to say \"$target\", in the same language as that text. " +
+            "Context where it is used: \"$ctx\". Each option must fit in the same place of the sentence (same grammatical form). " +
+            "One option per line. No numbering, no quotes, no explanations."
+        CloudText.ask(prompt, key) { list, err ->
+            if (my != aiSeq) return@ask
+            val opts = list?.firstOrNull()?.lines()?.map { it.trim().trimStart('-', '•', '*', ' ').replace(Regex("^\\d+[.)]\\s*"), "").trim('"', ' ') }
+                ?.filter { it.isNotEmpty() && it.length < 80 }?.distinct()?.take(6) ?: emptyList()
+            if (opts.isEmpty()) {
+                bar.show(title, err ?: L.t("No encontré opciones.", "No options found."), listOf(L.t("Cerrar", "Close") to { closeInfo() }))
+                return@ask
+            }
+            val buttons = ArrayList<Pair<String, () -> Unit>>()
+            for (o in opts) buttons.add(o to {
+                val c = currentInputConnection
+                if (c != null) {
+                    c.beginBatchEdit()
+                    c.setSelection(base, base + len)
+                    c.commitText(o, 1)
+                    c.endBatchEdit()
+                }
+                lastCorrection = null
+                closeInfo()
+            })
+            buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+            bar.show(title, L.t("Toca una opción para cambiar «$target»:", "Tap an option to replace «$target»:"), buttons)
+        }
+    }
+
+    // ---------------------------------------------------------------- Teclado flotante
+
+    private var floating = false
+    private var floatFrame: FrameLayout? = null
+    private var floatRoot: LinearLayout? = null
+    private var floatHandle: View? = null
+
+    private fun setHeight(v: View?, h: Int, bottom: Boolean = true) {
+        val lp = v?.layoutParams ?: return
+        lp.height = h
+        if (bottom) when (lp) {
+            is LinearLayout.LayoutParams -> lp.gravity = android.view.Gravity.BOTTOM
+            is FrameLayout.LayoutParams -> lp.gravity = android.view.Gravity.BOTTOM
+        }
+        v.layoutParams = lp
+    }
+
+    /** Prende o apaga el teclado flotante (una ventanita que puedes mover). */
+    private fun applyFloat() {
+        val on = prefs.getBoolean(Prefs.FLOAT, false)
+        floating = on
+        kv?.floatOn = on
+        val frame = floatFrame ?: return
+        val root = floatRoot ?: return
+        val w = window?.window ?: return
+        val h = if (on) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
+        try {
+            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, h)
+            setHeight(w.findViewById(android.R.id.inputArea), h)
+            setHeight(frame, h)
+        } catch (_: Exception) { }
+        floatHandle?.visibility = if (on) View.VISIBLE else View.GONE
+        val dm = resources.displayMetrics
+        if (on) {
+            val kw = (minOf(dm.widthPixels, dm.heightPixels) * 0.9f).toInt().coerceAtMost(dm.widthPixels)
+            val lp = FrameLayout.LayoutParams(kw, ViewGroup.LayoutParams.WRAP_CONTENT, android.view.Gravity.TOP or android.view.Gravity.START)
+            lp.leftMargin = prefs.getInt(Prefs.FLOAT_X, (dm.widthPixels - kw) / 2)
+            lp.topMargin = prefs.getInt(Prefs.FLOAT_Y, -1)
+            root.layoutParams = lp
+            val bg = android.graphics.drawable.GradientDrawable()
+            bg.setColor(kv?.palette?.bg ?: 0xFF000000.toInt())
+            bg.cornerRadius = 18f * dm.density
+            root.background = bg
+            root.clipToOutline = true
+            root.elevation = 10f * dm.density
+            frame.setBackgroundColor(0)
+        } else {
+            root.layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, android.view.Gravity.BOTTOM)
+            root.background = null
+            root.clipToOutline = false
+            root.elevation = 0f
+        }
+        frame.requestLayout()
+    }
+
+    /** Que la ventanita no se salga de la pantalla. */
+    private fun clampFloat(save: Boolean) {
+        if (!floating) return
+        val frame = floatFrame ?: return
+        val root = floatRoot ?: return
+        val lp = root.layoutParams as? FrameLayout.LayoutParams ?: return
+        if (frame.height == 0 || root.height == 0) return
+        val margin = (12 * resources.displayMetrics.density).toInt()
+        var y = lp.topMargin
+        if (y < 0) y = frame.height - root.height - margin * 3
+        val nx = lp.leftMargin.coerceIn(0, maxOf(0, frame.width - root.width))
+        val ny = y.coerceIn(0, maxOf(0, frame.height - root.height))
+        if (nx != lp.leftMargin || ny != lp.topMargin) {
+            lp.leftMargin = nx
+            lp.topMargin = ny
+            root.layoutParams = lp
+        }
+        if (save) prefs.edit().putInt(Prefs.FLOAT_X, nx).putInt(Prefs.FLOAT_Y, ny).apply()
+    }
+
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun makeFloatHandle(): View {
+        val dm = resources.displayMetrics
+        fun dp(v: Float) = (v * dm.density).toInt()
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = android.view.Gravity.CENTER_VERTICAL
+        val dock = IconView(this, Icons.FLOAT, 6f)
+        dock.setOnClickListener {
+            onKeyFeedback()
+            prefs.edit().putBoolean(Prefs.FLOAT, false).apply()
+            applyFloat()
+        }
+        row.addView(dock, LinearLayout.LayoutParams(dp(44f), dp(28f)))
+        val grip = object : View(this) {
+            val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+            override fun onDraw(c: android.graphics.Canvas) {
+                paint.color = kv?.palette?.hint ?: 0xFF888888.toInt()
+                val w = dp(44f).toFloat()
+                val hh = dp(5f).toFloat()
+                c.drawRoundRect(width / 2f - w / 2, height / 2f - hh / 2, width / 2f + w / 2, height / 2f + hh / 2, hh, hh, paint)
+            }
+        }
+        row.addView(grip, LinearLayout.LayoutParams(0, dp(28f), 1f))
+        row.addView(View(this), LinearLayout.LayoutParams(dp(44f), dp(28f)))
+        var downX = 0f
+        var downY = 0f
+        var startL = 0
+        var startT = 0
+        val drag = View.OnTouchListener { _, e ->
+            val root = floatRoot ?: return@OnTouchListener false
+            val lp = root.layoutParams as? FrameLayout.LayoutParams ?: return@OnTouchListener false
+            when (e.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    downX = e.rawX; downY = e.rawY
+                    startL = lp.leftMargin; startT = lp.topMargin
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    lp.leftMargin = startL + (e.rawX - downX).toInt()
+                    lp.topMargin = startT + (e.rawY - downY).toInt()
+                    root.layoutParams = lp
+                    clampFloat(false)
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> clampFloat(true)
+            }
+            true
+        }
+        grip.setOnTouchListener(drag)
+        dock.color = kv?.palette?.text ?: 0xFFFFFFFF.toInt()
+        return row
+    }
+
+    override fun onComputeInsets(outInsets: InputMethodService.Insets) {
+        super.onComputeInsets(outInsets)
+        if (!floating) return
+        val frame = floatFrame ?: return
+        val root = floatRoot ?: return
+        if (!frame.isShown || frame.height == 0) return
+        val loc = IntArray(2)
+        frame.getLocationInWindow(loc)
+        val bottom = loc[1] + frame.height
+        // La app de atrás usa toda la pantalla; solo la ventanita recibe toques
+        outInsets.contentTopInsets = bottom
+        outInsets.visibleTopInsets = bottom
+        outInsets.touchableInsets = InputMethodService.Insets.TOUCHABLE_INSETS_REGION
+        root.getLocationInWindow(loc)
+        outInsets.touchableRegion.set(loc[0], loc[1], loc[0] + root.width, loc[1] + root.height)
     }
 
     // ---------------------------------------------------------------- Buscar emojis y GIFs

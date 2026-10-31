@@ -19,6 +19,8 @@ class VoicePanel(context: Context) : FrameLayout(context) {
     interface Actions {
         fun onMicTap()
         fun onVoiceLangTap()
+        /** Botón "Reporte": prende el modo reporte o, si ya hablaste, crea el reporte. */
+        fun onReportTap()
     }
 
     var listener: PanelListener? = null
@@ -32,6 +34,9 @@ class VoicePanel(context: Context) : FrameLayout(context) {
     private val langBtn: TextView
     private val abc: TextView
     private val del: TextView
+    private val reportBtn = TextView(context)
+    private var reportOn = false
+    private var reportReady = false
 
     init {
         val body = LinearLayout(context)
@@ -40,7 +45,7 @@ class VoicePanel(context: Context) : FrameLayout(context) {
 
         partial.textSize = 17f
         partial.gravity = Gravity.CENTER
-        partial.maxLines = 3
+        partial.maxLines = 4
         partial.ellipsize = TextUtils.TruncateAt.START
         partial.setPadding(d(20f), d(12f), d(20f), 0)
         body.addView(partial, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -52,6 +57,13 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         status.gravity = Gravity.CENTER
         status.setPadding(d(16f), d(6f), d(16f), d(6f))
         body.addView(status, LinearLayout.LayoutParams(-1, -2))
+
+        // Modo reporte: hablas con tus palabras y la IA lo escribe como ticket formal
+        reportBtn.textSize = 14f
+        reportBtn.gravity = Gravity.CENTER
+        reportBtn.setPadding(d(16f), 0, d(16f), 0)
+        reportBtn.setOnClickListener { listener?.onPanelFeedback(); actions?.onReportTap() }
+        body.addView(reportBtn, LinearLayout.LayoutParams(-2, d(36f)).apply { bottomMargin = d(6f) })
 
         val bar = LinearLayout(context)
         bar.orientation = LinearLayout.HORIZONTAL
@@ -70,12 +82,37 @@ class VoicePanel(context: Context) : FrameLayout(context) {
 
         addView(body, LayoutParams(-1, -1))
         applyPalette(palette)
+        setReport(false, false)
     }
 
     fun setListening(on: Boolean) { mic.listening = on }
     fun setLevel(rmsDb: Float) { mic.level = ((rmsDb + 2f) / 12f).coerceIn(0f, 1f) }
     fun setStatus(text: String) { status.text = text }
     fun setPartial(text: String) { partial.text = text }
+    /** [on] = modo reporte prendido; [ready] = ya hay algo dictado para convertir. */
+    fun setReport(on: Boolean, ready: Boolean) {
+        reportOn = on
+        reportReady = ready
+        reportBtn.text = when {
+            on && ready -> L.t("✓ Crear reporte", "✓ Create report")
+            on -> L.t("📋 Modo reporte: ON", "📋 Report mode: ON")
+            else -> L.t("📋 Dictar reporte", "📋 Dictate report")
+        }
+        paintReport()
+    }
+
+    private fun paintReport() {
+        val p = palette
+        val r = d(18f).toFloat()
+        if (reportOn) {
+            reportBtn.setTextColor(p.onAccent)
+            reportBtn.background = PanelUi.pressable(p.accent, p.accentPressed, r)
+        } else {
+            reportBtn.setTextColor(p.text)
+            reportBtn.background = PanelUi.pressable(p.key, p.keyPressed, r)
+        }
+    }
+
     fun setLang(lang: String) { langBtn.text = if (lang == "es") "🎤 Español" else "🎤 English" }
 
     fun applyPalette(p: Palette) {
@@ -88,6 +125,7 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         for (b in listOf(abc, del)) { b.setTextColor(p.text); b.background = PanelUi.pressable(p.special, p.keyPressed, r) }
         langBtn.setTextColor(p.text)
         langBtn.background = PanelUi.pressable(p.key, p.keyPressed, r)
+        paintReport()
     }
 
     /** El círculo del micrófono: crece con tu voz mientras escucha. */
