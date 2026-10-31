@@ -240,7 +240,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
                 if (seen.add(v1)) edits(v1) { v2, p2 ->
                     for (d in dicts) {
                         val i = d.bestForFold(v2)
-                        if (i < 0 || d.logFreq[i] < MIN_EDIT_LF + 0.7f) continue
+                        if (i < 0 || d.logFreq[i] < LN150) continue
                         val key = d.words[i].lowercase()
                         top.offer(key, d.words[i], d.logFreq[i] + langBonus(d, lang) + p1 + p2 + userBonus(key))
                     }
@@ -411,6 +411,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         private const val ALPHABET = "abcdefghijklmnopqrstuvwxyz"
         private val MIN_ACCENT_LF = ln(30f)
         private val MIN_EDIT_LF = ln(300f)
+        private val LN150 = ln(150f)
     }
 }
 
