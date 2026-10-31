@@ -156,6 +156,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var phrasePanel: PhrasePanel? = null
     private var calcPanel: CalcPanel? = null
     private var gifPanel: GifPanel? = null
+    private var notebookPanel: ListPanel? = null
+    private var ticketsPanel: ListPanel? = null
     /** Barra arriba del teclado con el mensaje traducido. */
     private var infoBar: InfoBar? = null
     private var readTrans: Translation? = null
@@ -271,6 +273,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs.get(this)
+        TicketReminder.schedule(this)
         @Suppress("DEPRECATION")
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         audio = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
@@ -392,7 +395,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 when (tool) {
                     KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_VOICE,
                     KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN, KeyboardView.TOOL_PHRASES,
-                    KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT -> onToolbar(tool)
+                    KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT, KeyboardView.TOOL_BARCODE,
+                    KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS -> onToolbar(tool)
                     else -> { showMode(0); onToolbar(tool) }
                 }
             }
@@ -456,6 +460,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         box.addView(gp, FrameLayout.LayoutParams(-1, -1))
         gifPanel = gp
+
+        // Libreta del día (10) y Mis tickets (11)
+        val nb = ListPanel(this)
+        nb.visibility = View.GONE
+        nb.onBack = { showMode(0) }
+        nb.onFeedback = { onKeyFeedback() }
+        box.addView(nb, FrameLayout.LayoutParams(-1, -1))
+        notebookPanel = nb
+        val tk = ListPanel(this)
+        tk.visibility = View.GONE
+        tk.onBack = { showMode(0) }
+        tk.onFeedback = { onKeyFeedback() }
+        box.addView(tk, FrameLayout.LayoutParams(-1, -1))
+        ticketsPanel = tk
         scanPanel = sp
         panelBox = box
 
@@ -509,14 +527,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         srch.visibility = View.GONE
         srch.actions = object : SearchBar.Actions {
             override fun onSearchText(text: String) {
-                if (!srch.gifs) srch.showResults(EmojiSearch.search(text))
+                if (!srch.gifs && !srch.note) srch.showResults(EmojiSearch.search(text))
                 updateAutoCaps()
                 scheduleUpdate()
             }
             override fun onSearchClose() {
                 val gif = srch.gifs
+                val note = srch.note
                 stopSearch()
-                showMode(if (gif) 9 else 1)
+                showMode(if (note) 10 else if (gif) 9 else 1)
             }
             override fun onSearchPick(emoji: String) {
                 currentInputConnection?.commitText(emoji, 1)
@@ -625,6 +644,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             gp.visibility = if (m == 9) View.VISIBLE else View.GONE
             if (m == 9) { gp.open(pendingGifQuery); pendingGifQuery = null } else if (was) gp.close()
         }
+        notebookPanel?.let { it.visibility = if (m == 10) View.VISIBLE else View.GONE; if (m == 10) refreshNotebook() }
+        ticketsPanel?.let { it.visibility = if (m == 11) View.VISIBLE else View.GONE; if (m == 11) refreshTickets() }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
 
@@ -925,7 +946,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         aiSource = notes
         aiBase = -1
         aiLen = -1
-        runTicket(lang)
+        runTicket(ticketLang())
     }
 
     /** Escribe lo dictado con signos, espacio y mayúscula donde corresponde. */
@@ -1335,6 +1356,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         applySettings()
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
         if (prefs.getBoolean(Prefs.FLOAT, false)) handler.post { applyFloat() }
+        if (!isPassword) maybeShowWord()
 
         val type = info.inputType
         val cls = type and InputType.TYPE_MASK_CLASS
@@ -1426,6 +1448,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Ajustes que se guardan solos mientras escribes (no son cambios de personalización). */
     private val quietPrefs = setOf(
+        Prefs.NOTEBOOK, Prefs.TICKETS, Prefs.TICKET_NEXT, Prefs.WORD_SHOWN,
         Prefs.CLIP_LAST_SIG, Prefs.QUICK_DONE, Prefs.SHOT_USED, Prefs.SHOT_ASKS, Prefs.LANG, Prefs.TR_SRC,
         Prefs.BAR_TOOLS, Prefs.MORE_TOOLS, Prefs.BAR_TOOLS2, Prefs.MORE_TOOLS2, Prefs.SIZE, Prefs.LAST_FIELD,
         Prefs.FLOAT_X, Prefs.FLOAT_Y,
@@ -1515,6 +1538,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         phrasePanel?.applyPalette(pal)
         calcPanel?.applyPalette(pal)
         gifPanel?.applyPalette(pal)
+        notebookPanel?.applyPalette(pal)
+        ticketsPanel?.applyPalette(pal)
         infoBar?.applyPalette(pal)
         searchBar?.applyPalette(pal)
         if (floatFrame != null && prefs.getBoolean(Prefs.FLOAT, false) != floating) applyFloat()
@@ -1712,7 +1737,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (!suggestOn || !fieldSuggest || !prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)) return
         val ic = target() ?: return
         val before = ic.getTextBeforeCursor(80, 0) ?: return
-        val m = FormalWords.match(before) ?: return
+        val m = FormalWords.match(before)
+            ?: (if (prefs.getBoolean(Prefs.WORD_WEEK, true)) WeeklyWord.match(before) else null)
+            ?: return
         val slot = when {
             slotWords.all { it == null } -> 1
             slotTyped != 0 -> 0
@@ -2135,13 +2162,6 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_EDIT -> showMode(5)
             KeyboardView.TOOL_SHOT -> if (quick != null) useQuick() else useScreenshot()
             KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell()
-            KeyboardView.TOOL_SCAN -> {
-                if (hasPermission(android.Manifest.permission.CAMERA)) {
-                    showMode(4)
-                } else {
-                    Toast.makeText(this, L.t("Dale permiso a la cámara y vuelve a tocar el escáner.", "Allow the camera and tap the scanner again."), Toast.LENGTH_LONG).show()
-                    askPermission(MainActivity.EXTRA_ASK_CAMERA)
-                }
             }
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
             KeyboardView.TOOL_MORE -> showMode(6)
@@ -2168,6 +2188,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_GIF -> showMode(9)
             KeyboardView.TOOL_READ -> readMessage()
             KeyboardView.TOOL_TICKET -> startTicket()
+            KeyboardView.TOOL_BARCODE, KeyboardView.TOOL_SCAN -> {
+                scanPanel?.codeMode = action == KeyboardView.TOOL_BARCODE
+                if (hasPermission(android.Manifest.permission.CAMERA)) {
+                    showMode(4)
+                } else {
+                    Toast.makeText(this, L.t("Dale permiso a la cámara y vuelve a tocar el escáner.", "Allow the camera and tap the scanner again."), Toast.LENGTH_LONG).show()
+                    askPermission(MainActivity.EXTRA_ASK_CAMERA)
+                }
+            }
+            KeyboardView.TOOL_STAMP -> showStamp()
+            KeyboardView.TOOL_NOTEBOOK -> showMode(10)
+            KeyboardView.TOOL_TICKETS -> showMode(11)
+            KeyboardView.TOOL_WORD -> showWord()
             KeyboardView.TOOL_REVIEW -> startReview()
             KeyboardView.TOOL_FORMAL -> startFormalWord()
             KeyboardView.TOOL_REPORT -> {
@@ -2630,6 +2663,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         hConsume()
     }
 
+    override fun onToolsReordered(bar: List<Int>, more: List<Int>) {
+        Tools.save(prefs, bar, more)
+        morePanel?.setTools(bar, more, Tools.maxBar(this))
+    }
+
     override fun onOneHand(mode: Int) {
         prefs.edit().putString(Prefs.ONE_HAND, when (mode) { 1 -> "left"; 2 -> "right"; else -> "off" }).apply()
         kv?.oneHand = mode
@@ -2800,8 +2838,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         aiSource = f.first
         aiBase = f.second
         aiLen = f.third
-        runTicket(lang)
+        runTicket(ticketLang())
     }
+
+    /** Los tickets de DVSS van en inglés; si no usas ese formato, en el idioma del teclado. */
+    private fun ticketLang() = if (prefs.getBoolean(Prefs.TICKET_FORMAT, true)) "en" else lang
 
     private fun runTicket(outLang: String) {
         val title = if (outLang == "en") L.t("Ticket en inglés", "Ticket in English") else L.t("Ticket en español", "Ticket in Spanish")
@@ -2809,12 +2850,23 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bar = infoBar ?: return
         val my = ++aiSeq
         bar.show(title, L.t("Escribiendo el ticket…", "Writing the ticket…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+        val num = WorkStore.nextNumber(prefs)
+        val dvss = prefs.getBoolean(Prefs.TICKET_FORMAT, true)
+        val format = if (!dvss) "" else
+            "Use exactly this layout (field names in English even if the text is in another language):\n" +
+            "Ticket $num\nDate: ${WorkStore.ticketDate(System.currentTimeMillis())}\nLocation: ...\nArrival Time: ...\nDeparture Time: ...\n" +
+            "Job Description:\n...\nEquipment List:\n- ...\n" +
+            "If the notes say it is a service call, add \"(Service Call)\" after the ticket number and replace Job Description with " +
+            "these sections: Issue Reported, Issue Found, Action Taken, Next Steps.\n" +
+            "Equipment List: ONLY the materials and parts mentioned in the notes; never add anything. If none, write \"None\".\n" +
+            "If a field is not in the notes, write \"—\" after it.\n"
         val prompt = "You help a low-voltage field technician (access control, card readers, maglocks, door automation, " +
             "IP cameras, NVR, fiber optics, Cat 6 cabling) write work tickets for coworkers and supervisors.\n" +
-            "Turn the rough notes below into a clear, professional and detailed work ticket written in ${langName(outLang)}.\n" +
+            "Turn the rough notes below into a clear, professional and detailed work ticket written in " +
+            (if (dvss && outLang == "en") "professional technical English" else langName(outLang)) + ".\n" + format +
             "Rules:\n- Keep every fact (sites, door numbers, rooms, times, names, part names). Do not invent facts.\n" +
             "- Expand abbreviations and fix spelling.\n- First person, past tense, short clear sentences, in a logical order " +
-            "(arrival, work done, tests, result, pending items).\n- Plain text only. No markdown, no asterisks, no title.\n" +
+            "(arrival, work done, tests, result, pending items).\n- Plain text only. No markdown, no asterisks.\n" +
             "- Answer with the ticket text only.\n\nNotes:\n" + aiSource
         CloudText.ask(prompt, key) { list, err ->
             if (my != aiSeq) return@ask
@@ -2825,10 +2877,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 return@ask
             }
             val other = if (outLang == "en") "es" else "en"
+            // Al usarlo (reemplazar, escribir o copiar) se guarda en "Mis tickets" con su número
+            val keep = { WorkStore.addTicket(prefs, num, out) }
             bar.show(title, out, listOf(
-                (if (aiLen >= 0) L.t("Reemplazar", "Replace") else L.t("Escribir", "Type it")) to { aiPut(out) },
+                (if (aiLen >= 0) L.t("Reemplazar", "Replace") else L.t("Escribir", "Type it")) to { keep(); aiPut(out) },
                 (if (other == "en") "In English" else "En español") to { runTicket(other) },
-                L.t("Copiar", "Copy") to { aiCopy(out) },
+                L.t("Copiar", "Copy") to { keep(); aiCopy(out) },
                 L.t("Cerrar", "Close") to { closeInfo() },
             ))
         }
@@ -2946,6 +3000,142 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
             bar.show(title, L.t("Toca una opción para cambiar «$target»:", "Tap an option to replace «$target»:"), buttons)
         }
+    }
+
+    // ---------------------------------------------------------------- Libreta del día y Mis tickets
+
+    private fun refreshNotebook() {
+        val panel = notebookPanel ?: return
+        val notes = WorkStore.notes(prefs)
+        val rows = notes.map { n ->
+            ListPanel.Row(WorkStore.time(n.time), n.text,
+                onTap = { insertText(n.text) },
+                onDelete = { WorkStore.removeNote(prefs, n.time); refreshNotebook() })
+        }
+        val buttons = ArrayList<Pair<String, () -> Unit>>()
+        buttons.add(L.t("➕ Apuntar", "➕ Add note") to { startSearch(gif = false, note = true) })
+        if (notes.isNotEmpty()) {
+            buttons.add(L.t("📋 Crear ticket del día", "📋 Create the day's ticket") to {
+                aiSource = WorkStore.notesText(prefs)
+                aiBase = -1
+                aiLen = -1
+                showMode(0)
+                runTicket(ticketLang())
+            })
+            buttons.add(L.t("Vaciar", "Clear") to { WorkStore.clearNotes(prefs); refreshNotebook() })
+        }
+        panel.show(L.t("📒 Libreta de hoy", "📒 Today's notebook") + if (notes.isEmpty()) "" else " (${notes.size})", rows,
+            L.t("Apunta lo que vas haciendo en el día (toca ➕ Apuntar). Al final, «Crear ticket del día» lo junta todo en un ticket.",
+                "Note what you do during the day (tap ➕ Add note). At the end, «Create the day's ticket» puts it all in one ticket."),
+            buttons)
+    }
+
+    private fun refreshTickets() {
+        val panel = ticketsPanel ?: return
+        val list = WorkStore.tickets(prefs)
+        val rows = list.map { t ->
+            ListPanel.Row(L.t("Ticket ", "Ticket ") + t.num + "  ·  " + WorkStore.shortDate(t.time, L.english), t.text,
+                onTap = { showMode(0); insertText(t.text) },
+                onCopy = { aiCopy(t.text) },
+                onDelete = { WorkStore.removeTicket(prefs, t.num, t.time); refreshTickets() })
+        }
+        panel.show(L.t("🗂️ Mis tickets", "🗂️ My tickets") + "  ·  " + L.t("próximo: ", "next: ") + WorkStore.nextNumber(prefs), rows,
+            L.t("Aquí se guardan los tickets que creas con 📋 Notas → Ticket. Toca uno para escribirlo y usarlo de base.",
+                "Tickets you create with 📋 Notes → Ticket are saved here. Tap one to type it and use it as a base."),
+            listOf(L.t("📋 Ticket nuevo", "📋 New ticket") to { showMode(0); startTicket() }))
+    }
+
+    // ---------------------------------------------------------------- Hora, fecha y lugar
+
+    private fun showStamp() {
+        showMode(0)
+        val bar = infoBar ?: return
+        val now = System.currentTimeMillis()
+        val time = WorkStore.time(now)
+        val en = L.english
+        val date = if (en) java.text.SimpleDateFormat("EEEE, MMMM d, yyyy", java.util.Locale.US).format(now)
+            else java.text.SimpleDateFormat("EEEE d 'de' MMMM 'de' yyyy", java.util.Locale("es")).format(now)
+        val put: (String) -> Unit = { t -> insertText(t); closeInfo() }
+        bar.show(L.t("🕐 Hora, fecha y lugar", "🕐 Time, date and place"), "", listOf(
+            time to { put(time) },
+            L.t("Llegué a las $time", "Arrived at $time") to { put(L.t("Llegué a las $time", "Arrived at $time")) },
+            L.t("Salí a las $time", "Departed at $time") to { put(L.t("Salí a las $time", "Departed at $time")) },
+            date to { put(date) },
+            WorkStore.ticketDate(now) to { put(WorkStore.ticketDate(now)) },
+            L.t("📍 Dónde estoy", "📍 Where I am") to { insertPlace() },
+            L.t("Cerrar", "Close") to { closeInfo() },
+        ))
+    }
+
+    /** Escribe la dirección donde estás (pide permiso la primera vez). */
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun insertPlace() {
+        val bar = infoBar ?: return
+        val title = L.t("📍 Dónde estoy", "📍 Where I am")
+        if (!hasPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) && !hasPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)) {
+            bar.show(title, L.t("Dale permiso de ubicación a Best Keyboard y vuelve a tocar «Dónde estoy».",
+                "Allow location for Best Keyboard and tap «Where I am» again."), listOf(L.t("Dar permiso", "Allow") to {
+                closeInfo(); askPermission(MainActivity.EXTRA_ASK_LOCATION) }, L.t("Cerrar", "Close") to { closeInfo() }))
+            return
+        }
+        val lm = getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager ?: return
+        bar.show(title, L.t("Buscando dónde estás…", "Finding where you are…"), listOf(L.t("Cancelar", "Cancel") to { closeInfo() }))
+        val my = ++aiSeq
+        val got: (android.location.Location?) -> Unit = { loc ->
+            if (my == aiSeq) {
+                if (loc == null) bar.show(title, L.t("No pude saber dónde estás. Prende la ubicación del teléfono.", "Couldn't get your location. Turn on the phone's location."),
+                    listOf(L.t("Cerrar", "Close") to { closeInfo() }))
+                else Thread {
+                    val text = try {
+                        @Suppress("DEPRECATION")
+                        android.location.Geocoder(this, if (L.english) java.util.Locale.US else java.util.Locale("es"))
+                            .getFromLocation(loc.latitude, loc.longitude, 1)?.firstOrNull()?.getAddressLine(0)
+                    } catch (_: Exception) { null } ?: String.format(java.util.Locale.US, "%.5f, %.5f", loc.latitude, loc.longitude)
+                    handler.post {
+                        if (my != aiSeq) return@post
+                        bar.show(title, text, listOf(
+                            L.t("Escribir", "Type it") to { insertText(text); closeInfo() },
+                            L.t("Copiar", "Copy") to { aiCopy(text) },
+                            L.t("Cerrar", "Close") to { closeInfo() },
+                        ))
+                    }
+                }.start()
+            }
+        }
+        val provider = when {
+            lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER) -> android.location.LocationManager.NETWORK_PROVIDER
+            lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) -> android.location.LocationManager.GPS_PROVIDER
+            else -> null
+        }
+        if (provider == null) { got(null); return }
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                lm.getCurrentLocation(provider, null, mainExecutor) { loc -> got(loc ?: lm.getLastKnownLocation(provider)) }
+            } else {
+                got(lm.getLastKnownLocation(provider))
+            }
+        } catch (_: Exception) { got(null) }
+    }
+
+    // ---------------------------------------------------------------- Palabra de la semana
+
+    private fun showWord() {
+        showMode(0)
+        val w = WeeklyWord.current()
+        infoBar?.show(L.t("📖 Palabra de la semana", "📖 Word of the week"),
+            "${w.word}  (${w.en})\n${w.meaning}\n«${w.example}»\n\n" +
+                L.t("Reto: úsala en al menos 3 conversaciones esta semana.", "Challenge: use it in at least 3 conversations this week."),
+            listOf(L.t("Escribirla", "Type it") to { insertText(w.word.lowercase()); closeInfo() }, L.t("Cerrar", "Close") to { closeInfo() }))
+    }
+
+    /** La primera vez que abres el teclado en la semana, te enseña la palabra nueva. */
+    private fun maybeShowWord() {
+        if (!prefs.getBoolean(Prefs.WORD_WEEK, true)) return
+        val idx = WeeklyWord.weekIndex()
+        if (prefs.getInt(Prefs.WORD_SHOWN, -1) == idx) return
+        if (System.currentTimeMillis() < WeeklyWord.weekStart()) return
+        prefs.edit().putInt(Prefs.WORD_SHOWN, idx).apply()
+        handler.postDelayed({ if (isInputViewShown && mode == 0) showWord() }, 600)
     }
 
     // ---------------------------------------------------------------- Teclado flotante
@@ -3094,15 +3284,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // ---------------------------------------------------------------- Buscar emojis y GIFs
 
-    private fun startSearch(gif: Boolean) {
+    private fun startSearch(gif: Boolean, note: Boolean = false) {
         val bar = searchBar ?: return
         if (translating) stopTranslate()
         if (spellOn) stopSpell(keepSelection = true)
         closeInfo()
         showMode(0)
-        searching = if (gif) 2 else 1
+        searching = if (note) 3 else if (gif) 2 else 1
         bar.visibility = View.VISIBLE
-        bar.start(gif)
+        bar.start(gif, note)
         lastCorrection = null
         autoSpace = false
         lastWasSpace = false
@@ -3127,6 +3317,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bar = searchBar ?: return
         val q = bar.text().trim()
         val gif = bar.gifs
+        if (bar.note) {
+            // Guardar el apunte y seguir apuntando
+            if (q.isNotEmpty()) {
+                WorkStore.addNote(prefs, q)
+                bar.setText("")
+                Toast.makeText(this, L.t("Apunte guardado en la libreta", "Note saved in the notebook"), Toast.LENGTH_SHORT).show()
+            } else { stopSearch(); showMode(10) }
+            return
+        }
         stopSearch()
         if (gif) {
             pendingGifQuery = q.ifEmpty { null }

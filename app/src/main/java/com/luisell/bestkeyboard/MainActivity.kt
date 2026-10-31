@@ -57,6 +57,10 @@ class MainActivity : UiActivity() {
         const val EXTRA_SHOW_AI = "ver_ia"
         /** Abrir la app directo en la tarjeta "GIFs". */
         const val EXTRA_GIFS = "ver_gifs"
+        /** Pedir el permiso de ubicación (para escribir dónde estás). */
+        const val EXTRA_ASK_LOCATION = "pedir_ubicacion"
+        private const val REQ_LOCATION = 22
+        private const val REQ_NOTIF = 23
         private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
         private const val REQ_CAMERA = 8
@@ -76,6 +80,8 @@ class MainActivity : UiActivity() {
         window.navigationBarColor = BG
         setContentView(buildUi())
         handleAsk(intent)
+        TicketReminder.schedule(this)
+        prefs.registerOnSharedPreferenceChangeListener(reminderListener)
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -86,6 +92,9 @@ class MainActivity : UiActivity() {
     private fun handleAsk(i: Intent?) {
         if (i?.getBooleanExtra(EXTRA_ASK_MIC, false) == true) askMic()
         if (i?.getBooleanExtra(EXTRA_ASK_CAMERA, false) == true) askCamera()
+        if (i?.getBooleanExtra(EXTRA_ASK_LOCATION, false) == true) {
+            requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), REQ_LOCATION)
+        }
         if (i?.getBooleanExtra(EXTRA_ASK_PHOTOS, false) == true) askPhotos()
         if (i?.getBooleanExtra(EXTRA_SHOW_AI, false) == true) {
             // Bajar hasta la tarjeta de la IA para pegar la clave
@@ -111,6 +120,22 @@ class MainActivity : UiActivity() {
     }
 
     private fun cameraGranted() = checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+    /** Cambias el aviso del ticket: se vuelve a programar (y pide permiso para notificaciones). */
+    private val reminderListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == Prefs.REMINDER || key == Prefs.REMINDER_HOUR) {
+            TicketReminder.schedule(this)
+            if (prefs.getBoolean(Prefs.REMINDER, false) && android.os.Build.VERSION.SDK_INT >= 33 &&
+                checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        prefs.unregisterOnSharedPreferenceChangeListener(reminderListener)
+        super.onDestroy()
+    }
 
     private fun askCamera() {
         if (cameraGranted()) { refreshMic(); return }
@@ -526,6 +551,42 @@ class MainActivity : UiActivity() {
         ), 13f, faded = true)
         button(tr("Abrir Frases", "Open Phrases"), primary = true) { startActivity(Intent(this, PhrasesActivity::class.java)) }
 
+        // ---- Tickets del trabajo
+        card(tr("Tickets del trabajo", "Work tickets"), Icons.TICKETS)
+        switch(tr("Usar el formato de mis tickets (DVSS)", "Use my ticket format (DVSS)"), Prefs.TICKET_FORMAT, true,
+            tr("En inglés técnico con Date, Location, Arrival/Departure Time, Job Description y Equipment List. Los «Service Call» usan Issue Reported, Issue Found, Action Taken y Next Steps.",
+                "Technical English with Date, Location, Arrival/Departure Time, Job Description and Equipment List. «Service Call» tickets use Issue Reported, Issue Found, Action Taken and Next Steps."))
+        text(tr("Número del próximo ticket (sigue contando, nunca se reinicia):", "Next ticket number (keeps counting, never resets):"), 13f, faded = true)
+        val numBox = EditText(this).apply {
+            setText(WorkStore.nextNumber(prefs).toString())
+            isSingleLine = true
+            textSize = 15f
+            setTextColor(TEXT)
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        }
+        col.addView(numBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        button(tr("Guardar número", "Save number")) {
+            val n = numBox.text.toString().trim().toIntOrNull()
+            if (n == null || n < 1) toast("Escribe un número.", "Type a number.")
+            else { WorkStore.setNext(prefs, n); toast("Listo: el próximo será el Ticket $n.", "Done: the next one will be Ticket $n.") }
+        }
+        switch(tr("Aviso diario del ticket", "Daily ticket reminder"), Prefs.REMINDER, false,
+            tr("Te avisa «✅ TICKET REGISTERED» o «❌ NO TICKET» con la fecha.", "Shows «✅ TICKET REGISTERED» or «❌ NO TICKET» with the date."))
+        segmented(tr("Hora del aviso", "Reminder time"), Prefs.REMINDER_HOUR, "19", listOf(
+            "17" to "5 PM", "18" to "6 PM", "19" to "7 PM", "20" to "8 PM", "21" to "9 PM",
+        ))
+
+        // ---- Palabra de la semana
+        card(tr("Palabra de la semana", "Word of the week"), Icons.BOOK)
+        val ww = WeeklyWord.current()
+        text("${ww.word}  (${ww.en})", 18f, bold = true)
+        text(ww.meaning + "\n«" + ww.example + "»", 13f)
+        text(tr("Reto: úsala en al menos 3 conversaciones esta semana. Cada lunes sale una nueva.",
+            "Challenge: use it in at least 3 conversations this week. A new one comes every Monday."), 12f, faded = true)
+        switch(tr("Mostrarla en el teclado y sugerirla", "Show it on the keyboard and suggest it"), Prefs.WORD_WEEK, true)
+
         // ---- Una mano
         card(tr("Modo una mano", "One-hand mode"), Icons.ONEHAND)
         segmented(tr("Teclado más angosto", "Narrower keyboard"), Prefs.ONE_HAND, "off", listOf(
@@ -670,6 +731,22 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.7" to tr(
+            "•  📷 Escanear códigos de barras y QR (número de serie, MAC).\n" +
+                "•  🕐 Hora, fecha y lugar con un toque.\n" +
+                "•  📒 Libreta del día: tus apuntes se vuelven el ticket del día.\n" +
+                "•  🗂️ Mis tickets con número que sigue contando, y formato DVSS.\n" +
+                "•  ⏰ Aviso diario: ✅ TICKET REGISTERED / ❌ NO TICKET.\n" +
+                "•  📖 Palabra de la semana.\n" +
+                "•  Mantén presionado un botón de la barra de arriba para acomodarlo (los demás tiemblan).",
+            "•  📷 Scan barcodes and QR codes (serial number, MAC).\n" +
+                "•  🕐 Time, date and place with one tap.\n" +
+                "•  📒 Day notebook: your notes become the day's ticket.\n" +
+                "•  🗂️ My tickets with a number that keeps counting, and DVSS format.\n" +
+                "•  ⏰ Daily reminder: ✅ TICKET REGISTERED / ❌ NO TICKET.\n" +
+                "•  📖 Word of the week.\n" +
+                "•  Press and hold a top-bar button to move it (the others wiggle).",
+        ),
         "9.6" to tr(
             "•  📋 Notas → Ticket: tus notas rápidas se vuelven un ticket formal en español o inglés.\n" +
                 "•  🎤 Dictar reporte: hablas con tus palabras y la IA lo escribe ordenado y formal.\n" +

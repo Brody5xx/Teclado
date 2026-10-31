@@ -51,6 +51,11 @@ object Tools {
         Info(KeyboardView.TOOL_FORMAL, Icons.FORMAL, "Más formal (palabra)", "Formal words", true),
         Info(KeyboardView.TOOL_REVIEW, Icons.REVIEW, "Revisar antes de enviar", "Review before sending", true),
         Info(KeyboardView.TOOL_FLOAT, Icons.FLOAT, "Flotante", "Floating", false),
+        Info(KeyboardView.TOOL_BARCODE, Icons.BARCODE, "Escanear código", "Scan code", true),
+        Info(KeyboardView.TOOL_STAMP, Icons.CLOCK, "Hora, fecha y lugar", "Time, date and place", true),
+        Info(KeyboardView.TOOL_NOTEBOOK, Icons.NOTEBOOK, "Libreta del día", "Day notebook", true),
+        Info(KeyboardView.TOOL_TICKETS, Icons.TICKETS, "Mis tickets", "My tickets", true),
+        Info(KeyboardView.TOOL_WORD, Icons.BOOK, "Palabra de la semana", "Word of the week", true),
     )
 
     /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */
@@ -545,7 +550,13 @@ class ToolArranger(context: Context) : View(context) {
         for ((i, t) in showMore.withIndex()) {
             pillRect(i, tmp)
             if (tmp.bottom < gridTop - pillH || tmp.top > height) continue
-            if (t == HOLE) drawHole(c, RectF(tmp), p) else drawPill(c, t, RectF(tmp), p, false)
+            if (t == HOLE) drawHole(c, RectF(tmp), p) else {
+                // Mientras arrastras, los demás tiemblan un poquito: "se pueden mover"
+                val a = wiggle(t, 1.6f)
+                if (a != 0f) { c.save(); c.rotate(a, tmp.centerX(), tmp.centerY()) }
+                drawPill(c, t, RectF(tmp), p, false)
+                if (a != 0f) c.restore()
+            }
         }
         if (showMore.isEmpty()) {
             text.color = p.hint
@@ -587,7 +598,10 @@ class ToolArranger(context: Context) : View(context) {
                         fill.color = p.keyPressed
                         c.drawCircle(cx, cy, 19f * dd, fill)
                     }
+                    val a = wiggle(t, 7f)
+                    if (a != 0f) { c.save(); c.rotate(a, cx, cy) }
                     Tools.info(t)?.let { Icons.draw(c, it.icon, cx, cy, minOf(10f * dd, sw * 0.24f), p.text, p.key, dd) }
+                    if (a != 0f) c.restore()
                 }
             }
         }
@@ -598,7 +612,15 @@ class ToolArranger(context: Context) : View(context) {
             tmp.set(curX - w / 2, curY - pillH / 2, curX + w / 2, curY + pillH / 2)
             drawPill(c, pending, RectF(tmp), p, true)
         }
-        if (anim) postInvalidateDelayed(33)
+        if (dragging) postInvalidateOnAnimation()
+        else if (anim) postInvalidateDelayed(33)
+    }
+
+    /** Ángulo del temblor de cada botón mientras arrastras (0 si no estás arrastrando). */
+    private fun wiggle(tool: Int, deg: Float): Float {
+        if (!dragging || tool == pending) return 0f
+        val t = android.os.SystemClock.uptimeMillis() / 1000.0
+        return (deg * kotlin.math.sin(t * 2 * Math.PI * 4.5 + tool * 1.7)).toFloat()
     }
 
     private fun drawHole(c: Canvas, r: RectF, p: Palette) {

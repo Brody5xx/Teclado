@@ -68,6 +68,18 @@ class ScanPanel(context: Context) : FrameLayout(context) {
     private var capture: ImageCapture? = null
     private var busy = false
     private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
+    private val barcodes by lazy { com.google.mlkit.vision.barcode.BarcodeScanning.getClient() }
+
+    /** true = leer códigos de barras y QR (número de serie, MAC…); false = leer texto. */
+    var codeMode = false
+        set(v) { field = v; paintMode() }
+    private val modeRow = LinearLayout(context)
+    private val modeText = TextView(context)
+    private val modeCode = TextView(context)
+    private val codesRow = LinearLayout(context)
+    private val codesScroll = android.widget.HorizontalScrollView(context)
+    private var accent = 0xFF8AB4F8.toInt()
+    private var onAccent = 0xFF202124.toInt()
 
     init {
         setBackgroundColor(0xFF000000.toInt())
@@ -126,12 +138,52 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         resultBar.addView(insertBtn, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = d(10f) })
         resultBar.visibility = GONE
         addView(resultBar, LayoutParams(-1, -2, Gravity.BOTTOM).apply { setMargins(d(8f), 0, d(8f), d(8f)) })
+
+        // Códigos encontrados: cada uno es un botón que lo escribe
+        codesRow.orientation = LinearLayout.HORIZONTAL
+        codesScroll.isHorizontalScrollBarEnabled = false
+        codesScroll.addView(codesRow)
+        codesScroll.visibility = GONE
+        addView(codesScroll, LayoutParams(-1, -2, Gravity.BOTTOM).apply { setMargins(d(8f), 0, d(8f), d(16f)) })
+
+        // Arriba en medio: Texto | Código
+        modeRow.orientation = LinearLayout.HORIZONTAL
+        modeRow.background = PanelUi.rounded(0x99303134.toInt(), d(20f).toFloat())
+        modeRow.setPadding(d(4f), d(4f), d(4f), d(4f))
+        for ((t, code) in listOf(modeText to false, modeCode to true)) {
+            t.textSize = 14f
+            t.gravity = Gravity.CENTER
+            t.setPadding(d(14f), 0, d(14f), 0)
+            t.setOnClickListener {
+                actions?.onScanFeedback()
+                if (codeMode != code) { codeMode = code; retake() }
+            }
+            modeRow.addView(t, LinearLayout.LayoutParams(-2, d(34f)))
+        }
+        L.bind(modeText, "Texto", "Text")
+        L.bind(modeCode, "Código", "Code")
+        addView(modeRow, LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = d(14f) })
+        paintMode()
+    }
+
+    private fun paintMode() {
+        for ((t, code) in listOf(modeText to false, modeCode to true)) {
+            val on = codeMode == code
+            t.setTextColor(if (on) onAccent else 0xFFFFFFFF.toInt())
+            t.background = if (on) PanelUi.rounded(accent, d(17f).toFloat()) else null
+        }
+        if (busy || photo.visibility == VISIBLE) return
+        hint.text = if (codeMode) L.t("Apunta al código de barras o QR y toma la foto", "Point at the barcode or QR and take the photo")
+        else L.t("Apunta al texto y toma la foto", "Point at the text and take the photo")
     }
 
     fun applyPalette(p: Palette) {
         insertBtn.setTextColor(p.onAccent)
         insertBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(24f).toFloat())
         photo.accent = p.accent
+        accent = p.accent
+        onAccent = p.onAccent
+        paintMode()
     }
 
     // ---------------------------------------------------------------- Cámara
@@ -196,7 +248,9 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         shutter.visibility = VISIBLE
         gallery.visibility = VISIBLE
         hint.visibility = VISIBLE
-        hint.text = L.t("Toma una foto de las palabras", "Take a photo of words to scan")
+        codesScroll.visibility = GONE
+        codesRow.removeAllViews()
+        paintMode()
         if (owner == null && isShown) startCamera()
     }
 
@@ -205,7 +259,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         if (busy) return
         busy = true
         actions?.onScanFeedback()
-        hint.text = L.t("Leyendo el texto…", "Reading the text…")
+        hint.text = if (codeMode) L.t("Buscando códigos…", "Looking for codes…") else L.t("Leyendo el texto…", "Reading the text…")
         ic.takePicture(worker, object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val bmp = try { toBitmap(image) } catch (_: Throwable) { null } finally { image.close() }
@@ -246,6 +300,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         photo.setPhoto(bmp)
         photo.visibility = VISIBLE
         hint.visibility = VISIBLE
+        if (codeMode) { readCodes(bmp); return }
         hint.text = L.t("Leyendo el texto…", "Reading the text…")
         recognizer.process(InputImage.fromBitmap(bmp, 0))
             .addOnSuccessListener { result ->
@@ -272,6 +327,54 @@ class ScanPanel(context: Context) : FrameLayout(context) {
                 busy = false
                 hint.text = L.t("No se pudo leer el texto. Inténtalo otra vez.", "Couldn't read the text. Try again.")
             }
+    }
+
+    /** Lee códigos de barras y QR; si no hay, busca una MAC o un número de serie escrito. */
+    private fun readCodes(bmp: Bitmap) {
+        hint.text = L.t("Buscando códigos…", "Looking for codes…")
+        val img = InputImage.fromBitmap(bmp, 0)
+        barcodes.process(img)
+            .addOnSuccessListener { list ->
+                val found = list.mapNotNull { it.rawValue?.trim() }.filter { it.isNotEmpty() }.distinct()
+                if (found.isNotEmpty()) { busy = false; showCodes(found); return@addOnSuccessListener }
+                recognizer.process(img)
+                    .addOnSuccessListener { r -> busy = false; showCodes(codesInText(r.text)) }
+                    .addOnFailureListener { busy = false; showCodes(emptyList()) }
+            }
+            .addOnFailureListener { busy = false; showCodes(emptyList()) }
+    }
+
+    /** MAC (AA:BB:CC:11:22:33) y números de serie (S/N: …) escritos en la etiqueta. */
+    private fun codesInText(t: String): List<String> {
+        val out = ArrayList<String>()
+        Regex("\\b([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\\b").findAll(t).forEach { out.add(it.value.uppercase()) }
+        Regex("(?i)\\b(?:S/?N|SERIAL(?: NO\\.?| NUMBER)?|MAC)\\s*[:#]?\\s*([A-Z0-9:-]{6,})").findAll(t).forEach { out.add(it.groupValues[1]) }
+        return out.distinct()
+    }
+
+    private fun showCodes(codes: List<String>) {
+        codesRow.removeAllViews()
+        if (codes.isEmpty()) {
+            hint.text = L.t("No encontré códigos. Acércate un poco y que tenga buena luz.", "No codes found. Get a little closer with good light.")
+            codesScroll.visibility = GONE
+            return
+        }
+        hint.text = L.t("Toca el código para escribirlo", "Tap the code to type it")
+        for (c in codes) {
+            val b = TextView(context)
+            b.text = c
+            b.textSize = 15f
+            b.maxLines = 1
+            b.ellipsize = TextUtils.TruncateAt.MIDDLE
+            b.maxWidth = d(260f)
+            b.gravity = Gravity.CENTER
+            b.setPadding(d(16f), 0, d(16f), 0)
+            b.setTextColor(onAccent)
+            b.background = PanelUi.pressable(accent, accent and 0xCCFFFFFF.toInt(), d(22f).toFloat())
+            b.setOnClickListener { actions?.onScanFeedback(); actions?.onScanInsert(c) }
+            codesRow.addView(b, LinearLayout.LayoutParams(-2, d(46f)).apply { rightMargin = d(8f) })
+        }
+        codesScroll.visibility = VISIBLE
     }
 
     private fun updateResult() {

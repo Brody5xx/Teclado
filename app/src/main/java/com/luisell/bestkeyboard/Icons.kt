@@ -70,6 +70,11 @@ object Icons {
     const val FORMAL = 53
     const val FLOAT = 54
     const val REVIEW = 55
+    const val BARCODE = 56
+    const val CLOCK = 57
+    const val NOTEBOOK = 58
+    const val TICKETS = 59
+    const val BOOK = 60
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -461,6 +466,56 @@ object Icons {
                 c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
                 for (yy in 0..1) for (xx in 0..2)
                     c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            BARCODE -> {
+                // Esquinas de escáner con barras en medio
+                val k = s * 0.95f
+                val q = s * 0.35f
+                c.drawLine(cx - k, cy - k, cx - k + q, cy - k, st); c.drawLine(cx - k, cy - k, cx - k, cy - k + q, st)
+                c.drawLine(cx + k, cy - k, cx + k - q, cy - k, st); c.drawLine(cx + k, cy - k, cx + k, cy - k + q, st)
+                c.drawLine(cx - k, cy + k, cx - k + q, cy + k, st); c.drawLine(cx - k, cy + k, cx - k, cy + k - q, st)
+                c.drawLine(cx + k, cy + k, cx + k - q, cy + k, st); c.drawLine(cx + k, cy + k, cx + k, cy + k - q, st)
+                val bars = floatArrayOf(-0.5f, -0.25f, -0.05f, 0.2f, 0.45f)
+                for (b in bars) c.drawLine(cx + b * s, cy - s * 0.45f, cx + b * s, cy + s * 0.45f, st)
+            }
+            CLOCK -> {
+                // Reloj (hora, fecha y lugar)
+                c.drawCircle(cx, cy, s * 0.92f, st)
+                c.drawLine(cx, cy, cx, cy - s * 0.55f, st)
+                c.drawLine(cx, cy, cx + s * 0.4f, cy + s * 0.2f, st)
+            }
+            NOTEBOOK -> {
+                // Libreta con espiral
+                r.set(cx - s * 0.65f, cy - s * 0.95f, cx + s * 0.8f, cy + s * 0.95f)
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, st)
+                for (k in 0..3) c.drawLine(cx - s * 0.95f, cy - s * 0.6f + k * s * 0.4f, cx - s * 0.5f, cy - s * 0.6f + k * s * 0.4f, st)
+                c.drawLine(cx - s * 0.2f, cy - s * 0.35f, cx + s * 0.5f, cy - s * 0.35f, st)
+                c.drawLine(cx - s * 0.2f, cy + s * 0.05f, cx + s * 0.5f, cy + s * 0.05f, st)
+            }
+            TICKETS -> {
+                // Hojas apiladas (mis tickets)
+                r.set(cx - s * 0.5f, cy - s * 0.95f, cx + s * 0.95f, cy + s * 0.55f)
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, st)
+                r.set(cx - s * 0.95f, cy - s * 0.55f, cx + s * 0.5f, cy + s * 0.95f)
+                fl.color = bg
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, fl)
+                fl.color = color
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, st)
+                c.drawLine(cx - s * 0.6f, cy - s * 0.1f, cx + s * 0.15f, cy - s * 0.1f, st)
+                c.drawLine(cx - s * 0.6f, cy + s * 0.3f, cx + s * 0.15f, cy + s * 0.3f, st)
+            }
+            BOOK -> {
+                // Libro abierto (palabra de la semana)
+                path.reset()
+                path.moveTo(cx, cy - s * 0.55f)
+                path.quadTo(cx - s * 0.5f, cy - s * 0.85f, cx - s, cy - s * 0.7f)
+                path.lineTo(cx - s, cy + s * 0.75f)
+                path.quadTo(cx - s * 0.5f, cy + s * 0.6f, cx, cy + s * 0.9f)
+                path.quadTo(cx + s * 0.5f, cy + s * 0.6f, cx + s, cy + s * 0.75f)
+                path.lineTo(cx + s, cy - s * 0.7f)
+                path.quadTo(cx + s * 0.5f, cy - s * 0.85f, cx, cy - s * 0.55f)
+                c.drawPath(path, st)
+                c.drawLine(cx, cy - s * 0.55f, cx, cy + s * 0.9f, st)
             }
             TICKET -> {
                 // Tablita con hoja y renglones (ticket de trabajo)

@@ -44,6 +44,9 @@ class SearchBar(context: Context) : LinearLayout(context) {
     /** true = GIFs (resultados al tocar Buscar); false = emojis (mientras escribes). */
     var gifs = false
         private set
+    /** true = apunte para la libreta del día (Enter lo guarda). */
+    var note = false
+        private set
 
     val inputInfo = EditorInfo().apply {
         inputType = InputType.TYPE_CLASS_TEXT
@@ -102,9 +105,15 @@ class SearchBar(context: Context) : LinearLayout(context) {
     }
 
     /** Abre la búsqueda de emojis ([gif] = false) o de GIFs. */
-    fun start(gif: Boolean) {
+    fun start(gif: Boolean, noteMode: Boolean = false) {
         gifs = gif
-        if (gif) L.bindHint(box, "Buscar GIFs", "Search GIFs") else L.bindHint(box, "Buscar emojis", "Search emojis")
+        note = noteMode
+        glass.kind = if (noteMode) Icons.NOTEBOOK else Icons.SEARCH
+        when {
+            noteMode -> L.bindHint(box, "Apunta algo…", "Write a note…")
+            gif -> L.bindHint(box, "Buscar GIFs", "Search GIFs")
+            else -> L.bindHint(box, "Buscar emojis", "Search emojis")
+        }
         setText("")
         box.text?.let { Selection.setSelection(it, 0) }
         box.resetBlink()
@@ -127,6 +136,12 @@ class SearchBar(context: Context) : LinearLayout(context) {
     /** Emojis encontrados (en GIFs: un aviso para tocar Buscar). */
     fun showResults(list: List<String>) {
         results.removeAllViews()
+        if (note) {
+            resultsScroll.visibility = GONE
+            hint.visibility = VISIBLE
+            hint.text = L.t("Escribe tu apunte y toca Enter para guardarlo en la libreta.", "Type your note and tap Enter to save it in the notebook.")
+            return
+        }
         if (gifs) {
             resultsScroll.visibility = GONE
             hint.visibility = VISIBLE

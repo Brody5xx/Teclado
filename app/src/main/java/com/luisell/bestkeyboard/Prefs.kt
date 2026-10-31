@@ -87,6 +87,19 @@ object Prefs {
     const val FLOAT = "float_keyboard"
     const val FLOAT_X = "float_x"
     const val FLOAT_Y = "float_y"
+    /** Libreta del día y mis tickets (listas JSON). */
+    const val NOTEBOOK = "notebook"
+    const val TICKETS = "tickets"
+    /** El número que llevará el próximo ticket (nunca se reinicia). */
+    const val TICKET_NEXT = "ticket_next"
+    /** Tickets con el formato de DVSS (Date, Location, Arrival/Departure, Job Description, Equipment List). */
+    const val TICKET_FORMAT = "ticket_format_dvss"
+    /** Aviso del ticket del día: prendido y a qué hora (0-23). */
+    const val REMINDER = "ticket_reminder"
+    const val REMINDER_HOUR = "ticket_reminder_hour"
+    /** Palabra de la semana: prendida y la última semana que se mostró. */
+    const val WORD_WEEK = "word_week"
+    const val WORD_SHOWN = "word_week_shown"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

@@ -15,6 +15,12 @@
         android:maxSdkVersion="32" />
     <!-- Internet: SOLO para descargar una vez los idiomas de traducción. Lo que escribes no se envía. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Escribir dónde estás en el ticket (solo cuando tocas el botón) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Aviso diario del ticket -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Para sugerir el código de verificación de tus SMS (solo se lee dentro del teléfono) -->
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
@@ -70,6 +76,16 @@
             android:name=".WordsActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- Aviso del ticket del día (y volver a programarlo al prender el teléfono) -->
+        <receiver
+            android:name=".TicketReminderReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- "Frases": tus frases rápidas -->
         <activity

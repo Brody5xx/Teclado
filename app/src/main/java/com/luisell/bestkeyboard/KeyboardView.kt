@@ -41,6 +41,8 @@ class KeyboardView(context: Context) : View(context) {
         fun onResizeDone(scale: Float)
         /** Modo una mano: 0 normal, 1 izquierda, 2 derecha. */
         fun onOneHand(mode: Int) {}
+        /** Acomodaste los botones de la barra de arriba (barra, más opciones). */
+        fun onToolsReordered(bar: List<Int>, more: List<Int>) {}
     }
 
     companion object {
@@ -79,6 +81,11 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_FORMAL = 42
         const val TOOL_FLOAT = 43
         const val TOOL_REVIEW = 44
+        const val TOOL_BARCODE = 45
+        const val TOOL_STAMP = 46
+        const val TOOL_NOTEBOOK = 47
+        const val TOOL_TICKETS = 48
+        const val TOOL_WORD = 49
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -485,6 +492,38 @@ class KeyboardView(context: Context) : View(context) {
     private val stripVelocity = android.view.VelocityTracker.obtain()
     private val stripFling = android.widget.OverScroller(context, android.view.animation.DecelerateInterpolator(1.6f))
 
+    // ---- Acomodar los botones de la barra (mantener presionado y arrastrar)
+    private var editing = false
+    private var editList = ArrayList<Int>()
+    private var editTool = -1
+    private var editX = 0f
+    /** Dónde se dibuja cada botón (para que se muevan suave al acomodarse). */
+    private val toolX = HashMap<Int, Float>()
+    private val stripEditRunnable = Runnable {
+        if (!stripDown || stripDragging || stripPressed < 0) return@Runnable
+        val t = stripPressed
+        if (t !in allTools) return@Runnable
+        editing = true
+        editTool = t
+        editList = ArrayList(allTools.toList())
+        editX = downX
+        stripPressed = -1
+        listener?.onKeyFeedback()
+        postInvalidateOnAnimation()
+    }
+
+    /** Mueve el botón que arrastras al lugar donde está el dedo. */
+    private fun editMove() {
+        val step = toolStep()
+        val target = ((editX + stripScroll) / step).toInt().coerceIn(0, editList.size - 1)
+        val cur = editList.indexOf(editTool)
+        if (cur >= 0 && target != cur) {
+            editList.removeAt(cur)
+            editList.add(target, editTool)
+            listener?.onKeyFeedback()
+        }
+    }
+
     override fun computeScroll() {
         if (stripFling.computeScrollOffset()) {
             stripScroll = stripFling.currX.toFloat().coerceIn(0f, maxStripScroll())
@@ -565,6 +604,10 @@ class KeyboardView(context: Context) : View(context) {
             stripDownScroll = stripScroll
             stripPressed = if (wasFlinging) -1 else stripHit(x)
             if (stripPressed >= 0) listener?.onKeyFeedback()
+            // Mantener presionado un botón: modo acomodar (los demás tiemblan)
+            if (stripPressed >= 0 && !showingSuggestions && !showingShot && stripPressed in allTools) {
+                handler.postDelayed(stripEditRunnable, 420L)
+            }
             invalidate()
             return
         }
@@ -621,7 +664,14 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun movePointer(x: Float, y: Float) {
+        if (stripDown && editing) {
+            editX = x
+            editMove()
+            invalidate()
+            return
+        }
         if (stripDown) {
+            if (abs(x - downX) > 10f * d) handler.removeCallbacks(stripEditRunnable)
             // Deslizar la barra de arriba para ver los demás botones
             if (!showingSuggestions && !showingShot && maxStripScroll() > 0f && (stripDragging || abs(x - downX) > 10f * d)) {
                 stripDragging = true
@@ -712,6 +762,24 @@ class KeyboardView(context: Context) : View(context) {
             return
         }
         gestureCandidate = false
+        handler.removeCallbacks(stripEditRunnable)
+        if (stripDown && editing) {
+            stripDown = false
+            editing = false
+            stripPressed = -1
+            // Guarda el nuevo orden: los primeros van en la barra, los demás en "Más opciones"
+            val n = barTools.size
+            val list = editList.toMutableList()
+            val fixedAt = list.indexOf(TOOL_MORE)
+            if (fixedAt >= n && n > 0) { list.removeAt(fixedAt); list.add(n - 1, TOOL_MORE) }
+            val bar = list.take(n)
+            val more = list.drop(n)
+            setBarTools(bar, more)
+            listener?.onToolsReordered(bar, more)
+            listener?.onKeyFeedback()
+            invalidate()
+            return
+        }
         if (stripDown) {
             stripDown = false
             if (stripDragging) {
@@ -1367,15 +1435,83 @@ class KeyboardView(context: Context) : View(context) {
         c.drawLine(cx - r * 0.82f, cy + r * 0.5f, cx + r * 0.82f, cy + r * 0.5f, stroke)
     }
 
+    /** El ícono de cada botón de la barra de arriba (-1 si no tiene). */
+    private fun toolIcon(i: Int): Int = when (i) {
+        TOOL_SETTINGS -> Icons.SETTINGS
+        TOOL_THEME -> Icons.THEME
+        TOOL_EMOJI -> Icons.EMOJI
+        TOOL_CLIP -> Icons.CLIP
+        TOOL_TRANSLATE -> Icons.TRANSLATE
+        TOOL_EDIT -> Icons.EDIT
+        TOOL_SPELL -> Icons.SPELL
+        TOOL_SCAN -> Icons.SCAN
+        TOOL_VOICE -> Icons.MIC
+        TOOL_HIDE -> Icons.HIDE
+        TOOL_MORE -> Icons.MORE
+        TOOL_RESIZE -> Icons.RESIZE
+        TOOL_LANG -> Icons.GLOBE
+        TOOL_HACKER -> Icons.HACKER
+        TOOL_VAULT -> Icons.LOCK
+        TOOL_CODE -> Icons.CODE
+        TOOL_ANIM -> Icons.RIPPLE
+        TOOL_LABEL -> Icons.TEXTSIZE
+        TOOL_KEYSIZE -> Icons.KEYSIZE
+        TOOL_SOUND -> Icons.SPEAKER
+        TOOL_VIB -> Icons.VIBRATE
+        TOOL_SHAPE -> Icons.SHAPES
+        TOOL_STYLE -> Icons.BRUSH
+        TOOL_PHRASES -> Icons.BUBBLE
+        TOOL_READ -> Icons.READ
+        TOOL_ONEHAND -> Icons.ONEHAND
+        TOOL_CALC -> Icons.CALC
+        TOOL_GIF -> Icons.GIF
+        TOOL_TICKET -> Icons.TICKET
+        TOOL_REPORT -> Icons.REPORT
+        TOOL_FORMAL -> Icons.FORMAL
+        TOOL_FLOAT -> Icons.FLOAT
+        TOOL_REVIEW -> Icons.REVIEW
+        TOOL_BARCODE -> Icons.BARCODE
+        TOOL_STAMP -> Icons.CLOCK
+        TOOL_NOTEBOOK -> Icons.NOTEBOOK
+        TOOL_TICKETS -> Icons.TICKETS
+        TOOL_WORD -> Icons.BOOK
+        else -> -1
+    }
+
     private fun drawStrip(c: Canvas, p: Palette) {
         if (showingSuggestions) { drawSuggestions(c, p); return }
         if (showingShot) { drawShot(c, p); return }
         val cy = stripH / 2f
         val s = stripH * 0.22f
         val step = toolStep()
-        val tools = allTools
+        val tools = if (editing) editList.toIntArray() else allTools
+        if (editing) {
+            // Si llevas el botón a la orilla, la barra se desliza poco a poco
+            val edge = step * 0.7f
+            val sp = when {
+                editX < edge -> -(1f - editX / edge) * 9f * d
+                editX > width - edge -> (1f - (width - editX) / edge) * 9f * d
+                else -> 0f
+            }
+            if (sp != 0f) {
+                val before = stripScroll
+                stripScroll = (stripScroll + sp).coerceIn(0f, maxStripScroll())
+                if (stripScroll != before) editMove()
+            }
+        }
         stripScroll = stripScroll.coerceIn(0f, maxStripScroll())
-        val xs = FloatArray(tools.size) { step * (it + 0.5f) - stripScroll }
+        var moving = editing
+        val xs = FloatArray(tools.size) {
+            // Se van deslizando suave a su nuevo lugar
+            val target = step * (it + 0.5f)
+            val t = tools[it]
+            val cur = toolX[t] ?: target
+            val nx = if (abs(target - cur) < 0.6f) target else cur + (target - cur) * 0.3f
+            if (nx != target) moving = true
+            toolX[t] = nx
+            nx - stripScroll
+        }
+        val now = SystemClock.uptimeMillis() / 1000.0
         if (extraTools.isNotEmpty() && stripScroll < 1f) {
             // Rayita al borde derecho: avisa que hay más botones deslizando
             fill.color = alphaOf(p.hint, 0.5f)
@@ -1384,6 +1520,7 @@ class KeyboardView(context: Context) : View(context) {
         }
         for (n in tools.indices) {
             val i = tools[n]
+            if (editing && i == editTool) continue
             val cx = xs[n]
             if (cx < -step || cx > width + step) continue
             if (n == barTools.size && n > 0) {
@@ -1395,46 +1532,32 @@ class KeyboardView(context: Context) : View(context) {
                 fill.color = p.keyPressed
                 c.drawCircle(cx, cy, stripH * 0.4f, fill)
             }
-            val kind = when (i) {
-                TOOL_SETTINGS -> Icons.SETTINGS
-                TOOL_THEME -> Icons.THEME
-                TOOL_EMOJI -> Icons.EMOJI
-                TOOL_CLIP -> Icons.CLIP
-                TOOL_TRANSLATE -> Icons.TRANSLATE
-                TOOL_EDIT -> Icons.EDIT
-                TOOL_SPELL -> Icons.SPELL
-                TOOL_SCAN -> Icons.SCAN
-                TOOL_VOICE -> Icons.MIC
-                TOOL_HIDE -> Icons.HIDE
-                TOOL_MORE -> Icons.MORE
-                TOOL_RESIZE -> Icons.RESIZE
-                TOOL_LANG -> Icons.GLOBE
-                TOOL_HACKER -> Icons.HACKER
-                TOOL_VAULT -> Icons.LOCK
-                TOOL_CODE -> Icons.CODE
-                TOOL_ANIM -> Icons.RIPPLE
-                TOOL_LABEL -> Icons.TEXTSIZE
-                TOOL_KEYSIZE -> Icons.KEYSIZE
-                TOOL_SOUND -> Icons.SPEAKER
-                TOOL_VIB -> Icons.VIBRATE
-                TOOL_SHAPE -> Icons.SHAPES
-                TOOL_STYLE -> Icons.BRUSH
-                TOOL_PHRASES -> Icons.BUBBLE
-                TOOL_READ -> Icons.READ
-                TOOL_ONEHAND -> Icons.ONEHAND
-                TOOL_CALC -> Icons.CALC
-                TOOL_GIF -> Icons.GIF
-                TOOL_TICKET -> Icons.TICKET
-                TOOL_REPORT -> Icons.REPORT
-                TOOL_FORMAL -> Icons.FORMAL
-                TOOL_FLOAT -> Icons.FLOAT
-                TOOL_REVIEW -> Icons.REVIEW
-                else -> continue
-            }
+            val kind = toolIcon(i)
+            if (kind < 0) continue
             val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
+            // Modo acomodar: los demás tiemblan un poquito
+            val ang = if (editing) (7.0 * kotlin.math.sin(now * 2 * Math.PI * 4.5 + i * 1.7)).toFloat() else 0f
+            if (ang != 0f) { c.save(); c.rotate(ang, cx, cy) }
             Icons.draw(c, kind, cx, cy, s, if (on) p.accent else p.hint, bgc, d)
+            if (ang != 0f) c.restore()
         }
+        if (editing) {
+            // El que arrastras va debajo del dedo, un poco más grande
+            val kind = toolIcon(editTool)
+            if (kind >= 0) {
+                val cx = editX.coerceIn(step / 2f, width - step / 2f)
+                fill.color = p.keyPressed
+                c.drawCircle(cx, cy, stripH * 0.42f, fill)
+                st(p.accent)
+                c.drawCircle(cx, cy, stripH * 0.42f, stroke)
+                c.save()
+                c.scale(1.2f, 1.2f, cx, cy)
+                Icons.draw(c, kind, cx, cy, s, p.text, p.keyPressed, d)
+                c.restore()
+            }
+        }
+        if (moving) postInvalidateOnAnimation()
     }
 
     /** Botón de la esquina que abre las herramientas (panel de control). */
