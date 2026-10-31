@@ -30,7 +30,7 @@ class EditPanel(context: Context) : FrameLayout(context) {
     /** Modo seleccionar: las flechas van marcando el texto. */
     private var selecting = false
     private val title = TextView(context)
-    private val back = TextView(context)
+    private val back = IconView(context, Icons.BACK, 8f)
     private val keys = ArrayList<Pair<TextView, Boolean>>() // (botón, es de acción)
     private lateinit var selectBtn: TextView
 
@@ -43,9 +43,6 @@ class EditPanel(context: Context) : FrameLayout(context) {
         val head = LinearLayout(context)
         head.orientation = LinearLayout.HORIZONTAL
         head.gravity = Gravity.CENTER_VERTICAL
-        back.text = "←"
-        back.textSize = 20f
-        back.gravity = Gravity.CENTER
         back.setOnClickListener { actions?.onEditFeedback(); actions?.onEditBack() }
         head.addView(back, LinearLayout.LayoutParams(d(44f), d(40f)))
         L.bind(title, "Edición de texto", "Text editing")
@@ -145,7 +142,7 @@ class EditPanel(context: Context) : FrameLayout(context) {
         palette = p
         setBackgroundColor(p.bg)
         title.setTextColor(p.text)
-        back.setTextColor(p.text)
+        back.color = p.text
         back.background = PanelUi.pressable(p.special, p.keyPressed, d(20f).toFloat())
         val r = d(10f).toFloat()
         for ((t, action) in keys) {

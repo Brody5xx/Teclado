@@ -30,9 +30,9 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
 
     private val body = LinearLayout(context)
     private val grid = GridView(context)
-    private val tabViews = ArrayList<TextView>()
+    private val tabViews = ArrayList<IconView>()
     private val abc: TextView
-    private val del: TextView
+    private val del: IconView
     private val overlay = PanelOverlay(context, 0x33000000)
     private fun d(v: Float) = PanelUi.dp(context, v)
 
@@ -86,17 +86,14 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         val tabsRow = LinearLayout(context)
         tabsRow.orientation = LinearLayout.HORIZONTAL
         for (i in EmojiData.TAB_ICONS.indices) {
-            val t = TextView(context)
-            t.text = EmojiData.TAB_ICONS[i]
-            t.textSize = 17f
-            t.gravity = Gravity.CENTER
+            val t = IconView(context, Icons.EMOJI_TABS.getOrElse(i) { Icons.EMOJI }, 8.5f)
             t.setOnClickListener { listener?.onPanelFeedback(); jumpTo(i) }
             tabViews.add(t)
             tabsRow.addView(t, LinearLayout.LayoutParams(0, d(40f), 1f))
         }
         bar.addView(tabsRow, LinearLayout.LayoutParams(0, d(40f), 1f))
 
-        del = PanelUi.barButton(context, "⌫", palette)
+        del = IconView(context, Icons.DELETE, 9.5f)
         PanelUi.makeRepeatingDelete(del) { listener }
         bar.addView(del, LinearLayout.LayoutParams(d(54f), d(40f)))
         body.addView(bar, LinearLayout.LayoutParams(-1, -2))
@@ -151,6 +148,8 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         val r = d(7f).toFloat()
         for ((n, t) in tabViews.withIndex()) {
             t.background = if (n == tab) PanelUi.rounded(palette.keyPressed, r) else null
+            t.color = if (n == tab) palette.text else palette.hint
+            t.bgColor = if (n == tab) palette.keyPressed else palette.bg
         }
     }
 
@@ -202,8 +201,10 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         val r = d(7f).toFloat()
         abc.setTextColor(p.text)
         abc.background = PanelUi.pressable(p.special, p.keyPressed, r)
-        del.setTextColor(p.text)
+        del.color = p.text
+        del.bgColor = p.special
         del.background = PanelUi.pressable(p.special, p.keyPressed, r)
+        for (t in tabViews) { t.color = p.hint; t.bgColor = p.bg; t.invalidate() }
         val cur = currentTab
         currentTab = -1
         highlight(cur)

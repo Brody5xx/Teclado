@@ -31,9 +31,9 @@ class TranslateBar(context: Context) : LinearLayout(context) {
     private var palette = Palette.DARK
     private fun d(v: Float) = PanelUi.dp(context, v)
 
-    private val close = TextView(context)
+    private val close = IconView(context, Icons.BACK, 8f)
     private val from = TextView(context)
-    private val swap = TextView(context)
+    private val swap = IconView(context, Icons.SWAP, 8f)
     private val to = TextView(context)
     val box = CursorBox(context)
     private val status = TextView(context)
@@ -54,9 +54,6 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         val row = LinearLayout(context)
         row.orientation = HORIZONTAL
         row.gravity = Gravity.CENTER_VERTICAL
-        close.text = "←"
-        close.textSize = 20f
-        close.gravity = Gravity.CENTER
         close.setOnClickListener { actions?.onTranslateClose() }
         row.addView(close, LayoutParams(d(44f), d(38f)))
         for (t in listOf(from, to)) {
@@ -64,9 +61,6 @@ class TranslateBar(context: Context) : LinearLayout(context) {
             t.gravity = Gravity.CENTER
             t.setOnClickListener { actions?.onTranslateSwap() }
         }
-        swap.text = "⇄"
-        swap.textSize = 20f
-        swap.gravity = Gravity.CENTER
         swap.setOnClickListener { actions?.onTranslateSwap() }
         row.addView(from, LayoutParams(0, d(36f), 1f).apply { leftMargin = d(8f) })
         row.addView(swap, LayoutParams(d(48f), d(36f)))
@@ -162,9 +156,9 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         palette = p
         setBackgroundColor(p.bg)
         val r = d(18f).toFloat()
-        close.setTextColor(p.text)
+        close.color = p.text
         close.background = PanelUi.pressable(p.special, p.keyPressed, r)
-        swap.setTextColor(p.text)
+        swap.color = p.text
         for (t in listOf(from, to)) {
             t.setTextColor(p.onAccent)
             t.background = PanelUi.pressable(p.accent, p.accentPressed, r)

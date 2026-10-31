@@ -258,7 +258,7 @@ class KeyboardView(context: Context) : View(context) {
         return null
     }
 
-    /** Botón ▦ de la esquina: muestra las herramientas aunque haya sugerencias (como Gboard). */
+    /** Botón de herramientas de la esquina: muestra las herramientas aunque haya sugerencias (como Gboard). */
     private var forceTools = false
     private val menuW get() = 48f * d
     private val showingSuggestions get() = hasSuggestions && !forceTools && chipLabel == null
@@ -693,123 +693,35 @@ class KeyboardView(context: Context) : View(context) {
                 fill.color = p.keyPressed
                 c.drawCircle(cx, cy, stripH * 0.4f, fill)
             }
-            st(p.hint)
-            when (i) {
-                TOOL_SETTINGS -> {
-                    // Ajustes: 3 controles deslizantes (moderno y fácil de reconocer)
-                    val w = s * 0.95f
-                    val knobs = floatArrayOf(-0.45f, 0.4f, -0.05f)
-                    for (k in 0..2) {
-                        val y = cy + (k - 1) * s * 0.62f
-                        c.drawLine(cx - w, y, cx + w, y, stroke)
-                        val kx = cx + knobs[k] * w
-                        fill.color = p.bg
-                        c.drawCircle(kx, y, s * 0.3f, fill)
-                        fill.color = p.hint
-                        c.drawCircle(kx, y, s * 0.2f, fill)
-                    }
-                }
-                TOOL_THEME -> {
-                    val r = s * 0.85f
-                    c.drawCircle(cx, cy, r, stroke)
-                    tmp.set(cx - r, cy - r, cx + r, cy + r)
-                    fill.color = p.hint
-                    c.drawArc(tmp, 90f, 180f, true, fill)
-                }
-                TOOL_EMOJI -> {
-                    val r = s * 0.9f
-                    c.drawCircle(cx, cy, r, stroke)
-                    fill.color = p.hint
-                    c.drawCircle(cx - r * 0.35f, cy - r * 0.25f, r * 0.12f, fill)
-                    c.drawCircle(cx + r * 0.35f, cy - r * 0.25f, r * 0.12f, fill)
-                    tmp.set(cx - r * 0.5f, cy - r * 0.3f, cx + r * 0.5f, cy + r * 0.55f)
-                    c.drawArc(tmp, 20f, 140f, false, stroke)
-                }
-                TOOL_CLIP -> {
-                    tmp.set(cx - s * 0.7f, cy - s * 0.75f, cx + s * 0.7f, cy + s * 0.95f)
-                    c.drawRoundRect(tmp, s * 0.2f, s * 0.2f, stroke)
-                    tmp.set(cx - s * 0.35f, cy - s * 0.98f, cx + s * 0.35f, cy - s * 0.55f)
-                    fill.color = p.hint
-                    c.drawRoundRect(tmp, s * 0.12f, s * 0.12f, fill)
-                    c.drawLine(cx - s * 0.35f, cy - s * 0.05f, cx + s * 0.35f, cy - s * 0.05f, stroke)
-                    c.drawLine(cx - s * 0.35f, cy + s * 0.4f, cx + s * 0.2f, cy + s * 0.4f, stroke)
-                }
-                TOOL_TRANSLATE -> {
-                    drawLabel(c, "A文", cx, cy, stripH * 0.36f, if (translateOn) p.accent else p.hint)
-                }
-                TOOL_EDIT -> {
-                    // ‹I›: edición de texto
-                    drawLabel(c, "I", cx, cy, stripH * 0.42f, p.hint)
-                    st(p.hint)
-                    c.drawLine(cx - s * 0.55f, cy, cx - s * 0.95f, cy - s * 0.35f, stroke)
-                    c.drawLine(cx - s * 0.55f, cy, cx - s * 0.95f, cy + s * 0.35f, stroke)
-                    c.drawLine(cx + s * 0.55f, cy, cx + s * 0.95f, cy - s * 0.35f, stroke)
-                    c.drawLine(cx + s * 0.55f, cy, cx + s * 0.95f, cy + s * 0.35f, stroke)
-                }
-                TOOL_SPELL -> {
-                    // "abc" con una palomita: revisar ortografía
-                    val col = if (spellOn) p.accent else p.hint
-                    drawLabel(c, "abc", cx - s * 0.25f, cy - s * 0.25f, stripH * 0.27f, col)
-                    st(col)
-                    c.drawLine(cx - s * 0.1f, cy + s * 0.6f, cx + s * 0.25f, cy + s * 0.95f, stroke)
-                    c.drawLine(cx + s * 0.25f, cy + s * 0.95f, cx + s * 0.95f, cy + s * 0.2f, stroke)
-                }
-                TOOL_SCAN -> {
-                    // Marco de escáner: 4 esquinas y una línea en el medio
-                    val r = s * 0.85f
-                    val k = r * 0.45f
-                    for (sx in intArrayOf(-1, 1)) for (sy in intArrayOf(-1, 1)) {
-                        val x0 = cx + sx * r
-                        val y0 = cy + sy * r
-                        c.drawLine(x0, y0, x0 - sx * k, y0, stroke)
-                        c.drawLine(x0, y0, x0, y0 - sy * k, stroke)
-                    }
-                    c.drawLine(cx - r * 0.55f, cy, cx + r * 0.55f, cy, stroke)
-                }
-                TOOL_VOICE -> {
-                    tmp.set(cx - s * 0.38f, cy - s * 0.95f, cx + s * 0.38f, cy + s * 0.25f)
-                    fill.color = p.hint
-                    c.drawRoundRect(tmp, s * 0.38f, s * 0.38f, fill)
-                    tmp.set(cx - s * 0.68f, cy - s * 0.55f, cx + s * 0.68f, cy + s * 0.6f)
-                    c.drawArc(tmp, 0f, 180f, false, stroke)
-                    c.drawLine(cx, cy + s * 0.6f, cx, cy + s * 0.95f, stroke)
-                }
-                TOOL_HIDE -> {
-                    path.reset()
-                    path.moveTo(cx - s * 0.7f, cy - s * 0.3f)
-                    path.lineTo(cx, cy + s * 0.4f)
-                    path.lineTo(cx + s * 0.7f, cy - s * 0.3f)
-                    c.drawPath(path, stroke)
-                }
+            val kind = when (i) {
+                TOOL_SETTINGS -> Icons.SETTINGS
+                TOOL_THEME -> Icons.THEME
+                TOOL_EMOJI -> Icons.EMOJI
+                TOOL_CLIP -> Icons.CLIP
+                TOOL_TRANSLATE -> Icons.TRANSLATE
+                TOOL_EDIT -> Icons.EDIT
+                TOOL_SPELL -> Icons.SPELL
+                TOOL_SCAN -> Icons.SCAN
+                TOOL_VOICE -> Icons.MIC
+                TOOL_HIDE -> Icons.HIDE
+                else -> continue
             }
+            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn)
+            val bgc = if (stripPressed == i) p.keyPressed else p.bg
+            Icons.draw(c, kind, cx, cy, s, if (on) p.accent else p.hint, bgc, d)
         }
     }
 
-    /** Botón ▦ de la esquina (4 cuadritos). */
+    /** Botón de la esquina que abre las herramientas (panel de control). */
     private fun drawMenuButton(c: Canvas, p: Palette) {
         val cy = stripH / 2f
         val mx = menuW / 2f + 2f * d
-        if (stripPressed == TOOL_MENU) {
+        val pressed = stripPressed == TOOL_MENU
+        if (pressed) {
             fill.color = p.keyPressed
             c.drawCircle(mx, cy, stripH * 0.4f, fill)
         }
-        // Destello de 4 puntas (minimalista) + uno pequeño: "herramientas"
-        fill.color = p.text
-        sparkle(c, mx - 1.5f * d, cy + 1.5f * d, 8.5f * d)
-        sparkle(c, mx + 7f * d, cy - 7f * d, 3.6f * d)
-    }
-
-    /** Estrella de 4 puntas con lados curvos (estilo moderno). */
-    private fun sparkle(c: Canvas, x: Float, y: Float, r: Float) {
-        val k = r * 0.18f
-        path.reset()
-        path.moveTo(x, y - r)
-        path.quadTo(x + k, y - k, x + r, y)
-        path.quadTo(x + k, y + k, x, y + r)
-        path.quadTo(x - k, y + k, x - r, y)
-        path.quadTo(x - k, y - k, x, y - r)
-        path.close()
-        c.drawPath(path, fill)
+        Icons.draw(c, Icons.MENU, mx, cy, stripH * 0.22f, p.text, if (pressed) p.keyPressed else p.bg, d)
     }
 
     /** "🖼 Captura de pantalla": botón con la miniatura de tu última captura. */
@@ -840,7 +752,7 @@ class KeyboardView(context: Context) : View(context) {
             c.drawBitmap(b, null, tmp, null)
             c.restore()
         } else {
-            drawLabel(c, "🖼", cx, cy, r * 1.3f, p.text)
+            Icons.draw(c, Icons.IMAGE, cx, cy, r * 0.6f, p.text, p.key, d)
         }
         text.textAlign = Paint.Align.LEFT
         drawLabel(c, label, cx + r + 10f * d, cy, stripH * 0.33f, p.text)
@@ -850,7 +762,7 @@ class KeyboardView(context: Context) : View(context) {
     private fun drawSuggestions(c: Canvas, p: Palette) {
         val cellW = (width - menuW) / 3f
         val cy = stripH / 2f
-        // Botón ▦ (4 cuadritos) para abrir las herramientas
+        // Botón de la esquina para abrir las herramientas
         drawMenuButton(c, p)
         for (i in 0..2) {
             val left = menuW + i * cellW

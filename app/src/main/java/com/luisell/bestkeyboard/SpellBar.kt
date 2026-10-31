@@ -27,7 +27,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
     private var palette = Palette.DARK
     private fun d(v: Float) = PanelUi.dp(context, v)
 
-    private val close = TextView(context)
+    private val close = IconView(context, Icons.CLOSE, 7f)
     private val title = TextView(context)
     private val skip = TextView(context)
     private val learn = TextView(context)
@@ -41,9 +41,6 @@ class SpellBar(context: Context) : LinearLayout(context) {
         val row = LinearLayout(context)
         row.orientation = HORIZONTAL
         row.gravity = Gravity.CENTER_VERTICAL
-        close.text = "✕"
-        close.textSize = 17f
-        close.gravity = Gravity.CENTER
         close.setOnClickListener { actions?.onSpellClose() }
         row.addView(close, LayoutParams(d(40f), d(36f)))
         title.textSize = 15f
@@ -124,7 +121,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
         setBackgroundColor(p.bg)
         title.setTextColor(p.text)
         val r = d(17f).toFloat()
-        close.setTextColor(p.text)
+        close.color = p.text
         close.background = PanelUi.pressable(p.special, p.keyPressed, r)
         skip.setTextColor(p.text)
         skip.background = PanelUi.pressable(p.special, p.keyPressed, r)

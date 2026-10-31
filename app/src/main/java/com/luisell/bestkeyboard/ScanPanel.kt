@@ -57,8 +57,8 @@ class ScanPanel(context: Context) : FrameLayout(context) {
     private val hint = TextView(context)
     private val shutter = View(context)
     private val gallery = GalleryIcon(context)
-    private val closeBtn = TextView(context)
-    private val backBtn = TextView(context)
+    private val closeBtn = IconView(context, Icons.CLOSE, 7.5f)
+    private val backBtn = IconView(context, Icons.BACK, 8.5f)
     private val resultBar = LinearLayout(context)
     private val resultText = TextView(context)
     private val insertBtn = TextView(context)
@@ -78,17 +78,14 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         photo.onSelection = { updateResult() }
         addView(photo, LayoutParams(-1, -1))
 
-        fun circle(tv: TextView, label: String, size: Float) {
-            tv.text = label
-            tv.textSize = size
-            tv.gravity = Gravity.CENTER
-            tv.setTextColor(0xFFFFFFFF.toInt())
-            tv.background = PanelUi.pressable(0x99303134.toInt(), 0xCC505257.toInt(), d(24f).toFloat())
+        fun circle(v: IconView) {
+            v.color = 0xFFFFFFFF.toInt()
+            v.background = PanelUi.pressable(0x99303134.toInt(), 0xCC505257.toInt(), d(24f).toFloat())
         }
-        circle(closeBtn, "✕", 20f)
+        circle(closeBtn)
         closeBtn.setOnClickListener { actions?.onScanFeedback(); actions?.onScanClose() }
         addView(closeBtn, LayoutParams(d(48f), d(48f), Gravity.TOP or Gravity.END).apply { setMargins(0, d(10f), d(10f), 0) })
-        circle(backBtn, "←", 20f)
+        circle(backBtn)
         backBtn.visibility = GONE
         backBtn.setOnClickListener { actions?.onScanFeedback(); retake() }
         addView(backBtn, LayoutParams(d(48f), d(48f), Gravity.TOP or Gravity.START).apply { setMargins(d(10f), d(10f), 0, 0) })
@@ -177,7 +174,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
                 p.unbindAll()
                 p.bindToLifecycle(o, CameraSelector.DEFAULT_BACK_CAMERA, pv, ic)
             } catch (_: Exception) {
-                hint.text = L.t("No se pudo abrir la cámara. Usa 🖼 para elegir una foto.", "Couldn't open the camera. Use 🖼 to pick a photo.")
+                hint.text = L.t("No se pudo abrir la cámara. Toca el botón de galería para elegir una foto.", "Couldn't open the camera. Tap the gallery button to pick a photo.")
             }
         }, mainExecutor)
     }

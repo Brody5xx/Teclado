@@ -43,7 +43,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
     private val grid = GridView(context)
     private val empty = TextView(context)
     private val abc: TextView
-    private val del: TextView
+    private val del: IconView
     private val body = LinearLayout(context)
     private val overlay = PanelOverlay(context, 0x66000000)
     private var confirmClear = false
@@ -55,7 +55,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
     }
     private val decoder = Executors.newSingleThreadExecutor()
 
-    private inner class Holder(val box: FrameLayout, val text: TextView, val image: ImageView, val pin: TextView)
+    private inner class Holder(val box: FrameLayout, val text: TextView, val image: ImageView, val pin: IconView)
 
     private val adapter = object : BaseAdapter() {
         override fun getCount() = items.size
@@ -67,6 +67,9 @@ class ClipPanel(context: Context) : FrameLayout(context) {
             h.box.background = PanelUi.pressable(palette.key, palette.keyPressed, d(9f).toFloat())
             h.text.setTextColor(palette.text)
             h.pin.visibility = if (it.pinned) VISIBLE else GONE
+            h.pin.color = palette.accent
+            h.pin.bgColor = palette.bg
+            h.pin.background = PanelUi.rounded(palette.bg, d(10f).toFloat())
             if (it.isImage) {
                 h.text.visibility = GONE
                 h.image.visibility = VISIBLE
@@ -130,7 +133,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         hint.gravity = Gravity.CENTER
         hint.tag = "hint"
         bar.addView(hint, LinearLayout.LayoutParams(0, d(40f), 1f))
-        del = PanelUi.barButton(context, "⌫", palette)
+        del = IconView(context, Icons.DELETE, 9.5f)
         PanelUi.makeRepeatingDelete(del) { listener }
         bar.addView(del, LinearLayout.LayoutParams(d(54f), d(40f)))
         body.addView(bar, LinearLayout.LayoutParams(-1, -2))
@@ -159,10 +162,9 @@ class ClipPanel(context: Context) : FrameLayout(context) {
             }
         }
         box.addView(image, FrameLayout.LayoutParams(-1, -1))
-        val pin = TextView(context)
-        pin.text = "📌"
-        pin.textSize = 12f
-        box.addView(pin, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END).apply {
+        val pin = IconView(context, Icons.PIN, 5.5f)
+        pin.isClickable = false
+        box.addView(pin, FrameLayout.LayoutParams(d(20f), d(20f), Gravity.TOP or Gravity.END).apply {
             topMargin = d(2f); rightMargin = d(4f)
         })
         val h = Holder(box, text, image, pin)
@@ -212,8 +214,8 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         title.text = if (n == 0) word else "$word ($n)"
         val showEmpty = items.isEmpty()
         empty.text = if (!historyOn) L.t(
-            "El historial del portapapeles está apagado.\nPuedes encenderlo en los ajustes (⚙).",
-            "Clipboard history is off.\nYou can turn it on in settings (⚙).",
+            "El historial del portapapeles está apagado.\nPuedes encenderlo en los ajustes.",
+            "Clipboard history is off.\nYou can turn it on in settings.",
         )
         else L.t(
             "Todo lo que copies (textos e imágenes) aparecerá aquí.\nDura 2 días; lo que fijes 📌 se queda para siempre.",
@@ -288,7 +290,8 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         val r = d(7f).toFloat()
         abc.setTextColor(p.text)
         abc.background = PanelUi.pressable(p.special, p.keyPressed, r)
-        del.setTextColor(p.text)
+        del.color = p.text
+        del.bgColor = p.special
         del.background = PanelUi.pressable(p.special, p.keyPressed, r)
         findViewWithTag<TextView>("hint")?.setTextColor(p.hint)
         refresh()

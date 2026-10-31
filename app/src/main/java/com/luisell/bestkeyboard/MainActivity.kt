@@ -345,7 +345,15 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 6.6")
+        section("Novedades — Versión 6.8")
+        text(
+            "• Íconos nuevos en todo el teclado: barra de herramientas, emojis, portapapeles, traductor, " +
+                "edición, ortografía y escáner, todos con el mismo estilo de líneas finas.\n" +
+                "• Nuevo botón de herramientas: un pequeño panel de control.\n" +
+                "• La sugerencia de captura de pantalla tiene prioridad sobre las palabras.", 14f,
+        )
+
+        section("Versión 6.6")
         text(
             "• Los textos del teclado (paneles, botones y mensajes) cambian a inglés o español cuando " +
                 "cambias el idioma con 🌐.\n" +
