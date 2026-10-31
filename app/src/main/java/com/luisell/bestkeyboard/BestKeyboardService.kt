@@ -145,6 +145,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // Edición de texto (panel 5)
     private var editPanel: EditPanel? = null
     private var morePanel: MorePanel? = null
+    // Frases (7), calculadora (8) y GIFs (9)
+    private var phrasePanel: PhrasePanel? = null
+    private var calcPanel: CalcPanel? = null
+    private var gifPanel: GifPanel? = null
+    /** Barra arriba del teclado con el mensaje traducido. */
+    private var infoBar: InfoBar? = null
+    private var readTrans: Translation? = null
 
     // Sugerencia de captura de pantalla
     private var shot: Screenshots.Shot? = null
@@ -343,7 +350,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             override fun onMoreTool(tool: Int) {
                 when (tool) {
                     KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_VOICE,
-                    KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN -> onToolbar(tool)
+                    KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN, KeyboardView.TOOL_PHRASES,
+                    KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF -> onToolbar(tool)
                     else -> { showMode(0); onToolbar(tool) }
                 }
             }
@@ -356,6 +364,56 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         box.addView(more, FrameLayout.LayoutParams(-1, -1))
         morePanel = more
+
+        // Frases rápidas del trabajo
+        val pp = PhrasePanel(this)
+        pp.visibility = View.GONE
+        pp.actions = object : PhrasePanel.Actions {
+            override fun onPhrase(text: String) { showMode(0); insertPhrase(text) }
+            override fun onPhraseBack() = showMode(0)
+            override fun onPhraseEdit() {
+                showMode(0)
+                try {
+                    startActivity(Intent(this@BestKeyboardService, PhrasesActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                } catch (_: Exception) { }
+            }
+            override fun onPhraseFeedback() = onKeyFeedback()
+        }
+        box.addView(pp, FrameLayout.LayoutParams(-1, -1))
+        phrasePanel = pp
+
+        // Calculadora
+        val calc = CalcPanel(this)
+        calc.visibility = View.GONE
+        calc.actions = object : CalcPanel.Actions {
+            override fun onCalcInsert(text: String) { showMode(0); insertText(text) }
+            override fun onCalcBack() = showMode(0)
+            override fun onCalcFeedback() = onKeyFeedback()
+        }
+        box.addView(calc, FrameLayout.LayoutParams(-1, -1))
+        calcPanel = calc
+
+        // GIFs y stickers
+        val gp = GifPanel(this)
+        gp.visibility = View.GONE
+        gp.actions = object : GifPanel.Actions {
+            override fun onGifPick(file: java.io.File) {
+                pasteUri(android.net.Uri.parse("content://${ClipStore.AUTHORITY}/${file.name}"), "image/gif")
+            }
+            override fun onGifBack() = showMode(0)
+            override fun onGifSettings() {
+                showMode(0)
+                try {
+                    startActivity(Intent(this@BestKeyboardService, MainActivity::class.java)
+                        .putExtra(MainActivity.EXTRA_GIFS, true)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                } catch (_: Exception) { }
+            }
+            override fun onGifFeedback() = onKeyFeedback()
+        }
+        box.addView(gp, FrameLayout.LayoutParams(-1, -1))
+        gifPanel = gp
         scanPanel = sp
         panelBox = box
 
@@ -397,8 +455,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         sBar = sb
         spellOn = false
+        val ib = InfoBar(this)
+        ib.visibility = View.GONE
+        ib.onClose = { closeInfo() }
+        ib.onFeedback = { onKeyFeedback() }
+        infoBar = ib
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
+        root.addView(ib, LinearLayout.LayoutParams(-1, -2))
         root.addView(sb, LinearLayout.LayoutParams(-1, -2))
         root.addView(tb, LinearLayout.LayoutParams(-1, -2))
         val cb = CodeBar(this)
@@ -468,6 +532,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         morePanel?.let { mp ->
             mp.visibility = if (m == 6) View.VISIBLE else View.GONE
             if (m == 6) mp.open()
+        }
+        phrasePanel?.let { pp ->
+            pp.visibility = if (m == 7) View.VISIBLE else View.GONE
+            if (m == 7) pp.open()
+        }
+        calcPanel?.let { cp ->
+            cp.visibility = if (m == 8) View.VISIBLE else View.GONE
+            if (m == 8) cp.open()
+        }
+        gifPanel?.let { gp ->
+            val was = gp.visibility == View.VISIBLE
+            gp.visibility = if (m == 9) View.VISIBLE else View.GONE
+            if (m == 9) gp.open() else if (was) gp.close()
         }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
@@ -1119,9 +1196,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Pega una imagen: directo si la app la acepta (WhatsApp, Gmail...), si no, la deja copiada. */
     private fun pasteImage(item: ClipItem) {
-        val ic = currentInputConnection ?: return
         val uri = ClipStore.uriOf(item) ?: return
-        val mime = item.mime ?: "image/png"
+        pasteUri(uri, item.mime ?: "image/png")
+    }
+
+    private fun pasteUri(uri: android.net.Uri, mime: String) {
+        val ic = currentInputConnection ?: return
         val ei = currentInputEditorInfo
         if (Build.VERSION.SDK_INT >= 25 && ei != null) {
             val accepted = ei.contentMimeTypes ?: emptyArray()
@@ -1227,6 +1307,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (quick != null) clearQuick(false)
         if (shot != null || shotAsk) clearShot()
         if (mode != 0) showMode(0)
+        closeInfo()
         if (translating) stopTranslate()
         if (spellOn) stopSpell(keepSelection = true)
         kv?.reset()
@@ -1323,6 +1404,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         scanPanel?.applyPalette(pal)
         editPanel?.applyPalette(pal)
         morePanel?.applyPalette(pal)
+        phrasePanel?.applyPalette(pal)
+        calcPanel?.applyPalette(pal)
+        gifPanel?.applyPalette(pal)
+        infoBar?.applyPalette(pal)
+        v.oneHand = when (prefs.getString(Prefs.ONE_HAND, "off")) { "left" -> 1; "right" -> 2; else -> 0 }
         val (barTools, moreTools) = Tools.load(this, prefs)
         v.setBarTools(barTools)
         morePanel?.setTools(barTools, moreTools, Tools.maxBar(this))
@@ -1867,6 +1953,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 } catch (_: Exception) { }
             }
             KeyboardView.TOOL_LANG -> onKeyCode(Codes.LANG)
+            KeyboardView.TOOL_PHRASES -> showMode(7)
+            KeyboardView.TOOL_CALC -> showMode(8)
+            KeyboardView.TOOL_GIF -> showMode(9)
+            KeyboardView.TOOL_READ -> readMessage()
+            KeyboardView.TOOL_ONEHAND -> {
+                // Un toque: a la derecha (para el pulgar derecho); otro toque: normal
+                val now = kv?.oneHand ?: 0
+                onOneHand(if (now == 0) 2 else 0)
+            }
             KeyboardView.TOOL_RESIZE -> {
                 showMode(0)
                 kv?.startResize()
@@ -2307,6 +2402,109 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         ic.commitText(text, 1)
         hConsume()
+    }
+
+    override fun onOneHand(mode: Int) {
+        prefs.edit().putString(Prefs.ONE_HAND, when (mode) { 1 -> "left"; 2 -> "right"; else -> "off" }).apply()
+        kv?.oneHand = mode
+    }
+
+    // ---------------------------------------------------------------- Frases
+
+    /** Escribe la frase; si tiene "___", lo deja seleccionado para que escribas encima. */
+    private fun insertPhrase(text: String) {
+        val ic = target() ?: return
+        val before = ic.getTextBeforeCursor(1, 0) ?: ""
+        val space = if (before.isNotEmpty() && !before[0].isWhitespace()) " " else ""
+        val full = space + text
+        val blank = full.indexOf(Phrases.BLANK)
+        ic.beginBatchEdit()
+        ic.commitText(full, 1)
+        if (blank >= 0) {
+            val ex = try { ic.getExtractedText(ExtractedTextRequest(), 0) } catch (_: Exception) { null }
+            if (ex != null) {
+                val end = ex.startOffset + ex.selectionEnd
+                val start = end - full.length + blank
+                if (start >= 0) ic.setSelection(start, start + Phrases.BLANK.length)
+            }
+        }
+        ic.endBatchEdit()
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+    }
+
+    // ---------------------------------------------------------------- Traducir un mensaje
+
+    /** Adivina si un texto está en inglés (si no, lo tomamos como español). */
+    private fun looksEnglish(t: String): Boolean {
+        val low = t.lowercase()
+        val words = low.split(Regex("[^a-záéíóúñü']+")).filter { it.isNotEmpty() }
+        val en = setOf("the", "and", "you", "is", "are", "to", "of", "it", "i", "for", "on", "with", "this", "that", "have", "be", "what", "can", "will", "please", "thanks", "my", "your", "at", "in", "we", "do", "not", "was", "hi", "hello", "ok", "yes", "how", "when", "where")
+        val es = setOf("el", "la", "los", "las", "de", "que", "y", "en", "es", "un", "una", "por", "para", "con", "no", "se", "lo", "tu", "mi", "como", "pero", "si", "muy", "gracias", "hola", "está", "estoy", "qué", "yo", "te", "me", "ya", "al", "del", "cuando", "donde")
+        var e = 0
+        var sp = 0
+        for (w in words) { if (w in en) e++; if (w in es) sp++ }
+        if (Regex("[áéíóúñ¿¡]").containsMatchIn(low)) sp += 2
+        return e > sp
+    }
+
+    /** Traduce lo que seleccionaste o, si no hay nada, el último mensaje que copiaste. */
+    private fun readMessage() {
+        showMode(0)
+        val ic = currentInputConnection
+        val sel = try { ic?.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null }
+        val fromSel = !sel.isNullOrEmpty()
+        val text = if (fromSel) sel else try {
+            clipboard?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
+        } catch (_: Exception) { null }
+        val bar = infoBar ?: return
+        if (text.isNullOrEmpty()) {
+            bar.show(L.t("Traducir mensaje", "Translate message"), L.t(
+                "Mantén presionado el mensaje que te llegó y toca Copiar. Después vuelve a tocar este botón.\n\nTambién puedes seleccionar texto aquí y tocarlo.",
+                "Long-press the message you got and tap Copy. Then tap this button again.\n\nYou can also select text here and tap it."),
+                listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        val src = if (looksEnglish(text)) "en" else "es"
+        val dst = if (src == "es") "en" else "es"
+        val heading = if (src == "en") L.t("Inglés → Español", "English → Spanish") else L.t("Español → Inglés", "Spanish → English")
+        bar.show(heading, L.t("Traduciendo…", "Translating…"), emptyList())
+        readTrans?.close()
+        val t = Translation(src, dst)
+        readTrans = t
+        val fail: (String) -> Unit = {
+            handler.post {
+                if (readTrans === t) bar.show(heading,
+                    L.t("No se pudo traducir. La primera vez necesita internet para bajar el idioma.", "Couldn't translate. The first time it needs internet to download the language."),
+                    listOf(L.t("Cerrar", "Close") to { closeInfo() }))
+            }
+        }
+        t.prepare({
+            t.translate(text, { out ->
+                handler.post {
+                    if (readTrans !== t) return@post
+                    val buttons = ArrayList<Pair<String, () -> Unit>>()
+                    if (fromSel) buttons.add(L.t("Reemplazar", "Replace") to {
+                        currentInputConnection?.commitText(out, 1)
+                        closeInfo()
+                    })
+                    buttons.add(L.t("Copiar", "Copy") to {
+                        try { clipboard?.setPrimaryClip(ClipData.newPlainText("Traducción", out)) } catch (_: Exception) { }
+                        Toast.makeText(this, L.t("Copiado", "Copied"), Toast.LENGTH_SHORT).show()
+                    })
+                    if (!fromSel) buttons.add(L.t("Escribir", "Type it") to { insertText(out); closeInfo() })
+                    buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+                    bar.show(heading, out, buttons)
+                }
+            }, fail)
+        }, fail)
+    }
+
+    private fun closeInfo() {
+        readTrans?.close()
+        readTrans = null
+        infoBar?.visibility = View.GONE
     }
 
     override fun onResizeDone(scale: Float) {

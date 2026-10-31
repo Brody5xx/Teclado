@@ -42,6 +42,11 @@ object Tools {
         Info(KeyboardView.TOOL_HACKER, Icons.HACKER, "Teclado PC", "PC keyboard", false),
         Info(KeyboardView.TOOL_VAULT, Icons.LOCK, "Datos", "Data", true),
         Info(KeyboardView.TOOL_CODE, Icons.CODE, "Modo código", "Code mode", false),
+        Info(KeyboardView.TOOL_PHRASES, Icons.BUBBLE, "Frases", "Phrases", true),
+        Info(KeyboardView.TOOL_READ, Icons.READ, "Traducir mensaje", "Translate message", true),
+        Info(KeyboardView.TOOL_ONEHAND, Icons.ONEHAND, "Una mano", "One hand", false),
+        Info(KeyboardView.TOOL_CALC, Icons.CALC, "Calculadora", "Calculator", true),
+        Info(KeyboardView.TOOL_GIF, Icons.GIF, "GIFs", "GIFs", true),
     )
 
     /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */

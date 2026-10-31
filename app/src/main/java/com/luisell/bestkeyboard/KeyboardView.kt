@@ -39,6 +39,8 @@ class KeyboardView(context: Context) : View(context) {
         fun onGesture(xs: FloatArray, ys: FloatArray, count: Int)
         /** Terminaste de cambiar el tamaño del teclado ([scale] = 1 es el normal). */
         fun onResizeDone(scale: Float)
+        /** Modo una mano: 0 normal, 1 izquierda, 2 derecha. */
+        fun onOneHand(mode: Int) {}
     }
 
     companion object {
@@ -67,6 +69,11 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_VIB = 32
         const val TOOL_SHAPE = 33
         const val TOOL_STYLE = 34
+        const val TOOL_PHRASES = 35
+        const val TOOL_READ = 36
+        const val TOOL_ONEHAND = 37
+        const val TOOL_CALC = 38
+        const val TOOL_GIF = 39
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -170,6 +177,12 @@ class KeyboardView(context: Context) : View(context) {
     private val bottomPad = 6f * d
     /** Modo código encendido (para iluminar su botón). */
     var codeOn = false
+
+    /** Modo una mano: 0 normal, 1 teclas a la izquierda, 2 teclas a la derecha. */
+    var oneHand = 0
+        set(v) { if (field != v) { field = v; if (width > 0) layoutKeys(); invalidate() } }
+    private val handW get() = if (oneHand == 0) 0f else width * 0.18f
+    private val keysLeft get() = if (oneHand == 2) handW else 0f
         set(v) { if (field != v) { field = v; invalidate() } }
 
     /** Teclado de computadora: Ctrl/Alt/Shift/Fn encendidos (una vez) o fijos (dos toques). */
@@ -380,15 +393,16 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun layoutKeys() {
-        val w = width.toFloat()
+        val w = width.toFloat() - handW
+        val x0 = keysLeft
         val kh = keyH
         var y = stripH
         for (row in rows) {
             val total = row.fold(0f) { a, k -> a + k.weight }
-            var x = 0f
+            var x = x0
             for ((i, k) in row.withIndex()) {
                 val kw = w * k.weight / total
-                val right = if (i == row.lastIndex) w else x + kw
+                val right = if (i == row.lastIndex) x0 + w else x + kw
                 k.cell.set(x, y, right, y + kh)
                 val l = x + gapX / 2 + (if (i == 0) gapX / 2 else 0f)
                 val r = right - gapX / 2 - (if (i == row.lastIndex) gapX / 2 else 0f)
@@ -508,6 +522,13 @@ class KeyboardView(context: Context) : View(context) {
             stripPressed = stripHit(x)
             if (stripPressed >= 0) listener?.onKeyFeedback()
             invalidate()
+            return
+        }
+        if (oneHand != 0 && (if (oneHand == 1) x >= width - handW else x < handW)) {
+            // Botones del costado: arriba cambia de lado, abajo vuelve al teclado completo
+            listener?.onKeyFeedback()
+            val top = y < stripH + (height - stripH) / 2f
+            listener?.onOneHand(if (!top) 0 else if (oneHand == 1) 2 else 1)
             return
         }
         val key = findKey(x, y) ?: return
@@ -719,6 +740,7 @@ class KeyboardView(context: Context) : View(context) {
         } else c.drawColor(p.bg)
         if (p.effect.startsWith("matrix")) drawMatrix(c) else lastRain = 0L
         drawStrip(c, p)
+        if (oneHand != 0) drawHandSide(c, p)
         val now = SystemClock.uptimeMillis()
         labelMul = labelScale
         // Ola: las teclas vecinas de la fila saltan una tras otra
@@ -781,6 +803,29 @@ class KeyboardView(context: Context) : View(context) {
         else if (ak != null && showPreview && ak.code == 0 && !longPressed) drawPreview(c, ak, p)
         if (spaceCursor) drawSlideHint(c)
         if (resizing) drawResize(c, p)
+    }
+
+    /** El costado vacío del modo una mano: flecha para cambiar de lado y botón para agrandar. */
+    private fun drawHandSide(c: Canvas, p: Palette) {
+        val left = if (oneHand == 1) width - handW else 0f
+        val cx = left + handW / 2f
+        val midY = stripH + (height - stripH) / 2f
+        val s = minOf(handW, keyH) * 0.22f
+        val color = p.hint
+        st(color)
+        // Flecha hacia el otro lado
+        val dir = if (oneHand == 1) 1f else -1f
+        val ay = stripH + (midY - stripH) / 2f
+        c.drawLine(cx - s * dir, ay, cx + s * dir, ay, stroke)
+        c.drawLine(cx + s * dir, ay, cx + s * 0.3f * dir, ay - s * 0.6f, stroke)
+        c.drawLine(cx + s * dir, ay, cx + s * 0.3f * dir, ay + s * 0.6f, stroke)
+        // Agrandar: dos esquinas que se abren
+        val by = midY + (height - midY) / 2f
+        c.drawLine(cx - s, by - s, cx - s * 0.3f, by - s, stroke)
+        c.drawLine(cx - s, by - s, cx - s, by - s * 0.3f, stroke)
+        c.drawLine(cx + s, by + s, cx + s * 0.3f, by + s, stroke)
+        c.drawLine(cx + s, by + s, cx + s, by + s * 0.3f, stroke)
+        c.drawLine(cx - s, by - s, cx + s, by + s, stroke)
     }
 
     /** Mientras mueves el cursor con la barra espaciadora: teclas oscurecidas y "Desliza". */
@@ -1291,9 +1336,14 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_VIB -> Icons.VIBRATE
                 TOOL_SHAPE -> Icons.SHAPES
                 TOOL_STYLE -> Icons.BRUSH
+                TOOL_PHRASES -> Icons.BUBBLE
+                TOOL_READ -> Icons.READ
+                TOOL_ONEHAND -> Icons.ONEHAND
+                TOOL_CALC -> Icons.CALC
+                TOOL_GIF -> Icons.GIF
                 else -> continue
             }
-            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn)
+            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             Icons.draw(c, kind, cx, cy, s, if (on) p.accent else p.hint, bgc, d)
         }

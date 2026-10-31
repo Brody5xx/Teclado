@@ -105,6 +105,12 @@ object VaultStore {
         save(ctx, items.map { if (it.id == id) Entry(id, kind, label.trim(), value, shortcut.trim().lowercase()) else it })
     }
 
+    /** Cambia todo por [list] (al restaurar una copia de seguridad). */
+    fun replaceAll(ctx: Context, list: List<Entry>) {
+        load(ctx)
+        save(ctx, list)
+    }
+
     fun remove(ctx: Context, id: Long) {
         load(ctx)
         save(ctx, items.filter { it.id != id })

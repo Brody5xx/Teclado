@@ -71,6 +71,14 @@ object Prefs {
     const val LAST_FIELD = "last_field_info"
     const val CODE_LANG = "code_lang"
     const val MORE_TOOLS2 = "more_tools_all"
+    /** Tus frases rápidas (lista JSON). */
+    const val PHRASES = "phrases"
+    /** Mostrar las frases de ejemplo del trabajo. */
+    const val PHRASES_EXAMPLES = "phrases_examples"
+    /** Modo una mano: "off", "left" o "right". */
+    const val ONE_HAND = "one_hand"
+    /** Llave gratis de GIPHY para buscar GIFs y stickers. */
+    const val GIPHY_KEY = "giphy_key"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

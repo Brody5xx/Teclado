@@ -55,10 +55,14 @@ class MainActivity : UiActivity() {
         const val EXTRA_ASK_PHOTOS = "pedir_fotos"
         /** Abrir la app directo en la tarjeta "IA para escribir". */
         const val EXTRA_SHOW_AI = "ver_ia"
+        /** Abrir la app directo en la tarjeta "GIFs". */
+        const val EXTRA_GIFS = "ver_gifs"
         private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
         private const val REQ_CAMERA = 8
         private const val REQ_SMS = 10
+        private const val REQ_EXPORT = 20
+        private const val REQ_IMPORT = 21
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,6 +90,9 @@ class MainActivity : UiActivity() {
         if (i?.getBooleanExtra(EXTRA_SHOW_AI, false) == true) {
             // Bajar hasta la tarjeta de la IA para pegar la clave
             scrollView.postDelayed({ aiCard?.let { scrollView.smoothScrollTo(0, maxOf(0, it.top - dp(60))) } }, 250)
+        }
+        if (i?.getBooleanExtra(EXTRA_GIFS, false) == true) {
+            scrollView.postDelayed({ gifCard?.let { scrollView.smoothScrollTo(0, maxOf(0, it.top - dp(60))) } }, 250)
         }
     }
 
@@ -145,6 +152,82 @@ class MainActivity : UiActivity() {
     private fun askMic() {
         if (micGranted()) { refreshMic(); return }
         requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQ_MIC)
+    }
+
+    // ---------------------------------------------------------------- Copia de seguridad
+
+    private var backupPassword = ""
+
+    /** Pide la contraseña del respaldo ([export] = guardar; si no, para abrir uno). */
+    private fun askBackupPassword(export: Boolean, data: ByteArray? = null) {
+        val box = LinearLayout(this)
+        box.orientation = LinearLayout.VERTICAL
+        box.setPadding(dp(20), dp(8), dp(20), dp(4))
+        fun field(h: String) = EditText(this).apply {
+            hint = h
+            isSingleLine = true
+            textSize = 15f
+            setTextColor(TEXT)
+            setHintTextColor(SUB)
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        val p1 = field(tr("Contraseña del respaldo", "Backup password"))
+        val p2 = field(tr("Repite la contraseña", "Repeat the password"))
+        box.addView(p1, LinearLayout.LayoutParams(-1, -2))
+        if (export) box.addView(p2, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        val msg = TextView(this)
+        msg.text = if (export) tr("Anótala: sin ella no se puede abrir el respaldo.", "Write it down: without it the backup can't be opened.")
+        else tr("La contraseña que pusiste al guardarlo.", "The password you used when saving it.")
+        msg.textSize = 12f
+        msg.setTextColor(SUB)
+        msg.setPadding(0, dp(10), 0, 0)
+        box.addView(msg)
+        AlertDialog.Builder(this)
+            .setTitle(if (export) tr("Guardar copia de seguridad", "Save backup") else tr("Restaurar copia de seguridad", "Restore backup"))
+            .setView(box)
+            .setPositiveButton(tr("Seguir", "Continue")) { _, _ ->
+                val pw = p1.text.toString()
+                if (pw.length < 4) { toast("La contraseña debe tener al menos 4 letras.", "The password must have at least 4 characters."); return@setPositiveButton }
+                if (export) {
+                    if (pw != p2.text.toString()) { toast("Las contraseñas no son iguales.", "The passwords don't match."); return@setPositiveButton }
+                    backupPassword = pw
+                    try {
+                        @Suppress("DEPRECATION")
+                        startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                            .setType("application/octet-stream").putExtra(Intent.EXTRA_TITLE, "best-keyboard-respaldo.bkb"), REQ_EXPORT)
+                    } catch (_: Exception) { }
+                } else if (data != null) {
+                    val ok = try { Backup.import(this, data, pw) } catch (_: Exception) { false }
+                    if (ok) {
+                        toast("¡Listo! Todo se restauró.", "Done! Everything was restored.")
+                        recreate()
+                    } else toast("Contraseña incorrecta o archivo no válido.", "Wrong password or invalid file.")
+                }
+            }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, data)
+        val uri = data?.data ?: return
+        if (resultCode != RESULT_OK) return
+        when (requestCode) {
+            REQ_EXPORT -> try {
+                val bytes = Backup.export(this, backupPassword)
+                contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+                backupPassword = ""
+                toast("Copia de seguridad guardada.", "Backup saved.")
+            } catch (_: Exception) { toast("No se pudo guardar el archivo.", "Couldn't save the file.") }
+            REQ_IMPORT -> try {
+                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return
+                askBackupPassword(false, bytes)
+            } catch (_: Exception) { toast("No se pudo abrir el archivo.", "Couldn't open the file.") }
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -207,6 +290,7 @@ class MainActivity : UiActivity() {
     /** La columna principal; [col] es la tarjeta donde se van agregando las opciones. */
     private lateinit var scrollView: ScrollView
     private var aiCard: View? = null
+    private var gifCard: View? = null
 
     private fun confirm(titleEs: String, titleEn: String, msgEs: String, msgEn: String, action: () -> Unit) {
         AlertDialog.Builder(this)
@@ -403,6 +487,77 @@ class MainActivity : UiActivity() {
         ), 13f, faded = true)
         button(tr("Abrir Datos", "Open Data"), primary = true) { startActivity(Intent(this, DataActivity::class.java)) }
 
+        // ---- Frases rápidas
+        card(tr("Frases rápidas", "Quick phrases"), Icons.BUBBLE)
+        text(tr(
+            "Toca el botón 💬 «Frases» en el teclado (en ⋯) y escribe un reporte completo con un toque, en español o inglés. " +
+                "Lo que dice ___ queda seleccionado para que lo llenes.",
+            "Tap the 💬 «Phrases» button on the keyboard (in ⋯) and write a full report line with one tap, in Spanish or English. " +
+                "The ___ part gets selected so you can fill it in.",
+        ), 13f, faded = true)
+        button(tr("Abrir Frases", "Open Phrases"), primary = true) { startActivity(Intent(this, PhrasesActivity::class.java)) }
+
+        // ---- Una mano
+        card(tr("Modo una mano", "One-hand mode"), Icons.ONEHAND)
+        segmented(tr("Teclado más angosto", "Narrower keyboard"), Prefs.ONE_HAND, "off", listOf(
+            "off" to tr("Normal", "Normal"),
+            "left" to tr("Izquierda", "Left"),
+            "right" to tr("Derecha", "Right"),
+        ))
+        text(tr("También con el botón «Una mano» del teclado. En el costado vacío: la flecha cambia de lado y el otro botón lo vuelve normal.",
+            "Also with the «One hand» button on the keyboard. On the empty side: the arrow switches sides and the other button makes it normal."), 12f, faded = true)
+
+        // ---- GIFs
+        card(tr("GIFs y stickers", "GIFs and stickers"), Icons.GIF)
+        gifCard = col
+        text(tr(
+            "Los GIFs vienen de GIPHY y necesitan una llave GRATIS (solo una vez):\n" +
+                "1. Toca «Conseguir llave de GIPHY» y crea una cuenta (o entra).\n" +
+                "2. Toca «Create an API Key», elige «API» (no SDK) y ponle cualquier nombre, por ejemplo «Best Keyboard».\n" +
+                "3. Copia la llave que te da y pégala aquí abajo.",
+            "GIFs come from GIPHY and need a FREE key (only once):\n" +
+                "1. Tap «Get a GIPHY key» and create an account (or sign in).\n" +
+                "2. Tap «Create an API Key», choose «API» (not SDK) and give it any name, like «Best Keyboard».\n" +
+                "3. Copy the key and paste it below.",
+        ), 13f, faded = true)
+        button(tr("Conseguir llave de GIPHY", "Get a GIPHY key"), primary = true) {
+            try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://developers.giphy.com/dashboard/"))) } catch (_: Exception) { }
+        }
+        val gifBox = EditText(this).apply {
+            hint = tr("Pega aquí tu llave de GIPHY", "Paste your GIPHY key here")
+            setText(prefs.getString(Prefs.GIPHY_KEY, ""))
+            isSingleLine = true
+            textSize = 14f
+            setTextColor(TEXT)
+            setHintTextColor(SUB)
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+        }
+        col.addView(gifBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        button(tr("Guardar llave", "Save key")) {
+            prefs.edit().putString(Prefs.GIPHY_KEY, gifBox.text.toString().trim()).apply()
+            toast("Llave guardada. Toca GIFs en el teclado (en ⋯).", "Key saved. Tap GIFs on the keyboard (in ⋯).")
+        }
+        text(tr("Si la app no acepta GIFs desde el teclado, el GIF queda copiado para que lo pegues.",
+            "If the app doesn't accept GIFs from the keyboard, the GIF is copied so you can paste it."), 12f, faded = true)
+
+        // ---- Copia de seguridad
+        card(tr("Copia de seguridad", "Backup"), Icons.CLIP)
+        text(tr(
+            "Guarda en un archivo tus ajustes, tu estilo, tus palabras aprendidas, tus Datos y tus frases, protegido con una contraseña. " +
+                "Guárdalo en Google Drive o pásalo a tu teléfono nuevo y toca «Restaurar».",
+            "Save your settings, style, learned words, Data and phrases to one file, protected with a password. " +
+                "Keep it in Google Drive or move it to your new phone and tap «Restore».",
+        ), 13f, faded = true)
+        button(tr("Guardar copia de seguridad", "Save backup"), primary = true) { askBackupPassword(true) }
+        button(tr("Restaurar copia de seguridad", "Restore backup")) {
+            try {
+                @Suppress("DEPRECATION")
+                startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), REQ_IMPORT)
+            } catch (_: Exception) { }
+        }
+
         // ---- Sugerencias rápidas: copiado y códigos
         card(tr("Copiado y códigos", "Copied text and codes"), Icons.LOCK)
         switch(tr("Sugerir lo que acabo de copiar", "Suggest what I just copied"), Prefs.CLIP_SUGGEST, true,
@@ -486,6 +641,16 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.1" to tr(
+            "•  💬 Frases rápidas para reportes del trabajo (español e inglés) y las tuyas.\n" +
+                "•  Traducir mensaje: copia lo que te llegó y tradúcelo al instante.\n" +
+                "•  Modo una mano, calculadora y GIFs/stickers dentro del teclado.\n" +
+                "•  Copia de seguridad con contraseña (ajustes, palabras, Datos y frases).",
+            "•  💬 Quick phrases for work reports (Spanish and English) plus your own.\n" +
+                "•  Translate message: copy what you got and translate it instantly.\n" +
+                "•  One-hand mode, calculator and GIFs/stickers inside the keyboard.\n" +
+                "•  Password-protected backup (settings, words, Data and phrases).",
+        ),
         "9.0" to tr(
             "•  Color de las teclas y de las letras en cualquier tema (también teclas arcoíris 🌈).\n" +
                 "•  23 efectos al tocar: Gelatina, Temblor, Giro, Ola, Flash, Neón, Anillos, Estrellas, Confeti, Corazones, Fuego, Nieve, Letra voladora y 🎲 Sorpresa.\n" +

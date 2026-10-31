@@ -59,6 +59,11 @@ object Icons {
     const val VIBRATE = 42
     const val SHAPES = 43
     const val BRUSH = 44
+    const val BUBBLE = 45
+    const val READ = 46
+    const val ONEHAND = 47
+    const val CALC = 48
+    const val GIF = 49
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -409,6 +414,62 @@ object Icons {
                 path.quadTo(cx - s * 0.1f, cy + s * 0.95f, cx + s * 0.0f, cy + s * 0.2f)
                 path.close()
                 c.drawPath(path, fl)
+            }
+            BUBBLE -> {
+                // Globo de chat con dos líneas (Frases)
+                r.set(cx - s * 0.95f, cy - s * 0.8f, cx + s * 0.95f, cy + s * 0.45f)
+                c.drawRoundRect(r, s * 0.35f, s * 0.35f, st)
+                path.reset()
+                path.moveTo(cx - s * 0.45f, cy + s * 0.45f)
+                path.lineTo(cx - s * 0.6f, cy + s * 0.95f)
+                path.lineTo(cx - s * 0.05f, cy + s * 0.45f)
+                c.drawPath(path, st)
+                c.drawLine(cx - s * 0.55f, cy - s * 0.35f, cx + s * 0.55f, cy - s * 0.35f, st)
+                c.drawLine(cx - s * 0.55f, cy + s * 0.02f, cx + s * 0.25f, cy + s * 0.02f, st)
+            }
+            READ -> {
+                // Globo de mensaje con flechas (traducir mensaje)
+                r.set(cx - s * 0.95f, cy - s * 0.85f, cx + s * 0.95f, cy + s * 0.45f)
+                c.drawRoundRect(r, s * 0.35f, s * 0.35f, st)
+                path.reset()
+                path.moveTo(cx + s * 0.45f, cy + s * 0.45f)
+                path.lineTo(cx + s * 0.6f, cy + s * 0.95f)
+                path.lineTo(cx + s * 0.05f, cy + s * 0.45f)
+                c.drawPath(path, st)
+                c.drawLine(cx - s * 0.5f, cy - s * 0.38f, cx + s * 0.5f, cy - s * 0.38f, st)
+                c.drawLine(cx + s * 0.28f, cy - s * 0.55f, cx + s * 0.5f, cy - s * 0.38f, st)
+                c.drawLine(cx - s * 0.5f, cy + s * 0.0f, cx + s * 0.5f, cy + s * 0.0f, st)
+                c.drawLine(cx - s * 0.28f, cy + s * 0.17f, cx - s * 0.5f, cy + s * 0.0f, st)
+            }
+            ONEHAND -> {
+                // Teléfono con el teclado pegado a un lado
+                r.set(cx - s * 0.6f, cy - s * 0.95f, cx + s * 0.6f, cy + s * 0.95f)
+                c.drawRoundRect(r, s * 0.2f, s * 0.2f, st)
+                r.set(cx - s * 0.6f, cy + s * 0.15f, cx + s * 0.25f, cy + s * 0.95f)
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, fl)
+            }
+            CALC -> {
+                // Calculadora
+                r.set(cx - s * 0.75f, cy - s * 0.95f, cx + s * 0.75f, cy + s * 0.95f)
+                c.drawRoundRect(r, s * 0.2f, s * 0.2f, st)
+                c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
+                for (yy in 0..1) for (xx in 0..2)
+                    c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            GIF -> {
+                // Recuadro con la palabra GIF
+                r.set(cx - s * 0.98f, cy - s * 0.7f, cx + s * 0.98f, cy + s * 0.7f)
+                c.drawRoundRect(r, s * 0.2f, s * 0.2f, st)
+                // G
+                r.set(cx - s * 0.78f, cy - s * 0.38f, cx - s * 0.24f, cy + s * 0.38f)
+                c.drawArc(r, 20f, 290f, false, st)
+                c.drawLine(cx - s * 0.5f, cy + s * 0.05f, cx - s * 0.26f, cy + s * 0.05f, st)
+                // I
+                c.drawLine(cx - s * 0.04f, cy - s * 0.38f, cx - s * 0.04f, cy + s * 0.38f, st)
+                // F
+                c.drawLine(cx + s * 0.22f, cy - s * 0.38f, cx + s * 0.22f, cy + s * 0.38f, st)
+                c.drawLine(cx + s * 0.22f, cy - s * 0.38f, cx + s * 0.72f, cy - s * 0.38f, st)
+                c.drawLine(cx + s * 0.22f, cy - s * 0.02f, cx + s * 0.62f, cy - s * 0.02f, st)
             }
             RIPPLE -> {
                 // Punto con ondas (efecto al tocar)

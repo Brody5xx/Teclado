@@ -71,6 +71,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- "Frases": tus frases rápidas -->
+        <activity
+            android:name=".PhrasesActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- "Estilo": temas, colores, formas, animaciones, vibración y sonido -->
         <activity
             android:name=".StyleActivity"
