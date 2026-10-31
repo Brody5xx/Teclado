@@ -52,6 +52,8 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_EDIT = 20
         const val TOOL_SHOT = 21
         private const val LONG_PRESS_MS = 350L
+        /** Cuánto mantener la barra espaciadora para mover el cursor (con la opción de idioma). */
+        private const val SPACE_HOLD_MS = 300L
         private const val REPEAT_START_MS = 400L
     }
 
@@ -186,6 +188,14 @@ class KeyboardView(context: Context) : View(context) {
     private val altPad = 4f * d
 
     private val longPressRunnable = Runnable { onLongPress() }
+    /** Con "deslizar cambia el idioma": si mantienes la barra espaciadora, se activa el cursor. */
+    private var spaceHold = false
+    private val spaceHoldRunnable = Runnable {
+        if (activeKey?.code == Codes.SPACE && !spaceDragging) {
+            spaceHold = true
+            listener?.onKeyFeedback()
+        }
+    }
     private val repeatRunnable = object : Runnable {
         override fun run() {
             listener?.onDeletePress()
@@ -363,6 +373,10 @@ class KeyboardView(context: Context) : View(context) {
                 handler.postDelayed(repeatRunnable, REPEAT_START_MS)
             }
             Codes.SHIFT -> listener?.onKeyCode(Codes.SHIFT)
+            Codes.SPACE -> {
+                spaceHold = false
+                if (spaceSwitchesLang) handler.postDelayed(spaceHoldRunnable, SPACE_HOLD_MS)
+            }
             else -> if (key.alts.isNotEmpty() || key.code == Codes.LANG || key.emojiKey) {
                 handler.postDelayed(longPressRunnable, LONG_PRESS_MS)
             }
@@ -398,9 +412,11 @@ class KeyboardView(context: Context) : View(context) {
             return
         }
         if (key.code == Codes.SPACE) {
-            if (spaceSwitchesLang) {
-                // Deslizar a un lado cambia el idioma (una sola vez por deslizamiento)
+            if (spaceSwitchesLang && !spaceHold) {
+                // Deslizar rápido a un lado cambia el idioma (una sola vez por deslizamiento).
+                // Si primero mantienes presionado, se mueve el cursor (más abajo).
                 if (!spaceDragging && abs(x - downX) > 36f * d) {
+                    handler.removeCallbacks(spaceHoldRunnable)
                     spaceDragging = true
                     listener?.onKeyFeedback()
                     listener?.onKeyCode(Codes.LANG)
@@ -436,6 +452,7 @@ class KeyboardView(context: Context) : View(context) {
     private fun releasePointer(commit: Boolean) {
         handler.removeCallbacks(longPressRunnable)
         handler.removeCallbacks(repeatRunnable)
+        handler.removeCallbacks(spaceHoldRunnable)
         activeId = -1
         if (gesturing) {
             gesturing = false

@@ -223,7 +223,8 @@ class MainActivity : Activity() {
         section("Barra espaciadora")
         text("Mantén presionada la barra espaciadora y desliza el dedo para mover el cursor entre las letras.", 14f)
         switch("Deslizar la barra espaciadora cambia el idioma (y se quita el botón 🌐)", Prefs.SPACE_LANG, false)
-        text("Si lo activas, al deslizar la barra espaciadora cambias entre español e inglés en vez de mover el cursor.", 13f)
+        text("Si lo activas: desliza rápido la barra espaciadora para cambiar entre español e inglés. " +
+            "Para mover el cursor, mantenla presionada un momento (sentirás una vibración) y luego desliza.", 13f)
 
         section("Sugerencias y autocorrector")
         switch("Mostrar sugerencias de palabras", Prefs.SUGGEST, true)
@@ -350,10 +351,10 @@ class MainActivity : Activity() {
                 "• Mantén presionada una tecla de borrar para borrar rápido.", 14f,
         )
 
-        section("Novedades — Versión 6.9")
+        section("Novedades — Versión 7.0")
         text(
-            "• Nueva opción en «Barra espaciadora»: deslizar la barra cambia el idioma y se quita el botón 🌐. " +
-                "Viene apagada: deslizar sigue moviendo el cursor.", 14f,
+            "• Nueva opción en «Barra espaciadora»: deslizar rápido la barra cambia el idioma y se quita el botón 🌐. " +
+                "Mantenerla presionada y deslizar sigue moviendo el cursor. Viene apagada.", 14f,
         )
 
         section("Versión 6.8")
