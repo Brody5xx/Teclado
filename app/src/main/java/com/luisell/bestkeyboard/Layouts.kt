@@ -58,17 +58,20 @@ object Layouts {
 
     private fun numberRow() = "1234567890".map { ch(it.toString(), NUM_ALTS[it] ?: "") }
 
+    /** Si es false, no hay botón 🌐 (el idioma se cambia deslizando la barra espaciadora). */
+    var showGlobe = true
+
     private fun bottomRow(modeLabel: String, modeCode: Int, comma: String): List<Key> {
         val commaKey = when (comma) {
             "@" -> ch("@", ",")
             "/" -> ch("/", ",:")
             else -> Key(",", 0, ",", 1f, emptyList(), emojiKey = true)
         }
-        return listOf(
+        return listOfNotNull(
             sp(modeLabel, modeCode, 1.5f),
             commaKey,
-            sp("🌐", Codes.LANG, 1f),
-            Key(" ", Codes.SPACE, null, 4f, emptyList()),
+            if (showGlobe) sp("🌐", Codes.LANG, 1f) else null,
+            Key(" ", Codes.SPACE, null, if (showGlobe) 4f else 5f, emptyList()),
             ch(".", ",?¿!¡'\"-:;@/…"),
             sp("↵", Codes.ENTER, 1.5f),
         )

@@ -66,6 +66,9 @@ class KeyboardView(context: Context) : View(context) {
         set(v) { if (field != v) { field = v; invalidate() } }
     var enterAction = EditorInfo.IME_ACTION_NONE
         set(v) { if (field != v) { field = v; invalidate() } }
+    /** Deslizar la barra espaciadora cambia el idioma en vez de mover el cursor. */
+    var spaceSwitchesLang = false
+        set(v) { if (field != v) { field = v; invalidate() } }
     var spaceLabel = ""
         set(v) { if (field != v) { field = v; invalidate() } }
     var showPreview = true
@@ -395,6 +398,15 @@ class KeyboardView(context: Context) : View(context) {
             return
         }
         if (key.code == Codes.SPACE) {
+            if (spaceSwitchesLang) {
+                // Deslizar a un lado cambia el idioma (una sola vez por deslizamiento)
+                if (!spaceDragging && abs(x - downX) > 36f * d) {
+                    spaceDragging = true
+                    listener?.onKeyFeedback()
+                    listener?.onKeyCode(Codes.LANG)
+                }
+                return
+            }
             // Deslizar sobre la barra espaciadora mueve el cursor
             if (!spaceDragging && abs(x - downX) > 18f * d) {
                 spaceDragging = true
@@ -572,7 +584,7 @@ class KeyboardView(context: Context) : View(context) {
                     drawLabel(c, "☺", k.rect.right - keyH * 0.2f, k.rect.top + keyH * 0.2f, keyH * 0.24f, p.hint)
                 }
             }
-            Codes.SPACE -> drawLabel(c, spaceLabel, cx, cy, keyH * 0.26f, p.hint)
+            Codes.SPACE -> drawLabel(c, if (spaceSwitchesLang) "‹  $spaceLabel  ›" else spaceLabel, cx, cy, keyH * 0.26f, p.hint)
             Codes.SHIFT -> drawShift(c, cx, cy, s, fg)
             Codes.DELETE -> drawDelete(c, cx, cy, s, fg)
             Codes.ENTER -> drawEnter(c, cx, cy, s, fg)

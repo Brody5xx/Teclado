@@ -26,6 +26,8 @@ object Prefs {
     const val SHOTS = "suggest_screenshots"
     const val SHOT_USED = "screenshot_used"
     const val SHOT_ASKS = "screenshot_asks"
+    /** Deslizar la barra espaciadora cambia el idioma (y se quita el botón 🌐). */
+    const val SPACE_LANG = "space_switches_lang"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

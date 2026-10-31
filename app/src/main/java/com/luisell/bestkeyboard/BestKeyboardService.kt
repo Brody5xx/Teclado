@@ -1010,9 +1010,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         swipeOn = prefs.getBoolean(Prefs.SWIPE, true)
         v.swipeEnabled = swipeOn && page == Page.LETTERS && fieldSuggest
 
+        val spaceLang = prefs.getBoolean(Prefs.SPACE_LANG, false)
+        v.spaceSwitchesLang = spaceLang
         val newNumberRow = prefs.getBoolean(Prefs.NUMBER_ROW, true)
-        if (newNumberRow != numberRow) {
+        if (newNumberRow != numberRow || Layouts.showGlobe == spaceLang) {
             numberRow = newNumberRow
+            Layouts.showGlobe = !spaceLang
             rebuild()
         }
         v.spaceLabel = if (lang == "es") "Español" else "English"
