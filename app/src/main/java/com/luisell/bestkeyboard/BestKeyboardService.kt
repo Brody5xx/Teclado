@@ -1148,8 +1148,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             variation == InputType.TYPE_TEXT_VARIATION_URI -> "/"
             else -> ","
         }
-        val noSuggestions = (type and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0
+        // Algunas apps (como Instagram) piden "sin sugerencias" en su cuadro de mensajes:
+        // por defecto el teclado las muestra igual (se puede cambiar en los ajustes)
+        val noSuggestions = (type and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0 &&
+            !prefs.getBoolean(Prefs.SUGGEST_ALL_APPS, true)
         fieldSuggest = cls == InputType.TYPE_CLASS_TEXT && !isPassword && commaMode == "," && !noSuggestions
+        prefs.edit().putString(Prefs.LAST_FIELD,
+            "${info.packageName} · 0x${Integer.toHexString(type)} · 0x${Integer.toHexString(info.imeOptions)}").apply()
         fieldCorrect = fieldSuggest && variation != InputType.TYPE_TEXT_VARIATION_FILTER
         fieldLearn = fieldSuggest && (info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
         kv?.enterAction = enterActionFor(info)
@@ -1213,7 +1218,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Ajustes que se guardan solos mientras escribes (no son cambios de personalización). */
     private val quietPrefs = setOf(
         Prefs.CLIP_LAST_SIG, Prefs.QUICK_DONE, Prefs.SHOT_USED, Prefs.SHOT_ASKS, Prefs.LANG, Prefs.TR_SRC,
-        Prefs.BAR_TOOLS, Prefs.MORE_TOOLS, Prefs.BAR_TOOLS2, Prefs.MORE_TOOLS2, Prefs.SIZE,
+        Prefs.BAR_TOOLS, Prefs.MORE_TOOLS, Prefs.BAR_TOOLS2, Prefs.MORE_TOOLS2, Prefs.SIZE, Prefs.LAST_FIELD,
     )
     private val applyLive = Runnable {
         if (kv == null) return@Runnable

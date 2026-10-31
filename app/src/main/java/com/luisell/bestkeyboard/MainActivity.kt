@@ -481,6 +481,9 @@ class MainActivity : UiActivity() {
         // ---- Sugerencias
         card(tr("Sugerencias y autocorrector", "Suggestions and autocorrect"), Icons.TRANSLATE)
         switch(tr("Mostrar sugerencias de palabras", "Show word suggestions"), Prefs.SUGGEST, true)
+        switch(tr("Sugerencias en todas las apps", "Suggestions in every app"), Prefs.SUGGEST_ALL_APPS, true,
+            tr("Algunas apps (como Instagram) piden no mostrar sugerencias. Con esto encendido salen igual.",
+                "Some apps (like Instagram) ask for no suggestions. With this on, they show anyway."))
         switch(tr("Deslizar el dedo para escribir", "Swipe typing"), Prefs.SWIPE, true)
         switch(tr("Autocorrector", "Autocorrect"), Prefs.AUTOCORRECT, true,
             tr("Corrige al tocar espacio. Toca ⌫ justo después para deshacerlo.", "Fixes words when you tap space. Tap ⌫ right after to undo."))
@@ -635,6 +638,14 @@ class MainActivity : UiActivity() {
         }
         col = root
 
+        // Para revisar problemas: qué pidió el último cuadro de texto
+        val diag = TextView(this)
+        diag.text = tr("Último cuadro de texto: ", "Last text box: ") + (prefs.getString(Prefs.LAST_FIELD, "—") ?: "—")
+        diag.textSize = 10f
+        diag.setTextColor(LINE)
+        diag.gravity = Gravity.CENTER
+        root.addView(diag, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(20) })
+
         val foot = TextView(this)
         foot.text = tr("Hecho con ❤ · Best Keyboard", "Made with ❤ · Best Keyboard")
         foot.textSize = 12f
@@ -646,6 +657,7 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "8.9" to tr("•  Sugerencias también en Instagram y otras apps que las apagaban.", "•  Suggestions also in Instagram and other apps that turned them off."),
         "8.8" to tr(
             "•  «Más opciones» deja solo «Estilo» (lo demás está adentro).\n" +
                 "•  El tema Hacker en 12 colores, incluido arcoíris 🌈 (en Estilo → Colores).",

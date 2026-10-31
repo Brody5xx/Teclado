@@ -63,6 +63,10 @@ object Prefs {
     const val VAULT_LEARN = "vault_learn_emails"
     /** Modo código encendido y el lenguaje elegido (Python, JavaScript…). */
     const val CODE_MODE = "code_mode"
+    /** Mostrar sugerencias aunque la app pida que no (Instagram y otras). */
+    const val SUGGEST_ALL_APPS = "suggest_all_apps"
+    /** Qué pidió el último cuadro de texto (para revisar problemas). */
+    const val LAST_FIELD = "last_field_info"
     const val CODE_LANG = "code_lang"
     const val MORE_TOOLS2 = "more_tools_all"
 
