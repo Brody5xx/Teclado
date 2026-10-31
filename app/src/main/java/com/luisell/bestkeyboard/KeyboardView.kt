@@ -311,14 +311,16 @@ class KeyboardView(context: Context) : View(context) {
     // Sugerencia de captura de pantalla (botón con la miniatura)
     private var shotThumb: android.graphics.Bitmap? = null
     private var chipLabel: String? = null
+    private var chipIcon = Icons.IMAGE
     private val shotRect = RectF()
     private val showingShot get() = chipLabel != null && !forceTools
 
     /** Botón grande en el centro de la barra (la captura de pantalla, o el aviso del permiso). */
-    fun setChip(thumb: android.graphics.Bitmap?, label: String?) {
-        if (shotThumb === thumb && chipLabel == label) return
+    fun setChip(thumb: android.graphics.Bitmap?, label: String?, icon: Int = Icons.IMAGE) {
+        if (shotThumb === thumb && chipLabel == label && chipIcon == icon) return
         shotThumb = thumb
         chipLabel = label
+        chipIcon = icon
         invalidate(0, 0, width, stripH.toInt() + 1)
     }
 
@@ -945,7 +947,7 @@ class KeyboardView(context: Context) : View(context) {
             c.drawBitmap(b, null, tmp, null)
             c.restore()
         } else {
-            Icons.draw(c, Icons.IMAGE, cx, cy, r * 0.6f, p.text, p.key, d)
+            Icons.draw(c, chipIcon, cx, cy, r * 0.6f, p.text, p.key, d)
         }
         text.textAlign = Paint.Align.LEFT
         drawLabel(c, label, cx + r + 10f * d, cy, stripH * 0.33f, p.text)

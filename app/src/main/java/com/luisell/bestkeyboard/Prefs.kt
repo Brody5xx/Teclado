@@ -43,6 +43,12 @@ object Prefs {
     const val GEMINI_KEY = "gemini_key"
     /** Idioma de la pantalla de ajustes: auto / es / en. */
     const val APP_LANG = "app_lang"
+    /** Sugerir arriba lo que acabas de copiar. */
+    const val CLIP_SUGGEST = "suggest_copied"
+    /** Sugerir el código de verificación de los SMS. */
+    const val OTP_SUGGEST = "suggest_codes"
+    /** Lo último que ya usaste o descartaste (para no volver a ofrecerlo). */
+    const val QUICK_DONE = "quick_done"
     const val MORE_TOOLS2 = "more_tools_all"
 
     fun get(ctx: Context): SharedPreferences =

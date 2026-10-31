@@ -87,7 +87,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var clipboard: ClipboardManager? = null
     private var clipHistoryOn = true
     private var lastClipSig: String? = null
-    private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
+    private val clipListener = ClipboardManager.OnPrimaryClipChangedListener {
+        captureClip()
+        handler.removeCallbacks(quickCheck)
+        handler.postDelayed(quickCheck, 150)
+    }
 
     // Revisar ortografía palabra por palabra
     private class SpellErr(var start: Int, var end: Int, val word: String, val sugg: List<String>, val maybe: Boolean)
@@ -140,6 +144,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
     }
     private val shotCheck = Runnable { if (isInputViewShown) checkScreenshot() }
+
+    // Sugerencia rápida: lo que copiaste o el código del SMS (va antes que la captura)
+    private var quick: QuickPaste.Item? = null
+    private val quickCheck = Runnable { if (isInputViewShown) checkQuick() }
+    /** Avisa cuando llega un SMS nuevo (para ofrecer el código con el teclado abierto). */
+    private val smsObserver = object : android.database.ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            handler.removeCallbacks(quickCheck)
+            handler.postDelayed(quickCheck, 700)
+        }
+    }
 
     // Escáner dentro del teclado (panel 4)
     private var scanPanel: ScanPanel? = null
@@ -208,6 +223,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         clipboard?.addPrimaryClipChangedListener(clipListener)
         try {
             contentResolver.registerContentObserver(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, mediaObserver)
+        } catch (_: Exception) { }
+        try {
+            contentResolver.registerContentObserver(android.net.Uri.parse("content://sms"), true, smsObserver)
         } catch (_: Exception) { }
         tSrc = prefs.getString(Prefs.TR_SRC, "es") ?: "es"
         tDst = if (tSrc == "es") "en" else "es"
@@ -430,7 +448,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (!shotAsk) prefs.edit().putInt(Prefs.SHOT_ASKS, asks + 1).apply()
                 shot = null
                 shotAsk = true
-                kv?.setChip(null, L.t("Activar sugerencia de capturas", "Turn on screenshot suggestions"))
+                if (quick == null) kv?.setChip(null, L.t("Activar sugerencia de capturas", "Turn on screenshot suggestions"))
             } else clearShot()
             return
         }
@@ -443,7 +461,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (s != null && s.id != usedId) {
                     shot = s
                     shotAsk = false
-                    kv?.setChip(thumb, L.t("Captura de pantalla", "Screenshot"))
+                    if (quick == null) kv?.setChip(thumb, L.t("Captura de pantalla", "Screenshot"))
                 } else clearShot()
             }
         }
@@ -452,7 +470,81 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun clearShot() {
         shot = null
         shotAsk = false
+        if (quick == null) kv?.setChip(null, null)
+    }
+
+    // ---------------------------------------------------------------- Copiado / códigos
+
+    /** ¿Hay algo copiado hace poco o un código de SMS? Lo ofrece arriba del teclado. */
+    private fun checkQuick() {
+        val copyOn = prefs.getBoolean(Prefs.CLIP_SUGGEST, true)
+        val codeOn = prefs.getBoolean(Prefs.OTP_SUGGEST, true)
+        if ((!copyOn && !codeOn) || hackerActive) { clearQuick(false); return }
+        val done = prefs.getString(Prefs.QUICK_DONE, "") ?: ""
+        // Lo copiado (se lee aquí, el teclado tiene permiso mientras está abierto)
+        var fromClip: QuickPaste.Item? = null
+        if (copyOn || codeOn) {
+            val clip = try { clipboard?.primaryClip } catch (_: Exception) { null }
+            val desc = clip?.description
+            val sensitive = desc?.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) == true
+            val text = if (clip != null && clip.itemCount > 0) clip.getItemAt(0).text?.toString() else null
+            if (desc != null && !sensitive && !text.isNullOrBlank() && clip.getItemAt(0).uri == null) {
+                val ts = desc.timestamp
+                // La hora puede venir en dos formatos: se acepta si es reciente en cualquiera
+                val age = minOf(kotlin.math.abs(System.currentTimeMillis() - ts), kotlin.math.abs(SystemClock.elapsedRealtime() - ts))
+                val sig = "clip:$ts:${text.hashCode()}"
+                if (age < QuickPaste.MAX_AGE_MS && sig != done) {
+                    val code = QuickPaste.asCode(text)
+                    if (code != null && codeOn) {
+                        fromClip = QuickPaste.Item(code, L.t("Código: ", "Code: ") + code, true, sig, System.currentTimeMillis() - age)
+                    } else if (copyOn && !isPassword) {
+                        fromClip = QuickPaste.Item(text, L.t("Pegar: ", "Paste: ") + QuickPaste.preview(text), false, sig, System.currentTimeMillis() - age)
+                    }
+                }
+            }
+        }
+        if (!codeOn || !QuickPaste.canReadSms(this)) { showQuick(fromClip); return }
+        val app = applicationContext
+        shotIo.execute {
+            val sms = QuickPaste.recentSmsCode(app)?.takeIf { it.sig != done }
+            handler.post {
+                // El más nuevo de los dos
+                val best = listOfNotNull(fromClip, sms).maxByOrNull { it.time }
+                showQuick(best)
+            }
+        }
+    }
+
+    private fun showQuick(item: QuickPaste.Item?) {
+        quick = item
+        if (item == null) {
+            kv?.setChip(null, null)
+            checkScreenshot()
+            return
+        }
+        kv?.setChip(null, item.label, if (item.isCode) Icons.LOCK else Icons.CLIP)
+    }
+
+    /** Quita la sugerencia rápida; con [forget] no se vuelve a ofrecer (ya la usaste o seguiste escribiendo). */
+    private fun clearQuick(forget: Boolean) {
+        val q = quick ?: return
+        if (forget) prefs.edit().putString(Prefs.QUICK_DONE, q.sig).apply()
+        quick = null
         kv?.setChip(null, null)
+    }
+
+    /** Tocaste la sugerencia: se escribe lo copiado o el código. */
+    private fun useQuick() {
+        val q = quick ?: return
+        clearQuick(true)
+        val ic = target() ?: return
+        ic.commitText(q.text, 1)
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+        updateAutoCaps()
+        scheduleUpdate()
+        if (q.isCode) Toast.makeText(this, L.t("Código pegado", "Code pasted"), Toast.LENGTH_SHORT).show()
     }
 
     /** Tocaste "Captura de pantalla": se guarda en el portapapeles y se pega aquí. */
@@ -1015,6 +1107,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         updateAutoCaps()
         scheduleUpdate()
         checkScreenshot()
+        checkQuick()
         // Volviste de elegir una foto en la galería: ábrela en el escáner para elegir palabras
         ScanActivity.takePendingPhoto()?.let { bmp ->
             scanPhoto = bmp
@@ -1035,6 +1128,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        if (quick != null) clearQuick(false)
         if (shot != null || shotAsk) clearShot()
         if (mode != 0) showMode(0)
         if (translating) stopTranslate()
@@ -1047,6 +1141,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onDestroy() {
         clipboard?.removePrimaryClipChangedListener(clipListener)
         try { contentResolver.unregisterContentObserver(mediaObserver) } catch (_: Exception) { }
+        try { contentResolver.unregisterContentObserver(smsObserver) } catch (_: Exception) { }
         recognizer?.destroy()
         recognizer = null
         trans?.close()
@@ -1344,6 +1439,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onKeyText(text: String) {
         if (spellOn) stopSpell()
         if (hackerActive) { hackerText(text); return }
+        if (quick != null) clearQuick(true)
         if (shot != null || shotAsk) clearShot()
         val ic = target() ?: return
         val phantom = phantomSpace
@@ -1548,7 +1644,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_CLIP -> showMode(2)
             KeyboardView.TOOL_VOICE -> showMode(3)
             KeyboardView.TOOL_EDIT -> showMode(5)
-            KeyboardView.TOOL_SHOT -> useScreenshot()
+            KeyboardView.TOOL_SHOT -> if (quick != null) useQuick() else useScreenshot()
             KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell()
             KeyboardView.TOOL_SCAN -> {
                 if (hasPermission(android.Manifest.permission.CAMERA)) {

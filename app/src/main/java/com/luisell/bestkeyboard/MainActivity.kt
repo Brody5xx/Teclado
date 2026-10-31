@@ -38,6 +38,7 @@ class MainActivity : Activity() {
     private lateinit var micBtn: TextView
     private lateinit var photosBtn: TextView
     private lateinit var camBtn: TextView
+    private lateinit var smsBtn: TextView
 
     /** Idioma de esta pantalla: el del teléfono, o el que elijas. */
     private var en = false
@@ -61,6 +62,7 @@ class MainActivity : Activity() {
         private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
         private const val REQ_CAMERA = 8
+        private const val REQ_SMS = 10
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,6 +119,36 @@ class MainActivity : Activity() {
         requestPermissions(arrayOf(android.Manifest.permission.CAMERA), REQ_CAMERA)
     }
 
+    private fun smsGranted() = QuickPaste.canReadSms(this)
+
+    private fun askSms() {
+        if (smsGranted()) { refreshMic(); return }
+        requestPermissions(arrayOf(android.Manifest.permission.READ_SMS), REQ_SMS)
+    }
+
+    /** Android a veces bloquea este permiso en apps instaladas desde un APK: aquí se explica cómo permitirlo. */
+    private fun smsBlockedHelp() {
+        AlertDialog.Builder(this)
+            .setTitle(tr("Permitir leer los códigos", "Allow reading codes"))
+            .setMessage(tr(
+                "Si Android no te dejó dar el permiso:\n\n" +
+                    "1. Toca «Abrir información de la app».\n" +
+                    "2. Toca los 3 puntitos ⋮ arriba a la derecha → «Permitir ajustes restringidos».\n" +
+                    "3. Entra a Permisos → SMS → Permitir.\n" +
+                    "4. Vuelve aquí.",
+                "If Android didn't let you give the permission:\n\n" +
+                    "1. Tap «Open app info».\n" +
+                    "2. Tap the 3 dots ⋮ at the top right → «Allow restricted settings».\n" +
+                    "3. Go to Permissions → SMS → Allow.\n" +
+                    "4. Come back here.",
+            ))
+            .setPositiveButton(tr("Abrir información de la app", "Open app info")) { _, _ ->
+                try { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) } catch (_: Exception) { }
+            }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
+    }
+
     private fun micGranted() = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
     private fun askMic() {
@@ -132,6 +164,8 @@ class MainActivity : Activity() {
                 else toast("Sin ese permiso no puedo sugerir tus capturas.", "Without that permission I can't suggest your screenshots.")
             REQ_CAMERA -> if (cameraGranted()) toast("¡Listo! Vuelve a donde escribías y toca el escáner.", "Done! Go back to where you were typing and tap the scanner.")
                 else toast("Sin el permiso de la cámara no se puede escanear.", "Without the camera permission you can't scan.")
+            REQ_SMS -> if (smsGranted()) toast("¡Listo! Cuando te llegue un código por SMS, aparece arriba del teclado.", "Done! When a code arrives by SMS, it shows above the keyboard.")
+                else smsBlockedHelp()
             REQ_MIC -> if (micGranted()) toast("¡Listo! Vuelve a donde escribías y toca el micrófono para dictar.", "Done! Go back to where you were typing and tap the mic to dictate.")
                 else toast("Sin el permiso del micrófono no se puede dictar.", "Without the microphone permission you can't dictate.")
         }
@@ -157,6 +191,7 @@ class MainActivity : Activity() {
         if (::micBtn.isInitialized) micBtn.text = if (micGranted()) tr("✓  Micrófono permitido", "✓  Microphone allowed") else tr("Permitir el micrófono", "Allow the microphone")
         if (::photosBtn.isInitialized) photosBtn.text = if (Screenshots.hasPermission(this)) tr("✓  Capturas de pantalla permitidas", "✓  Screenshots allowed")
             else tr("Permitir ver mis capturas", "Allow seeing my screenshots")
+        if (::smsBtn.isInitialized) smsBtn.text = if (smsGranted()) tr("✓  Códigos de SMS permitidos", "✓  SMS codes allowed") else tr("Permitir leer códigos de SMS", "Allow reading SMS codes")
         if (::camBtn.isInitialized) camBtn.text = if (cameraGranted()) tr("✓  Cámara permitida", "✓  Camera allowed") else tr("Permitir la cámara", "Allow the camera")
     }
 
@@ -371,6 +406,16 @@ class MainActivity : Activity() {
         text(tr("Dictado: di \"coma\", \"punto final\", \"nueva línea\"… Traducción y escáner funcionan dentro del teléfono.",
             "Dictation: say \"comma\", \"period\", \"new line\"… Translation and scanner work on the phone."), 12f, faded = true)
 
+        // ---- Sugerencias rápidas: copiado y códigos
+        card(tr("Copiado y códigos", "Copied text and codes"), Icons.LOCK)
+        switch(tr("Sugerir lo que acabo de copiar", "Suggest what I just copied"), Prefs.CLIP_SUGGEST, true,
+            tr("Arriba del teclado sale «Pegar: …» por 3 minutos. Un toque y se escribe.", "«Paste: …» shows above the keyboard for 3 minutes. One tap types it."))
+        switch(tr("Sugerir códigos de verificación", "Suggest verification codes"), Prefs.OTP_SUGGEST, true,
+            tr("Cuando te llega un SMS con un código (o lo copias), sale «Código: 123456».", "When an SMS with a code arrives (or you copy one), «Code: 123456» shows up."))
+        smsBtn = button("") { askSms() }
+        text(tr("Los SMS se leen solo dentro de tu teléfono, únicamente para encontrar el código. Nada se envía.",
+            "SMS are read only on your phone, just to find the code. Nothing is sent."), 12f, faded = true)
+
         // ---- Portapapeles
         card(tr("Portapapeles", "Clipboard"), Icons.CLIP)
         switch(tr("Guardar todo lo que copio", "Save everything I copy"), Prefs.CLIP_HISTORY, true,
@@ -434,6 +479,12 @@ class MainActivity : Activity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "7.9" to tr(
+            "•  Sugerencia de lo que copias: «Pegar: …» arriba del teclado.\n" +
+                "•  Códigos de verificación de tus SMS: «Código: 123456», un toque y se pega.",
+            "•  Suggestion of what you copy: «Paste: …» above the keyboard.\n" +
+                "•  Verification codes from your SMS: «Code: 123456», one tap pastes it.",
+        ),
         "7.7" to tr(
             "•  Ajustes en español o inglés (según tu teléfono, o elígelo arriba).\n" +
                 "•  El botón de ortografía selecciona todo el texto solo.\n" +

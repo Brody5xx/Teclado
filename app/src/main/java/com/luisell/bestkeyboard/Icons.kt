@@ -47,6 +47,7 @@ object Icons {
     const val PENCIL = 30
     const val CHEVRON = 31
     const val HACKER = 32
+    const val LOCK = 33
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -362,6 +363,16 @@ object Icons {
                 path.lineTo(cx + a, cy - a)
                 path.lineTo(cx + a, cy - a * 0.1f)
                 c.drawPath(path, st)
+            }
+            LOCK -> {
+                // Candado (códigos de verificación)
+                r.set(cx - s * 0.75f, cy - s * 0.1f, cx + s * 0.75f, cy + s * 0.95f)
+                c.drawRoundRect(r, s * 0.2f, s * 0.2f, st)
+                r.set(cx - s * 0.45f, cy - s * 0.95f, cx + s * 0.45f, cy + s * 0.1f)
+                c.drawArc(r, 180f, 180f, false, st)
+                c.drawLine(cx - s * 0.45f, cy - s * 0.42f, cx - s * 0.45f, cy - s * 0.1f, st)
+                c.drawLine(cx + s * 0.45f, cy - s * 0.42f, cx + s * 0.45f, cy - s * 0.1f, st)
+                c.drawCircle(cx, cy + s * 0.42f, s * 0.13f, fl)
             }
             HACKER -> {
                 // Hacker con capucha (con hombros) y ">_" en la cara
