@@ -786,11 +786,11 @@ class MainActivity : Activity() {
         val current = prefs.getString(Prefs.THEME, "auto")
         for ((id, names, pal) in Palette.THEMES) {
             val c = ThemeCard(this, pal, tr(names.first, names.second))
-            c.selected = id == current
+            c.chosen = id == current
             c.setOnClickListener {
                 prefs.edit().putString(Prefs.THEME, id).apply()
-                cards.forEach { it.selected = false }
-                c.selected = true
+                cards.forEach { it.chosen = false }
+                c.chosen = true
             }
             cards.add(c)
             row.addView(c, LinearLayout.LayoutParams(dp(104), dp(118)).apply { rightMargin = dp(10) })
@@ -848,7 +848,7 @@ class MainActivity : Activity() {
     /** Tarjeta con un mini teclado dibujado con los colores del tema. */
     @SuppressLint("ViewConstructor")
     private class ThemeCard(context: Context, private val pal: Palette?, private val name: String) : View(context) {
-        var selected = false
+        var chosen = false
             set(v) { field = v; invalidate() }
         private val p = Paint(Paint.ANTI_ALIAS_FLAG)
         private val r = RectF()
@@ -894,7 +894,7 @@ class MainActivity : Activity() {
                     c.drawRoundRect(r, 3 * dd, 3 * dd, p)
                 }
             }
-            if (selected) {
+            if (chosen) {
                 p.style = Paint.Style.STROKE
                 p.strokeWidth = 3 * dd
                 p.shader = LinearGradient(0f, 0f, w, 0f, CYAN, VIOLET, Shader.TileMode.CLAMP)
@@ -903,10 +903,10 @@ class MainActivity : Activity() {
                 p.shader = null
                 p.style = Paint.Style.FILL
             }
-            p.color = if (selected) TEXT else SUB
+            p.color = if (chosen) TEXT else SUB
             p.textSize = 12.5f * dd
             p.textAlign = Paint.Align.CENTER
-            p.typeface = if (selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+            p.typeface = if (chosen) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
             c.drawText(name, w / 2, h - 7 * dd, p)
         }
     }
