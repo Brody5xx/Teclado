@@ -469,7 +469,14 @@ class MainActivity : Activity() {
 
         // ---- Apariencia
         card(tr("Apariencia", "Appearance"), Icons.THEME)
-        segmented(tr("Tema", "Theme"), Prefs.THEME, "auto", listOf("auto" to "Auto", "light" to tr("Claro", "Light"), "dark" to tr("Oscuro", "Dark")))
+        themeGallery()
+        accentSwatches()
+        segmented(tr("Forma de las teclas", "Key shape"), Prefs.KEY_SHAPE, "normal",
+            listOf("square" to tr("Cuadradas", "Square"), "normal" to "Normal", "round" to tr("Redondas", "Round"), "pill" to tr("Píldora", "Pill")))
+        segmented(tr("Tamaño de las letras", "Letter size"), Prefs.LABEL_SIZE, "normal",
+            listOf("small" to tr("Pequeñas", "Small"), "normal" to "Normal", "big" to tr("Grandes", "Big")))
+        segmented(tr("Animación al tocar", "Tap animation"), Prefs.KEY_ANIM, "pop",
+            listOf("none" to tr("Ninguna", "None"), "pop" to tr("Rebote", "Bounce"), "ripple" to tr("Onda", "Ripple"), "glow" to tr("Brillo", "Glow")))
         segmented(tr("Altura de las teclas", "Key height"), Prefs.HEIGHT, "normal",
             listOf("low" to tr("Baja", "Low"), "normal" to "Normal", "high" to tr("Alta", "High")))
         switch(tr("Fila de números arriba", "Number row on top"), Prefs.NUMBER_ROW, true)
@@ -479,9 +486,29 @@ class MainActivity : Activity() {
         // ---- Tacto
         card(tr("Al tocar una tecla", "When tapping a key"), Icons.EDIT)
         switch(tr("Vibración", "Vibration"), Prefs.VIBRATE, true)
+        segmented(tr("Tipo de vibración", "Vibration type"), Prefs.VIB_STYLE, "modern",
+            listOf("modern" to tr("Moderna (clic)", "Modern (click)"), "classic" to tr("Clásica", "Classic")))
         segmented(tr("Fuerza de la vibración", "Vibration strength"), Prefs.VIB_STRENGTH, "medium",
             listOf("soft" to tr("Suave", "Soft"), "medium" to tr("Media", "Medium"), "strong" to tr("Fuerte", "Strong")))
+        button(tr("Probar vibración", "Test vibration")) {
+            Feedback.vibrate(this, prefs.getString(Prefs.VIB_STYLE, "modern"), prefs.getString(Prefs.VIB_STRENGTH, "medium"))
+        }
+        text(tr("Si no la sientes, prueba «Clásica» y «Fuerte». También revisa en Ajustes del teléfono → Sonido y vibración → «Vibración al tocar».",
+            "If you can't feel it, try «Classic» and «Strong». Also check phone Settings → Sound & vibration → «Touch vibration»."), 12f, faded = true)
         switch(tr("Sonido", "Sound"), Prefs.SOUND, false)
+        segmented(tr("Tipo de sonido", "Sound type"), Prefs.SOUND_STYLE, "modern",
+            listOf("modern" to tr("Moderno", "Modern"), "classic" to tr("Clásico", "Classic")))
+        segmented(tr("Volumen", "Volume"), Prefs.SOUND_VOL, "medium",
+            listOf("low" to tr("Bajo", "Low"), "medium" to tr("Medio", "Medium"), "high" to tr("Alto", "High")))
+        button(tr("Probar sonido", "Test sound")) {
+            val st = prefs.getString(Prefs.SOUND_STYLE, "modern")
+            val vol = prefs.getString(Prefs.SOUND_VOL, "medium")
+            val h = android.os.Handler(mainLooper)
+            // Letra, letra, borrar, espacio
+            listOf(0L to Feedback.KIND_KEY, 140L to Feedback.KIND_KEY, 300L to Feedback.KIND_DELETE, 480L to Feedback.KIND_SPACE)
+                .forEach { (t, k) -> h.postDelayed({ Feedback.sound(this, k, st, vol) }, t) }
+        }
+        text(tr("Como en iPhone, no suena si el teléfono está en silencio o en vibración.", "Like on iPhone, it doesn't play when the phone is on silent or vibrate."), 12f, faded = true)
 
         // ---- Escritura
         card(tr("Escritura", "Typing"), Icons.SPELL)
@@ -665,6 +692,14 @@ class MainActivity : Activity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "8.4" to tr(
+            "•  11 temas (Medianoche, Océano, Neón, Bosque, Atardecer, Rosa, Hacker, Aurora…) y color de acento.\n" +
+                "•  Forma de las teclas, tamaño de las letras y animaciones al tocar (Rebote, Onda, Brillo).\n" +
+                "•  Vibración moderna (clic del teléfono) y sonidos nuevos: letra, borrar y espacio.",
+            "•  11 themes (Midnight, Ocean, Neon, Forest, Sunset, Rose, Hacker, Aurora…) and accent color.\n" +
+                "•  Key shape, letter size and tap animations (Bounce, Ripple, Glow).\n" +
+                "•  Modern vibration (the phone's click) and new sounds: letter, delete and space.",
+        ),
         "8.3" to tr(
             "•  Modo código </> (en ⋯): teclado para programar (Tab, ( ) [ ] { } : =), sangría automática, " +
                 "palabras de Python/JavaScript/Kotlin/Java/HTML/C++ y la IA: Explicar, Escribir código, Arreglar error y Pista.",
@@ -733,6 +768,146 @@ class MainActivity : Activity() {
             selected -> tr("✅ ¡Todo listo! Ya estás usando Best Keyboard.", "✅ All set! You're using Best Keyboard.")
             enabled -> tr("Falta el paso 2: toca el botón y elige Best Keyboard.", "Step 2 left: tap the button and choose Best Keyboard.")
             else -> tr("Sigue estos 2 pasos para empezar a usar el teclado:", "Follow these 2 steps to start using the keyboard:")
+        }
+    }
+
+    // ---------------------------------------------------------------- Temas
+
+    /** Galería de temas: tarjetas con un mini teclado de cada tema (desliza a los lados). */
+    private fun themeGallery() {
+        val t = TextView(this)
+        t.text = tr("Tema", "Theme")
+        t.textSize = 15f
+        t.setTextColor(TEXT)
+        col.addView(t, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        val cards = ArrayList<ThemeCard>()
+        val current = prefs.getString(Prefs.THEME, "auto")
+        for ((id, names, pal) in Palette.THEMES) {
+            val c = ThemeCard(this, pal, tr(names.first, names.second))
+            c.selected = id == current
+            c.setOnClickListener {
+                prefs.edit().putString(Prefs.THEME, id).apply()
+                cards.forEach { it.selected = false }
+                c.selected = true
+            }
+            cards.add(c)
+            row.addView(c, LinearLayout.LayoutParams(dp(104), dp(118)).apply { rightMargin = dp(10) })
+        }
+        val hs = android.widget.HorizontalScrollView(this)
+        hs.isHorizontalScrollBarEnabled = false
+        hs.addView(row)
+        col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(6) })
+    }
+
+    /** Círculos de colores para el acento (Enter, botones encendidos…). */
+    private fun accentSwatches() {
+        divider()
+        val t = TextView(this)
+        t.text = tr("Color de acento", "Accent color")
+        t.textSize = 15f
+        t.setTextColor(TEXT)
+        col.addView(t, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        val dots = ArrayList<Pair<String, View>>()
+        val cur = prefs.getString(Prefs.ACCENT, "") ?: ""
+        fun paint(sel: String) {
+            for ((v, view) in dots) {
+                val color = if (v.isEmpty()) LINE else v.toLong(16).toInt()
+                view.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    if (v.isEmpty()) {
+                        colors = intArrayOf(CYAN, VIOLET)
+                        gradientType = GradientDrawable.SWEEP_GRADIENT
+                    } else setColor(color)
+                    setStroke(dp(if (v == sel) 3 else 1), if (v == sel) TEXT else LINE)
+                }
+            }
+        }
+        val options = listOf("") + Palette.ACCENTS.map { String.format("%08X", it) }
+        for (v in options) {
+            val dot = View(this)
+            dot.setOnClickListener {
+                prefs.edit().putString(Prefs.ACCENT, v).apply()
+                paint(v)
+            }
+            dots.add(v to dot)
+            row.addView(dot, LinearLayout.LayoutParams(dp(30), dp(30)).apply { rightMargin = dp(10) })
+        }
+        paint(cur)
+        val hs = android.widget.HorizontalScrollView(this)
+        hs.isHorizontalScrollBarEnabled = false
+        hs.addView(row)
+        col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(4) })
+        text(tr("El primero (multicolor) usa el color que trae el tema.", "The first one (multicolor) uses the theme's own color."), 12f, faded = true)
+    }
+
+    /** Tarjeta con un mini teclado dibujado con los colores del tema. */
+    @SuppressLint("ViewConstructor")
+    private class ThemeCard(context: Context, private val pal: Palette?, private val name: String) : View(context) {
+        var selected = false
+            set(v) { field = v; invalidate() }
+        private val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val r = RectF()
+        private val dd = resources.displayMetrics.density
+
+        init { isClickable = true }
+
+        override fun onDraw(c: Canvas) {
+            val w = width.toFloat()
+            val h = height.toFloat()
+            val boardH = h - 26 * dd
+            r.set(0f, 0f, w, boardH)
+            // "Automático": mitad clara, mitad oscura
+            val a = pal ?: Palette.DARK
+            if (pal == null) {
+                p.color = Palette.LIGHT.bg
+                c.drawRoundRect(r, 16 * dd, 16 * dd, p)
+                c.save()
+                c.clipRect(w / 2, 0f, w, boardH)
+                p.color = Palette.DARK.bg
+                c.drawRoundRect(r, 16 * dd, 16 * dd, p)
+                c.restore()
+            } else {
+                p.shader = LinearGradient(0f, 0f, 0f, boardH, a.bg, a.bg2, Shader.TileMode.CLAMP)
+                c.drawRoundRect(r, 16 * dd, 16 * dd, p)
+                p.shader = null
+            }
+            // 3 filas de teclitas
+            val pad = 8 * dd
+            val gap = 3 * dd
+            val rows = 3
+            val kh = (boardH - pad * 2 - gap * (rows - 1)) / rows
+            for (row in 0 until rows) {
+                val n = if (row == 2) 5 else 6
+                val kw = (w - pad * 2 - gap * (n - 1)) / n
+                for (i in 0 until n) {
+                    val left = pad + i * (kw + gap)
+                    val top = pad + row * (kh + gap)
+                    r.set(left, top, left + kw, top + kh)
+                    val half = pal == null && left > w / 2
+                    val kp = if (pal == null) (if (half) Palette.DARK else Palette.LIGHT) else a
+                    p.color = if (row == 2 && i == n - 1) kp.accent else kp.key
+                    c.drawRoundRect(r, 3 * dd, 3 * dd, p)
+                }
+            }
+            if (selected) {
+                p.style = Paint.Style.STROKE
+                p.strokeWidth = 3 * dd
+                p.shader = LinearGradient(0f, 0f, w, 0f, CYAN, VIOLET, Shader.TileMode.CLAMP)
+                r.set(1.5f * dd, 1.5f * dd, w - 1.5f * dd, boardH - 1.5f * dd)
+                c.drawRoundRect(r, 15 * dd, 15 * dd, p)
+                p.shader = null
+                p.style = Paint.Style.FILL
+            }
+            p.color = if (selected) TEXT else SUB
+            p.textSize = 12.5f * dd
+            p.textAlign = Paint.Align.CENTER
+            p.typeface = if (selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+            c.drawText(name, w / 2, h - 7 * dd, p)
         }
     }
 

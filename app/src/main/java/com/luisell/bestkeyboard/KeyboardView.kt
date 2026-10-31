@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.os.SystemClock
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Handler
@@ -178,7 +179,32 @@ class KeyboardView(context: Context) : View(context) {
     private val keyH get() = keyHeightDp * heightScale * d
     private val gapX = 5f * d
     private val gapY = 8f * d
-    private val radius = 7f * d
+    private var radius = 7f * d
+
+    // ---------------------------------------------------------------- Personalización
+
+    /** Forma de las teclas: square / normal / round / pill. */
+    var keyShape = "normal"
+        set(v) {
+            field = v
+            radius = when (v) { "square" -> 3f; "round" -> 13f; "pill" -> 60f; else -> 7f } * d
+            invalidate()
+        }
+    /** Tamaño de las letras de las teclas (1 = normal). */
+    var labelScale = 1f
+        set(v) { field = v; invalidate() }
+    /** Animación al tocar: none / pop / ripple / glow. */
+    var keyAnim = "pop"
+    private var labelMul = 1f
+
+    /** Qué sonido toca la última tecla: letra, borrar o espacio/enter. */
+    var lastPressKind = Feedback.KIND_KEY
+        private set
+
+    private class Anim(val key: Key, val start: Long, val x: Float, val y: Float)
+    private val anims = ArrayList<Anim>()
+    private val animPath = Path()
+    private fun animDur() = when (keyAnim) { "ripple" -> 380L; "glow" -> 420L; else -> 230L }
 
     // Pinturas creadas una sola vez (nada se crea mientras se dibuja = más fluido)
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -408,7 +434,17 @@ class KeyboardView(context: Context) : View(context) {
         val key = findKey(x, y) ?: return
         activeKey = key
         if (forceTools) { forceTools = false; invalidate(0, 0, width, stripH.toInt() + 1) }
+        lastPressKind = when (key.code) {
+            Codes.DELETE -> Feedback.KIND_DELETE
+            Codes.SPACE, Codes.ENTER -> Feedback.KIND_SPACE
+            else -> Feedback.KIND_KEY
+        }
+        if (keyAnim != "none") {
+            anims.removeAll { it.key === key }
+            anims.add(Anim(key, SystemClock.uptimeMillis(), x, y))
+        }
         listener?.onKeyFeedback()
+        lastPressKind = Feedback.KIND_KEY
         // ¿Podría empezar un trazo? (solo desde una letra)
         gestureCandidate = swipeEnabled && key.code == 0 && key.label.length == 1 && key.label[0].isLetter()
         gesturing = false
@@ -595,9 +631,40 @@ class KeyboardView(context: Context) : View(context) {
 
     override fun onDraw(c: Canvas) {
         val p = palette
-        c.drawColor(p.bg)
+        if (p.bg2 != p.bg) {
+            // Fondo en degradado (temas Océano, Neón, Aurora…)
+            fill.shader = android.graphics.LinearGradient(0f, 0f, 0f, height.toFloat(), p.bg, p.bg2, android.graphics.Shader.TileMode.CLAMP)
+            c.drawRect(0f, 0f, width.toFloat(), height.toFloat(), fill)
+            fill.shader = null
+        } else c.drawColor(p.bg)
         drawStrip(c, p)
-        for (row in rows) for (k in row) drawKey(c, k, p)
+        val now = SystemClock.uptimeMillis()
+        labelMul = labelScale
+        for (row in rows) for (k in row) {
+            val a = if (anims.isEmpty()) null else anims.firstOrNull { it.key === k }
+            if (a == null) { drawKey(c, k, p); continue }
+            val t = ((now - a.start).toFloat() / animDur()).coerceIn(0f, 1f)
+            if (keyAnim == "pop") {
+                // Se hunde un poquito y rebota
+                val sc = if (t < 0.35f) 1f - 0.1f * (t / 0.35f) else {
+                    val u = (t - 0.35f) / 0.65f - 1f
+                    0.9f + 0.1f * (1f + 2.70158f * u * u * u + 1.70158f * u * u)
+                }
+                c.save()
+                c.scale(sc, sc, k.rect.centerX(), k.rect.centerY())
+                drawKey(c, k, p)
+                c.restore()
+            } else {
+                drawKey(c, k, p)
+                drawKeyAnim(c, k, a, t, p)
+            }
+        }
+        labelMul = 1f
+        if (anims.isNotEmpty()) {
+            val dur = animDur()
+            anims.removeAll { now - it.start > dur }
+            if (anims.isNotEmpty()) postInvalidateOnAnimation()
+        }
         if (gesturing && gCount > 1) drawTrail(c, p)
         val ak = activeKey
         if (altKeys != null) drawAlts(c, p)
@@ -719,7 +786,29 @@ class KeyboardView(context: Context) : View(context) {
         stroke.strokeWidth = 1.8f * d
     }
 
-    private fun drawLabel(c: Canvas, s: String, cx: Float, cy: Float, size: Float, color: Int) {
+    /** Onda que sale del dedo, o un brillo alrededor de la tecla. */
+    private fun drawKeyAnim(c: Canvas, k: Key, a: Anim, t: Float, p: Palette) {
+        if (keyAnim == "ripple") {
+            c.save()
+            animPath.reset()
+            animPath.addRoundRect(k.rect, radius, radius, Path.Direction.CW)
+            c.clipPath(animPath)
+            val maxR = kotlin.math.hypot(k.rect.width(), k.rect.height())
+            fill.color = (p.accent and 0x00FFFFFF) or (((1f - t) * 0x70).toInt() shl 24)
+            c.drawCircle(a.x, a.y, maxR * (0.15f + 0.95f * t), fill)
+            c.restore()
+        } else if (keyAnim == "glow") {
+            val alpha = ((1f - t) * 255).toInt()
+            fill.color = (p.accent and 0x00FFFFFF) or ((alpha * 0x30 / 255) shl 24)
+            c.drawRoundRect(k.rect, radius, radius, fill)
+            stroke.color = (p.accent and 0x00FFFFFF) or (alpha shl 24)
+            stroke.strokeWidth = 2.5f * d
+            c.drawRoundRect(k.rect, radius, radius, stroke)
+        }
+    }
+
+    private fun drawLabel(c: Canvas, s: String, cx: Float, cy: Float, sizeIn: Float, color: Int) {
+        val size = sizeIn * labelMul
         text.textSize = size
         text.color = color
         text.getFontMetrics(fm)
@@ -776,7 +865,7 @@ class KeyboardView(context: Context) : View(context) {
 
     /** Como drawLabel, pero achica el texto si no cabe en la tecla ("PgUp" en teclas angostas). */
     private fun drawFit(c: Canvas, s: String, cx: Float, cy: Float, size: Float, color: Int, w: Float) {
-        text.textSize = size
+        text.textSize = size * labelMul
         val tw = text.measureText(s)
         val max = w * 0.86f
         drawLabel(c, s, cx, cy, if (tw > max && tw > 0) size * max / tw else size, color)

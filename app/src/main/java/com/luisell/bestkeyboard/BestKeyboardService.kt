@@ -56,6 +56,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var vibMs = 15L
     private var vibAmp = 140
     private var soundOn = false
+    private var vibStyle: String? = "modern"
+    private var vibStrength: String? = "medium"
+    private var soundStyle: String? = "modern"
+    private var soundVol: String? = "medium"
     private var autoCap = true
     private var doubleSpace = true
     private var numberRow = true
@@ -241,6 +245,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         audio = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         WordStore.load(this) { scheduleUpdate() }
+        Feedback.init(this)
         EmojiData.load(this)
         ClipStore.load(this)
         ClipStore.onChange = { if (mode == 2) clipPanel?.refresh() }
@@ -1244,13 +1249,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val theme = prefs.getString(Prefs.THEME, "auto")
         val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
-        val dark = when (theme) {
-            "light" -> false
-            "dark" -> true
-            else -> systemDark
-        }
-        val pal = if (dark) Palette.DARK else Palette.LIGHT
+        var pal = Palette.forTheme(theme, systemDark)
+        // Color de acento elegido (si no, el del tema)
+        prefs.getString(Prefs.ACCENT, "")?.takeIf { it.isNotEmpty() }?.toLongOrNull(16)?.let { pal = pal.withAccent(it.toInt()) }
         v.palette = pal
+        v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
+        v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f }
+        v.keyAnim = prefs.getString(Prefs.KEY_ANIM, "pop") ?: "pop"
+        vibStyle = prefs.getString(Prefs.VIB_STYLE, "modern")
+        vibStrength = prefs.getString(Prefs.VIB_STRENGTH, "medium")
+        soundStyle = prefs.getString(Prefs.SOUND_STYLE, "modern")
+        soundVol = prefs.getString(Prefs.SOUND_VOL, "medium")
         emojiPanel?.applyPalette(pal)
         clipHistoryOn = prefs.getBoolean(Prefs.CLIP_HISTORY, true)
         clipPanel?.let { it.historyOn = clipHistoryOn; it.applyPalette(pal) }
@@ -2291,18 +2300,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onKeyFeedback() {
-        if (vibrateOn) {
-            val vib = vibrator
-            if (vib != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val amp = if (vib.hasAmplitudeControl()) vibAmp else VibrationEffect.DEFAULT_AMPLITUDE
-                    vib.vibrate(VibrationEffect.createOneShot(vibMs, amp))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vib.vibrate(vibMs)
-                }
-            }
-        }
-        if (soundOn) audio?.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, -1f)
+        val kind = kv?.lastPressKind ?: Feedback.KIND_KEY
+        if (vibrateOn) Feedback.vibrate(this, vibStyle, vibStrength)
+        if (soundOn) Feedback.sound(this, kind, soundStyle, soundVol)
     }
 }
