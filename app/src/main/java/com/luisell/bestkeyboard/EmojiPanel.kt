@@ -35,7 +35,9 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
     private var currentTab = -1
 
     private val body = LinearLayout(context)
-    private val grid = GridView(context)
+    private val grid = GlowGrid(context)
+    private val glow = GlowScrollbar(context)
+    private var userScrolling = false
     private val tabViews = ArrayList<IconView>()
     private val abc: TextView
     private val del: IconView
@@ -110,18 +112,26 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         grid.adapter = adapter
         grid.selector = ColorDrawable(0x33888888)
         grid.isFastScrollEnabled = false
-        PanelUi.glowScrollbar(grid)
+        // Sin la barra de Android: usamos la nuestra (destello de luz que no se puede agarrar)
+        grid.isVerticalScrollBarEnabled = false
         grid.setPadding(d(2f), d(4f), d(2f), d(4f))
         grid.clipToPadding = false
         grid.setOnItemClickListener { _, _, pos, _ -> pick(items[pos]) }
         grid.setOnItemLongClickListener { _, v, pos, _ -> showTones(v, items[pos]) }
         grid.setOnScrollListener(object : AbsListView.OnScrollListener {
-            override fun onScrollStateChanged(view: AbsListView?, scrollState: Int) {}
+            override fun onScrollStateChanged(view: AbsListView?, scrollState: Int) {
+                userScrolling = scrollState != AbsListView.OnScrollListener.SCROLL_STATE_IDLE
+                if (userScrolling) showGlow()
+            }
             override fun onScroll(view: AbsListView?, first: Int, visible: Int, total: Int) {
                 if (!searching) highlight(tabFor(first))
+                if (userScrolling) showGlow()
             }
         })
-        body.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
+        val gridBox = FrameLayout(context)
+        gridBox.addView(grid, LayoutParams(-1, -1))
+        gridBox.addView(glow, LayoutParams(-1, -1))
+        body.addView(gridBox, LinearLayout.LayoutParams(-1, 0, 1f))
         mini.visibility = View.GONE
         mini.actions = object : MiniKeys.Actions {
             override fun onMiniText(s: String) { if (query.length < 30) query.append(s); refreshSearch() }
@@ -161,6 +171,11 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         addView(body, LayoutParams(-1, -1))
         addView(overlay, LayoutParams(-1, -1))
         applyPalette(palette)
+    }
+
+    private fun showGlow() {
+        val (pos, visible) = grid.scrollInfo()
+        glow.show(pos, visible)
     }
 
     /** Se llama cada vez que se abre el panel. */

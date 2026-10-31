@@ -167,9 +167,17 @@ class GifPanel(context: Context) : FrameLayout(context) {
 
         val stack = FrameLayout(context)
         grid.columnCount = 3
-        PanelUi.glowScrollbar(scroll)
+        scroll.isVerticalScrollBarEnabled = false
         scroll.addView(grid, LayoutParams(-1, -2))
         stack.addView(scroll, LayoutParams(-1, -1))
+        // Destello de luz al deslizar (igual que en los emojis)
+        val glow = GlowScrollbar(context)
+        stack.addView(glow, LayoutParams(-1, -1))
+        scroll.setOnScrollChangeListener { _, _, y, _, _ ->
+            val content = grid.height.toFloat()
+            val view = scroll.height.toFloat()
+            if (content > view && view > 0f) glow.show(y / (content - view), view / content)
+        }
         status.gravity = Gravity.CENTER
         status.textSize = 14f
         status.setPadding(d(20f), d(10f), d(20f), d(10f))

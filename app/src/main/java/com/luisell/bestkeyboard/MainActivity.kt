@@ -647,6 +647,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.4" to tr("•  Barra de scroll nueva en emojis, GIFs y stickers: un destello de luz blanca, fino y suave, que se apaga solo y no estorba al tocar.",
+            "•  New scroll bar in emojis, GIFs and stickers: a thin, soft flash of white light that fades by itself and doesn't get in the way."),
         "9.3" to tr("•  Buscar emojis, GIFs y stickers sin salir del panel: sale un tecladito abajo y los resultados aparecen mientras escribes.",
             "•  Search emojis, GIFs and stickers without leaving the panel: a small keyboard shows below and results appear as you type."),
         "9.2" to tr(
