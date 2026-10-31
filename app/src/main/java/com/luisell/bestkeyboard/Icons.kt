@@ -52,6 +52,11 @@ object Icons {
     const val EYE = 35
     const val EYE_OFF = 36
     const val CODE = 37
+    const val RIPPLE = 38
+    const val TEXTSIZE = 39
+    const val KEYSIZE = 40
+    const val SPEAKER = 41
+    const val VIBRATE = 42
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -385,6 +390,63 @@ object Icons {
                     st.color = p0
                     st.strokeWidth = st.strokeWidth / 2.2f
                     c.drawLine(cx - s * 0.8f, cy - s * 0.8f, cx + s * 0.8f, cy + s * 0.8f, st)
+                }
+            }
+            RIPPLE -> {
+                // Punto con ondas (efecto al tocar)
+                c.drawCircle(cx, cy, s * 0.22f, fl)
+                c.drawCircle(cx, cy, s * 0.55f, st)
+                r.set(cx - s * 0.95f, cy - s * 0.95f, cx + s * 0.95f, cy + s * 0.95f)
+                c.drawArc(r, 200f, 50f, false, st)
+                c.drawArc(r, 290f, 50f, false, st)
+                c.drawArc(r, 20f, 50f, false, st)
+                c.drawArc(r, 110f, 50f, false, st)
+            }
+            TEXTSIZE -> {
+                // "A" grande y "a" chiquita
+                path.reset()
+                path.moveTo(cx - s * 0.95f, cy + s * 0.85f)
+                path.lineTo(cx - s * 0.4f, cy - s * 0.85f)
+                path.lineTo(cx + s * 0.15f, cy + s * 0.85f)
+                c.drawPath(path, st)
+                c.drawLine(cx - s * 0.75f, cy + s * 0.3f, cx - s * 0.05f, cy + s * 0.3f, st)
+                path.reset()
+                path.moveTo(cx + s * 0.35f, cy + s * 0.85f)
+                path.lineTo(cx + s * 0.65f, cy + s * 0.05f)
+                path.lineTo(cx + s * 0.95f, cy + s * 0.85f)
+                c.drawPath(path, st)
+            }
+            KEYSIZE -> {
+                // Tecla chica dentro de una grande
+                r.set(cx - s * 0.95f, cy - s * 0.95f, cx + s * 0.95f, cy + s * 0.95f)
+                c.drawRoundRect(r, s * 0.3f, s * 0.3f, st)
+                r.set(cx - s * 0.4f, cy - s * 0.4f, cx + s * 0.4f, cy + s * 0.4f)
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, fl)
+            }
+            SPEAKER -> {
+                path.reset()
+                path.moveTo(cx - s * 0.9f, cy - s * 0.3f)
+                path.lineTo(cx - s * 0.5f, cy - s * 0.3f)
+                path.lineTo(cx, cy - s * 0.75f)
+                path.lineTo(cx, cy + s * 0.75f)
+                path.lineTo(cx - s * 0.5f, cy + s * 0.3f)
+                path.lineTo(cx - s * 0.9f, cy + s * 0.3f)
+                path.close()
+                c.drawPath(path, st)
+                r.set(cx - s * 0.2f, cy - s * 0.45f, cx + s * 0.45f, cy + s * 0.45f)
+                c.drawArc(r, -60f, 120f, false, st)
+                r.set(cx - s * 0.2f, cy - s * 0.85f, cx + s * 0.9f, cy + s * 0.85f)
+                c.drawArc(r, -55f, 110f, false, st)
+            }
+            VIBRATE -> {
+                // Teléfono con rayitas a los lados
+                r.set(cx - s * 0.4f, cy - s * 0.85f, cx + s * 0.4f, cy + s * 0.85f)
+                c.drawRoundRect(r, s * 0.18f, s * 0.18f, st)
+                for (sx in intArrayOf(-1, 1)) {
+                    val x = cx + sx * s * 0.7f
+                    c.drawLine(x, cy - s * 0.4f, x, cy + s * 0.4f, st)
+                    val x2 = cx + sx * s * 0.98f
+                    c.drawLine(x2, cy - s * 0.2f, x2, cy + s * 0.2f, st)
                 }
             }
             CODE -> {

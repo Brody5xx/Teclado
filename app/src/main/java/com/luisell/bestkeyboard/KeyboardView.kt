@@ -60,6 +60,11 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_HACKER = 25
         const val TOOL_VAULT = 26
         const val TOOL_CODE = 27
+        const val TOOL_ANIM = 28
+        const val TOOL_LABEL = 29
+        const val TOOL_KEYSIZE = 30
+        const val TOOL_SOUND = 31
+        const val TOOL_VIB = 32
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -996,6 +1001,11 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_HACKER -> Icons.HACKER
                 TOOL_VAULT -> Icons.LOCK
                 TOOL_CODE -> Icons.CODE
+                TOOL_ANIM -> Icons.RIPPLE
+                TOOL_LABEL -> Icons.TEXTSIZE
+                TOOL_KEYSIZE -> Icons.KEYSIZE
+                TOOL_SOUND -> Icons.SPEAKER
+                TOOL_VIB -> Icons.VIBRATE
                 else -> continue
             }
             val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn)

@@ -1,34 +1,37 @@
-"""Genera los sonidos modernos del teclado (originales, hechos con matemáticas).
+"""Genera los sonidos del teclado (originales, hechos con matemáticas).
 
-Tres sonidos como en los teclados de hoy: letra (tick agudo y seco), borrar (un poco más grave)
-y espacio/enter (un "toc" más grave y suave). Uso: python3 tools/make_sounds.py
+Estilo: toque digital de pantalla, corto, suave y seco ("pop" de membrana híbrida),
+sin eco, menos de 20 milisegundos. Tres variantes: letra, borrar y espacio/enter.
+Uso: python3 tools/make_sounds.py
 """
 import wave
 import numpy as np
 
 SR = 44100
-rng = np.random.default_rng(7)
+rng = np.random.default_rng(3)
 
 
-def band_noise(n, lo, hi):
-    x = rng.standard_normal(n)
+def lowpass(x, hz):
     f = np.fft.rfft(x)
-    freqs = np.fft.rfftfreq(n, 1 / SR)
-    f[(freqs < lo) | (freqs > hi)] = 0
-    y = np.fft.irfft(f, n)
-    return y / (np.abs(y).max() + 1e-9)
+    freqs = np.fft.rfftfreq(len(x), 1 / SR)
+    f *= 1 / (1 + (freqs / hz) ** 4)  # corte suave
+    return np.fft.irfft(f, len(x))
 
 
-def click(ms, noise_band, noise_tau, body_hz, body_tau, thump_hz, thump_tau, mix):
+def pop(ms, f0, f1, tau, click_amt, peak):
     n = int(SR * ms / 1000)
     t = np.arange(n) / SR
-    attack = np.minimum(1, t / 0.0004)  # 0.4 ms de subida: sin chasquido digital
-    noise = band_noise(n, *noise_band) * np.exp(-t / noise_tau)
-    body = np.sin(2 * np.pi * body_hz * t) * np.exp(-t / body_tau)
-    thump = np.sin(2 * np.pi * thump_hz * t) * np.exp(-t / thump_tau)
-    y = attack * (mix[0] * noise + mix[1] * body + mix[2] * thump)
-    y *= np.minimum(1, (n - np.arange(n)) / (SR * 0.004))  # final suave
-    return y / np.abs(y).max() * 0.85
+    # Tono que baja rápido de f0 a f1: suena a "pop" (como una membrana que se hunde)
+    freq = f1 + (f0 - f1) * np.exp(-t / 0.0018)
+    phase = 2 * np.pi * np.cumsum(freq) / SR
+    tone = np.sin(phase) * np.exp(-t / tau)
+    # Clic de contacto, muy cortito y filtrado (seco, sin brillo metálico)
+    click = lowpass(rng.standard_normal(n), 3800) * np.exp(-t / 0.0006)
+    y = tone + click_amt * click
+    attack = np.minimum(1, t / 0.0003)
+    release = np.clip((n - np.arange(n)) / (SR * 0.003), 0, 1)  # termina en silencio total
+    y = y * attack * release
+    return y / np.abs(y).max() * peak
 
 
 def save(name, y):
@@ -38,9 +41,9 @@ def save(name, y):
         w.setsampwidth(2)
         w.setframerate(SR)
         w.writeframes(data.tobytes())
-    print(name, len(data), "muestras")
+    print(name, f"{len(data) / SR * 1000:.1f} ms")
 
 
-save("click_key", click(38, (2200, 7000), 0.0028, 1750, 0.0045, 260, 0.004, (0.75, 0.35, 0.25)))
-save("click_delete", click(42, (1600, 5200), 0.0034, 1250, 0.0055, 210, 0.005, (0.7, 0.4, 0.3)))
-save("click_space", click(55, (900, 3200), 0.0045, 620, 0.008, 150, 0.007, (0.55, 0.45, 0.45)))
+save("click_key", pop(16, 1400, 700, 0.0028, 0.35, 0.55))
+save("click_delete", pop(17, 1100, 560, 0.0031, 0.3, 0.55))
+save("click_space", pop(19, 820, 400, 0.0036, 0.25, 0.6))

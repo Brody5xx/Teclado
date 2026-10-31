@@ -29,17 +29,22 @@ object Tools {
         Info(KeyboardView.TOOL_EMOJI, Icons.EMOJI, "Emojis", "Emojis", true),
         Info(KeyboardView.TOOL_CLIP, Icons.CLIP, "Portapapeles", "Clipboard", true),
         Info(KeyboardView.TOOL_TRANSLATE, Icons.TRANSLATE, "Traducir", "Translate", false),
-        Info(KeyboardView.TOOL_SCAN, Icons.SCAN, "Escanear texto", "Scan text", true),
+        Info(KeyboardView.TOOL_SCAN, Icons.SCAN, "Escanear", "Scan", true),
         Info(KeyboardView.TOOL_SPELL, Icons.SPELL, "Ortografía", "Spell check", false),
-        Info(KeyboardView.TOOL_EDIT, Icons.EDIT, "Edición de texto", "Text editing", true),
+        Info(KeyboardView.TOOL_EDIT, Icons.EDIT, "Editar texto", "Edit text", true),
         Info(KeyboardView.TOOL_MORE, Icons.MORE, "Más opciones", "More options", true),
         Info(KeyboardView.TOOL_VOICE, Icons.MIC, "Micrófono", "Microphone", true),
-        Info(KeyboardView.TOOL_HIDE, Icons.HIDE, "Bajar el teclado", "Hide keyboard", false),
-        Info(KeyboardView.TOOL_RESIZE, Icons.RESIZE, "Cambiar tamaño", "Resize", false),
-        Info(KeyboardView.TOOL_LANG, Icons.GLOBE, "Siguiente idioma", "Next language", false),
-        Info(KeyboardView.TOOL_THEME, Icons.THEME, "Tema claro / oscuro", "Light / dark theme", false),
+        Info(KeyboardView.TOOL_HIDE, Icons.HIDE, "Bajar", "Hide", false),
+        Info(KeyboardView.TOOL_RESIZE, Icons.RESIZE, "Tamaño", "Resize", false),
+        Info(KeyboardView.TOOL_LANG, Icons.GLOBE, "Idioma", "Language", false),
+        Info(KeyboardView.TOOL_THEME, Icons.THEME, "Tema", "Theme", false),
+        Info(KeyboardView.TOOL_ANIM, Icons.RIPPLE, "Efecto", "Effect", false),
+        Info(KeyboardView.TOOL_LABEL, Icons.TEXTSIZE, "Letras", "Letters", false),
+        Info(KeyboardView.TOOL_KEYSIZE, Icons.KEYSIZE, "Teclas", "Keys", false),
+        Info(KeyboardView.TOOL_SOUND, Icons.SPEAKER, "Sonido", "Sound", false),
+        Info(KeyboardView.TOOL_VIB, Icons.VIBRATE, "Vibración", "Vibration", false),
         Info(KeyboardView.TOOL_SETTINGS, Icons.SETTINGS, "Ajustes", "Settings", true),
-        Info(KeyboardView.TOOL_HACKER, Icons.HACKER, "Teclado de computadora", "PC keyboard", false),
+        Info(KeyboardView.TOOL_HACKER, Icons.HACKER, "Teclado PC", "PC keyboard", false),
         Info(KeyboardView.TOOL_VAULT, Icons.LOCK, "Mis datos", "My data", true),
         Info(KeyboardView.TOOL_CODE, Icons.CODE, "Modo código", "Code mode", false),
     )
@@ -106,6 +111,65 @@ object Tools {
 }
 
 /**
+ * Botones que cambian una opción con un toque (o deslizando a los lados): tema, efecto, letras,
+ * tamaño de las teclas, sonido y vibración. El teclado cambia al instante.
+ */
+object Cycles {
+    class Opt(val es: String, val en: String) { val name get() = L.t(es, en) }
+
+    private fun themes() = Palette.THEMES.map { Opt(it.second.first, it.second.second) }
+
+    fun has(tool: Int) = tool in setOf(
+        KeyboardView.TOOL_THEME, KeyboardView.TOOL_ANIM, KeyboardView.TOOL_LABEL,
+        KeyboardView.TOOL_KEYSIZE, KeyboardView.TOOL_SOUND, KeyboardView.TOOL_VIB,
+    )
+
+    fun options(tool: Int): List<Opt> = when (tool) {
+        KeyboardView.TOOL_THEME -> themes()
+        KeyboardView.TOOL_ANIM -> listOf(Opt("Ninguno", "None"), Opt("Rebote", "Bounce"), Opt("Onda", "Ripple"), Opt("Brillo", "Glow"))
+        KeyboardView.TOOL_LABEL -> listOf(Opt("Pequeñas", "Small"), Opt("Normal", "Normal"), Opt("Grandes", "Big"))
+        KeyboardView.TOOL_KEYSIZE -> listOf(Opt("Bajas", "Low"), Opt("Normal", "Normal"), Opt("Altas", "Tall"))
+        KeyboardView.TOOL_SOUND -> listOf(Opt("Apagado", "Off"), Opt("Moderno", "Modern"), Opt("Clásico", "Classic"))
+        KeyboardView.TOOL_VIB -> listOf(Opt("Apagada", "Off"), Opt("Sistema", "System"), Opt("Moderna", "Modern"), Opt("Fuerte", "Strong"))
+        else -> emptyList()
+    }
+
+    private val ANIMS = listOf("none", "pop", "ripple", "glow")
+    private val SIZES = listOf("small", "normal", "big")
+    private val HEIGHTS = listOf("low", "normal", "high")
+    private val VIBS = listOf("system", "modern", "classic")
+    private val SOUNDS = listOf("modern", "classic")
+
+    fun current(p: android.content.SharedPreferences, tool: Int): Int = when (tool) {
+        KeyboardView.TOOL_THEME -> Palette.THEMES.indexOfFirst { it.first == p.getString(Prefs.THEME, "auto") }.coerceAtLeast(0)
+        KeyboardView.TOOL_ANIM -> ANIMS.indexOf(p.getString(Prefs.KEY_ANIM, "pop")).coerceAtLeast(0)
+        KeyboardView.TOOL_LABEL -> SIZES.indexOf(p.getString(Prefs.LABEL_SIZE, "normal")).coerceAtLeast(0)
+        KeyboardView.TOOL_KEYSIZE -> HEIGHTS.indexOf(p.getString(Prefs.HEIGHT, "normal")).coerceAtLeast(0)
+        KeyboardView.TOOL_SOUND -> if (!p.getBoolean(Prefs.SOUND, false)) 0 else 1 + SOUNDS.indexOf(p.getString(Prefs.SOUND_STYLE, "modern")).coerceAtLeast(0)
+        KeyboardView.TOOL_VIB -> if (!p.getBoolean(Prefs.VIBRATE, true)) 0 else 1 + VIBS.indexOf(p.getString(Prefs.VIB_STYLE, "system")).coerceAtLeast(0)
+        else -> 0
+    }
+
+    /** Pasa a la opción siguiente ([dir] = 1) o anterior (-1). Devuelve el nombre de la nueva. */
+    fun step(p: android.content.SharedPreferences, tool: Int, dir: Int): String {
+        val opts = options(tool)
+        if (opts.isEmpty()) return ""
+        val i = ((current(p, tool) + dir) % opts.size + opts.size) % opts.size
+        val e = p.edit()
+        when (tool) {
+            KeyboardView.TOOL_THEME -> e.putString(Prefs.THEME, Palette.THEMES[i].first)
+            KeyboardView.TOOL_ANIM -> e.putString(Prefs.KEY_ANIM, ANIMS[i])
+            KeyboardView.TOOL_LABEL -> e.putString(Prefs.LABEL_SIZE, SIZES[i])
+            KeyboardView.TOOL_KEYSIZE -> e.putString(Prefs.HEIGHT, HEIGHTS[i])
+            KeyboardView.TOOL_SOUND -> if (i == 0) e.putBoolean(Prefs.SOUND, false) else e.putBoolean(Prefs.SOUND, true).putString(Prefs.SOUND_STYLE, SOUNDS[i - 1])
+            KeyboardView.TOOL_VIB -> if (i == 0) e.putBoolean(Prefs.VIBRATE, false) else e.putBoolean(Prefs.VIBRATE, true).putString(Prefs.VIB_STYLE, VIBS[i - 1])
+        }
+        e.apply()
+        return opts[i].name
+    }
+}
+
+/**
  * Panel "Más opciones" (como el de Gboard): botones grandes con lo que no está en la barra de arriba.
  * Con el lápiz ✎ puedes acomodar todos los botones arrastrándolos.
  */
@@ -132,7 +196,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
     private val grid = LinearLayout(context)
     private val scroll = ScrollView(context)
     private val arranger = ToolArranger(context)
-    private class Btn(val box: LinearLayout, val icon: IconView, val text: TextView, val chevron: IconView?)
+    private class Btn(val box: LinearLayout, val icon: IconView, val text: TextView, val chevron: IconView?, val sub: TextView? = null)
     private val buttons = ArrayList<Btn>()
 
     private var bar: List<Int> = emptyList()
@@ -246,7 +310,78 @@ class MorePanel(context: Context) : FrameLayout(context) {
     }
 
     /** Botón grande como en Gboard: ícono, nombre (se desliza si es largo) y › si abre algo. */
+    /** Achica la letra hasta que el nombre quepa; si aun así no cabe, se desliza despacio. */
+    private fun fit(t: TextView, base: Float) {
+        t.post {
+            val w = t.width - t.paddingLeft - t.paddingRight
+            if (w <= 0) return@post
+            var size = base
+            t.textSize = size
+            while (size > 12f && t.paint.measureText(t.text.toString()) > w) {
+                size -= 0.5f
+                t.textSize = size
+            }
+            if (t.paint.measureText(t.text.toString()) > w) {
+                t.ellipsize = TextUtils.TruncateAt.MARQUEE
+                t.marqueeRepeatLimit = -1
+                t.isSelected = true
+            } else {
+                t.ellipsize = TextUtils.TruncateAt.END
+                t.isSelected = false
+            }
+        }
+    }
+
+    /** Botón que cambia una opción: un toque = la siguiente; deslizar a los lados = cambiar. */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun cycler(info: Tools.Info): LinearLayout {
+        val prefs = Prefs.get(context)
+        val b = LinearLayout(context)
+        b.orientation = LinearLayout.HORIZONTAL
+        b.gravity = Gravity.CENTER_VERTICAL
+        b.setPadding(d(18f), 0, d(10f), 0)
+        b.isClickable = true
+        val iv = IconView(context, info.icon, 10.5f)
+        iv.isClickable = false
+        b.addView(iv, LinearLayout.LayoutParams(d(30f), d(30f)))
+        val texts = LinearLayout(context)
+        texts.orientation = LinearLayout.VERTICAL
+        texts.setPadding(d(12f), 0, d(2f), 0)
+        val name = TextView(context)
+        name.text = info.label
+        name.textSize = 11.5f
+        name.isSingleLine = true
+        val value = TextView(context)
+        value.textSize = 15.5f
+        value.isSingleLine = true
+        value.setTypeface(value.typeface, Typeface.BOLD)
+        fun show() { value.text = "‹ " + Cycles.options(info.tool)[Cycles.current(prefs, info.tool)].name + " ›"; fit(value, 15.5f) }
+        show()
+        texts.addView(name)
+        texts.addView(value)
+        b.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+        var downX = 0f
+        b.setOnTouchListener { v, e ->
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { downX = e.x; v.isPressed = true }
+                MotionEvent.ACTION_CANCEL -> v.isPressed = false
+                MotionEvent.ACTION_UP -> {
+                    v.isPressed = false
+                    val dx = e.x - downX
+                    val dir = if (dx < -d(30f)) 1 else if (dx > d(30f)) -1 else 1
+                    actions?.onMoreFeedback()
+                    Cycles.step(prefs, info.tool, dir)
+                    show()
+                }
+            }
+            true
+        }
+        buttons.add(Btn(b, iv, value, null, name))
+        return b
+    }
+
     private fun button(info: Tools.Info): LinearLayout {
+        if (Cycles.has(info.tool)) return cycler(info)
         val b = LinearLayout(context)
         b.orientation = LinearLayout.HORIZONTAL
         b.gravity = Gravity.CENTER_VERTICAL
@@ -259,8 +394,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
         t.text = info.label
         t.textSize = 16f
         t.isSingleLine = true
-        t.ellipsize = TextUtils.TruncateAt.MARQUEE
-        t.marqueeRepeatLimit = -1
+        t.ellipsize = TextUtils.TruncateAt.END
         t.isHorizontalFadingEdgeEnabled = true
         t.setPadding(d(14f), 0, d(4f), 0)
         b.addView(t, LinearLayout.LayoutParams(0, -2, 1f))
@@ -271,8 +405,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
             b.addView(chev, LinearLayout.LayoutParams(d(22f), d(22f)))
         }
         b.setOnClickListener { actions?.onMoreFeedback(); actions?.onMoreTool(info.tool) }
-        // "Seleccionado" hace que el texto largo se deslice solo
-        t.post { t.isSelected = true }
+        fit(t, 16f)
         buttons.add(Btn(b, iv, t, chev))
         return b
     }
@@ -285,6 +418,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
             btn.icon.bgColor = p.key
             btn.text.setTextColor(p.text)
             btn.chevron?.color = p.text
+            btn.sub?.setTextColor(p.hint)
         }
     }
 

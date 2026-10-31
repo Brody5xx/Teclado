@@ -51,13 +51,26 @@ object Feedback {
         }
     }
 
-    /** Vibra un toque. [style] = modern / classic, [strength] = soft / medium / strong. */
-    fun vibrate(ctx: Context, style: String?, strength: String?) {
+    /**
+     * Vibra un toque. [style] = system (la vibración de teclado del teléfono, como Gboard) /
+     * modern (clic del motor) / classic (pulso fuerte). [strength] = soft / medium / strong.
+     * [view] = la vista que se tocó (la usa el modo "system").
+     */
+    fun vibrate(ctx: Context, style: String?, strength: String?, view: android.view.View? = null) {
         init(ctx)
+        if ((style == null || style == "system") && view != null) {
+            val c = when (strength) {
+                "soft" -> android.view.HapticFeedbackConstants.CLOCK_TICK
+                "strong" -> android.view.HapticFeedbackConstants.VIRTUAL_KEY
+                else -> if (Build.VERSION.SDK_INT >= 27) android.view.HapticFeedbackConstants.KEYBOARD_TAP else android.view.HapticFeedbackConstants.VIRTUAL_KEY
+            }
+            @Suppress("DEPRECATION")
+            if (view.performHapticFeedback(c, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING)) return
+        }
         val v = vibrator ?: return
         if (!v.hasVibrator()) return
         try {
-            if (style != "classic" && Build.VERSION.SDK_INT >= 29) {
+            if (style == "modern" && Build.VERSION.SDK_INT >= 29) {
                 val effect = when (strength) {
                     "soft" -> VibrationEffect.EFFECT_TICK
                     "strong" -> VibrationEffect.EFFECT_HEAVY_CLICK
@@ -96,10 +109,11 @@ object Feedback {
             )
             return
         }
+        // Suave a propósito: un toque sutil, no un "clac"
         val vol = when (volume) {
-            "low" -> 0.3f
-            "high" -> 1f
-            else -> 0.6f
+            "low" -> 0.18f
+            "high" -> 0.6f
+            else -> 0.34f
         }
         pool?.play(ids[kind.coerceIn(0, 2)], vol, vol, 1, 0, 1f)
     }

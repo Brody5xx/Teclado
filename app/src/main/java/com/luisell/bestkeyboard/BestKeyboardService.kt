@@ -1276,7 +1276,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
         v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f }
         v.keyAnim = prefs.getString(Prefs.KEY_ANIM, "pop") ?: "pop"
-        vibStyle = prefs.getString(Prefs.VIB_STYLE, "modern")
+        vibStyle = prefs.getString(Prefs.VIB_STYLE, "system")
         vibStrength = prefs.getString(Prefs.VIB_STRENGTH, "medium")
         soundStyle = prefs.getString(Prefs.SOUND_STYLE, "modern")
         soundVol = prefs.getString(Prefs.SOUND_VOL, "medium")
@@ -1796,10 +1796,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 startActivity(i)
             }
-            KeyboardView.TOOL_THEME -> {
-                val nowDark = kv?.palette?.isDark ?: true
-                prefs.edit().putString(Prefs.THEME, if (nowDark) "light" else "dark").apply()
-                applySettings()
+            KeyboardView.TOOL_THEME, KeyboardView.TOOL_ANIM, KeyboardView.TOOL_LABEL,
+            KeyboardView.TOOL_KEYSIZE, KeyboardView.TOOL_SOUND, KeyboardView.TOOL_VIB -> {
+                // Desde la barra de arriba: un toque pasa a la siguiente opción
+                val name = Cycles.step(prefs, action, 1)
+                val title = Tools.info(action)?.label ?: ""
+                Toast.makeText(this, "$title: $name", Toast.LENGTH_SHORT).show()
             }
             KeyboardView.TOOL_HIDE -> requestHideSelf(0)
             KeyboardView.TOOL_EMOJI -> showMode(1)
@@ -2321,7 +2323,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onKeyFeedback() {
         val kind = kv?.lastPressKind ?: Feedback.KIND_KEY
-        if (vibrateOn) Feedback.vibrate(this, vibStyle, vibStrength)
+        if (vibrateOn) Feedback.vibrate(this, vibStyle, vibStrength, kv)
         if (soundOn) Feedback.sound(this, kind, soundStyle, soundVol)
     }
 }

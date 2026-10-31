@@ -486,15 +486,28 @@ class MainActivity : Activity() {
         // ---- Tacto
         card(tr("Al tocar una tecla", "When tapping a key"), Icons.EDIT)
         switch(tr("Vibración", "Vibration"), Prefs.VIBRATE, true)
-        segmented(tr("Tipo de vibración", "Vibration type"), Prefs.VIB_STYLE, "modern",
-            listOf("modern" to tr("Moderna (clic)", "Modern (click)"), "classic" to tr("Clásica", "Classic")))
+        segmented(tr("Tipo de vibración", "Vibration type"), Prefs.VIB_STYLE, "system",
+            listOf("system" to tr("Sistema", "System"), "modern" to tr("Moderna", "Modern"), "classic" to tr("Fuerte", "Strong")))
         segmented(tr("Fuerza de la vibración", "Vibration strength"), Prefs.VIB_STRENGTH, "medium",
             listOf("soft" to tr("Suave", "Soft"), "medium" to tr("Media", "Medium"), "strong" to tr("Fuerte", "Strong")))
-        button(tr("Probar vibración", "Test vibration")) {
-            Feedback.vibrate(this, prefs.getString(Prefs.VIB_STYLE, "modern"), prefs.getString(Prefs.VIB_STRENGTH, "medium"))
+        lateinit var testBtn: TextView
+        testBtn = button(tr("Probar vibración", "Test vibration")) {
+            Feedback.vibrate(this, prefs.getString(Prefs.VIB_STYLE, "system"), prefs.getString(Prefs.VIB_STRENGTH, "medium"), testBtn)
         }
-        text(tr("Si no la sientes, prueba «Clásica» y «Fuerte». También revisa en Ajustes del teléfono → Sonido y vibración → «Vibración al tocar».",
-            "If you can't feel it, try «Classic» and «Strong». Also check phone Settings → Sound & vibration → «Touch vibration»."), 12f, faded = true)
+        lateinit var allBtn: TextView
+        allBtn = button(tr("Probar los 3 tipos (1, 2, 3)", "Test the 3 types (1, 2, 3)")) {
+            val h = android.os.Handler(mainLooper)
+            val st = prefs.getString(Prefs.VIB_STRENGTH, "medium")
+            listOf("system" to tr("1 · Sistema", "1 · System"), "modern" to tr("2 · Moderna", "2 · Modern"), "classic" to tr("3 · Fuerte", "3 · Strong"))
+                .forEachIndexed { i, (style, name) ->
+                    h.postDelayed({
+                        Toast.makeText(this, name, Toast.LENGTH_SHORT).show()
+                        Feedback.vibrate(this, style, st, allBtn)
+                    }, i * 1300L)
+                }
+        }
+        text(tr("Elige arriba el tipo que sí sientas. Si no sientes ninguno, revisa en los ajustes del teléfono → Sonido y vibración → «Vibración del teclado» o «Respuesta táctil».",
+            "Pick above the type you can feel. If you feel none, check phone settings → Sound & vibration → «Keyboard vibration» or «Touch feedback»."), 12f, faded = true)
         switch(tr("Sonido", "Sound"), Prefs.SOUND, false)
         segmented(tr("Tipo de sonido", "Sound type"), Prefs.SOUND_STYLE, "modern",
             listOf("modern" to tr("Moderno", "Modern"), "classic" to tr("Clásico", "Classic")))
@@ -692,6 +705,14 @@ class MainActivity : Activity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "8.6" to tr(
+            "•  Sonido nuevo: toque corto y suave (menos de 20 ms).\n" +
+                "•  Vibración tipo «Sistema» (como Gboard) y botón para probar los 3 tipos.\n" +
+                "•  En «Más opciones»: Tema, Efecto, Letras, Teclas, Sonido y Vibración se cambian con un toque o deslizando.",
+            "•  New sound: a short, soft tap (under 20 ms).\n" +
+                "•  «System» vibration (like Gboard) and a button to test the 3 types.\n" +
+                "•  In «More options»: Theme, Effect, Letters, Keys, Sound and Vibration change with a tap or a swipe.",
+        ),
         "8.5" to tr("•  Los cambios de los ajustes (tema, colores, forma, animación…) se ven al instante en el teclado abierto.",
             "•  Settings changes (theme, colors, shape, animation…) show instantly on the open keyboard."),
         "8.4" to tr(

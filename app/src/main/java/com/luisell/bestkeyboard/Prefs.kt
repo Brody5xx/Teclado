@@ -10,7 +10,7 @@ object Prefs {
     const val KEY_SHAPE = "key_shape"    // square / normal / round / pill
     const val LABEL_SIZE = "label_size"  // small / normal / big
     const val KEY_ANIM = "key_anim"      // none / pop / ripple / glow
-    const val VIB_STYLE = "vib_style"    // modern / classic
+    const val VIB_STYLE = "vib_style"    // system / modern / classic
     const val SOUND_STYLE = "sound_style" // modern / classic
     const val SOUND_VOL = "sound_volume" // low / medium / high
     const val HEIGHT = "key_height"      // low / normal / high
