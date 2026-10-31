@@ -59,6 +59,18 @@
         </service>
 
         <!-- Escanear texto con la cámara -->
+        <!-- "Datos": correos, contraseñas y atajos -->
+        <activity
+            android:name=".DataActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- "Mis palabras": ver y editar lo aprendido -->
+        <activity
+            android:name=".WordsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- "Estilo": temas, colores, formas, animaciones, vibración y sonido -->
         <activity
             android:name=".StyleActivity"

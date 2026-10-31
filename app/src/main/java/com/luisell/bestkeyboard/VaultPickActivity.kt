@@ -58,15 +58,15 @@ class VaultPickActivity : Activity() {
         root.setPadding(dp(20), dp(20), dp(20), dp(12))
         root.background = GradientDrawable().apply { setColor(MainActivity.CARD); cornerRadius = dp(24).toFloat() }
         val title = TextView(this)
-        title.text = if (all) tr("Mis datos", "My data") else tr("Mis contraseñas", "My passwords")
+        title.text = if (all) tr("Datos", "Data") else tr("Mis contraseñas", "My passwords")
         title.textSize = 20f
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD))
         title.setTextColor(MainActivity.TEXT)
         root.addView(title)
         val sub = TextView(this)
         sub.text = when {
-            list.isEmpty() -> tr("Todavía no guardaste nada. Agrégalo en la app Best Keyboard → «Mis datos».",
-                "Nothing saved yet. Add it in the Best Keyboard app → «My data».")
+            list.isEmpty() -> tr("Todavía no guardaste nada. Agrégalo en la app Best Keyboard → «Datos».",
+                "Nothing saved yet. Add it in the Best Keyboard app → «Data».")
             unlocked -> tr("Toca uno y se escribe donde estabas.", "Tap one and it's typed where you were.")
             else -> tr("Elige una. Se pide tu huella o PIN antes de escribirla.", "Pick one. Your fingerprint or PIN is asked before typing it.")
         }
@@ -177,7 +177,7 @@ class VaultPickActivity : Activity() {
             when {
                 Build.VERSION.SDK_INT >= 30 -> BiometricPrompt.Builder(this)
                     .setTitle(title)
-                    .setSubtitle(tr("Para ver «Mis datos»", "To see «My data»"))
+                    .setSubtitle(tr("Para ver «Datos»", "To see «Data»"))
                     .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
                     .build().authenticate(CancellationSignal(), mainExecutor, cb)
                 Build.VERSION.SDK_INT == 29 -> @Suppress("DEPRECATION") BiometricPrompt.Builder(this)

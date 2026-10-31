@@ -212,11 +212,26 @@ class KeyboardView(context: Context) : View(context) {
     var lastPressKind = Feedback.KIND_KEY
         private set
 
-    private class Anim(val key: Key, val start: Long, val x: Float, val y: Float)
+    private class Anim(val key: Key, val start: Long, val x: Float, val y: Float, val type: String)
     private val anims = ArrayList<Anim>()
     private val animPath = Path()
-    private fun animDur() = when (keyAnim) {
-        "ripple" -> 380L; "glow" -> 420L; "sparks" -> 480L; "bubble" -> 420L; "lift" -> 280L; else -> 230L
+
+    /** Los efectos al tocar. */
+    object Fx {
+        /** Todos los efectos al tocar (el orden es el de los ajustes). */
+        val ALL = listOf(
+            "none", "random", "pop", "zoom", "lift", "jelly", "shake", "spin", "wave", "ripple", "glow", "flash",
+            "neon", "rings", "bubble", "sparks", "stars", "confetti", "hearts", "fire", "snow", "bubbles", "fly",
+        )
+        /** Los que mueven la tecla (los demás dibujan algo encima). */
+        private val MOVES = setOf("pop", "zoom", "lift", "jelly", "shake", "spin")
+        fun duration(type: String) = when (type) {
+            "ripple" -> 380L; "glow" -> 420L; "sparks" -> 480L; "bubble" -> 420L; "lift" -> 280L; "jelly" -> 340L
+            "shake" -> 320L; "spin" -> 340L; "wave" -> 650L; "flash" -> 240L; "neon" -> 620L; "rings" -> 620L
+            "stars" -> 560L; "confetti" -> 760L; "hearts" -> 850L; "fire" -> 650L; "snow" -> 950L
+            "bubbles" -> 950L; "fly" -> 620L; else -> 230L
+        }
+        fun moves(type: String) = type in MOVES
     }
 
     // ---------------------------------------------------------------- Lluvia de código (tema Hacker)
@@ -505,7 +520,8 @@ class KeyboardView(context: Context) : View(context) {
         }
         if (keyAnim != "none") {
             anims.removeAll { it.key === key }
-            anims.add(Anim(key, SystemClock.uptimeMillis(), x, y))
+            val type = if (keyAnim == "random") Fx.ALL.drop(2).random() else keyAnim
+            anims.add(Anim(key, SystemClock.uptimeMillis(), x, y, type))
         }
         listener?.onKeyFeedback()
         lastPressKind = Feedback.KIND_KEY
@@ -705,39 +721,58 @@ class KeyboardView(context: Context) : View(context) {
         drawStrip(c, p)
         val now = SystemClock.uptimeMillis()
         labelMul = labelScale
-        for (row in rows) for (k in row) {
+        // Ola: las teclas vecinas de la fila saltan una tras otra
+        val waves = anims.filter { it.type == "wave" }
+        for ((ri, row) in rows.withIndex()) for ((ci, k) in row.withIndex()) {
             val a = if (anims.isEmpty()) null else anims.firstOrNull { it.key === k }
-            if (a == null) { drawKey(c, k, p); continue }
-            val t = ((now - a.start).toFloat() / animDur()).coerceIn(0f, 1f)
-            if (keyAnim == "pop" || keyAnim == "zoom") {
-                // Se hunde un poquito y rebota
-                val sc = if (keyAnim == "zoom") {
-                    // Crece un poquito y vuelve
-                    1f + 0.14f * kotlin.math.sin(Math.PI * t).toFloat()
-                } else if (t < 0.35f) 1f - 0.1f * (t / 0.35f) else {
-                    val u = (t - 0.35f) / 0.65f - 1f
-                    0.9f + 0.1f * (1f + 2.70158f * u * u * u + 1.70158f * u * u)
-                }
-                c.save()
-                c.scale(sc, sc, k.rect.centerX(), k.rect.centerY())
-                drawKey(c, k, p)
-                c.restore()
-            } else if (keyAnim == "lift") {
-                // La tecla salta hacia arriba y baja
-                val dy = -6f * d * kotlin.math.sin(Math.PI * t).toFloat()
-                c.save()
-                c.translate(0f, dy)
-                drawKey(c, k, p)
-                c.restore()
-            } else {
-                drawKey(c, k, p)
-                drawKeyAnim(c, k, a, t, p)
+            var waveDy = 0f
+            for (w in waves) {
+                val wi = row.indexOf(w.key)
+                if (wi < 0) continue
+                val delay = kotlin.math.abs(ci - wi) * 45L
+                val tt = ((now - w.start - delay).toFloat() / 260f)
+                if (tt in 0f..1f) waveDy += -5f * d * kotlin.math.sin(Math.PI * tt).toFloat()
             }
+            if ((a == null || !Fx.moves(a.type)) && waveDy == 0f) { drawKey(c, k, p); continue }
+            c.save()
+            if (waveDy != 0f) c.translate(0f, waveDy)
+            if (a != null && Fx.moves(a.type)) {
+                val t = ((now - a.start).toFloat() / Fx.duration(a.type)).coerceIn(0f, 1f)
+                val cx = k.rect.centerX()
+                val cy = k.rect.centerY()
+                val damp = 1f - t
+                when (a.type) {
+                    "pop" -> {
+                        // Se hunde un poquito y rebota
+                        val sc = if (t < 0.35f) 1f - 0.1f * (t / 0.35f) else {
+                            val u = (t - 0.35f) / 0.65f - 1f
+                            0.9f + 0.1f * (1f + 2.70158f * u * u * u + 1.70158f * u * u)
+                        }
+                        c.scale(sc, sc, cx, cy)
+                    }
+                    "zoom" -> { val sc = 1f + 0.14f * kotlin.math.sin(Math.PI * t).toFloat(); c.scale(sc, sc, cx, cy) }
+                    "lift" -> c.translate(0f, -6f * d * kotlin.math.sin(Math.PI * t).toFloat())
+                    "jelly" -> {
+                        // Gelatina: se aplasta y se estira
+                        val w = 0.14f * kotlin.math.sin(2 * Math.PI * t).toFloat() * damp
+                        c.scale(1f + w, 1f - w, cx, cy)
+                    }
+                    "shake" -> c.translate(4f * d * kotlin.math.sin(6 * Math.PI * t).toFloat() * damp, 0f)
+                    "spin" -> c.rotate(14f * kotlin.math.sin(3 * Math.PI * t).toFloat() * damp, cx, cy)
+                }
+            }
+            drawKey(c, k, p)
+            c.restore()
+        }
+        // Lo que se dibuja encima (ondas, chispas, corazones…) va después, para que no lo tapen otras teclas
+        for (a in anims) {
+            if (Fx.moves(a.type) || a.type == "wave") continue
+            val t = ((now - a.start).toFloat() / Fx.duration(a.type)).coerceIn(0f, 1f)
+            drawKeyAnim(c, a.key, a, t, p)
         }
         labelMul = 1f
         if (anims.isNotEmpty()) {
-            val dur = animDur()
-            anims.removeAll { now - it.start > dur }
+            anims.removeAll { now - it.start > Fx.duration(it.type) }
             if (anims.isNotEmpty()) postInvalidateOnAnimation()
         }
         if (gesturing && gCount > 1) drawTrail(c, p)
@@ -896,42 +931,171 @@ class KeyboardView(context: Context) : View(context) {
         }
     }
 
-    /** Onda que sale del dedo, o un brillo alrededor de la tecla. */
+    private fun alphaOf(color: Int, a: Float) = (color and 0x00FFFFFF) or ((a.coerceIn(0f, 1f) * 255).toInt() shl 24)
+    private fun hue(h: Float) = android.graphics.Color.HSVToColor(floatArrayOf(((h % 360f) + 360f) % 360f, 0.8f, 1f))
+
+    /** Estrella de [n] puntas (para el efecto Estrellas). */
+    private fun star(c: Canvas, x: Float, y: Float, r: Float, color: Int) {
+        animPath.reset()
+        for (i in 0 until 10) {
+            val rr = if (i % 2 == 0) r else r * 0.45f
+            val ang = Math.PI / 5 * i - Math.PI / 2
+            val px = x + (kotlin.math.cos(ang) * rr).toFloat()
+            val py = y + (kotlin.math.sin(ang) * rr).toFloat()
+            if (i == 0) animPath.moveTo(px, py) else animPath.lineTo(px, py)
+        }
+        animPath.close()
+        fill.color = color
+        c.drawPath(animPath, fill)
+    }
+
+    /** Corazoncito relleno. */
+    private fun heart(c: Canvas, x: Float, y: Float, s: Float, color: Int) {
+        animPath.reset()
+        animPath.moveTo(x, y + s * 0.85f)
+        animPath.cubicTo(x - s * 1.25f, y, x - s * 0.75f, y - s * 1.05f, x, y - s * 0.4f)
+        animPath.cubicTo(x + s * 0.75f, y - s * 1.05f, x + s * 1.25f, y, x, y + s * 0.85f)
+        animPath.close()
+        fill.color = color
+        c.drawPath(animPath, fill)
+    }
+
+    /** Dibuja el efecto [a] de la tecla [k] en el momento [t] (0 = empieza, 1 = termina). */
     private fun drawKeyAnim(c: Canvas, k: Key, a: Anim, t: Float, p: Palette) {
-        if (keyAnim == "ripple") {
-            c.save()
-            animPath.reset()
-            animPath.addRoundRect(k.rect, radius, radius, Path.Direction.CW)
-            c.clipPath(animPath)
-            val maxR = kotlin.math.hypot(k.rect.width(), k.rect.height())
-            fill.color = (p.accent and 0x00FFFFFF) or (((1f - t) * 0x70).toInt() shl 24)
-            c.drawCircle(a.x, a.y, maxR * (0.15f + 0.95f * t), fill)
-            c.restore()
-        } else if (keyAnim == "sparks") {
-            // Chispitas que salen del dedo
-            val seed = (a.start % 997).toInt()
-            for (i in 0 until 9) {
-                val ang = (i * 40 + seed * 7) * Math.PI / 180.0
-                val dist = (10f + 26f * t) * d * (0.7f + ((seed + i * 13) % 10) / 20f)
-                val x = a.x + (kotlin.math.cos(ang) * dist).toFloat()
-                val y = a.y + (kotlin.math.sin(ang) * dist).toFloat() - 6f * d * t
-                fill.color = (p.accent and 0x00FFFFFF) or (((1f - t) * 255).toInt() shl 24)
-                c.drawCircle(x, y, (2.6f - 1.6f * t) * d, fill)
+        val seed = (a.start % 997).toInt()
+        val rnd = java.util.Random(a.start)
+        val fade = 1f - t
+        when (a.type) {
+            "ripple" -> {
+                c.save()
+                animPath.reset()
+                animPath.addRoundRect(k.rect, radius, radius, Path.Direction.CW)
+                c.clipPath(animPath)
+                val maxR = kotlin.math.hypot(k.rect.width(), k.rect.height())
+                fill.color = alphaOf(p.accent, fade * 0.45f)
+                c.drawCircle(a.x, a.y, maxR * (0.15f + 0.95f * t), fill)
+                c.restore()
             }
-        } else if (keyAnim == "bubble") {
-            // Un anillo que crece hacia afuera de la tecla
-            stroke.color = (p.accent and 0x00FFFFFF) or (((1f - t) * 220).toInt() shl 24)
-            stroke.strokeWidth = (2.5f - 1.5f * t) * d
-            val grow = 12f * d * t
-            tmp.set(k.rect.left - grow, k.rect.top - grow, k.rect.right + grow, k.rect.bottom + grow)
-            c.drawRoundRect(tmp, radius + grow, radius + grow, stroke)
-        } else if (keyAnim == "glow") {
-            val alpha = ((1f - t) * 255).toInt()
-            fill.color = (p.accent and 0x00FFFFFF) or ((alpha * 0x30 / 255) shl 24)
-            c.drawRoundRect(k.rect, radius, radius, fill)
-            stroke.color = (p.accent and 0x00FFFFFF) or (alpha shl 24)
-            stroke.strokeWidth = 2.5f * d
-            c.drawRoundRect(k.rect, radius, radius, stroke)
+            "glow" -> {
+                fill.color = alphaOf(p.accent, fade * 0.19f)
+                c.drawRoundRect(k.rect, radius, radius, fill)
+                stroke.color = alphaOf(p.accent, fade)
+                stroke.strokeWidth = 2.5f * d
+                c.drawRoundRect(k.rect, radius, radius, stroke)
+            }
+            "flash" -> {
+                fill.color = alphaOf(0xFFFFFFFF.toInt(), fade * 0.65f)
+                c.drawRoundRect(k.rect, radius, radius, fill)
+            }
+            "neon" -> {
+                // Borde que cambia de color como un letrero de neón
+                for (w in 0..2) {
+                    stroke.color = alphaOf(hue(t * 360f + seed + w * 40f), fade * (0.9f - w * 0.25f))
+                    stroke.strokeWidth = (2f + w * 2.5f) * d
+                    c.drawRoundRect(k.rect, radius, radius, stroke)
+                }
+            }
+            "sparks" -> {
+                for (i in 0 until 9) {
+                    val ang = (i * 40 + seed * 7) * Math.PI / 180.0
+                    val dist = (10f + 26f * t) * d * (0.7f + ((seed + i * 13) % 10) / 20f)
+                    val x = a.x + (kotlin.math.cos(ang) * dist).toFloat()
+                    val y = a.y + (kotlin.math.sin(ang) * dist).toFloat() - 6f * d * t
+                    fill.color = alphaOf(p.accent, fade)
+                    c.drawCircle(x, y, (2.6f - 1.6f * t) * d, fill)
+                }
+            }
+            "bubble" -> {
+                stroke.color = alphaOf(p.accent, fade * 0.86f)
+                stroke.strokeWidth = (2.5f - 1.5f * t) * d
+                val grow = 12f * d * t
+                tmp.set(k.rect.left - grow, k.rect.top - grow, k.rect.right + grow, k.rect.bottom + grow)
+                c.drawRoundRect(tmp, radius + grow, radius + grow, stroke)
+            }
+            "rings" -> {
+                // Tres anillos que salen uno tras otro
+                for (i in 0..2) {
+                    val tt = ((t - i * 0.18f) / 0.64f).coerceIn(0f, 1f)
+                    if (tt <= 0f || tt >= 1f) continue
+                    stroke.color = alphaOf(p.accent, (1f - tt) * 0.9f)
+                    stroke.strokeWidth = 2f * d
+                    c.drawCircle(a.x, a.y, (6f + 34f * tt) * d, stroke)
+                }
+            }
+            "stars" -> {
+                for (i in 0 until 6) {
+                    val ang = (i * 60 + seed) * Math.PI / 180.0
+                    val dist = (8f + 30f * t) * d
+                    star(c, a.x + (kotlin.math.cos(ang) * dist).toFloat(), a.y + (kotlin.math.sin(ang) * dist).toFloat(),
+                        (5f - 2f * t) * d, alphaOf(if (i % 2 == 0) 0xFFFFD54F.toInt() else p.accent, fade))
+                }
+            }
+            "confetti" -> {
+                // Papelitos de colores que saltan y caen
+                for (i in 0 until 16) {
+                    val vx = (rnd.nextFloat() - 0.5f) * 70f * d
+                    val vy = -(30f + rnd.nextFloat() * 50f) * d
+                    val x = a.x + vx * t
+                    val y = a.y + vy * t + 90f * d * t * t
+                    val sz = (2.5f + rnd.nextFloat() * 2f) * d
+                    c.save()
+                    c.rotate(t * 540f * (if (i % 2 == 0) 1 else -1) + i * 30f, x, y)
+                    fill.color = alphaOf(hue(i * 47f + seed), fade + 0.2f)
+                    c.drawRect(x - sz, y - sz * 0.6f, x + sz, y + sz * 0.6f, fill)
+                    c.restore()
+                }
+            }
+            "hearts" -> {
+                for (i in 0 until 3) {
+                    val tt = ((t - i * 0.12f) / 0.76f).coerceIn(0f, 1f)
+                    if (tt <= 0f) continue
+                    val x = a.x + (i - 1) * 12f * d + 5f * d * kotlin.math.sin(tt * 8f + i).toFloat()
+                    val y = a.y - 44f * d * tt
+                    heart(c, x, y, (4f + 3f * tt) * d, alphaOf(if (i == 1) 0xFFFF4081.toInt() else 0xFFFF80AB.toInt(), 1f - tt))
+                }
+            }
+            "fire" -> {
+                // Chispitas de fuego que suben y cambian de amarillo a rojo
+                for (i in 0 until 12) {
+                    val tt = ((t - (i % 4) * 0.08f) / 0.76f).coerceIn(0f, 1f)
+                    if (tt <= 0f) continue
+                    val x = k.rect.left + k.rect.width() * (0.2f + 0.6f * rnd.nextFloat()) + 3f * d * kotlin.math.sin(tt * 12f + i).toFloat()
+                    val y = k.rect.top + k.rect.height() * 0.3f - 34f * d * tt * (0.6f + rnd.nextFloat() * 0.6f)
+                    val col = if (tt < 0.35f) 0xFFFFE082.toInt() else if (tt < 0.7f) 0xFFFF9800.toInt() else 0xFFFF3D00.toInt()
+                    fill.color = alphaOf(col, 1f - tt)
+                    c.drawCircle(x, y, (3.4f - 2.4f * tt) * d, fill)
+                }
+            }
+            "snow" -> {
+                // Copitos que caen despacito
+                for (i in 0 until 9) {
+                    val x0 = k.rect.left + k.rect.width() * rnd.nextFloat()
+                    val x = x0 + 6f * d * kotlin.math.sin(t * 6f + i).toFloat()
+                    val y = k.rect.top + k.rect.height() * 0.2f + 40f * d * t * (0.6f + rnd.nextFloat() * 0.6f)
+                    fill.color = alphaOf(0xFFFFFFFF.toInt(), fade * 0.9f)
+                    c.drawCircle(x, y, (1.6f + rnd.nextFloat() * 1.6f) * d, fill)
+                }
+            }
+            "bubbles" -> {
+                // Burbujitas que suben moviéndose de lado a lado
+                for (i in 0 until 6) {
+                    val tt = ((t - i * 0.07f) / 0.65f).coerceIn(0f, 1f)
+                    if (tt <= 0f) continue
+                    val x = a.x + (rnd.nextFloat() - 0.5f) * 24f * d + 5f * d * kotlin.math.sin(tt * 10f + i).toFloat()
+                    val y = a.y - 50f * d * tt
+                    stroke.color = alphaOf(p.accent, (1f - tt) * 0.9f)
+                    stroke.strokeWidth = 1.3f * d
+                    c.drawCircle(x, y, (2f + 5f * tt) * d, stroke)
+                }
+            }
+            "fly" -> {
+                // La letra sale volando hacia arriba
+                if (k.code == 0) {
+                    val sz = keyH * 0.42f * (1f + 0.8f * t)
+                    drawLabel(c, display(k.label), k.rect.centerX(), k.rect.centerY() - 40f * d * t, sz / labelMul.coerceAtLeast(0.01f),
+                        alphaOf(p.accent, fade))
+                }
+            }
         }
     }
 
@@ -947,9 +1111,12 @@ class KeyboardView(context: Context) : View(context) {
         val pressed = k === activeKey
         val modLocked = k.code in modsLocked
         val modOnce = k.code in modsOnce
+        val rainbow = p.rainbowKeys && !k.special && k.code != Codes.ENTER
         val bg = when {
             k.code == Codes.ENTER -> if (pressed) p.accentPressed else p.accent
             modLocked -> if (pressed) p.accentPressed else p.accent
+            rainbow -> android.graphics.Color.HSVToColor(floatArrayOf(
+                (k.rect.centerX() / width.coerceAtLeast(1) * 300f + k.rect.top / 6f) % 360f, if (pressed) 0.45f else 0.7f, if (p.isDark) 0.75f else 0.9f))
             pressed -> p.keyPressed
             k.special -> p.special
             else -> p.key

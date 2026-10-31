@@ -15,7 +15,9 @@ object QuickPaste {
     private const val SMS_AGE_MS = 10 * 60 * 1000L
 
     /** [picker] = botón "Mis contraseñas" (abre la ventanita para elegir una). */
-    class Item(val text: String, val label: String, val isCode: Boolean, val sig: String, val time: Long, val picker: Boolean = false)
+    class Item(val text: String, val label: String, val isCode: Boolean, val sig: String, val time: Long, val picker: Boolean = false,
+               /** "Guardar en Datos": lo que seleccionaste. */
+               val save: Boolean = false)
 
     private val KEYWORDS = Regex(
         "(?i)(c[oó]digo|code|otp|verif|pin\\b|contrase|password|passcode|clave|token|seguridad|security|autentica|authenticat|login|inicio de sesi)",

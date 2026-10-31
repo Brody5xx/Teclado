@@ -99,6 +99,12 @@ object VaultStore {
         save(ctx, items + Entry(System.currentTimeMillis(), kind, label.trim(), value, shortcut.trim().lowercase()))
     }
 
+    /** Cambia un dato que ya existe. */
+    fun update(ctx: Context, id: Long, kind: Int, label: String, value: String, shortcut: String) {
+        load(ctx)
+        save(ctx, items.map { if (it.id == id) Entry(id, kind, label.trim(), value, shortcut.trim().lowercase()) else it })
+    }
+
     fun remove(ctx: Context, id: Long) {
         load(ctx)
         save(ctx, items.filter { it.id != id })

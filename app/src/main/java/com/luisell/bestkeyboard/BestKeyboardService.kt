@@ -568,7 +568,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             checkScreenshot()
             return
         }
-        kv?.setChip(null, item.label, if (item.isCode || item.picker) Icons.LOCK else Icons.CLIP)
+        kv?.setChip(null, item.label, if (item.isCode || item.picker || item.save) Icons.LOCK else Icons.CLIP)
     }
 
     /** Quita la sugerencia rápida; con [forget] no se vuelve a ofrecer (ya la usaste o seguiste escribiendo). */
@@ -589,9 +589,28 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** Seleccionaste un texto: arriba sale «Guardar en Datos». */
+    private val selChipCheck = Runnable {
+        if (selStart == selEnd || spellOn || codeOn || hackerActive || translating || mode != 0) return@Runnable
+        val sel = try { currentInputConnection?.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null }
+        if (sel.isNullOrEmpty() || sel.length > 300) return@Runnable
+        showQuick(QuickPaste.Item(sel, L.t("Guardar en Datos", "Save to Data"), false, "", System.currentTimeMillis(), save = true))
+    }
+
     /** Tocaste la sugerencia: se escribe lo copiado o el código. */
     private fun useQuick() {
         val q = quick ?: return
+        if (q.save) {
+            // Abre "Datos" con lo seleccionado listo para guardar
+            clearQuick(false)
+            try {
+                startActivity(Intent(this, DataActivity::class.java)
+                    .putExtra(DataActivity.EXTRA_TEXT, q.text)
+                    .putExtra(DataActivity.EXTRA_PASSWORD, isPassword)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+            } catch (_: Exception) { }
+            return
+        }
         if (q.picker) {
             // Ventanita para elegir la contraseña (pide huella o PIN antes de escribirla)
             try {
@@ -1215,6 +1234,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         WordStore.saveNow()
     }
 
+    private fun withCustomColors(p: Palette) = Palette.custom(p, prefs)
+
     /** Ajustes que se guardan solos mientras escribes (no son cambios de personalización). */
     private val quietPrefs = setOf(
         Prefs.CLIP_LAST_SIG, Prefs.QUICK_DONE, Prefs.SHOT_USED, Prefs.SHOT_ASKS, Prefs.LANG, Prefs.TR_SRC,
@@ -1257,7 +1278,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (newSelStart != newSelEnd) {
             clearSlots()
             handler.removeCallbacks(updateRunnable)
+            handler.removeCallbacks(selChipCheck)
+            handler.postDelayed(selChipCheck, 250)
         } else {
+            if (quick?.save == true) clearQuick(false)
             scheduleUpdate()
         }
     }
@@ -1276,7 +1300,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             Configuration.UI_MODE_NIGHT_YES
         var pal = Palette.forTheme(theme, systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
         // Color de acento elegido (si no, el del tema)
-        prefs.getString(Prefs.ACCENT, "")?.takeIf { it.isNotEmpty() }?.toLongOrNull(16)?.let { pal = pal.withAccent(it.toInt()) }
+        pal = withCustomColors(pal)
         v.palette = pal
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
         v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f }

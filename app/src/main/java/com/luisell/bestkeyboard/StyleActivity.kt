@@ -102,7 +102,7 @@ class StyleActivity : UiActivity() {
     private fun applyPreview() {
         val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         var pal = Palette.forTheme(prefs.getString(Prefs.THEME, "auto"), systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
-        prefs.getString(Prefs.ACCENT, "")?.takeIf { it.isNotEmpty() }?.toLongOrNull(16)?.let { pal = pal.withAccent(it.toInt()) }
+        pal = Palette.custom(pal, prefs)
         preview.palette = pal
         preview.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
         preview.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f }
@@ -116,6 +116,10 @@ class StyleActivity : UiActivity() {
         card(tr("Colores", "Colors"), Icons.THEME)
         themeGallery()
         accentSwatches()
+        colorSwatches(tr("Color de las teclas", "Key color"), Prefs.KEY_COLOR, Palette.KEY_COLORS,
+            tr("El primero (multicolor) es el del tema. El último es arcoíris 🌈.", "The first (multicolor) is the theme's. The last one is rainbow 🌈."))
+        colorSwatches(tr("Color de las letras", "Letter color"), Prefs.TEXT_COLOR, Palette.TEXT_COLORS,
+            tr("El primero (multicolor) es el del tema.", "The first (multicolor) is the theme's."))
         hackerSwatches()
 
         card(tr("Teclas", "Keys"), Icons.SHAPES)
@@ -132,10 +136,15 @@ class StyleActivity : UiActivity() {
         switch(tr("Letra grande al tocar", "Big letter on tap"), Prefs.PREVIEW, true)
 
         card(tr("Animación al tocar", "Tap animation"), Icons.RIPPLE)
-        chips(tr("Efecto", "Effect"), Prefs.KEY_ANIM, "pop", listOf(
-            "none" to tr("Ninguno", "None"), "pop" to tr("Rebote", "Bounce"), "zoom" to "Zoom", "lift" to tr("Saltar", "Jump"),
-            "ripple" to tr("Onda", "Ripple"), "glow" to tr("Brillo", "Glow"), "sparks" to tr("Chispas", "Sparks"),
-            "bubble" to tr("Burbuja", "Bubble"),
+        chipGrid(tr("Efecto", "Effect"), Prefs.KEY_ANIM, "pop", listOf(
+            "none" to tr("Ninguno", "None"), "random" to tr("🎲 Sorpresa", "🎲 Surprise"), "pop" to tr("Rebote", "Bounce"),
+            "zoom" to "Zoom", "lift" to tr("Saltar", "Jump"), "jelly" to tr("Gelatina", "Jelly"),
+            "shake" to tr("Temblor", "Shake"), "spin" to tr("Giro", "Spin"), "wave" to tr("Ola", "Wave"),
+            "ripple" to tr("Onda", "Ripple"), "glow" to tr("Brillo", "Glow"), "flash" to "Flash",
+            "neon" to tr("Neón", "Neon"), "rings" to tr("Anillos", "Rings"), "bubble" to tr("Burbuja", "Bubble"),
+            "sparks" to tr("Chispas", "Sparks"), "stars" to tr("Estrellas", "Stars"), "confetti" to tr("Confeti", "Confetti"),
+            "hearts" to tr("Corazones", "Hearts"), "fire" to tr("Fuego", "Fire"), "snow" to tr("Nieve", "Snow"),
+            "bubbles" to tr("Burbujitas", "Bubbles"), "fly" to tr("Letra voladora", "Flying letter"),
         ))
         text(tr("Toca las teclas de arriba para ver el efecto.", "Tap the keys above to see the effect."), 12f, faded = true)
 

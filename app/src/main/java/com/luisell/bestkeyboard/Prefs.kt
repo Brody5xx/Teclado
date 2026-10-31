@@ -8,6 +8,8 @@ object Prefs {
     const val THEME = "theme"            // auto / light / dark / midnight / ocean / neon / forest / sunset / rose / hacker / aurora
     const val ACCENT = "accent_color"    // "" = el del tema, o un color como "FF4FD1FF"
     const val HACKER_COLOR = "hacker_color" // color del tema Hacker: "" (verde), un color, o "rainbow"
+    const val KEY_COLOR = "key_color"    // color de las teclas en cualquier tema: "" (del tema), un color, o "rainbow"
+    const val TEXT_COLOR = "text_color"  // color de las letras: "" (del tema) o un color
     const val KEY_SHAPE = "key_shape"    // square / normal / round / pill
     const val LABEL_SIZE = "label_size"  // small / normal / big
     const val KEY_ANIM = "key_anim"      // none / pop / ripple / glow
@@ -93,7 +95,39 @@ class Palette(
     val effect: String = "",
     /** Letras tipo código (monoespaciadas). */
     val mono: Boolean = false,
+    /** Teclas de colores del arcoíris (cada columna un color). */
+    val rainbowKeys: Boolean = false,
 ) {
+    private fun copy(key: Int = this.key, keyPressed: Int = this.keyPressed, special: Int = this.special,
+                     text: Int = this.text, hint: Int = this.hint, rainbowKeys: Boolean = this.rainbowKeys) =
+        Palette(isDark, bg, key, keyPressed, special, accent, accentPressed, onAccent, text, hint, popup, shadow, bg2, effect, mono, rainbowKeys)
+
+    /** El mismo tema con teclas de otro color (las especiales un poco más oscuras). */
+    fun withKeys(c: Int): Palette {
+        val k = c or 0xFF000000.toInt()
+        val lum = luma(k)
+        val dark = lum < 140
+        val text2 = if (dark) 0xFFF5F6F8.toInt() else 0xFF15161A.toInt()
+        return copy(key = k, keyPressed = mixC(k, if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt(), 0.22f),
+            special = mixC(k, 0xFF000000.toInt(), if (dark) 0.25f else 0.14f), text = text2,
+            hint = mixC(text2, k, 0.45f))
+    }
+
+    /** Teclas arcoíris: cada columna de un color. */
+    fun withRainbowKeys() = copy(rainbowKeys = true, text = 0xFFFFFFFF.toInt(), hint = 0xDDFFFFFF.toInt())
+
+    /** El mismo tema con letras de otro color. */
+    fun withText(c: Int): Palette {
+        val t = c or 0xFF000000.toInt()
+        return copy(text = t, hint = mixC(t, key, 0.4f))
+    }
+
+    private fun luma(c: Int) = 0.299 * ((c shr 16) and 0xFF) + 0.587 * ((c shr 8) and 0xFF) + 0.114 * (c and 0xFF)
+    private fun mixC(c: Int, t: Int, f: Float): Int {
+        fun ch(sh: Int) = (((c shr sh) and 0xFF) + ((((t shr sh) and 0xFF) - ((c shr sh) and 0xFF)) * f)).toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+    }
+
     /** El mismo tema con otro color de acento (Enter, botones encendidos…). */
     fun withAccent(c: Int): Palette {
         val r = (c shr 16) and 0xFF
@@ -108,7 +142,7 @@ class Palette(
         }
         return Palette(isDark, bg, key, keyPressed, special, c or 0xFF000000.toInt(),
             if (isDark) mix(255, 0.3f) else mix(0, 0.2f), if (light) 0xFF101114.toInt() else 0xFFFFFFFF.toInt(),
-            text, hint, popup, shadow, bg2, effect, mono)
+            text, hint, popup, shadow, bg2, effect, mono, rainbowKeys)
     }
 
     companion object {
@@ -195,6 +229,19 @@ class Palette(
                 light(0xFFFFF0E6, 0xFFFFFFFF, 0xFFFFD6BF, 0xFFFFDCCB, 0xFFFF7043, 0xFFF4511E, 0xFF4A2A1C, 0xFF9A7765)),
         )
 
+        /** Aplica los colores que elegiste (acento, teclas, letras) encima del tema. */
+        fun custom(p: Palette, prefs: android.content.SharedPreferences): Palette {
+            var pal = p
+            prefs.getString(Prefs.ACCENT, "")?.takeIf { it.isNotEmpty() }?.toLongOrNull(16)?.let { pal = pal.withAccent(it.toInt()) }
+            when (val k = prefs.getString(Prefs.KEY_COLOR, "") ?: "") {
+                "" -> Unit
+                "rainbow" -> pal = pal.withRainbowKeys()
+                else -> k.toLongOrNull(16)?.let { pal = pal.withKeys(it.toInt()) }
+            }
+            prefs.getString(Prefs.TEXT_COLOR, "")?.takeIf { it.isNotEmpty() }?.toLongOrNull(16)?.let { pal = pal.withText(it.toInt()) }
+            return pal
+        }
+
         /** Los colores del tema elegido ("auto" sigue al teléfono). [hackerColor] = color del tema Hacker. */
         fun forTheme(id: String?, systemDark: Boolean, hackerColor: String? = null): Palette {
             if (id == "hacker" && !hackerColor.isNullOrEmpty()) {
@@ -217,6 +264,17 @@ class Palette(
             0xFF000000.toInt(), mix(c, 0xFFFFFFFF.toInt(), 0.25f), mix(c, 0xFF000000.toInt(), 0.35f),
             alpha(mix(c, 0xFF000000.toInt(), 0.9f), 0xEE), 0x00000000, 0xFF000000.toInt(),
             effect = if (rainbow) "matrix-rainbow" else "matrix", mono = true,
+        )
+
+        /** Colores para las teclas y las letras (en cualquier tema). */
+        val KEY_COLORS = listOf(
+            "FF000000", "FF1C1C1E", "FF2F3139", "FF5F6368", "FFFFFFFF", "FFF1F3F4", "FF0D47A1", "FF1E88E5",
+            "FF00ACC1", "FF00897B", "FF43A047", "FF7CB342", "FFFDD835", "FFFB8C00", "FFE53935", "FFD81B60",
+            "FF8E24AA", "FF5E35B1", "FF6D4C41", "FFFFCDD2", "FFC8E6C9", "FFBBDEFB", "FFE1BEE7", "rainbow",
+        )
+        val TEXT_COLORS = listOf(
+            "FFFFFFFF", "FF000000", "FF9AA0A6", "FF4FD1FF", "FF2979FF", "FF7C4DFF", "FFE040FB", "FFFF4081",
+            "FFFF1744", "FFFF6D00", "FFFFD54F", "FFC6FF00", "FF00E676", "FF1DE9B6",
         )
 
         /** Colores para el tema Hacker (el último es arcoíris). */

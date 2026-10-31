@@ -137,6 +137,51 @@ abstract class UiActivity : Activity() {
         text(tr("El primero (multicolor) usa el color que trae el tema.", "The first one (multicolor) uses the theme's own color."), 12f, faded = true)
     }
 
+    /** Fila de colores para una opción ([key]); el primero (multicolor) = el del tema. */
+    protected fun colorSwatches(label: String, key: String, colors: List<String>, help: String) {
+        divider()
+        val t = TextView(this)
+        t.text = label
+        t.textSize = 15f
+        t.setTextColor(TEXT)
+        col.addView(t, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        val dots = ArrayList<Pair<String, View>>()
+        val cur = prefs.getString(key, "") ?: ""
+        fun paint(sel: String) {
+            for ((v, view) in dots) {
+                view.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    when (v) {
+                        "" -> { colors = intArrayOf(CYAN, VIOLET); gradientType = GradientDrawable.SWEEP_GRADIENT }
+                        "rainbow" -> {
+                            colors = intArrayOf(0xFFFF1744.toInt(), 0xFFFFC400.toInt(), 0xFF00E676.toInt(), 0xFF00E5FF.toInt(), 0xFF7C4DFF.toInt(), 0xFFFF1744.toInt())
+                            gradientType = GradientDrawable.SWEEP_GRADIENT
+                        }
+                        else -> setColor(v.toLong(16).toInt())
+                    }
+                    setStroke(dp(if (v == sel) 3 else 1), if (v == sel) TEXT else LINE)
+                }
+            }
+        }
+        for (v in listOf("") + colors) {
+            val dot = View(this)
+            dot.setOnClickListener {
+                prefs.edit().putString(key, v).apply()
+                paint(v)
+            }
+            dots.add(v to dot)
+            row.addView(dot, LinearLayout.LayoutParams(dp(30), dp(30)).apply { rightMargin = dp(10) })
+        }
+        paint(cur)
+        val hs = android.widget.HorizontalScrollView(this)
+        hs.isHorizontalScrollBarEnabled = false
+        hs.addView(row)
+        col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(4) })
+        text(help, 12f, faded = true)
+    }
+
     /** Colores del tema Hacker (teclas y lluvia de código). El último es arcoíris. */
     protected fun hackerSwatches() {
         divider()
@@ -398,6 +443,49 @@ abstract class UiActivity : Activity() {
         hs.isHorizontalScrollBarEnabled = false
         hs.addView(row)
         col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(12) })
+    }
+
+    /** Muchas opciones en una cuadrícula de [cols] columnas (la elegida se ilumina). */
+    protected fun chipGrid(label: String, key: String, def: String, options: List<Pair<String, String>>, cols: Int = 3) {
+        if (col.childCount > 0) divider()
+        val t = TextView(this)
+        t.text = label
+        t.textSize = 15f
+        t.setTextColor(TEXT)
+        col.addView(t, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        val views = ArrayList<Pair<String, TextView>>()
+        fun paint(sel: String?) {
+            for ((v, tv) in views) {
+                val on = v == sel
+                tv.setTextColor(if (on) 0xFF0B0D12.toInt() else SUB)
+                tv.background = if (on) GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(16f) }
+                else GradientDrawable().apply { setColor(BG); cornerRadius = dpf(16f) }
+            }
+        }
+        var row: LinearLayout? = null
+        for ((i, pair) in options.withIndex()) {
+            if (i % cols == 0) {
+                row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                col.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+            }
+            val (value, name) = pair
+            val o = TextView(this)
+            o.text = name
+            o.textSize = 13f
+            o.gravity = Gravity.CENTER
+            o.maxLines = 1
+            o.setPadding(dp(4), dp(10), dp(4), dp(10))
+            o.setOnClickListener {
+                prefs.edit().putString(key, value).apply()
+                paint(value)
+            }
+            views.add(value to o)
+            row?.addView(o, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
+        }
+        val rest = options.size % cols
+        if (rest != 0) repeat(cols - rest) { row?.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f).apply { setMargins(dp(3), 0, dp(3), 0) }) }
+        paint(prefs.getString(key, def))
+        col.addView(View(this), LinearLayout.LayoutParams(-1, dp(10)))
     }
 
     protected fun divider() {
