@@ -647,6 +647,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.3" to tr("•  Buscar emojis, GIFs y stickers sin salir del panel: sale un tecladito abajo y los resultados aparecen mientras escribes.",
+            "•  Search emojis, GIFs and stickers without leaving the panel: a small keyboard shows below and results appear as you type."),
         "9.2" to tr(
             "•  Buscar emojis y GIFs con una barra de búsqueda (escribe «casa», «feliz», «perro»…).\n" +
                 "•  El botón GIF ahora está dentro del panel de emojis.\n" +

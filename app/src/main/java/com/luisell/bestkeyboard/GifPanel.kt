@@ -60,6 +60,15 @@ class GifPanel(context: Context) : FrameLayout(context) {
     private var query = ""
     private val catViews = ArrayList<TextView>()
     private var searchBtn: IconView? = null
+    // Buscar sin salir del panel
+    private val mini = MiniKeys(context)
+    private val searchRow = LinearLayout(context)
+    private val searchIcon = IconView(context, Icons.SEARCH, 6.5f)
+    private val searchText = TextView(context)
+    private val searchClear = IconView(context, Icons.CLOSE, 5.5f)
+    private var catsScroll: View? = null
+    private var searching = false
+    private val typed = StringBuilder()
     private val thumbs = ArrayList<ImageView>()
 
     /** Lo que buscas al tocar cada botón (en inglés, GIPHY encuentra más). */
@@ -92,7 +101,10 @@ class GifPanel(context: Context) : FrameLayout(context) {
         val head = LinearLayout(context)
         head.orientation = LinearLayout.HORIZONTAL
         head.gravity = Gravity.CENTER_VERTICAL
-        back.setOnClickListener { actions?.onGifFeedback(); actions?.onGifBack() }
+        back.setOnClickListener {
+            actions?.onGifFeedback()
+            if (searching) stopSearch() else actions?.onGifBack()
+        }
         head.addView(back, LinearLayout.LayoutParams(d(44f), d(36f)))
         for ((t, isSticker) in listOf(gifTab to false, stickerTab to true)) {
             t.textSize = 14f
@@ -107,7 +119,7 @@ class GifPanel(context: Context) : FrameLayout(context) {
         }
         // Buscar GIFs (abre la barra de búsqueda con el teclado)
         val searchBtn = IconView(context, Icons.SEARCH, 7f)
-        searchBtn.setOnClickListener { actions?.onGifFeedback(); actions?.onGifSearch() }
+        searchBtn.setOnClickListener { actions?.onGifFeedback(); if (searching) mini.visibility = View.VISIBLE else startSearch() }
         this.searchBtn = searchBtn
         head.addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
         head.addView(searchBtn, LinearLayout.LayoutParams(d(52f), d(34f)))
@@ -136,6 +148,22 @@ class GifPanel(context: Context) : FrameLayout(context) {
             cats.addView(t, LinearLayout.LayoutParams(-2, d(30f)).apply { rightMargin = d(6f) })
         }
         body.addView(hs, LinearLayout.LayoutParams(-1, d(36f)).apply { topMargin = d(2f) })
+        catsScroll = hs
+
+        // Caja de búsqueda (se ve al tocar la lupa)
+        searchRow.orientation = LinearLayout.HORIZONTAL
+        searchRow.gravity = Gravity.CENTER_VERTICAL
+        searchRow.setPadding(d(10f), 0, d(6f), 0)
+        searchRow.addView(searchIcon, LinearLayout.LayoutParams(d(24f), d(24f)))
+        searchText.textSize = 14f
+        searchText.maxLines = 1
+        searchText.setPadding(d(8f), 0, 0, 0)
+        searchRow.addView(searchText, LinearLayout.LayoutParams(0, -2, 1f))
+        searchClear.setOnClickListener { actions?.onGifFeedback(); typed.setLength(0); showTyped(); mini.visibility = View.VISIBLE }
+        searchRow.addView(searchClear, LinearLayout.LayoutParams(d(30f), d(30f)))
+        searchRow.setOnClickListener { actions?.onGifFeedback(); mini.visibility = View.VISIBLE }
+        searchRow.visibility = View.GONE
+        body.addView(searchRow, LinearLayout.LayoutParams(-1, d(36f)).apply { topMargin = d(2f) })
 
         val stack = FrameLayout(context)
         grid.columnCount = 3
@@ -150,13 +178,70 @@ class GifPanel(context: Context) : FrameLayout(context) {
         }
         stack.addView(status, LayoutParams(-1, -1))
         body.addView(stack, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = d(4f) })
+        mini.visibility = View.GONE
+        mini.actions = object : MiniKeys.Actions {
+            override fun onMiniText(s: String) { if (typed.length < 40) typed.append(s); showTyped() }
+            override fun onMiniDelete() { if (typed.isNotEmpty()) typed.setLength(typed.length - 1); showTyped() }
+            override fun onMiniEnter() {
+                // Busca y esconde el tecladito para ver bien los GIFs
+                mini.visibility = View.GONE
+                query = typed.toString().trim()
+                load()
+            }
+            override fun onMiniFeedback() { actions?.onGifFeedback() }
+        }
+        body.addView(mini, LinearLayout.LayoutParams(-1, d(176f)))
         addView(body, LayoutParams(-1, -1))
         applyPalette(palette)
     }
 
     private fun key() = Prefs.get(context).getString(Prefs.GIPHY_KEY, "")?.trim() ?: ""
 
+    private fun startSearch() {
+        searching = true
+        typed.setLength(0)
+        catsScroll?.visibility = View.GONE
+        searchRow.visibility = View.VISIBLE
+        mini.visibility = View.VISIBLE
+        showTyped()
+    }
+
+    private fun stopSearch() {
+        searching = false
+        typed.setLength(0)
+        searchRow.visibility = View.GONE
+        mini.visibility = View.GONE
+        catsScroll?.visibility = View.VISIBLE
+        catIndex = 0
+        query = ""
+        paintCats()
+        load()
+    }
+
+    private fun showTyped() {
+        val q = typed.toString()
+        if (q.isEmpty()) {
+            searchText.text = if (stickers) L.t("Buscar stickers", "Search stickers") else L.t("Buscar GIFs", "Search GIFs")
+            searchText.setTextColor(palette.hint)
+        } else {
+            val sp = android.text.SpannableString("$q|")
+            sp.setSpan(android.text.style.ForegroundColorSpan(palette.accent), q.length, q.length + 1, 0)
+            searchText.text = sp
+            searchText.setTextColor(palette.text)
+        }
+        searchClear.visibility = if (q.isEmpty()) View.INVISIBLE else View.VISIBLE
+    }
+
     fun open(search: String? = null) {
+        if (searching && search == null) {
+            searching = false
+            typed.setLength(0)
+            searchRow.visibility = View.GONE
+            mini.visibility = View.GONE
+            catsScroll?.visibility = View.VISIBLE
+            catIndex = 0
+            query = ""
+        }
         for ((i, t) in catViews.withIndex()) t.text = L.t(CATS[i].first, CATS[i].second)
         if (search != null) {
             // Lo que buscaste en la barra: ninguna categoría encendida
@@ -330,6 +415,10 @@ class GifPanel(context: Context) : FrameLayout(context) {
         back.color = p.text
         back.background = PanelUi.pressable(p.special, p.keyPressed, d(18f).toFloat())
         searchBtn?.let { it.color = p.text; it.background = PanelUi.pressable(p.special, p.keyPressed, d(17f).toFloat()) }
+        searchRow.background = PanelUi.pressable(p.key, p.keyPressed, d(18f).toFloat())
+        searchIcon.color = p.hint
+        searchClear.color = p.hint
+        mini.applyPalette(p)
         status.setTextColor(p.hint)
         paintTabs()
         paintCats()
