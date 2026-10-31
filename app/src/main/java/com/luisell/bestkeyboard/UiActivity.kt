@@ -138,7 +138,7 @@ abstract class UiActivity : Activity() {
     }
 
     /** Fila de colores para una opción ([key]); el primero (multicolor) = el del tema. */
-    protected fun colorSwatches(label: String, key: String, colors: List<String>, help: String) {
+    protected fun colorSwatches(label: String, key: String, choices: List<String>, help: String) {
         divider()
         val t = TextView(this)
         t.text = label
@@ -165,7 +165,7 @@ abstract class UiActivity : Activity() {
                 }
             }
         }
-        for (v in listOf("") + colors) {
+        for (v in listOf("") + choices) {
             val dot = View(this)
             dot.setOnClickListener {
                 prefs.edit().putString(key, v).apply()
