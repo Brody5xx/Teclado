@@ -37,6 +37,8 @@ object Prefs {
     const val BAR_TOOLS2 = "bar_tools_all"
     /** Teclado de computadora ("modo hacker") encendido. */
     const val HACKER = "hacker_keyboard"
+    /** Con texto seleccionado, ⇧ cambia lo seleccionado a MAYÚSCULAS / minúsculas / Tipo Título. */
+    const val SEL_CAPS = "selection_caps"
     const val MORE_TOOLS2 = "more_tools_all"
 
     fun get(ctx: Context): SharedPreferences =

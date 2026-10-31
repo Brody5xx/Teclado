@@ -34,6 +34,10 @@ class SpellBar(context: Context) : LinearLayout(context) {
         /** Tocaste la palabra mal escrita número [index] en el texto. */
         fun onSpellSelect(index: Int)
         fun onSpellFixAll()
+        /** "Reescribir formal" (solo con texto seleccionado). */
+        fun onRewrite()
+        /** Usar la versión formal número [index]. */
+        fun onRewriteUse(index: Int)
     }
 
     /** Un error dentro del texto que se muestra ([start]..[end] relativos al texto). */
@@ -46,6 +50,10 @@ class SpellBar(context: Context) : LinearLayout(context) {
     private val close = IconView(context, Icons.CLOSE, 7f)
     private val title = TextView(context)
     private val fixAll = TextView(context)
+    private val rewrite = TextView(context)
+    /** Se muestra "Reescribir formal" (cuando revisas un texto seleccionado). */
+    var rewriteOn = false
+        set(v) { field = v; rewrite.visibility = if (v) VISIBLE else GONE }
     private val preview = TextView(context)
     private val previewScroll = object : ScrollView(context) {
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -77,6 +85,13 @@ class SpellBar(context: Context) : LinearLayout(context) {
         fixAll.setPadding(d(14f), 0, d(14f), 0)
         fixAll.setOnClickListener { actions?.onSpellFixAll() }
         row.addView(fixAll, LayoutParams(-2, d(34f)))
+        L.bind(rewrite, "Reescribir formal", "Make formal")
+        rewrite.textSize = 14f
+        rewrite.gravity = Gravity.CENTER
+        rewrite.setPadding(d(14f), 0, d(14f), 0)
+        rewrite.visibility = GONE
+        rewrite.setOnClickListener { actions?.onRewrite() }
+        row.addView(rewrite, LayoutParams(-2, d(34f)).apply { leftMargin = d(6f) })
         addView(row, LayoutParams(-1, -2))
 
         // Tu texto, con los errores marcados
@@ -107,6 +122,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
         title.text = if (n == 1) L.t("1 palabra por revisar", "1 word to check")
         else L.t("$n palabras por revisar", "$n words to check")
         fixAll.visibility = VISIBLE
+        rewrite.visibility = if (rewriteOn) VISIBLE else GONE
         previewScroll.visibility = VISIBLE
 
         val red = 0xFFE53935.toInt()
@@ -166,11 +182,31 @@ class SpellBar(context: Context) : LinearLayout(context) {
         chips.addView(c, LayoutParams(-2, -2).apply { rightMargin = d(8f) })
     }
 
+    /** Muestra la versión formal [index] de [versions], con botones para usarla. */
+    fun showRewrite(versions: List<String>, index: Int) {
+        title.text = L.t("Versión formal", "Formal version")
+        fixAll.visibility = GONE
+        rewrite.visibility = GONE
+        previewScroll.visibility = VISIBLE
+        preview.text = versions[index]
+        previewScroll.scrollTo(0, 0)
+        chips.removeAllViews()
+        chip(L.t("Usar este texto", "Use this text"), true) { actions?.onRewriteUse(index) }
+        if (versions.size > 1) {
+            chip(L.t("Otra versión (${index + 1}/${versions.size})", "Another version (${index + 1}/${versions.size})"), false) {
+                showRewrite(versions, (index + 1) % versions.size)
+            }
+        }
+        chip(L.t("Cancelar", "Cancel"), false) { actions?.onSpellClose() }
+        scroll.scrollTo(0, 0)
+    }
+
     /** Mensaje (por ejemplo "Revisando…" o "Listo, sin errores"). */
-    fun message(text: String) {
+    fun message(text: String, showRewrite: Boolean = rewriteOn) {
         title.text = text
         chips.removeAllViews()
         fixAll.visibility = GONE
+        rewrite.visibility = if (showRewrite) VISIBLE else GONE
         previewScroll.visibility = GONE
     }
 
@@ -187,6 +223,8 @@ class SpellBar(context: Context) : LinearLayout(context) {
         close.background = PanelUi.pressable(p.special, p.keyPressed, r)
         fixAll.setTextColor(p.onAccent)
         fixAll.background = PanelUi.pressable(p.accent, p.accentPressed, r)
+        rewrite.setTextColor(p.accent)
+        rewrite.background = PanelUi.pressable(p.key, p.keyPressed, r)
         preview.setTextColor(p.text)
         preview.background = PanelUi.rounded(p.key, d(14f).toFloat())
     }

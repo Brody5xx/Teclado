@@ -98,6 +98,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var spellText = ""
     private var spellBase = 0
     private var spellToken = 0
+    /** Revisando un texto seleccionado (ahí también se puede "Reescribir formal"). */
+    private var spellSelection = false
+    private var rewrites: List<String> = emptyList()
     private val spellWorker = java.util.concurrent.Executors.newSingleThreadExecutor()
     private var spellOn = false
 
@@ -336,6 +339,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             override fun onSpellSkip() { onKeyFeedback(); spellSkip() }
             override fun onSpellSelect(index: Int) { onKeyFeedback(); spellShow(index) }
             override fun onSpellFixAll() { onKeyFeedback(); spellFixAll() }
+            override fun onRewrite() { onKeyFeedback(); startRewrite() }
+            override fun onRewriteUse(index: Int) { onKeyFeedback(); useRewrite(index) }
             override fun onSpellLearn() { onKeyFeedback(); spellLearn() }
             override fun onSpellClose() { onKeyFeedback(); stopSpell() }
         }
@@ -626,6 +631,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         spellErrors = ArrayList()
         spellText = text
         spellBase = base
+        spellSelection = selection
+        rewrites = emptyList()
+        bar.rewriteOn = selection
         bar.visibility = View.VISIBLE
         bar.resetButtons()
         bar.message(L.t("Revisando tu texto…", "Checking your text…"))
@@ -659,7 +667,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             handler.post {
                 if (!spellOn || token != spellToken) return@post
                 spellErrors = errs
-                if (errs.isEmpty()) {
+                if (errs.isEmpty() && selection) {
+                    // Sin errores, pero se queda abierto para poder "Reescribir formal"
+                    bar.message(L.t("✅ Sin errores. ¿Lo hago más formal?", "✅ No mistakes. Make it more formal?"))
+                } else if (errs.isEmpty()) {
                     bar.message(if (selection) L.t("✅ No encontré errores en lo que seleccionaste.", "✅ No mistakes in your selection.")
                         else L.t("✅ No encontré errores de ortografía.", "✅ No spelling mistakes found."))
                     handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2500)
@@ -671,6 +682,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Muestra todo el texto con los errores marcados; el número [i] queda elegido (y marcado en la app). */
     private fun spellShow(i: Int) {
         val bar = sBar ?: return
+        if (spellErrors.isEmpty() && spellSelection) {
+            // Revisaste lo seleccionado: se queda la opción de "Reescribir formal"
+            val end = spellBase + spellText.length
+            currentInputConnection?.setSelection(spellBase, end)
+            bar.message(L.t("✅ Listo. ¿Lo hago más formal?", "✅ Done. Make it more formal?"))
+            return
+        }
         if (spellErrors.isEmpty()) {
             bar.message(L.t("✅ Listo, revisaste todo el texto.", "✅ Done, you checked all the text."))
             handler.postDelayed({ if (spellOn && spellErrors.isEmpty()) stopSpell() }, 2000)
@@ -744,6 +762,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun stopSpell(keepSelection: Boolean = false) {
         if (!spellOn) return
         spellOn = false
+        spellToken++
         kv?.spellOn = false
         sBar?.visibility = View.GONE
         // Quitar la marca: el cursor queda al final de la palabra marcada
@@ -1364,6 +1383,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onKeyCode(code: Int) {
         if (spellOn && code != Codes.SHIFT) stopSpell()
         if (hackerActive && hackerKey(code)) return
+        if (code == Codes.SHIFT && selStart != selEnd && !translating && prefs.getBoolean(Prefs.SEL_CAPS, false)) {
+            if (changeSelectionCase()) return
+        }
         val ic = target()
         if (code != Codes.SHIFT) {
             lastCorrection = null
@@ -1538,6 +1560,75 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 kv?.startResize()
             }
         }
+    }
+
+    // ---------------------------------------------------------------- Reescribir formal
+
+    private fun startRewrite() {
+        val bar = sBar ?: return
+        val text = spellText.trim()
+        if (text.isEmpty()) return
+        bar.message(L.t("Reescribiendo con la IA del teléfono…", "Rewriting with the phone's AI…"), showRewrite = false)
+        val token = spellToken
+        FormalRewriter.run(this, spellText, lang,
+            status = { msg -> if (spellOn && token == spellToken) bar.message(msg, showRewrite = false) },
+            done = { list, err ->
+                if (!spellOn || token != spellToken) return@run
+                if (list == null) {
+                    bar.message(err ?: "", showRewrite = false)
+                } else {
+                    rewrites = list
+                    bar.showRewrite(list, 0)
+                }
+            })
+    }
+
+    /** Cambia el texto seleccionado por la versión formal elegida. */
+    private fun useRewrite(index: Int) {
+        val ic = currentInputConnection ?: return
+        val txt = rewrites.getOrNull(index) ?: return
+        val end = spellBase + spellText.length
+        ic.beginBatchEdit()
+        ic.setSelection(spellBase, end)
+        ic.commitText(txt, 1)
+        ic.endBatchEdit()
+        spellErrors = ArrayList()
+        stopSpell(keepSelection = true)
+    }
+
+    // ---------------------------------------------------------------- Mayúsculas en lo seleccionado
+
+    /**
+     * Con texto seleccionado, ⇧ lo cambia: normal → MAYÚSCULAS → minúsculas → Tipo Título → MAYÚSCULAS...
+     * El texto queda seleccionado para poder tocar ⇧ otra vez.
+     */
+    private fun changeSelectionCase(): Boolean {
+        val ic = currentInputConnection ?: return false
+        val sel = try { ic.getSelectedText(0)?.toString() } catch (_: Exception) { null }
+        if (sel.isNullOrEmpty() || sel.none { it.isLetter() }) return false
+        val upper = sel.uppercase()
+        val lower = sel.lowercase()
+        val out = when {
+            sel == upper -> lower
+            sel == lower -> titleCase(sel)
+            else -> upper
+        }
+        val start = minOf(selStart, selEnd)
+        ic.beginBatchEdit()
+        ic.commitText(out, 1)
+        ic.setSelection(start, start + out.length)
+        ic.endBatchEdit()
+        return true
+    }
+
+    private fun titleCase(s: String): String {
+        val sb = StringBuilder(s.length)
+        var startWord = true
+        for (c in s) {
+            sb.append(if (startWord && c.isLetter()) c.titlecaseChar() else c)
+            startWord = !c.isLetterOrDigit() && c != '\'' && c != '’'
+        }
+        return sb.toString()
     }
 
     // ---------------------------------------------------------------- Teclado de computadora
