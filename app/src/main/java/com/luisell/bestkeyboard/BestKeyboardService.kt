@@ -1741,6 +1741,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
             KeyboardView.TOOL_MORE -> showMode(6)
             KeyboardView.TOOL_HACKER -> toggleHacker()
+            KeyboardView.TOOL_VAULT -> {
+                // Pide la huella y muestra tus correos, contraseñas y textos guardados
+                showMode(0)
+                try {
+                    startActivity(Intent(this, VaultPickActivity::class.java)
+                        .putExtra(VaultPickActivity.EXTRA_ALL, true)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS))
+                } catch (_: Exception) { }
+            }
             KeyboardView.TOOL_LANG -> onKeyCode(Codes.LANG)
             KeyboardView.TOOL_RESIZE -> {
                 showMode(0)
