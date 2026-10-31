@@ -58,6 +58,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_MORE = 24
         const val TOOL_HACKER = 25
         const val TOOL_VAULT = 26
+        const val TOOL_CODE = 27
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -155,6 +156,10 @@ class KeyboardView(context: Context) : View(context) {
     private var rows: List<List<Key>> = emptyList()
     private val stripH = 46f * d
     private val bottomPad = 6f * d
+    /** Modo código encendido (para iluminar su botón). */
+    var codeOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
+
     /** Teclado de computadora: Ctrl/Alt/Shift/Fn encendidos (una vez) o fijos (dos toques). */
     var hackerOn = false
         set(v) { if (field != v) { field = v; invalidate() } }
@@ -901,9 +906,10 @@ class KeyboardView(context: Context) : View(context) {
                 TOOL_LANG -> Icons.GLOBE
                 TOOL_HACKER -> Icons.HACKER
                 TOOL_VAULT -> Icons.LOCK
+                TOOL_CODE -> Icons.CODE
                 else -> continue
             }
-            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn)
+            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             Icons.draw(c, kind, cx, cy, s, if (on) p.accent else p.hint, bgc, d)
         }

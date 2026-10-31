@@ -51,6 +51,7 @@ object Icons {
     const val MAIL = 34
     const val EYE = 35
     const val EYE_OFF = 36
+    const val CODE = 37
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -385,6 +386,20 @@ object Icons {
                     st.strokeWidth = st.strokeWidth / 2.2f
                     c.drawLine(cx - s * 0.8f, cy - s * 0.8f, cx + s * 0.8f, cy + s * 0.8f, st)
                 }
+            }
+            CODE -> {
+                // </>  (programar)
+                path.reset()
+                path.moveTo(cx - s * 0.45f, cy - s * 0.6f)
+                path.lineTo(cx - s * 1.0f, cy)
+                path.lineTo(cx - s * 0.45f, cy + s * 0.6f)
+                c.drawPath(path, st)
+                path.reset()
+                path.moveTo(cx + s * 0.45f, cy - s * 0.6f)
+                path.lineTo(cx + s * 1.0f, cy)
+                path.lineTo(cx + s * 0.45f, cy + s * 0.6f)
+                c.drawPath(path, st)
+                c.drawLine(cx + s * 0.2f, cy - s * 0.85f, cx - s * 0.2f, cy + s * 0.85f, st)
             }
             MAIL -> {
                 // Sobre de carta

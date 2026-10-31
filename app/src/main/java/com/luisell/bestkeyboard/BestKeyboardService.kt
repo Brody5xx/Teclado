@@ -108,6 +108,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private val spellWorker = java.util.concurrent.Executors.newSingleThreadExecutor()
     private var spellOn = false
 
+    // Modo código: teclado para programar + ayuda de la IA (explicar, escribir, arreglar, pistas)
+    private var codeOn = false
+    private var codeLang = "Python"
+    private var codeBar: CodeBar? = null
+    private var codeToken = 0
+    /** Las sugerencias de arriba son fragmentos de código (y estos son los fragmentos completos). */
+    private var codeActive = false
+    private val codeValues = arrayOfNulls<String>(3)
+    /** Escribiendo la descripción en la cajita de "Escribir código". */
+    private val codeAsking get() = codeOn && codeBar?.asking == true
+
     // Teclado de computadora ("modo hacker")
     private var hacker = false
     private var hFn = false
@@ -182,18 +193,30 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private val translateRunnable = Runnable { doTranslate() }
 
     /** Donde escribe el teclado: la caja de traducción (si estás traduciendo) o la app. */
-    private fun target(): InputConnection? = if (translating) tBar?.connection else currentInputConnection
-    private fun targetInfo(): EditorInfo? = if (translating) tBar?.inputInfo else currentInputEditorInfo
+    private fun target(): InputConnection? = when {
+        translating -> tBar?.connection
+        codeAsking -> codeBar?.connection
+        else -> currentInputConnection
+    }
+    private fun targetInfo(): EditorInfo? = when {
+        translating -> tBar?.inputInfo
+        codeAsking -> codeBar?.inputInfo
+        else -> currentInputEditorInfo
+    }
 
     /** Envía una tecla (borrar, flechas, enter) a donde esté escribiendo el teclado. */
     private fun sendKey(code: Int, meta: Int = 0) {
         // La caja del traductor está dentro del teclado: ahí las teclas se aplican directo
-        val tb = tBar
-        if (translating && tb != null) {
+        val inner = when {
+            translating -> tBar?.box
+            codeAsking -> codeBar?.box
+            else -> null
+        }
+        if (inner != null) {
             when (code) {
-                KeyEvent.KEYCODE_DEL -> tb.deleteBack()
-                KeyEvent.KEYCODE_DPAD_LEFT -> tb.moveCursor(-1)
-                KeyEvent.KEYCODE_DPAD_RIGHT -> tb.moveCursor(1)
+                KeyEvent.KEYCODE_DEL -> inner.deleteBack()
+                KeyEvent.KEYCODE_DPAD_LEFT -> inner.moveCursor(-1)
+                KeyEvent.KEYCODE_DPAD_RIGHT -> inner.moveCursor(1)
             }
             return
         }
@@ -372,6 +395,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         root.orientation = LinearLayout.VERTICAL
         root.addView(sb, LinearLayout.LayoutParams(-1, -2))
         root.addView(tb, LinearLayout.LayoutParams(-1, -2))
+        val cb = CodeBar(this)
+        cb.visibility = View.GONE
+        cb.actions = codeActions
+        codeBar = cb
+        root.addView(cb, LinearLayout.LayoutParams(-1, -2))
         root.addView(box, LinearLayout.LayoutParams(-1, -2))
 
         mode = 0
@@ -1165,6 +1193,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
         learnTypedEmail()
+        codeBar?.let { if (it.asking) it.hideAsk() }
         if (quick != null) clearQuick(false)
         if (shot != null || shotAsk) clearShot()
         if (mode != 0) showMode(0)
@@ -1228,6 +1257,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         voicePanel?.applyPalette(pal)
         tBar?.applyPalette(pal)
         sBar?.applyPalette(pal)
+        codeBar?.applyPalette(pal)
+        codeOn = prefs.getBoolean(Prefs.CODE_MODE, false)
+        codeLang = prefs.getString(Prefs.CODE_LANG, "Python") ?: "Python"
+        v.codeOn = codeOn
+        codeBar?.let { it.visibility = if (codeOn) View.VISIBLE else View.GONE; it.setLang(codeLang) }
         scanPanel?.applyPalette(pal)
         editPanel?.applyPalette(pal)
         morePanel?.applyPalette(pal)
@@ -1301,6 +1335,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         v.setMods(emptySet(), emptySet())
+        if (codeOn && page == Page.LETTERS) {
+            v.setRows(CodeLayouts.letters())
+            v.shift = shift
+            v.swipeEnabled = false
+            return
+        }
         val rows = when (page) {
             Page.LETTERS -> Layouts.letters(numberRow, commaMode)
             Page.SYM -> Layouts.symbols()
@@ -1320,6 +1360,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Pone mayúscula sola al empezar una oración. */
     private fun updateAutoCaps() {
         if (hackerActive) return
+        if (codeOn && !codeAsking) { if (shift == 1 && !manualShift) setShift(0); return }
         if (shift == 2 || manualShift) return
         if (!autoCap || isPassword || page != Page.LETTERS) {
             if (shift == 1) setShift(0)
@@ -1346,6 +1387,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun clearSlots() {
         vaultActive = false
+        codeActive = false
         slotWords.fill(null)
         slotTyped = -1
         kv?.clearSuggestions()
@@ -1362,7 +1404,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Sugiere tus correos y atajos guardados. Devuelve true si los mostró. */
     private fun vaultSuggest(): Boolean {
         if (isPassword || hackerActive || translating || page == Page.NUM || !prefs.getBoolean(Prefs.VAULT_SUGGEST, true)) return false
-        if (VaultStore.items.isEmpty()) return false
+        if (VaultStore.items.isEmpty() || codeOn) return false
         val token = vaultToken() ?: return false
         val m = VaultStore.match(token, commaMode == "@")
         if (m.isEmpty()) return false
@@ -1382,6 +1424,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun showSlots(left: String?, center: String?, right: String?, bold: Boolean, typedLeft: Boolean) {
         vaultActive = false
+        codeActive = false
         slotWords[0] = left
         slotWords[1] = center
         slotWords[2] = right
@@ -1390,13 +1433,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun canCorrect(word: String, before: CharSequence): Boolean {
-        if (!autocorrectOn || !fieldCorrect) return false
+        if (!autocorrectOn || !fieldCorrect || codeOn) return false
         // Un nombre propio en medio de la frase (ej. "Mendoza") no se corrige
         if (word.length > 1 && word[0].isUpperCase() && !TextUtil.isSentenceStart(before, word.length)) return false
         return true
     }
 
     private fun updateSuggestions() {
+        if (codeOn) { codeSuggest(); return }
         if (vaultSuggest()) return
         val eng = WordStore.engine
         val ic = target()
@@ -1448,6 +1492,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSuggestion(slot: Int) {
+        if (codeActive) { useCodeSnippet(slot); return }
         if (vaultActive) {
             // Tocaste uno de "Mis datos": cambia lo escrito por el valor completo
             val v = vaultValues.getOrNull(slot) ?: return
@@ -1523,6 +1568,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onKeyText(text: String) {
         if (spellOn) stopSpell()
         if (hackerActive) { hackerText(text); return }
+        if (codeOn && !codeAsking) { codeText(text); return }
         if (quick != null) clearQuick(true)
         if (shot != null || shotAsk) clearShot()
         val ic = target() ?: return
@@ -1583,7 +1629,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             Codes.SPACE -> {
                 if (ic == null) return
                 autoSpace = false
-                val before = if (doubleSpace && !isPassword && lastWasSpace) ic.getTextBeforeCursor(2, 0) else null
+                val before = if (doubleSpace && !isPassword && lastWasSpace && !codeOn) ic.getTextBeforeCursor(2, 0) else null
                 if (before != null && before.length == 2 && before[1] == ' ' && before[0].isLetterOrDigit()) {
                     // Doble espacio = punto y espacio
                     ic.deleteSurroundingText(1, 0)
@@ -1608,6 +1654,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (ic == null) return
                 autoSpace = false
                 if (translating) { translateEnter(); return }
+                if (codeAsking) { codeActions.onCodeAsk(codeBar?.box?.text?.toString() ?: ""); return }
+                if (codeOn) { codeEnter(); return }
                 ic.beginBatchEdit()
                 finishWord(ic)
                 ic.endBatchEdit()
@@ -1662,6 +1710,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onDeletePress() {
         if (spellOn) stopSpell()
         if (hackerActive) { sendKey(KeyEvent.KEYCODE_DEL, hMeta()); hConsume(); return }
+        if (codeOn && !codeAsking && codeDeleteIndent()) return
         val ic = target() ?: return
         autoSpace = false
         lastWasSpace = false
@@ -1741,6 +1790,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
             KeyboardView.TOOL_MORE -> showMode(6)
             KeyboardView.TOOL_HACKER -> toggleHacker()
+            KeyboardView.TOOL_CODE -> toggleCode()
             KeyboardView.TOOL_VAULT -> {
                 // Pide la huella y muestra tus correos, contraseñas y textos guardados
                 showMode(0)
@@ -1856,12 +1906,253 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         return sb.toString()
     }
 
+    // ---------------------------------------------------------------- Modo código
+
+    /** Enciende o apaga el Modo código (el teclado cambia para programar). */
+    private fun toggleCode() {
+        codeOn = !codeOn
+        prefs.edit().putBoolean(Prefs.CODE_MODE, codeOn).apply()
+        if (codeOn && hacker) prefs.edit().putBoolean(Prefs.HACKER, false).apply()
+        codeToken++
+        if (mode != 0) showMode(0)
+        if (translating) stopTranslate()
+        if (spellOn) stopSpell(keepSelection = true)
+        codeBar?.let { it.hideAsk(); it.hideResult() }
+        if (page != Page.NUM) page = Page.LETTERS
+        manualShift = false
+        setShift(0)
+        applySettings()
+        rebuild()
+        clearSlots()
+        if (codeOn) {
+            Toast.makeText(this, L.t("Modo código: Explicar, Escribir código, Arreglar error y Pista", "Code mode: Explain, Write code, Fix error and Hint"), Toast.LENGTH_SHORT).show()
+        } else updateAutoCaps()
+        scheduleUpdate()
+    }
+
+    /** Escribe tal cual (sin autocorrector ni espacios automáticos). */
+    private fun codeText(text: String) {
+        val ic = target() ?: return
+        var t = text
+        if (shift > 0 && t.length == 1) t = t.uppercase()
+        ic.commitText(t, 1)
+        if (shift == 1) { manualShift = false; setShift(0) }
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+        scheduleUpdate()
+    }
+
+    /** Enter con sangría automática: copia la de la línea y agrega 4 espacios después de ":" o "{". */
+    private fun codeEnter() {
+        val ic = target() ?: return
+        val ei = targetInfo()
+        val action = if (ei != null) enterActionFor(ei) else EditorInfo.IME_ACTION_NONE
+        if (action != EditorInfo.IME_ACTION_NONE) { ic.performEditorAction(action); return }
+        val before = ic.getTextBeforeCursor(500, 0)?.toString() ?: ""
+        val line = before.substringAfterLast('\n')
+        var indent = line.takeWhile { it == ' ' || it == '\t' }
+        if (CodeWords.opensBlock(codeLang, line)) indent += CodeLayouts.TAB
+        ic.commitText("\n" + indent, 1)
+        lastWasSpace = false
+        scheduleUpdate()
+    }
+
+    /** Borrar en una sangría vacía borra los 4 espacios de una vez. */
+    private fun codeDeleteIndent(): Boolean {
+        val ic = target() ?: return false
+        if (selStart != selEnd) return false
+        val before = ic.getTextBeforeCursor(200, 0)?.toString() ?: return false
+        val line = before.substringAfterLast('\n')
+        if (line.length >= 4 && line.isNotEmpty() && line.all { it == ' ' } && line.endsWith(CodeLayouts.TAB)) {
+            val n = if (line.length % 4 == 0) 4 else line.length % 4
+            ic.deleteSurroundingText(n, 0)
+            scheduleUpdate()
+            return true
+        }
+        return false
+    }
+
+    /** Sugiere palabras del lenguaje (print(), for … in range():…) según lo que escribes. */
+    private fun codeSuggest() {
+        val ic = target()
+        if (ic == null || codeAsking || page == Page.NUM) { clearSlots(); return }
+        val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
+        val token = before.takeLastWhile { it.isLetterOrDigit() || it == '_' || it == '<' || it == '#' }
+        val list = CodeWords.complete(codeLang, token)
+        if (list.isEmpty()) { clearSlots(); return }
+        val order = listOf(1, 0, 2)
+        val labels = arrayOfNulls<String>(3)
+        val values = arrayOfNulls<String>(3)
+        for ((i, w) in list.withIndex()) {
+            labels[order[i]] = CodeWords.label(w)
+            values[order[i]] = w
+        }
+        showSlots(labels[0], labels[1], labels[2], false, false)
+        for (i in 0..2) codeValues[i] = values[i]
+        codeActive = true
+    }
+
+    /** Tocaste un fragmento: reemplaza lo escrito y deja el cursor donde va (ej. dentro de print()). */
+    private fun useCodeSnippet(slot: Int) {
+        val snippet = codeValues.getOrNull(slot) ?: return
+        val ic = target() ?: return
+        val before = ic.getTextBeforeCursor(500, 0)?.toString() ?: ""
+        val token = before.takeLastWhile { it.isLetterOrDigit() || it == '_' || it == '<' || it == '#' }
+        val indent = before.substringAfterLast('\n').takeWhile { it == ' ' || it == '\t' }
+        // Las líneas nuevas del fragmento siguen la sangría de la línea actual
+        val text = snippet.replace("\n", "\n" + indent)
+        val mark = text.indexOf(CodeWords.CURSOR)
+        val clean = text.replace(CodeWords.CURSOR.toString(), "")
+        ic.beginBatchEdit()
+        if (token.isNotEmpty()) ic.deleteSurroundingText(token.length, 0)
+        ic.commitText(clean, 1)
+        ic.endBatchEdit()
+        if (mark >= 0) repeat(clean.length - mark) { sendKey(KeyEvent.KEYCODE_DPAD_LEFT) }
+        clearSlots()
+        lastCorrection = null
+    }
+
+    /** El código que seleccionaste, o todo el texto si no seleccionaste nada. */
+    private fun codeSource(): String {
+        val ic = currentInputConnection ?: return ""
+        val sel = if (selStart != selEnd) try { ic.getSelectedText(0)?.toString() } catch (_: Exception) { null } else null
+        if (!sel.isNullOrBlank()) return sel.take(12000)
+        val et = try { ic.getExtractedText(ExtractedTextRequest().apply { hintMaxChars = 12000 }, 0) } catch (_: Exception) { null }
+        val all = et?.text?.toString()
+            ?: ((ic.getTextBeforeCursor(6000, 0)?.toString() ?: "") + (ic.getTextAfterCursor(6000, 0)?.toString() ?: ""))
+        return all.take(12000)
+    }
+
+    /** Quita marcas de formato (**negritas**, # títulos) de las explicaciones. */
+    private fun plain(t: String) = t.replace("**", "").replace("__", "")
+        .replace(Regex("(?m)^#{1,6}\\s+"), "").replace(Regex("(?m)^\\s*[*-]\\s+"), "• ").trim()
+
+    /** El primer bloque ```código``` de la respuesta (o null). */
+    private fun codeBlock(t: String): String? {
+        val m = Regex("```[a-zA-Z0-9+#]*\\n?([\\s\\S]*?)```").find(t) ?: return null
+        return m.groupValues[1].trimEnd()
+    }
+
+    /** Pregunta a Gemini y muestra el resultado en la barra del Modo código. */
+    private fun codeAsk(prompt: String, onAnswer: (String) -> Unit) {
+        val cb = codeBar ?: return
+        val key = prefs.getString(Prefs.GEMINI_KEY, "")?.trim().orEmpty()
+        if (key.isEmpty()) { cb.showNeedKey(); return }
+        cb.showStatus(L.t("Pensando…", "Thinking…"))
+        val token = ++codeToken
+        CloudText.ask(prompt, key) { list, err ->
+            if (!codeOn || token != codeToken) return@ask
+            val ans = list?.firstOrNull()
+            if (ans == null) cb.showStatus(err ?: L.t("No hubo respuesta.", "No answer.")) else onAnswer(ans)
+        }
+    }
+
+    private val codeActions = object : CodeBar.Actions {
+        override fun onCodeFeedback() = onKeyFeedback()
+        override fun onCodeClose() = toggleCode()
+        override fun onCodeLang() {
+            val i = CodeWords.LANGS.indexOf(codeLang)
+            codeLang = CodeWords.LANGS[(i + 1) % CodeWords.LANGS.size]
+            prefs.edit().putString(Prefs.CODE_LANG, codeLang).apply()
+            codeBar?.setLang(codeLang)
+            scheduleUpdate()
+        }
+
+        override fun onCodeExplain() {
+            val src = codeSource()
+            if (src.isBlank()) { codeBar?.showStatus(L.t("Escribe o selecciona código primero.", "Type or select some code first.")); return }
+            val prompt = if (L.english)
+                "You are a patient programming teacher. Explain this $codeLang code line by line in very simple English for a total beginner. " +
+                    "For each line write the line, then below it '→ ' and what it does. At the end, say in 1–2 sentences what the whole program does. " +
+                    "No markdown (no **, no #).\n\nCode:\n$src"
+            else
+                "Eres un profesor de programación paciente. Explica este código de $codeLang línea por línea en español muy sencillo, para un principiante total. " +
+                    "Para cada línea escribe la línea y debajo '→ ' y lo que hace. Al final, di en 1–2 frases qué hace el programa completo. " +
+                    "Sin markdown (sin **, sin #).\n\nCódigo:\n$src"
+            codeAsk(prompt) { codeBar?.showResult(L.t("Explicación", "Explanation"), plain(it), null, false) }
+        }
+
+        override fun onCodeWrite() {
+            codeBar?.showAsk()
+            clearSlots()
+            updateAutoCaps()
+        }
+
+        override fun onCodeCancelAsk() {
+            codeBar?.hideAsk()
+            scheduleUpdate()
+        }
+
+        override fun onCodeAsk(description: String) {
+            if (description.isBlank()) return
+            codeBar?.hideAsk()
+            val prompt = if (L.english)
+                "Write $codeLang code that does this: $description\nUse clear names and short comments in English explaining each part. " +
+                    "Keep it simple for a beginner. Reply ONLY with the code, no ``` and no explanations outside the code."
+            else
+                "Escribe código en $codeLang que haga esto: $description\nUsa nombres claros y comentarios cortos en español que expliquen cada parte. " +
+                    "Que sea sencillo para un principiante. Responde SOLO con el código, sin ``` y sin explicaciones fuera del código."
+            codeAsk(prompt) { ans ->
+                val code = codeBlock(ans) ?: ans.trim()
+                codeBar?.showResult(L.t("Código listo", "Code ready"), code, code, true)
+            }
+        }
+
+        override fun onCodeFix() {
+            val src = codeSource()
+            if (src.isBlank()) { codeBar?.showStatus(L.t("Pega o selecciona tu código o el error primero.", "Paste or select your code or the error first.")); return }
+            val prompt = if (L.english)
+                "This is $codeLang code and/or an error message. 1) Explain in simple English, for a beginner, what is wrong and why. " +
+                    "2) Then give the complete fixed code between ``` and ```. No other markdown.\n\n$src"
+            else
+                "Esto es código de $codeLang y/o un mensaje de error. 1) Explica en español sencillo, para un principiante, qué está mal y por qué. " +
+                    "2) Luego da el código corregido completo entre ``` y ```. Sin otro markdown.\n\n$src"
+            codeAsk(prompt) { ans ->
+                val code = codeBlock(ans)
+                val why = plain(if (code != null) ans.replace(Regex("```[\\s\\S]*?```"), "").trim() else ans)
+                val shown = if (code != null) why + "\n\n" + L.t("Código corregido:", "Fixed code:") + "\n" + code else why
+                codeBar?.showResult(L.t("Qué estaba mal", "What was wrong"), shown, code, false)
+            }
+        }
+
+        override fun onCodeHint() {
+            val src = codeSource()
+            val prompt = if (L.english)
+                "I'm learning $codeLang. Give me ONE short hint (2–3 sentences) in simple English to move forward or fix this code, " +
+                    "WITHOUT giving the full solution or writing the final code. No markdown.\n\n$src"
+            else
+                "Estoy aprendiendo $codeLang. Dame UNA pista corta (2–3 frases) en español sencillo para avanzar o arreglar este código, " +
+                    "SIN darme la solución completa ni escribir el código final. Sin markdown.\n\n$src"
+            codeAsk(prompt) { codeBar?.showResult(L.t("Pista", "Hint"), plain(it), null, false) }
+        }
+
+        override fun onCodeInsert(text: String) {
+            currentInputConnection?.commitText(text, 1)
+            codeBar?.hideResult()
+            scheduleUpdate()
+        }
+
+        override fun onCodeCopy(text: String) {
+            try {
+                clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("code", text))
+                Toast.makeText(this@BestKeyboardService, L.t("Copiado", "Copied"), Toast.LENGTH_SHORT).show()
+            } catch (_: Exception) { }
+        }
+
+        override fun onCodeAddKey() {
+            codeBar?.hideResult()
+            askPermission(MainActivity.EXTRA_SHOW_AI)
+        }
+    }
+
     // ---------------------------------------------------------------- Teclado de computadora
 
     /** Enciende o apaga el teclado de computadora ("modo hacker"). */
     private fun toggleHacker() {
         hacker = !hacker
         prefs.edit().putBoolean(Prefs.HACKER, hacker).apply()
+        if (hacker && codeOn) prefs.edit().putBoolean(Prefs.CODE_MODE, false).apply()
         hCtrl = 0; hAlt = 0; hShift = 0; hFn = false
         if (mode != 0) showMode(0)
         if (page != Page.NUM) page = Page.LETTERS

@@ -53,6 +53,9 @@ object Prefs {
     const val VAULT_SUGGEST = "vault_suggest"
     /** Guardar solo los correos que escribo en campos de correo. */
     const val VAULT_LEARN = "vault_learn_emails"
+    /** Modo código encendido y el lenguaje elegido (Python, JavaScript…). */
+    const val CODE_MODE = "code_mode"
+    const val CODE_LANG = "code_lang"
     const val MORE_TOOLS2 = "more_tools_all"
 
     fun get(ctx: Context): SharedPreferences =

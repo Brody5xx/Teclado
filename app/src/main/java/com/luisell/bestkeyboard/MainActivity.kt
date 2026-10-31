@@ -620,6 +620,7 @@ class MainActivity : Activity() {
                 "•  Mantén la coma para los emojis.\n" +
                 "•  ⋯ abre «Más opciones»; con el lápiz ✎ acomodas todos los botones.\n" +
                 "•  El hacker cambia a teclado de computadora (Ctrl, Alt, Esc, Tab, F1–F12).\n" +
+                "•  </> Modo código: teclado para programar y la IA te explica, escribe y arregla código.\n" +
                 "•  Mantén 🌐 para cambiar a otro teclado.",
             "•  Hold a letter for accents (á, é, ñ…) and the period for ¿ ? ¡ !\n" +
                 "•  ⇧ twice = ALL CAPS.\n" +
@@ -627,6 +628,7 @@ class MainActivity : Activity() {
                 "•  Hold the comma for emojis.\n" +
                 "•  ⋯ opens «More options»; the pencil ✎ lets you arrange every button.\n" +
                 "•  The hacker switches to a PC keyboard (Ctrl, Alt, Esc, Tab, F1–F12).\n" +
+                "•  </> Code mode: a keyboard for coding, and the AI explains, writes and fixes code.\n" +
                 "•  Hold 🌐 to switch to another keyboard.",
         ), 13f)
 
@@ -663,6 +665,12 @@ class MainActivity : Activity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "8.3" to tr(
+            "•  Modo código </> (en ⋯): teclado para programar (Tab, ( ) [ ] { } : =), sangría automática, " +
+                "palabras de Python/JavaScript/Kotlin/Java/HTML/C++ y la IA: Explicar, Escribir código, Arreglar error y Pista.",
+            "•  Code mode </> (in ⋯): a keyboard for coding (Tab, ( ) [ ] { } : =), auto-indent, " +
+                "Python/JavaScript/Kotlin/Java/HTML/C++ words and AI: Explain, Write code, Fix error and Hint.",
+        ),
         "8.2" to tr("•  Botón 🔒 «Mis datos» en el teclado (en ⋯): pide tu huella y muestra tus correos, contraseñas y textos.",
             "•  🔒 «My data» button on the keyboard (in ⋯): asks for your fingerprint and shows your emails, passwords and texts."),
         "8.1" to tr("•  Ojito 👁 para ver la contraseña mientras la escribes en «Mis datos».", "•  Eye 👁 to see the password while you type it in «My data»."),

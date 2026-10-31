@@ -110,11 +110,16 @@ object CloudText {
 
     /** Reescribe [text] formal y profesional con Google Gemini usando la clave gratis [key]. */
     fun formal(text: String, key: String, done: (List<String>?, String?) -> Unit) {
+        val prompt = "Reescribe el siguiente texto con un tono formal y profesional, corrigiendo la " +
+            "ortografía y la gramática. Mantén el mismo idioma del texto y el mismo significado; no " +
+            "agregues información nueva. Responde SOLO con el texto reescrito, sin comillas, sin " +
+            "títulos y sin explicaciones.\n\nTexto:\n" + text
+        ask(prompt, key) { list, err -> done(list?.map { it.trim('"', '“', '”') }, err) }
+    }
+
+    /** Le pregunta a Google Gemini ([prompt]) con tu clave; prueba varios modelos si uno falla. */
+    fun ask(prompt: String, key: String, done: (List<String>?, String?) -> Unit) {
         io.execute {
-            val prompt = "Reescribe el siguiente texto con un tono formal y profesional, corrigiendo la " +
-                "ortografía y la gramática. Mantén el mismo idioma del texto y el mismo significado; no " +
-                "agregues información nueva. Responde SOLO con el texto reescrito, sin comillas, sin " +
-                "títulos y sin explicaciones.\n\nTexto:\n" + text
             val req = JSONObject().put(
                 "contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))),
             ).put("generationConfig", JSONObject().put("temperature", 0.4))
@@ -133,7 +138,7 @@ object CloudText {
                             if (p.optBoolean("thought", false)) continue // "pensamientos" del modelo, no van
                             sb.append(p.optString("text"))
                         }
-                        val result = sb.toString().trim().trim('"', '“', '”')
+                        val result = sb.toString().trim()
                         if (result.isNotEmpty()) {
                             main.post { done(listOf(result), null) }
                             return@execute

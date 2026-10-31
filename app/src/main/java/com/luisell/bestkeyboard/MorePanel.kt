@@ -41,6 +41,7 @@ object Tools {
         Info(KeyboardView.TOOL_SETTINGS, Icons.SETTINGS, "Ajustes", "Settings", true),
         Info(KeyboardView.TOOL_HACKER, Icons.HACKER, "Teclado de computadora", "PC keyboard", false),
         Info(KeyboardView.TOOL_VAULT, Icons.LOCK, "Mis datos", "My data", true),
+        Info(KeyboardView.TOOL_CODE, Icons.CODE, "Modo código", "Code mode", false),
     )
 
     /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */
