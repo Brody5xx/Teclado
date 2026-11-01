@@ -880,6 +880,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.8" to tr("•  Barra de arriba: al deslizarla sale una línea de luz en el medio y el botón que pasa por ahí crece, como elegir un personaje en un videojuego.",
+            "•  Top bar: when you swipe it, a line of light shows in the middle and the button passing over it grows, like picking a character in a video game."),
         "10.7" to tr("•  Portapapeles: al seleccionar, cada nota tiene un rombo ◇ (vacío o con palomita).\n•  Agregar o editar en el portapapeles abre una caja grande con varias líneas y el botón «✓ Guardar».",
             "•  Clipboard: when selecting, each note has a diamond ◇ (empty or checked).\n•  Adding or editing in the clipboard opens a big multi-line box with a «✓ Save» button."),
         "10.6" to tr(

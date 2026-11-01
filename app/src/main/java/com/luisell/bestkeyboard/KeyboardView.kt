@@ -835,6 +835,13 @@ class KeyboardView(context: Context) : View(context) {
     private val stripVelocity = android.view.VelocityTracker.obtain()
     private val stripFling = android.widget.OverScroller(context, android.view.animation.DecelerateInterpolator(1.6f))
 
+    // ---- Luz del medio al deslizar la barra de arriba
+    private var stripGlow = 0f
+    private var lastGlowMs = 0L
+    private var lastSlideMs = 0L
+
+    private fun blendColor(a: Int, b: Int, f: Float): Int = (0xFF shl 24) or blend(a, b, f.coerceIn(0f, 1f))
+
     // ---- Acomodar los botones de la barra (mantener presionado y arrastrar)
     private var editing = false
     private var editList = ArrayList<Int>()
@@ -2110,6 +2117,30 @@ class KeyboardView(context: Context) : View(context) {
             nx - stripScroll
         }
         val now = SystemClock.uptimeMillis() / 1000.0
+        // ---- Luz de "elegir personaje": aparece mientras deslizas la barra y se apaga sola
+        val ms = SystemClock.uptimeMillis()
+        val sliding = !editing && (stripDragging || !stripFling.isFinished)
+        if (sliding) lastSlideMs = ms
+        val target = if (sliding || ms - lastSlideMs < 260) 1f else 0f
+        val dtg = if (lastGlowMs == 0L) 16f else (ms - lastGlowMs).coerceIn(1, 64).toFloat()
+        lastGlowMs = ms
+        stripGlow = if (target > stripGlow) minOf(1f, stripGlow + dtg / 140f) else maxOf(0f, stripGlow - dtg / 320f)
+        val mid = width / 2f
+        if (stripGlow > 0.01f) {
+            // Línea fina de luz que sale desde abajo de la barra, quieta en el medio
+            val g = stripGlow
+            val top = stripH - stripH * 0.92f * g
+            fill.shader = android.graphics.RadialGradient(mid, stripH, stripH * 0.9f,
+                alphaOf(p.accent, 0.28f * g), alphaOf(p.accent, 0f), android.graphics.Shader.TileMode.CLAMP)
+            c.drawCircle(mid, stripH, stripH * 0.9f, fill)
+            fill.shader = android.graphics.LinearGradient(0f, stripH, 0f, top,
+                alphaOf(0xFFFFFFFF.toInt(), 0.95f * g), alphaOf(p.accent, 0f), android.graphics.Shader.TileMode.CLAMP)
+            c.drawRect(mid - 0.9f * d, top, mid + 0.9f * d, stripH, fill)
+            fill.shader = null
+            fill.color = alphaOf(0xFFFFFFFF.toInt(), g)
+            c.drawCircle(mid, stripH - 0.5f * d, 2.2f * d, fill)
+        }
+        if (stripGlow > 0.01f || target > 0f) postInvalidateOnAnimation()
         if (extraTools.isNotEmpty() && stripScroll < 1f) {
             // Rayita al borde derecho: avisa que hay más botones deslizando
             fill.color = alphaOf(p.hint, 0.5f)
@@ -2136,9 +2167,14 @@ class KeyboardView(context: Context) : View(context) {
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             // Modo acomodar: los demás tiemblan un poquito
             val ang = if (editing) (7.0 * kotlin.math.sin(now * 2 * Math.PI * 4.5 + i * 1.7)).toFloat() else 0f
-            if (ang != 0f) { c.save(); c.rotate(ang, cx, cy) }
-            Icons.draw(c, kind, cx, cy, s, if (on) p.accent else p.hint, bgc, d)
-            if (ang != 0f) c.restore()
+            // El que pasa por la luz del medio crece un poquito (como elegir un personaje)
+            val near = if (stripGlow > 0.01f) (1f - kotlin.math.abs(cx - mid) / step).coerceIn(0f, 1f) else 0f
+            val grow = 1f + 0.42f * near * near * stripGlow
+            val lit = near * stripGlow
+            if (ang != 0f || grow != 1f) { c.save(); if (ang != 0f) c.rotate(ang, cx, cy); if (grow != 1f) c.scale(grow, grow, cx, cy) }
+            val col = if (on) p.accent else if (lit > 0.05f) blendColor(p.hint, p.text, lit) else p.hint
+            Icons.draw(c, kind, cx, cy, s, col, bgc, d)
+            if (ang != 0f || grow != 1f) c.restore()
         }
         if (editing) {
             // El que arrastras va debajo del dedo, un poco más grande
