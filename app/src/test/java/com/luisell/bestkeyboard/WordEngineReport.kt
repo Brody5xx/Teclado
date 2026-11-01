@@ -27,9 +27,9 @@ class WordEngineReport {
         val esCases = listOf(
             "tambien", "manana", "esta", "está", "como", "que", "aqui", "despues", "porfavor",
             "hloa", "hola", "graicas", "trabjo", "cmara", "camaras", "puerta", "instalacion",
-            "cable", "cableado", "fibra", "electrico", "electrica", "hospital", "supermercado",
+            "cable", "cableado", "fibra", "electrico", "electrica", "oficina", "supermercado",
             "mañna", "nesecito", "ayer", "asi", "dia", "vamoss", "q", "xq", "ok", "jajaja",
-            "RUMC", "IDF", "Mendoza", "Luisell", "acceso", "conexion", "revisar", "cambie",
+            "ACME", "IDF", "García", "Marisol", "acceso", "conexion", "revisar", "cambie",
             "haser", "vien", "osea", "aveces", "tecnico", "door", "the", "meeting",
         )
         for (w in esCases) sb.append("  $w -> ${eng.correction(w, "es") ?: "(sin cambio)"}\n")
@@ -52,11 +52,11 @@ class WordEngineReport {
         }
 
         sb.append("\n== Aprendizaje ==\n")
-        user.learn("Luisell")
-        user.add("RUMC"); user.add("RUMC")
+        user.learn("Marisol")
+        user.add("ACME"); user.add("ACME")
         repeat(3) { user.addBigram("buenos", "días") }
-        sb.append("  Lui -> ${eng.completions("Lui", null, "es")}\n")
-        sb.append("  luisel -> ${eng.correction("luisel", "es")}\n")
+        sb.append("  Mari -> ${eng.completions("Mari", null, "es")}\n")
+        sb.append("  marisl -> ${eng.correction("marisl", "es")}\n")
         sb.append("  después de 'buenos' -> ${eng.predictions("buenos", "es")}\n")
 
         // Velocidad
@@ -85,7 +85,7 @@ class WordEngineReport {
         sb.append("\n== Corrector ortográfico (subrayado rojo) ==\n")
         for ((lg, w) in listOf(
             "es" to "tambien", "es" to "nesecito", "es" to "trabjo", "es" to "aqui", "es" to "hola",
-            "es" to "mañana", "es" to "door", "es" to "RUMC", "es" to "Luisell", "es" to "instalacion",
+            "es" to "mañana", "es" to "door", "es" to "ACME", "es" to "Marisol", "es" to "instalacion",
             "en" to "recieve", "en" to "becuase", "en" to "i", "en" to "camera", "en" to "hola", "en" to "dont",
         )) {
             val r = eng.spellCheck(w, lg)

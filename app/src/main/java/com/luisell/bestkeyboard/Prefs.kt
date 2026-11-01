@@ -96,7 +96,8 @@ object Prefs {
     /** El número que llevará el próximo ticket (nunca se reinicia). */
     const val TICKET_NEXT = "ticket_next"
     /** Tickets con el formato del trabajo (Date, Location, Arrival/Departure, Job Description, Equipment List). */
-    const val TICKET_FORMAT = "ticket_format_dvss"
+    const val TICKET_FORMAT = "ticket_format_work"
+    const val TICKET_FORMAT_OLD = "ticket_format_dvss"  // nombre viejo (se pasa al nuevo una sola vez)
     /** Aviso del ticket del día: prendido y a qué hora (0-23). */
     const val REMINDER = "ticket_reminder"
     const val REMINDER_HOUR = "ticket_reminder_hour"

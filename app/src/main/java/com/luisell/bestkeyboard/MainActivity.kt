@@ -881,8 +881,10 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
-        "11.4" to tr("•  Mi jornada: al tocar «📍 Llegué al sitio» en un lugar que no tienes guardado, el GPS busca la dirección y la anota («Llegué a 350 Engle St»).\n•  Luego te pregunta «¿Guardar este sitio?»: le pones nombre una vez y la próxima vez lo reconoce solo (y lo de hoy también cambia al nombre nuevo).",
-            "•  My workday: when you tap «📍 Arrived on site» at a place you haven't saved, GPS finds the address and logs it («Arrived at 350 Engle St»).\n•  Then it asks «Save this site?»: name it once and next time it's recognized automatically (today's entries switch to the new name too)."),
+        "11.4.1" to tr("•  Ejemplos nuevos y genéricos en toda la app (sin nombres de lugares reales).",
+            "•  New generic examples throughout the app (no real place names)."),
+        "11.4" to tr("•  Mi jornada: al tocar «📍 Llegué al sitio» en un lugar que no tienes guardado, el GPS busca la dirección y la anota («Llegué a 123 Main St»).\n•  Luego te pregunta «¿Guardar este sitio?»: le pones nombre una vez y la próxima vez lo reconoce solo (y lo de hoy también cambia al nombre nuevo).",
+            "•  My workday: when you tap «📍 Arrived on site» at a place you haven't saved, GPS finds the address and logs it («Arrived at 123 Main St»).\n•  Then it asks «Save this site?»: name it once and next time it's recognized automatically (today's entries switch to the new name too)."),
         "11.3.3" to tr("•  Mi jornada: elige cuánto te descuentan de almuerzo (15 min, 30 min, 45 min, 1 hora) o escribe otro tiempo con «✏️ Otro tiempo…».",
             "•  My workday: choose how much lunch is deducted (15 min, 30 min, 45 min, 1 hour) or type another time with «✏️ Other time…»."),
         "11.3.2" to tr("•  Mi jornada: el almuerzo descuenta siempre 30 minutos, cualquier día (aunque sea corto o tomes más o menos). Los botones 🍔 y ↩️ sirven para anotar cuánto tomaste.",

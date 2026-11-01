@@ -11,7 +11,7 @@ object WeeklyWord {
     class Word(val word: String, val meaning: String, val example: String, val en: String, val replaces: List<String>)
 
     val WORDS = listOf(
-        Word("Afable", "Amable y fácil de tratar.", "El supervisor del hospital fue muy afable con todo el equipo.", "Affable", listOf("amable", "buena onda")),
+        Word("Afable", "Amable y fácil de tratar.", "El nuevo vecino fue muy afable con todos en el edificio.", "Affable", listOf("amable", "buena onda")),
         Word("Asertivo", "Que dice lo que piensa con claridad y respeto.", "Fui asertivo y le expliqué que faltaba material.", "Assertive", listOf("directo")),
         Word("Perspicaz", "Que nota detalles que otros no ven.", "Fue perspicaz notar que el cable estaba mal etiquetado.", "Perceptive", listOf("listo", "observador")),
         Word("Cordial", "Amable y respetuoso, con buen trato.", "La reunión fue cordial y llegamos a un acuerdo.", "Cordial", listOf("amable", "amistoso")),

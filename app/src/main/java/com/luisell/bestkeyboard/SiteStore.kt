@@ -46,7 +46,7 @@ object SiteStore {
         if (WorkStore.sameDay(n.time, System.currentTimeMillis())) n else { setNew(p, null); null }
     } catch (_: Exception) { null }
 
-    /** "350 Engle St, Englewood, NJ 07631, USA" → "350 Engle St". */
+    /** "123 Main St, Springfield, USA" → "123 Main St". */
     fun shortAddress(full: String): String = full.substringBefore(",").trim().ifEmpty { full }
 
     /** Busca la dirección de un punto del GPS (necesita internet; llamar en segundo plano). */

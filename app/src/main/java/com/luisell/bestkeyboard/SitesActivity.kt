@@ -148,7 +148,7 @@ class SitesActivity : UiActivity() {
     }
 
     private fun askName(address: String, lat: Double, lon: Double, fromNew: String = "") {
-        val name = field(tr("Nombre (ej. RUMC, Hospital, Tienda 12)", "Name (e.g. RUMC, Hospital, Store 12)"))
+        val name = field(tr("Nombre (ej. Oficina central, Bodega, Tienda 12)", "Name (e.g. Main office, Warehouse, Store 12)"))
         val addr = field(tr("Dirección", "Address"), address)
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -164,7 +164,7 @@ class SitesActivity : UiActivity() {
                 if (n.isEmpty()) { toast("Ponle un nombre.", "Give it a name."); return@setPositiveButton }
                 SiteStore.add(prefs, SiteStore.Site(n, addr.text.toString().trim(), lat, lon))
                 if (fromNew.isNotEmpty()) {
-                    // Lo de hoy también cambia: "Llegué a 350 Engle St" → "Llegué a RUMC"
+                    // Lo de hoy también cambia: "Llegué a 123 Main St" → "Llegué a Oficina central"
                     WorkDay.renameSiteToday(prefs, fromNew, n)
                     SiteStore.setNew(prefs, null)
                     WorkdayCenter.refresh(this)
@@ -177,7 +177,7 @@ class SitesActivity : UiActivity() {
     }
 
     private fun addByAddress() {
-        val name = field(tr("Nombre (ej. RUMC)", "Name (e.g. RUMC)"))
+        val name = field(tr("Nombre (ej. Bodega norte)", "Name (e.g. North warehouse)"))
         val addr = field(tr("Dirección completa", "Full address"))
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

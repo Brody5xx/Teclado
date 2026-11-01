@@ -17,6 +17,13 @@ import java.util.Locale
 class BestApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        // Pasa el ajuste viejo del formato de tickets a su nombre nuevo
+        try {
+            val p = Prefs.get(this)
+            if (p.contains(Prefs.TICKET_FORMAT_OLD)) {
+                p.edit().putBoolean(Prefs.TICKET_FORMAT, p.getBoolean(Prefs.TICKET_FORMAT_OLD, true)).remove(Prefs.TICKET_FORMAT_OLD).apply()
+            }
+        } catch (_: Exception) { }
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, e ->
             try { CrashLog.save(this, e) } catch (_: Throwable) { }

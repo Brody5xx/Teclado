@@ -166,14 +166,14 @@ object WorkDay {
     fun setSite(p: SharedPreferences, time: Long, site: String) =
         save(p, all(p).map { if (it.time == time) Event(it.time, it.kind, site) else it })
 
-    /** El nombre que se ve: "📍 Llegué a RUMC". */
+    /** El nombre que se ve: "📍 Llegué a Oficina central". */
     fun labelOf(e: Event): String = if (e.site.isEmpty()) label(e.kind) else if (names[e.kind] != null) label(e.kind) + " · " + e.site else when (e.kind) {
         ARRIVE -> L.t("📍 Llegué a ${e.site}", "📍 Arrived at ${e.site}")
         LEAVE -> L.t("🚪 Salí de ${e.site}", "🚪 Left ${e.site}")
         else -> label(e.kind) + " · " + e.site
     }
 
-    /** Le cambia el nombre al sitio en los eventos de hoy ("350 Engle St" → "Englewood Hospital"). */
+    /** Le cambia el nombre al sitio en los eventos de hoy ("123 Main St" → "Oficina central"). */
     fun renameSiteToday(p: SharedPreferences, old: String, new: String) {
         val now = System.currentTimeMillis()
         save(p, all(p).map { if (it.site == old && WorkStore.sameDay(it.time, now)) Event(it.time, it.kind, new) else it })

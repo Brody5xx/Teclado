@@ -1824,7 +1824,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun canCorrect(word: String, before: CharSequence): Boolean {
         if (!autocorrectOn || !fieldCorrect || codeOn) return false
-        // Un nombre propio en medio de la frase (ej. "Mendoza") no se corrige
+        // Un nombre propio en medio de la frase (ej. "García") no se corrige
         if (word.length > 1 && word[0].isUpperCase() && !TextUtil.isSentenceStart(before, word.length)) return false
         return true
     }
@@ -2949,7 +2949,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val f = grabField()
         if (f == null || f.first.isBlank()) {
             infoBar?.show(L.t("Notas → Ticket", "Notes → Ticket"), L.t(
-                "Escribe tus notas rápido y con tus palabras (por ejemplo: «cambie maglock puerta 3 rumc ya sirve») y vuelve a tocar este botón.",
+                "Escribe tus notas rápido y con tus palabras (por ejemplo: «cambie maglock puerta 3 ya sirve») y vuelve a tocar este botón.",
                 "Type your notes quickly in your own words (e.g. «swapped maglock door 3 works now») and tap this button again."),
                 listOf(L.t("Entendido", "Got it") to { closeInfo() }))
             return

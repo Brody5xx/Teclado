@@ -103,7 +103,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         if (typed.length < 2) return null
         if (typed.any { it.isDigit() }) return null
         val letters = typed.filter { it.isLetter() }
-        if (letters.length > 1 && letters.all { it.isUpperCase() }) return null // siglas: RUMC, IDF
+        if (letters.length > 1 && letters.all { it.isUpperCase() }) return null // siglas: ONU, USB
         if (typed.drop(1).any { it.isUpperCase() }) return null                // McDonald, iPhone
 
         val lower = typed.lowercase()
@@ -192,7 +192,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         if (w.length < 2 || w.length > 40) return ok
         if (w.any { it.isDigit() || it == '@' || it == '/' || it == '.' || it == '_' || it == '#' }) return ok
         val letters = w.filter { it.isLetter() }
-        if (letters.length > 1 && letters.all { it.isUpperCase() }) return ok   // siglas: RUMC, IDF
+        if (letters.length > 1 && letters.all { it.isUpperCase() }) return ok   // siglas: ONU, USB
         if (w.drop(1).any { it.isUpperCase() }) return ok                         // iPhone, McDonald
         val lower = w.lowercase()
 
