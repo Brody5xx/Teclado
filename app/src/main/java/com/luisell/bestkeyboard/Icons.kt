@@ -75,6 +75,7 @@ object Icons {
     const val NOTEBOOK = 58
     const val TICKETS = 59
     const val BOOK = 60
+    const val TRUCK = 61
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -466,6 +467,21 @@ object Icons {
                 c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
                 for (yy in 0..1) for (xx in 0..2)
                     c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            TRUCK -> {
+                // Camioneta (mi jornada)
+                path.reset()
+                path.moveTo(cx - s, cy + s * 0.45f)
+                path.lineTo(cx - s, cy - s * 0.1f)
+                path.lineTo(cx - s * 0.1f, cy - s * 0.1f)
+                path.lineTo(cx - s * 0.1f, cy - s * 0.65f)
+                path.lineTo(cx + s * 0.5f, cy - s * 0.65f)
+                path.lineTo(cx + s * 0.95f, cy - s * 0.1f)
+                path.lineTo(cx + s * 0.95f, cy + s * 0.45f)
+                path.close()
+                c.drawPath(path, st)
+                c.drawCircle(cx - s * 0.55f, cy + s * 0.55f, s * 0.24f, fl)
+                c.drawCircle(cx + s * 0.5f, cy + s * 0.55f, s * 0.24f, fl)
             }
             BARCODE -> {
                 // Esquinas de escáner con barras en medio

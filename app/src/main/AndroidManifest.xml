@@ -33,6 +33,7 @@
     </queries>
 
     <application
+        android:name=".BestApp"
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:roundIcon="@drawable/ic_launcher"
@@ -86,6 +87,11 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Guía rápida -->
+        <activity
+            android:name=".GuideActivity"
+            android:exported="false" />
 
         <!-- "Frases": tus frases rápidas -->
         <activity

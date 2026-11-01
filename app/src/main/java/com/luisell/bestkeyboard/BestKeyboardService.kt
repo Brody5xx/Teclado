@@ -158,6 +158,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var gifPanel: GifPanel? = null
     private var notebookPanel: ListPanel? = null
     private var ticketsPanel: ListPanel? = null
+    private var workdayPanel: ListPanel? = null
     /** Barra arriba del teclado con el mensaje traducido. */
     private var infoBar: InfoBar? = null
     private var readTrans: Translation? = null
@@ -332,6 +333,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 vp.setLang(voiceLang)
                 if (listening) { recognizer?.cancel(); startVoice() }
             }
+            override fun onEnglishTap() {
+                voiceEnglish = !voiceEnglish
+                vp.setEnglish(voiceEnglish)
+                if (voiceEnglish) {
+                    // Hablas en español
+                    voiceLang = "es"
+                    vp.setLang(voiceLang)
+                    if (listening) { recognizer?.cancel(); startVoice() }
+                    val tr = voiceTrans ?: Translation("es", "en").also { voiceTrans = it }
+                    if (!tr.ready) tr.prepare({}, {})
+                    vp.setStatus(L.t("Habla en español: se escribe en inglés.", "Speak Spanish: it's typed in English."))
+                }
+            }
             override fun onReportTap() {
                 when {
                     !reportMode -> {
@@ -396,7 +410,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_VOICE,
                     KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN, KeyboardView.TOOL_PHRASES,
                     KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT, KeyboardView.TOOL_BARCODE,
-                    KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS -> onToolbar(tool)
+                    KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS, KeyboardView.TOOL_WORKDAY -> onToolbar(tool)
                     else -> { showMode(0); onToolbar(tool) }
                 }
             }
@@ -474,6 +488,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         tk.onFeedback = { onKeyFeedback() }
         box.addView(tk, FrameLayout.LayoutParams(-1, -1))
         ticketsPanel = tk
+        val wd = ListPanel(this)
+        wd.visibility = View.GONE
+        wd.onBack = { showMode(0) }
+        wd.onFeedback = { onKeyFeedback() }
+        box.addView(wd, FrameLayout.LayoutParams(-1, -1))
+        workdayPanel = wd
         scanPanel = sp
         panelBox = box
 
@@ -646,6 +666,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         notebookPanel?.let { it.visibility = if (m == 10) View.VISIBLE else View.GONE; if (m == 10) refreshNotebook() }
         ticketsPanel?.let { it.visibility = if (m == 11) View.VISIBLE else View.GONE; if (m == 11) refreshTickets() }
+        workdayPanel?.let { it.visibility = if (m == 12) View.VISIBLE else View.GONE; if (m == 12) refreshWorkday() }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
 
@@ -951,8 +972,27 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Escribe lo dictado con signos, espacio y mayúscula donde corresponde. */
     private fun commitVoice(raw: String) {
+        val t = VoiceText.process(raw, voiceLang)
+        if (t.isEmpty()) return
+        if (voiceEnglish) {
+            // Hablaste en español: se escribe en inglés
+            val tr = voiceTrans ?: Translation("es", "en").also { voiceTrans = it }
+            val go = { tr.translate(t, { out -> handler.post { commitVoiceText(out) } }, { handler.post { commitVoiceText(t) } }) }
+            if (tr.ready) go() else tr.prepare({ handler.post { go() } }, { handler.post {
+                voicePanel?.setStatus(L.t("No se pudo traducir (la primera vez necesita internet).", "Couldn't translate (the first time needs internet)."))
+                commitVoiceText(t)
+            } })
+            return
+        }
+        commitVoiceText(t)
+    }
+
+    private var voiceEnglish = false
+    private var voiceTrans: Translation? = null
+
+    private fun commitVoiceText(text: String) {
         val ic = target() ?: return
-        var t = VoiceText.process(raw, voiceLang)
+        var t = text.trim()
         if (t.isEmpty()) return
         val before = ic.getTextBeforeCursor(64, 0) ?: ""
         if (TextUtil.isSentenceStart(before, 0) && autoCap) {
@@ -1540,6 +1580,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         gifPanel?.applyPalette(pal)
         notebookPanel?.applyPalette(pal)
         ticketsPanel?.applyPalette(pal)
+        workdayPanel?.applyPalette(pal)
         infoBar?.applyPalette(pal)
         searchBar?.applyPalette(pal)
         if (floatFrame != null && prefs.getBoolean(Prefs.FLOAT, false) != floating) applyFloat()
@@ -2199,6 +2240,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_STAMP -> showStamp()
             KeyboardView.TOOL_NOTEBOOK -> showMode(10)
             KeyboardView.TOOL_TICKETS -> showMode(11)
+            KeyboardView.TOOL_WORKDAY -> showMode(12)
             KeyboardView.TOOL_WORD -> showWord()
             KeyboardView.TOOL_REVIEW -> startReview()
             KeyboardView.TOOL_FORMAL -> startFormalWord()
@@ -2840,6 +2882,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         runTicket(ticketLang())
     }
 
+    /** Las horas de "Mi jornada" de hoy, para que el ticket las use. */
+    private fun workdayHint(): String {
+        val ev = WorkDay.day(prefs)
+        if (ev.isEmpty()) return ""
+        return "Times recorded today with the time tracker (use them for Arrival Time / Departure Time unless the notes say otherwise):\n" +
+            WorkDay.text(ev, true) + "\n"
+    }
+
     /** Los tickets de DVSS van en inglés; si no usas ese formato, en el idioma del teclado. */
     private fun ticketLang() = if (prefs.getBoolean(Prefs.TICKET_FORMAT, true)) "en" else lang
 
@@ -2866,7 +2916,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             "Rules:\n- Keep every fact (sites, door numbers, rooms, times, names, part names). Do not invent facts.\n" +
             "- Expand abbreviations and fix spelling.\n- First person, past tense, short clear sentences, in a logical order " +
             "(arrival, work done, tests, result, pending items).\n- Plain text only. No markdown, no asterisks.\n" +
-            "- Answer with the ticket text only.\n\nNotes:\n" + aiSource
+            "- Answer with the ticket text only.\n" + workdayHint() + "\nNotes:\n" + aiSource
         CloudText.ask(prompt, key) { list, err ->
             if (my != aiSeq) return@ask
             val out = list?.firstOrNull()?.replace("**", "")?.trim()
@@ -3042,6 +3092,59 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             L.t("Aquí se guardan los tickets que creas con 📋 Notas → Ticket. Toca uno para escribirlo y usarlo de base.",
                 "Tickets you create with 📋 Notes → Ticket are saved here. Tap one to type it and use it as a base."),
             listOf(L.t("📋 Ticket nuevo", "📋 New ticket") to { showMode(0); startTicket() }))
+    }
+
+    // ---------------------------------------------------------------- Mi jornada
+
+    private fun refreshWorkday() {
+        val panel = workdayPanel ?: return
+        val events = WorkDay.day(prefs)
+        val sum = WorkDay.summary(events)
+        val rows = ArrayList<ListPanel.Row>()
+        if (events.isNotEmpty()) {
+            rows.add(ListPanel.Row(L.t("Hoy", "Today") + (if (sum.running) L.t(" · en curso", " · in progress") else ""),
+                L.t("Total ${WorkDay.dur(sum.total)}\nEn el sitio ${WorkDay.dur(sum.site)} · Manejando ${WorkDay.dur(sum.driving)}",
+                    "Total ${WorkDay.dur(sum.total)}\nOn site ${WorkDay.dur(sum.site)} · Driving ${WorkDay.dur(sum.driving)}")))
+        }
+        for (e in events) {
+            rows.add(ListPanel.Row(WorkStore.time(e.time), WorkDay.label(e.kind),
+                onTap = { adjustEvent(e.time, e.kind) },
+                onDelete = { WorkDay.remove(prefs, e.time); refreshWorkday() }))
+        }
+        val next = WorkDay.nextKind(events)
+        val kinds = listOf(WorkDay.START, WorkDay.ARRIVE, WorkDay.LEAVE, WorkDay.HOME)
+        val order = listOf(next) + kinds.filter { it != next }
+        val buttons = ArrayList<Pair<String, () -> Unit>>()
+        for (k in order) buttons.add(WorkDay.label(k) to {
+            WorkDay.add(prefs, k)
+            refreshWorkday()
+        })
+        if (events.isNotEmpty()) {
+            buttons.add(L.t("✍️ Escribir resumen", "✍️ Type summary") to {
+                insertText(WorkDay.text(WorkDay.day(prefs), ticketLang() == "en"))
+                showMode(0)
+            })
+        }
+        panel.show(L.t("🛻 Mi jornada", "🛻 My workday") + "  ·  " + L.t("semana ", "week ") + WorkDay.dur(WorkDay.weekTotal(prefs)), rows,
+            L.t("Toca 🛻 Comencé cuando subes a la camioneta. Luego 📍 Llegué al sitio, 🚪 Salí del sitio y 🏠 Llegué a casa. Si se te olvidó, toca la hora para cambiarla.",
+                "Tap 🛻 Started when you get in the truck. Then 📍 Arrived on site, 🚪 Left the site and 🏠 Home. If you forgot, tap the time to change it."),
+            buttons)
+    }
+
+    /** Cambiar la hora de un evento (si se te olvidó tocarlo a tiempo). */
+    private fun adjustEvent(time: Long, kind: String) {
+        val bar = infoBar ?: return
+        var t = time
+        fun showBar() {
+            bar.show(WorkDay.label(kind) + ": " + WorkStore.time(t), L.t("Cambia la hora si se te olvidó tocarlo a tiempo.", "Change the time if you forgot to tap it on time."), listOf(
+                L.t("Listo", "Done") to { closeInfo() },
+                "−15 min" to { t = WorkDay.shift(prefs, t, -15); refreshWorkday(); showBar() },
+                "−5 min" to { t = WorkDay.shift(prefs, t, -5); refreshWorkday(); showBar() },
+                "+5 min" to { t = WorkDay.shift(prefs, t, 5); refreshWorkday(); showBar() },
+                "+15 min" to { t = WorkDay.shift(prefs, t, 15); refreshWorkday(); showBar() },
+            ))
+        }
+        showBar()
     }
 
     // ---------------------------------------------------------------- Hora, fecha y lugar

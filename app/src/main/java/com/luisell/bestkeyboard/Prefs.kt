@@ -100,6 +100,10 @@ object Prefs {
     /** Palabra de la semana: prendida y la última semana que se mostró. */
     const val WORD_WEEK = "word_week"
     const val WORD_SHOWN = "word_week_shown"
+    /** Mi jornada (comencé, llegué, salí, casa). */
+    const val WORKDAY = "workday"
+    /** Ya viste la guía rápida. */
+    const val GUIDE_SEEN = "guide_seen"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

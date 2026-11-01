@@ -370,8 +370,13 @@ abstract class UiActivity : Activity() {
     // ---------------------------------------------------------------- Ayudantes de diseño
 
     /** Empieza una tarjeta nueva con título e ícono; lo que se agregue después va dentro. */
-    protected fun card(title: String, icon: Int, glow: Boolean = false) {
+    /** Palabras extra para el buscador de ajustes (por tarjeta). "-" = no sale en la búsqueda. */
+    protected val cardKeywords = HashMap<View, String>()
+
+    protected fun card(title: String, icon: Int, glow: Boolean = false, keywords: String = "") {
         val head = LinearLayout(this)
+        head.tag = "cardHead"
+        if (keywords.isNotEmpty()) cardKeywords[head] = keywords
         head.orientation = LinearLayout.HORIZONTAL
         head.gravity = Gravity.CENTER_VERTICAL
         val iv = IconView(this, icon, 8f)
@@ -397,8 +402,43 @@ abstract class UiActivity : Activity() {
             cornerRadius = dpf(22f)
             if (glow) setStroke(dp(1), 0x804FD1FF.toInt()) else setStroke(dp(1), LINE)
         }
+        c.tag = "cardBody"
         root.addView(c, LinearLayout.LayoutParams(-1, -2))
         col = c
+    }
+
+    /** Todo el texto de una vista (para buscar). */
+    private fun allText(v: View, sb: StringBuilder) {
+        if (v is TextView) { sb.append(' ').append(v.text); v.hint?.let { sb.append(' ').append(it) } }
+        if (v is android.view.ViewGroup) for (i in 0 until v.childCount) allText(v.getChildAt(i), sb)
+    }
+
+    private fun norm(s: String): String = java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "")
+
+    /** Muestra solo las tarjetas que tienen lo que buscas. Devuelve cuántas quedaron. */
+    protected fun filterCards(query: String): Int {
+        val words = norm(query).split(Regex("\\s+")).filter { it.isNotEmpty() }
+        var shown = 0
+        var i = 0
+        while (i < root.childCount) {
+            val head = root.getChildAt(i)
+            if (head.tag != "cardHead" || i + 1 >= root.childCount) { i++; continue }
+            val body = root.getChildAt(i + 1)
+            val kw = cardKeywords[head] ?: ""
+            val ok = if (words.isEmpty()) true else if (kw == "-") false else {
+                val sb = StringBuilder(kw)
+                allText(head, sb)
+                allText(body, sb)
+                val hay = norm(sb.toString())
+                words.all { hay.contains(it) }
+            }
+            head.visibility = if (ok) View.VISIBLE else View.GONE
+            body.visibility = if (ok) View.VISIBLE else View.GONE
+            if (ok) shown++
+            i += 2
+        }
+        return shown
     }
 
     protected fun subTitle(s: String) {

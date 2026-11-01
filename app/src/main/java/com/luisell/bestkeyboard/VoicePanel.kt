@@ -21,6 +21,8 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         fun onVoiceLangTap()
         /** Botón "Reporte": prende el modo reporte o, si ya hablaste, crea el reporte. */
         fun onReportTap()
+        /** Botón "Escribir en inglés": hablas en español y se escribe en inglés. */
+        fun onEnglishTap()
     }
 
     var listener: PanelListener? = null
@@ -35,6 +37,8 @@ class VoicePanel(context: Context) : FrameLayout(context) {
     private val abc: TextView
     private val del: TextView
     private val reportBtn = TextView(context)
+    private val enBtn = TextView(context)
+    private var enOn = false
     private var reportOn = false
     private var reportReady = false
 
@@ -63,7 +67,16 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         reportBtn.gravity = Gravity.CENTER
         reportBtn.setPadding(d(16f), 0, d(16f), 0)
         reportBtn.setOnClickListener { listener?.onPanelFeedback(); actions?.onReportTap() }
-        body.addView(reportBtn, LinearLayout.LayoutParams(-2, d(36f)).apply { bottomMargin = d(6f) })
+        enBtn.textSize = 14f
+        enBtn.gravity = Gravity.CENTER
+        enBtn.setPadding(d(16f), 0, d(16f), 0)
+        enBtn.setOnClickListener { listener?.onPanelFeedback(); actions?.onEnglishTap() }
+        val chips = LinearLayout(context)
+        chips.orientation = LinearLayout.HORIZONTAL
+        chips.gravity = Gravity.CENTER
+        chips.addView(reportBtn, LinearLayout.LayoutParams(-2, d(36f)).apply { rightMargin = d(8f) })
+        chips.addView(enBtn, LinearLayout.LayoutParams(-2, d(36f)))
+        body.addView(chips, LinearLayout.LayoutParams(-2, -2).apply { bottomMargin = d(6f) })
 
         val bar = LinearLayout(context)
         bar.orientation = LinearLayout.HORIZONTAL
@@ -83,6 +96,7 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         addView(body, LayoutParams(-1, -1))
         applyPalette(palette)
         setReport(false, false)
+        setEnglish(false)
     }
 
     fun setListening(on: Boolean) { mic.listening = on }
@@ -101,8 +115,18 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         paintReport()
     }
 
+    /** [on] = lo que dictas en español se escribe en inglés. */
+    fun setEnglish(on: Boolean) {
+        enOn = on
+        enBtn.text = if (on) "🇺🇸 " + L.t("En inglés: ON", "English: ON") else "🇺🇸 " + L.t("Escribir en inglés", "Type in English")
+        paintReport()
+    }
+
     private fun paintReport() {
         val p = palette
+        val rr = d(18f).toFloat()
+        enBtn.setTextColor(if (enOn) p.onAccent else p.text)
+        enBtn.background = if (enOn) PanelUi.pressable(p.accent, p.accentPressed, rr) else PanelUi.pressable(p.key, p.keyPressed, rr)
         val r = d(18f).toFloat()
         if (reportOn) {
             reportBtn.setTextColor(p.onAccent)

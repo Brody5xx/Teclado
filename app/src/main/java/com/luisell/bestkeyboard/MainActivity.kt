@@ -82,6 +82,11 @@ class MainActivity : UiActivity() {
         handleAsk(intent)
         TicketReminder.schedule(this)
         prefs.registerOnSharedPreferenceChangeListener(reminderListener)
+        // La primera vez, la guía rápida
+        if (savedInstanceState == null && !prefs.getBoolean(Prefs.GUIDE_SEEN, false)) {
+            prefs.edit().putBoolean(Prefs.GUIDE_SEEN, true).apply()
+            startActivity(Intent(this, GuideActivity::class.java))
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -367,6 +372,56 @@ class MainActivity : UiActivity() {
         meta.addView(pill)
         root.addView(meta, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
 
+        // ---- Si la app tuvo un error, se puede copiar para arreglarlo
+        CrashLog.last(this)?.let { err ->
+            card(tr("⚠️ Hubo un error", "⚠️ There was an error"), Icons.CLOSE, glow = true, keywords = "-")
+            val crashBody = col
+            text(tr("La app o el teclado se cerró por un error. Toca «Copiar error» y pégalo en el chat con Claude para arreglarlo.",
+                "The app or keyboard closed because of an error. Tap «Copy error» and paste it in the chat with Claude to fix it."), 13f)
+            text(err.lineSequence().take(6).joinToString("\n"), 11f, faded = true)
+            button(tr("Copiar error", "Copy error"), primary = true) {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("Error", err))
+                toast("Error copiado. Pégalo en el chat.", "Error copied. Paste it in the chat.")
+            }
+            button(tr("Ya lo mandé, borrar", "Sent it, delete")) {
+                CrashLog.clear(this)
+                val i = root.indexOfChild(crashBody)
+                if (i > 0) root.getChildAt(i - 1).visibility = View.GONE
+                crashBody.visibility = View.GONE
+            }
+        }
+
+        // ---- Buscador de ajustes
+        val searchBox = EditText(this).apply {
+            hint = tr("🔎  Buscar en ajustes (vibración, ticket, GIF…)", "🔎  Search settings (vibration, ticket, GIF…)")
+            isSingleLine = true
+            textSize = 15f
+            setTextColor(TEXT)
+            setHintTextColor(SUB)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(24f); setStroke(dp(1), 0x664FD1FF) }
+        }
+        root.addView(searchBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(18) })
+        val noResults = TextView(this).apply {
+            text = tr("No encontré nada con esa palabra.", "Nothing found for that word.")
+            textSize = 14f
+            setTextColor(SUB)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(24), 0, dp(24))
+            visibility = View.GONE
+        }
+        root.addView(noResults, LinearLayout.LayoutParams(-1, -2))
+        searchBox.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val q = s?.toString() ?: ""
+                val n = filterCards(q)
+                noResults.visibility = if (q.isNotBlank() && n == 0) View.VISIBLE else View.GONE
+            }
+        })
+
         // ---- Idioma de la app
         card(tr("Idioma", "Language"), Icons.GLOBE)
         segmented(tr("Idioma de esta pantalla", "Language of this screen"), Prefs.APP_LANG, "auto",
@@ -397,8 +452,14 @@ class MainActivity : UiActivity() {
             background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
 
+        // ---- Guía rápida
+        card(tr("Guía rápida", "Quick guide"), Icons.BOOK, keywords = "ayuda tutorial help como usar")
+        text(tr("Un recorrido corto por todo lo que tiene el teclado.", "A short tour of everything the keyboard has."), 13f, faded = true)
+        button(tr("Ver la guía", "See the guide"), primary = true) { startActivity(Intent(this, GuideActivity::class.java)) }
+
         // ---- Estilo (pantalla aparte con el teclado de muestra)
-        card(tr("Estilo del teclado", "Keyboard style"), Icons.BRUSH, glow = true)
+        card(tr("Estilo del teclado", "Keyboard style"), Icons.BRUSH, glow = true,
+            keywords = "tema temas colores color vibracion vibrar sonido animacion efecto forma teclas tamano letras hacker arcoiris theme vibration sound animation shape keys size letters rainbow")
         text(tr("Temas, colores, forma y tamaño de las teclas, animaciones, vibración y sonido. Con un teclado de muestra que cambia al instante.",
             "Themes, colors, key shape and size, animations, vibration and sound. With a sample keyboard that changes instantly."), 13f, faded = true)
         button(tr("Abrir Estilo", "Open Style"), primary = true) {
@@ -691,7 +752,7 @@ class MainActivity : UiActivity() {
         ), 13f)
 
         // ---- Novedades (lo más nuevo visible, lo demás escondido)
-        card(tr("Novedades", "What's new"), Icons.RECENT)
+        card(tr("Novedades", "What's new"), Icons.RECENT, keywords = "-")
         val notes = releaseNotes()
         subTitle(tr("Versión ", "Version ") + notes[0].first)
         text(notes[0].second, 13f)
@@ -731,6 +792,18 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.9" to tr(
+            "•  🛻 Mi jornada: Comencé (camioneta), Llegué al sitio, Salí del sitio y Llegué a casa, con tus horas del día y de la semana.\n" +
+                "•  🇺🇸 En el micrófono: habla en español y se escribe en inglés.\n" +
+                "•  🔎 Buscador en los ajustes.\n" +
+                "•  📘 Guía rápida.\n" +
+                "•  🐞 Si algo se cierra por un error, aquí sale para copiarlo y mandármelo.",
+            "•  🛻 My workday: Started (truck), Arrived on site, Left the site and Home, with your hours for the day and week.\n" +
+                "•  🇺🇸 In the mic: speak Spanish and it's typed in English.\n" +
+                "•  🔎 Search in settings.\n" +
+                "•  📘 Quick guide.\n" +
+                "•  🐞 If something closes because of an error, it shows here so you can copy it and send it to me.",
+        ),
         "9.8.1" to tr("•  Arreglado: Estilo se cerraba al elegir otro tema.", "•  Fixed: Style closed when picking another theme."),
         "9.8" to tr("•  En Estilo, los colores del tema Hacker solo salen cuando eliges el tema Hacker, y aparecen deslizándose hacia abajo.",
             "•  In Style, the Hacker theme colors only show when you pick the Hacker theme, and they slide down into view."),
