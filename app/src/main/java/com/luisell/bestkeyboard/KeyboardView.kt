@@ -249,6 +249,17 @@ class KeyboardView(context: Context) : View(context) {
     /** Mostrar el nombre del botón que pasa por la luz del medio. */
     var stripNames = true
     private var nameTool = -1
+    private var labelTool = -1
+    private var labelAnim = 0f
+    private var wasSliding = false
+    private var settledMs = 0L
+    private var stripMoveMs = 0L
+    private val capRect = RectF()
+    private var glowRadial: android.graphics.Shader? = null
+    private var glowLine: android.graphics.Shader? = null
+    private var glowW = -1
+    private var glowColor = 0
+    private var glowH = -1f
     private var nameNear = 0f
     private var labelMul = 1f
 
@@ -877,7 +888,9 @@ class KeyboardView(context: Context) : View(context) {
         if (!stripLoops()) return
         val step = toolStep()
         val l = stripLoopLen()
-        var target = Math.round(stripScroll / step) * step
+        // Un botón queda justo en el medio (debajo de la luz)
+        val mid = width / 2f
+        var target = (Math.round((stripScroll + mid) / step - 0.5f) + 0.5f) * step - mid
         if (seamDist(stripScroll) < step * 0.75f) target = Math.round(stripScroll / l) * l
         val dx = (target - stripScroll).toInt()
         if (abs(dx) < 1) { stripScroll = target; return }
@@ -1098,11 +1111,12 @@ class KeyboardView(context: Context) : View(context) {
             if (abs(x - downX) > 10f * d) handler.removeCallbacks(stripEditRunnable)
             // Deslizar la barra de arriba para ver los demás botones
             if (!showingSuggestions && !showingShot && maxStripScroll() > 0f && (stripDragging || abs(x - downX) > 10f * d)) {
-                if (!stripDragging) stripLastX = x
+                if (!stripDragging) { stripLastX = x; stripMoveMs = SystemClock.uptimeMillis() }
                 stripDragging = true
                 stripPressed = -1
                 val delta = stripLastX - x
                 stripLastX = x
+                if (abs(delta) > 0.6f * d) stripMoveMs = SystemClock.uptimeMillis()
                 if (stripLoops()) {
                     // Cerca del principio se pone un poquito duro (el "ancla"), pero puedes seguir dando vueltas
                     val zone = toolStep() * 0.6f
@@ -2208,40 +2222,8 @@ class KeyboardView(context: Context) : View(context) {
             nx - stripScroll
         }
         val now = SystemClock.uptimeMillis() / 1000.0
-        // ---- Luz de "elegir personaje": aparece mientras deslizas la barra y se apaga sola
         val ms = SystemClock.uptimeMillis()
-        val sliding = !editing && (stripDragging || !stripFling.isFinished)
-        if (sliding) lastSlideMs = ms
-        val target = if (sliding || ms - lastSlideMs < 260) 1f else 0f
-        val dtg = if (lastGlowMs == 0L) 16f else (ms - lastGlowMs).coerceIn(1, 64).toFloat()
-        lastGlowMs = ms
-        stripGlow = if (target > stripGlow) minOf(1f, stripGlow + dtg / 140f) else maxOf(0f, stripGlow - dtg / 320f)
         val mid = width / 2f
-        if (stripGlow > 0.01f && stripLight > 0f) {
-            // Línea fina de luz HORIZONTAL abajo de la barra, quieta en el medio: brilla en el centro y se apaga a los lados
-            val g = (stripGlow * stripLight).coerceAtMost(1f)
-            val half = width * 0.36f * (0.4f + 0.6f * g)
-            val y = stripH - 1.2f * d
-            // Brillo suave que sube desde la línea
-            fill.shader = android.graphics.RadialGradient(mid, y, stripH * 0.95f,
-                alphaOf(p.accent, 0.22f * g), alphaOf(p.accent, 0f), android.graphics.Shader.TileMode.CLAMP)
-            c.save()
-            c.scale(1.6f, 0.75f, mid, y)
-            c.drawCircle(mid, y, stripH * 0.95f, fill)
-            c.restore()
-            fill.shader = android.graphics.LinearGradient(mid - half, 0f, mid + half, 0f,
-                intArrayOf(alphaOf(p.accent, 0f), alphaOf(p.accent, 0.85f * g), alphaOf(0xFFFFFFFF.toInt(), g), alphaOf(p.accent, 0.85f * g), alphaOf(p.accent, 0f)),
-                floatArrayOf(0f, 0.3f, 0.5f, 0.7f, 1f), android.graphics.Shader.TileMode.CLAMP)
-            c.drawRect(mid - half, y - 0.8f * d, mid + half, y + 0.8f * d, fill)
-            fill.shader = null
-        }
-        if (stripGlow > 0.01f || target > 0f) postInvalidateOnAnimation()
-        if (extraTools.isNotEmpty() && (if (loops) wrapScroll(stripScroll) else stripScroll) < 1f) {
-            // Rayita al borde derecho: avisa que hay más botones deslizando
-            fill.color = alphaOf(p.hint, 0.5f)
-            tmp.set(width - 3f * d, cy - stripH * 0.22f, width - 1f * d, cy + stripH * 0.22f)
-            c.drawRoundRect(tmp, d, d, fill)
-        }
         // ---- Dónde va cada botón. Barra sin fin: después del último vuelve a salir el primero
         val ents = ArrayList<Long>(tools.size + 8)
         fun ent(n: Int, x: Float) = ents.add((n.toLong() shl 32) or (java.lang.Float.floatToRawIntBits(x).toLong() and 0xFFFFFFFFL))
@@ -2255,37 +2237,93 @@ class KeyboardView(context: Context) : View(context) {
                 if (x + l <= width + step) ent(n, x + l)
             }
         } else for (n in tools.indices) ent(n, xs[n])
-        // ---- El del medio: su nombre sale DENTRO de la barra, en una cápsula que empuja a los vecinos
+        // ---- El del medio
         var selE = -1
         var selDist = Float.MAX_VALUE
         if (!editing) for ((k, e) in ents.withIndex()) {
             val dd = abs(java.lang.Float.intBitsToFloat(e.toInt()) - mid)
             if (dd < selDist) { selDist = dd; selE = k }
         }
-        nameNear = if (selE >= 0) (1f - selDist / step).coerceIn(0f, 1f) else 0f
-        nameTool = if (selE >= 0) tools[(ents[selE] shr 32).toInt()] else -1
-        val la = if (stripNames && nameTool >= 0) (stripGlow * ((nameNear - 0.5f) * 2f).coerceIn(0f, 1f)).coerceIn(0f, 1f) else 0f
+        val nearTool = if (selE >= 0) tools[(ents[selE] shr 32).toInt()] else -1
+        // ---- Luz de "elegir personaje": aparece mientras deslizas la barra y se apaga sola
+        val sliding = !editing && (stripDragging || !stripFling.isFinished)
+        val fingerStill = stripDragging && ms - stripMoveMs > 220
+        if (sliding && !fingerStill) lastSlideMs = ms
+        if (wasSliding && !sliding) settledMs = ms
+        wasSliding = sliding
+        // El nombre sale cuando la barra se queda quieta con un botón en el medio (no mientras va rápido: así no parpadea)
+        val centered = selE >= 0 && selDist < step * 0.3f
+        var want = stripNames && !editing && centered &&
+            ((!sliding && settledMs > 0L && ms - settledMs < 1400) || fingerStill)
+        if (labelAnim > 0f && labelTool != nearTool) want = false
+        if (labelAnim <= 0f) labelTool = nearTool
+        val dtg = if (lastGlowMs == 0L) 16f else (ms - lastGlowMs).coerceIn(1, 64).toFloat()
+        lastGlowMs = ms
+        labelAnim = if (want) minOf(1f, labelAnim + dtg / 200f) else maxOf(0f, labelAnim - dtg / 170f)
+        val target = if (sliding || ms - lastSlideMs < 260 || want || labelAnim > 0f) 1f else 0f
+        stripGlow = if (target > stripGlow) minOf(1f, stripGlow + dtg / 140f) else maxOf(0f, stripGlow - dtg / 320f)
+        if (stripGlow > 0.01f && stripLight > 0f) {
+            // Línea fina de luz HORIZONTAL abajo de la barra, quieta en el medio (sombras guardadas: nada se crea al dibujar)
+            val g = (stripGlow * stripLight).coerceAtMost(1f)
+            val y = stripH - 1.2f * d
+            if (glowW != width || glowColor != p.accent || glowH != stripH) {
+                glowW = width; glowColor = p.accent; glowH = stripH
+                glowRadial = android.graphics.RadialGradient(0f, 0f, 1f, alphaOf(p.accent, 0.22f), alphaOf(p.accent, 0f), android.graphics.Shader.TileMode.CLAMP)
+                glowLine = android.graphics.LinearGradient(-1f, 0f, 1f, 0f,
+                    intArrayOf(alphaOf(p.accent, 0f), alphaOf(p.accent, 0.85f), 0xFFFFFFFF.toInt(), alphaOf(p.accent, 0.85f), alphaOf(p.accent, 0f)),
+                    floatArrayOf(0f, 0.3f, 0.5f, 0.7f, 1f), android.graphics.Shader.TileMode.CLAMP)
+            }
+            val r = stripH * 0.95f
+            fill.shader = glowRadial
+            fill.color = 0xFFFFFFFF.toInt()
+            fill.alpha = (255 * g).toInt()
+            c.save()
+            c.translate(mid, y)
+            c.scale(1.6f * r, 0.75f * r)
+            c.drawCircle(0f, 0f, 1f, fill)
+            c.restore()
+            val half = width * 0.36f * (0.4f + 0.6f * g)
+            fill.shader = glowLine
+            c.save()
+            c.translate(mid, y)
+            c.scale(half, 1f)
+            c.drawRect(-1f, -0.8f * d, 1f, 0.8f * d, fill)
+            c.restore()
+            fill.shader = null
+            fill.alpha = 255
+        }
+        if (stripGlow > 0.01f || target > 0f) postInvalidateOnAnimation()
+        if (extraTools.isNotEmpty() && (if (loops) wrapScroll(stripScroll) else stripScroll) < 1f) {
+            // Rayita al borde derecho: avisa que hay más botones deslizando
+            fill.color = alphaOf(p.hint, 0.5f)
+            tmp.set(width - 3f * d, cy - stripH * 0.22f, width - 1f * d, cy + stripH * 0.22f)
+            c.drawRoundRect(tmp, d, d, fill)
+        }
+        // ---- El nombre: cápsula que se abre suave al lado del ícono del medio y aparta a los vecinos
+        val la = labelAnim.let { it * it * (3f - 2f * it) }
+        nameTool = labelTool
+        if (selE >= 0 && nearTool != labelTool) selE = -1
         var label = ""
         var labelW = 0f
         text.textSize = 13f * d
         text.isFakeBoldText = true
-        if (la > 0.02f) {
-            label = Tools.ALL.firstOrNull { it.tool == nameTool }?.label?.substringBefore(" (")?.trim() ?: ""
+        if (la > 0.01f && selE >= 0) {
+            label = Tools.ALL.firstOrNull { it.tool == labelTool }?.label?.substringBefore(" (")?.trim() ?: ""
             if (label.length > 18) label = label.take(17).trimEnd() + "…"
             labelW = text.measureText(label)
         }
         val gap = 6f * d
         val ext = if (label.isEmpty()) 0f else (labelW + gap) / 2f * la
-        if (ext > 0f && selE >= 0) {
+        if (ext > 0f) {
             val sx = java.lang.Float.intBitsToFloat(ents[selE].toInt())
-            val iconHalf = s * 1.6f
+            val iconHalf = s * 1.7f
             val h = stripH * 0.66f
-            tmp.set(sx - ext - iconHalf - 6f * d * la, cy - h / 2f, sx + ext + iconHalf + 8f * d * la, cy + h / 2f)
+            capRect.set(sx - ext - iconHalf - 4f * d * la, cy - h / 2f, sx + ext + iconHalf + 6f * d * la, cy + h / 2f)
             fill.color = alphaOf(p.accent, 0.16f * la)
-            c.drawRoundRect(tmp, h / 2f, h / 2f, fill)
+            c.drawRoundRect(capRect, h / 2f, h / 2f, fill)
             st(alphaOf(p.accent, 0.75f * la))
             stroke.strokeWidth = 1.3f * d
-            c.drawRoundRect(tmp, h / 2f, h / 2f, stroke)
+            c.drawRoundRect(capRect, h / 2f, h / 2f, stroke)
         }
         for ((k, e) in ents.withIndex()) {
             val n = (e shr 32).toInt()
@@ -2296,7 +2334,7 @@ class KeyboardView(context: Context) : View(context) {
             val cx = when {
                 ext <= 0f -> rawX
                 k == selE -> rawX - ext
-                else -> rawX + Math.signum(rawX - mid) * ext * 2f * (abs(rawX - mid) / step).coerceIn(0f, 1f)
+                else -> rawX + Math.signum(rawX - mid) * ext * 2f * (abs(rawX - mid) / (step * 0.5f)).coerceIn(0f, 1f)
             }
             if (cx < -step || cx > width + step) continue
             if (loops && n == 0) {
@@ -2328,10 +2366,10 @@ class KeyboardView(context: Context) : View(context) {
             val ang = if (editing) (7.0 * kotlin.math.sin(now * 2 * Math.PI * 4.5 + i * 1.7)).toFloat() else 0f
             // El que pasa por la luz del medio crece un poquito (como elegir un personaje)
             val near = if (stripGlow > 0.01f) (1f - kotlin.math.abs(rawX - mid) / step).coerceIn(0f, 1f) else 0f
-            val grow = 1f + (0.42f - 0.2f * la) * near * near * stripGlow
+            val grow = 1f + (0.42f - 0.25f * la) * near * near * stripGlow
             val lit = near * stripGlow
             // Rueda: los botones van en arco (el del medio arriba, los de los lados bajan, se achican y se inclinan)
-            val dxn = ((cx - mid) / (width / 2f)).coerceIn(-1.2f, 1.2f) * kotlin.math.sqrt(stripArc)
+            val dxn = ((rawX - mid) / (width / 2f)).coerceIn(-1.2f, 1.2f) * kotlin.math.sqrt(stripArc)
             val arcY = stripGlow * dxn * dxn * stripH * 0.22f
             val arcScale = 1f - stripGlow * 0.18f * dxn * dxn
             val arcRot = stripGlow * dxn * 16f
@@ -2351,7 +2389,10 @@ class KeyboardView(context: Context) : View(context) {
                 text.color = alphaOf(p.text, la)
                 text.textAlign = Paint.Align.LEFT
                 text.getFontMetrics(fm)
-                c.drawText(label, cx + s * 1.6f * grow + gap * la, cy - (fm.ascent + fm.descent) / 2f, text)
+                c.save()
+                c.clipRect(capRect)
+                c.drawText(label, cx + s * 1.5f * grow + gap * la, cy - (fm.ascent + fm.descent) / 2f, text)
+                c.restore()
                 text.textAlign = Paint.Align.CENTER
             }
         }
