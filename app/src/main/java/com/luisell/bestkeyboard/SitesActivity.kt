@@ -168,7 +168,7 @@ class SitesActivity : UiActivity() {
             val c = LinearLayout(this)
             c.orientation = LinearLayout.VERTICAL
             val n = TextView(this)
-            n.text = "📍 " + s.name
+            n.text = "📍 " + s.name + if (s.rate > 0) "   ⭐ " + Pay.money(s.rate) + tr("/hora", "/hour") else ""
             n.textSize = 16f
             n.setTextColor(TEXT)
             c.addView(n)
@@ -178,6 +178,7 @@ class SitesActivity : UiActivity() {
             a.textSize = 12f
             a.setTextColor(SUB)
             c.addView(a)
+            c.setOnClickListener { askRate(s) }
             row.addView(c, LinearLayout.LayoutParams(0, -2, 1f))
             val del = IconView(this, Icons.CLOSE, 6f)
             del.color = SUB
@@ -185,6 +186,25 @@ class SitesActivity : UiActivity() {
             row.addView(del, LinearLayout.LayoutParams(dp(40), dp(40)))
             list.addView(row)
         }
+    }
+
+    /** Un sitio que paga más por hora (0 o vacío = el pago normal). */
+    private fun askRate(s: SiteStore.Site) {
+        val box = field(tr("Pago por hora en este sitio (vacío = el normal)", "Hourly pay at this site (empty = normal)"),
+            if (s.rate > 0) s.rate.toString().removeSuffix(".0") else "")
+        box.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        val wrap = LinearLayout(this).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(box, LinearLayout.LayoutParams(-1, -2)) }
+        AlertDialog.Builder(this)
+            .setTitle("📍 " + s.name)
+            .setMessage(tr("¿Este sitio te paga diferente por hora? Escribe cuánto. Déjalo vacío para usar tu pago normal.",
+                "Does this site pay a different hourly rate? Type it. Leave it empty to use your normal pay."))
+            .setView(wrap)
+            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
+                SiteStore.setRate(prefs, s.name, box.text.toString().trim().replace(",", ".").toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0)
+                refresh()
+            }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
     }
 
     private fun field(hint: String, value: String = "") = EditText(this).apply {

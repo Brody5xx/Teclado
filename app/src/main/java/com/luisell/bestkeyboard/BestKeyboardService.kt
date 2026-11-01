@@ -3231,6 +3231,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                         (if (sum.lunchAuto) L.t(" (fijo, no marcado)", " (fixed, not logged)") else "") +
                         (if (WorkDay.lunchPaid) L.t(" · pagado", " · paid") else L.t(" · se descuentan ", " · deducted ") + WorkDay.dur(sum.deducted)) else "")))
         }
+        // 💵 Cuánto llevas ganado esta semana
+        val payCfg = Pay.config(prefs)
+        if (payCfg.isSet) {
+            val r = Pay.week(prefs, WorkDay.weekStart())
+            rows.add(ListPanel.Row(L.t("💵 Semana", "💵 Week"),
+                L.t("Bruto ${Pay.money(r.gross)} · te quedan aprox. ${Pay.money(r.net)}\nToca para ver el desglose",
+                    "Gross ${Pay.money(r.gross)} · take-home approx. ${Pay.money(r.net)}\nTap to see the breakdown"),
+                onTap = { showPay() }))
+        }
         for (e in events) {
             rows.add(ListPanel.Row(WorkStore.time(e.time), WorkDay.labelOf(e),
                 onTap = { adjustEvent(e.time, e.kind) },
@@ -3404,6 +3413,22 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         return sb.toString()
     }
 
+    /** 💵 El desglose del pago de la semana. */
+    private fun showPay(weeksAgo: Int = 0) {
+        showMode(0)
+        val bar = infoBar ?: return
+        val r = Pay.week(prefs, WorkDay.weekStart(weeksAgo))
+        val thisWeek = weeksAgo == 0
+        bar.show(if (thisWeek) L.t("💵 Esta semana (aprox.)", "💵 This week (approx.)") else L.t("💵 Semana pasada (aprox.)", "💵 Last week (approx.)"),
+            Pay.text(r, Pay.config(prefs)),
+            listOf(
+                (if (thisWeek) L.t("Semana pasada", "Last week") else L.t("Esta semana", "This week")) to {
+                    showPay(if (thisWeek) 1 else 0)
+                },
+                L.t("Cerrar", "Close") to { closeInfo() },
+            ))
+    }
+
     /** 📄 ¿De qué semana quieres la hoja de horas? */
     private fun askTimesheet() {
         showMode(0)
@@ -3414,7 +3439,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 "A PDF is made with your days, hours, sites, lunch and overtime, ready to send by WhatsApp or email."),
             listOf(
                 L.t("Esta semana", "This week") to { closeInfo(); sendTimesheet(WorkDay.weekStart(), en) },
-                L.t("Semana pasada", "Last week") to { closeInfo(); sendTimesheet(WorkDay.weekStart() - 7L * 24 * 3600 * 1000, en) },
+                L.t("Semana pasada", "Last week") to { closeInfo(); sendTimesheet(WorkDay.weekStart(1), en) },
                 (if (en) "En español" else "In English") to { closeInfo(); sendTimesheet(WorkDay.weekStart(), !en) },
                 L.t("Cerrar", "Close") to { closeInfo() },
             ))

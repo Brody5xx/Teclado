@@ -78,6 +78,20 @@ class WorkdayButtonsActivity : UiActivity() {
         col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
         paintIcons()
 
+        // ---- 💵 Pago
+        card(tr("Tu pago", "Your pay"), Icons.BRIEFCASE)
+        text(tr("Para calcular cuánto vas a cobrar en la semana. Se guarda solo en tu teléfono. Es un cálculo aproximado: lo exacto es tu talón de pago.",
+            "To estimate your weekly pay. It's saved only on your phone. It's an approximate calculation: your pay stub is the exact one."), 12f, faded = true)
+        payList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(payList, LinearLayout.LayoutParams(-1, -2))
+        paintPay()
+        text(tr("¿Un sitio paga más? En «Mis sitios» toca ese sitio y ponle su pago por hora.",
+            "Does a site pay more? In «My sites» tap that site and set its hourly pay."), 12f, faded = true)
+
+        // ---- 🌙 Cerrar el día
+        card(tr("Cerrar el día", "Close the day"), Icons.CLOCK)
+        switch(tr("Avisarme a las 9 PM si no marqué «Casa»", "Remind me at 9 PM if I didn't log «Home»"), Prefs.NIGHT_REMIND, true)
+
         // ---- Horas extra
         card(tr("Horas extra", "Overtime"), Icons.STOPWATCH)
         segmented(tr("Horas normales por día", "Regular hours per day"), Prefs.OVERTIME_DAY, "8",
@@ -154,6 +168,66 @@ class WorkdayButtonsActivity : UiActivity() {
             }
             iconRow.addView(box, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
         }
+    }
+
+    private lateinit var payList: LinearLayout
+
+    private fun paintPay() {
+        payList.removeAllViews()
+        val c = Pay.config(prefs)
+        fun money(v: Double) = if (v > 0) Pay.money(v) else tr("toca para poner", "tap to set")
+        fun pct(v: Double) = if (v > 0) (if (v == Math.floor(v)) v.toLong().toString() else v.toString()) + "%" else tr("toca para poner", "tap to set")
+        val rows = listOf(
+            Triple("drive", tr("🛻 Por hora manejando (camioneta)", "🛻 Hourly while driving (truck)"), money(c.drive) + if (c.drive > 0) tr(" /hora", " /hour") else ""),
+            Triple("site", tr("📍 Por hora en el sitio", "📍 Hourly on site"), money(c.site) + if (c.site > 0) tr(" /hora", " /hour") else ""),
+            Triple("ot", tr("⏰ Horas extra (más de 40)", "⏰ Overtime (over 40)"), "× " + c.otMult),
+            Triple("tax", tr("🏛️ Taxes", "🏛️ Taxes"), pct(c.taxPct)),
+            Triple("k401", "🏦 401(k)", pct(c.k401Pct)),
+            Triple("life", tr("🛡️ Seguro de vida (por semana)", "🛡️ Life insurance (per week)"), money(c.lifeWeek)),
+            Triple("other", tr("➖ Otros descuentos (por semana)", "➖ Other deductions (per week)"), money(c.otherWeek)),
+        )
+        for ((i, r) in rows.withIndex()) {
+            if (i > 0) payList.addView(View(this).apply { setBackgroundColor(LINE) }, LinearLayout.LayoutParams(-1, dp(1)))
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+            row.setPadding(0, dp(12), 0, dp(12))
+            val n = TextView(this).apply { text = r.second; textSize = 15f; setTextColor(TEXT) }
+            val v = TextView(this).apply { text = r.third; textSize = 14f; setTextColor(CYAN) }
+            row.addView(n, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(v)
+            row.setOnClickListener { askPay(r.first, r.second) }
+            payList.addView(row)
+        }
+    }
+
+    private fun askPay(key: String, label: String) {
+        val c = Pay.config(prefs)
+        val cur = when (key) { "drive" -> c.drive; "site" -> c.site; "ot" -> c.otMult; "tax" -> c.taxPct; "k401" -> c.k401Pct; "life" -> c.lifeWeek; else -> c.otherWeek }
+        val box = EditText(this).apply {
+            setText(if (cur > 0) cur.toString().removeSuffix(".0") else "")
+            setSelection(text.length)
+            isSingleLine = true
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            textSize = 18f
+            setTextColor(TEXT)
+            setHintTextColor(SUB)
+            hint = when (key) { "tax", "k401" -> tr("Porcentaje (ej. 12.5)", "Percent (e.g. 12.5)"); "ot" -> "1.5"; else -> tr("Cantidad en dólares (ej. 25)", "Amount in dollars (e.g. 25)") }
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
+        }
+        val wrap = LinearLayout(this).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(box, LinearLayout.LayoutParams(-1, -2)) }
+        AlertDialog.Builder(this)
+            .setTitle(label)
+            .setView(wrap)
+            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
+                val v = box.text.toString().trim().replace(",", ".").toDoubleOrNull() ?: 0.0
+                if (v < 0 || (key in listOf("tax", "k401") && v > 100)) { toast("Ese número no se ve bien.", "That number doesn't look right."); return@setPositiveButton }
+                Pay.set(prefs, key, if (key == "ot" && v <= 0) 1.5 else v)
+                paintPay()
+            }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
     }
 
     private fun minText(m: Int): String = when {

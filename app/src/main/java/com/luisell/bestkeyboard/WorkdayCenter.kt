@@ -106,6 +106,39 @@ object WorkdayCenter {
         } catch (_: Exception) { }
         scheduleMorning(ctx)
         try { scheduleOvertime(ctx) } catch (_: Exception) { }
+        try { scheduleNight(ctx) } catch (_: Exception) { }
+    }
+
+    const val ACTION_NIGHT = "com.luisell.bestkeyboard.WORKDAY_NIGHT"
+
+    /** 🌙 A las 9 PM: si la jornada sigue abierta, te avisa. */
+    private fun scheduleNight(ctx: Context) {
+        val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+        val pi = PendingIntent.getBroadcast(ctx, 4715, Intent(ctx, WorkdayReceiver::class.java).setAction(ACTION_NIGHT),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        am.cancel(pi)
+        val p = Prefs.get(ctx)
+        if (!p.getBoolean(Prefs.NIGHT_REMIND, true) || !WorkDay.isRunning(WorkDay.day(p))) return
+        val c = java.util.Calendar.getInstance()
+        c.set(java.util.Calendar.HOUR_OF_DAY, 21); c.set(java.util.Calendar.MINUTE, 0); c.set(java.util.Calendar.SECOND, 0)
+        if (c.timeInMillis <= System.currentTimeMillis()) return
+        try { am.setWindow(android.app.AlarmManager.RTC_WAKEUP, c.timeInMillis, 10 * 60_000L, pi) } catch (_: Exception) { }
+    }
+
+    /** "🌙 Tu jornada sigue abierta" con el botón para cerrarla. */
+    fun nightAlert(ctx: Context) {
+        val p = Prefs.get(ctx)
+        L.set(p.getString(Prefs.LANG, "es") ?: "es")
+        val ev = WorkDay.day(p)
+        if (!p.getBoolean(Prefs.NIGHT_REMIND, true) || !WorkDay.isRunning(ev)) return
+        val leave = ev.lastOrNull { it.kind == WorkDay.LEAVE }
+        val text = (if (leave != null) L.t("Saliste de ${leave.site.ifEmpty { "tu sitio" }} a las ${WorkStore.time(leave.time)}. ",
+            "You left ${leave.site.ifEmpty { "your site" }} at ${WorkStore.time(leave.time)}. ") else "") +
+            L.t("Si ya estás en casa, márcalo. Si llegaste antes, en Mi jornada toca la hora para cambiarla.",
+                "If you're home, log it. If you got home earlier, tap the time in My workday to change it.")
+        val fin = WorkDay.finalKind()
+        AutoSites.notify(ctx, L.t("🌙 Tu jornada sigue abierta", "🌙 Your workday is still open"), text,
+            WorkDay.label(fin) to intentFor(ctx, fin, 210), 4722)
     }
 
     const val ACTION_OVERTIME = "com.luisell.bestkeyboard.WORKDAY_OVERTIME"
@@ -285,6 +318,7 @@ class WorkdayWidget : AppWidgetProvider() {
 class WorkdayReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         if (intent.action == WorkdayCenter.ACTION_OVERTIME) { WorkdayCenter.overtimeAlert(ctx); return }
+        if (intent.action == WorkdayCenter.ACTION_NIGHT) { WorkdayCenter.nightAlert(ctx); return }
         if (intent.action == WorkdayCenter.ACTION_REFRESH || intent.action == Intent.ACTION_BOOT_COMPLETED) {
             WorkdayCenter.refresh(ctx)
             // Al prender el teléfono las geocercas se borran: se vuelven a poner

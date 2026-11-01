@@ -271,12 +271,13 @@ object WorkDay {
     }
 
     /** El lunes de esta semana a las 0:00. */
-    fun weekStart(): Long {
+    fun weekStart(weeksAgo: Int = 0): Long {
         val c = Calendar.getInstance()
         c.firstDayOfWeek = Calendar.MONDAY
         c.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
         c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0); c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0)
         if (c.timeInMillis > System.currentTimeMillis()) c.add(Calendar.DAY_OF_YEAR, -7)
+        if (weeksAgo > 0) c.add(Calendar.DAY_OF_YEAR, -7 * weeksAgo)
         return c.timeInMillis
     }
 

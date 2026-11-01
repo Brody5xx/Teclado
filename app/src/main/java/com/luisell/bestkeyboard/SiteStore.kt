@@ -6,7 +6,8 @@ import org.json.JSONObject
 
 /** "Mis sitios": los lugares donde trabajas seguido, con su dirección y dónde están (GPS). */
 object SiteStore {
-    class Site(val name: String, val address: String, val lat: Double, val lon: Double)
+    /** [rate] = pago por hora especial en este sitio (0 = el normal). */
+    class Site(val name: String, val address: String, val lat: Double, val lon: Double, val rate: Double = 0.0)
 
     /** A cuántos metros cuenta como "estoy en ese sitio". */
     const val RADIUS_M = 400f
@@ -15,15 +16,19 @@ object SiteStore {
         val a = JSONArray(p.getString(Prefs.SITES, "[]"))
         (0 until a.length()).map {
             val o = a.getJSONObject(it)
-            Site(o.optString("n"), o.optString("a"), o.optDouble("la", 0.0), o.optDouble("lo", 0.0))
+            Site(o.optString("n"), o.optString("a"), o.optDouble("la", 0.0), o.optDouble("lo", 0.0), o.optDouble("r", 0.0))
         }
     } catch (_: Exception) { emptyList() }
 
     private fun save(p: SharedPreferences, list: List<Site>) {
         val a = JSONArray()
-        for (s in list) a.put(JSONObject().put("n", s.name).put("a", s.address).put("la", s.lat).put("lo", s.lon))
+        for (s in list) a.put(JSONObject().put("n", s.name).put("a", s.address).put("la", s.lat).put("lo", s.lon).put("r", s.rate))
         p.edit().putString(Prefs.SITES, a.toString()).apply()
     }
+
+    /** Pago por hora especial de un sitio (0 = el normal). */
+    fun setRate(p: SharedPreferences, name: String, rate: Double) =
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, rate) else it })
 
     fun add(p: SharedPreferences, site: Site) = save(p, all(p).filter { !it.name.equals(site.name, true) } + site)
     fun remove(p: SharedPreferences, name: String) = save(p, all(p).filter { it.name != name })
