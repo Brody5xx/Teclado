@@ -2127,18 +2127,22 @@ class KeyboardView(context: Context) : View(context) {
         stripGlow = if (target > stripGlow) minOf(1f, stripGlow + dtg / 140f) else maxOf(0f, stripGlow - dtg / 320f)
         val mid = width / 2f
         if (stripGlow > 0.01f) {
-            // Línea fina de luz que sale desde abajo de la barra, quieta en el medio
+            // Línea fina de luz HORIZONTAL abajo de la barra, quieta en el medio: brilla en el centro y se apaga a los lados
             val g = stripGlow
-            val top = stripH - stripH * 0.92f * g
-            fill.shader = android.graphics.RadialGradient(mid, stripH, stripH * 0.9f,
-                alphaOf(p.accent, 0.28f * g), alphaOf(p.accent, 0f), android.graphics.Shader.TileMode.CLAMP)
-            c.drawCircle(mid, stripH, stripH * 0.9f, fill)
-            fill.shader = android.graphics.LinearGradient(0f, stripH, 0f, top,
-                alphaOf(0xFFFFFFFF.toInt(), 0.95f * g), alphaOf(p.accent, 0f), android.graphics.Shader.TileMode.CLAMP)
-            c.drawRect(mid - 0.9f * d, top, mid + 0.9f * d, stripH, fill)
+            val half = width * 0.36f * (0.4f + 0.6f * g)
+            val y = stripH - 1.2f * d
+            // Brillo suave que sube desde la línea
+            fill.shader = android.graphics.RadialGradient(mid, y, stripH * 0.95f,
+                alphaOf(p.accent, 0.22f * g), alphaOf(p.accent, 0f), android.graphics.Shader.TileMode.CLAMP)
+            c.save()
+            c.scale(1.6f, 0.75f, mid, y)
+            c.drawCircle(mid, y, stripH * 0.95f, fill)
+            c.restore()
+            fill.shader = android.graphics.LinearGradient(mid - half, 0f, mid + half, 0f,
+                intArrayOf(alphaOf(p.accent, 0f), alphaOf(p.accent, 0.85f * g), alphaOf(0xFFFFFFFF.toInt(), g), alphaOf(p.accent, 0.85f * g), alphaOf(p.accent, 0f)),
+                floatArrayOf(0f, 0.3f, 0.5f, 0.7f, 1f), android.graphics.Shader.TileMode.CLAMP)
+            c.drawRect(mid - half, y - 0.8f * d, mid + half, y + 0.8f * d, fill)
             fill.shader = null
-            fill.color = alphaOf(0xFFFFFFFF.toInt(), g)
-            c.drawCircle(mid, stripH - 0.5f * d, 2.2f * d, fill)
         }
         if (stripGlow > 0.01f || target > 0f) postInvalidateOnAnimation()
         if (extraTools.isNotEmpty() && stripScroll < 1f) {
@@ -2171,10 +2175,22 @@ class KeyboardView(context: Context) : View(context) {
             val near = if (stripGlow > 0.01f) (1f - kotlin.math.abs(cx - mid) / step).coerceIn(0f, 1f) else 0f
             val grow = 1f + 0.42f * near * near * stripGlow
             val lit = near * stripGlow
-            if (ang != 0f || grow != 1f) { c.save(); if (ang != 0f) c.rotate(ang, cx, cy); if (grow != 1f) c.scale(grow, grow, cx, cy) }
+            // Rueda: los botones van en arco (el del medio arriba, los de los lados bajan, se achican y se inclinan)
+            val dxn = ((cx - mid) / (width / 2f)).coerceIn(-1.2f, 1.2f)
+            val arcY = stripGlow * dxn * dxn * stripH * 0.22f
+            val arcScale = 1f - stripGlow * 0.18f * dxn * dxn
+            val arcRot = stripGlow * dxn * 16f
+            val totalScale = grow * arcScale
+            val moved = ang != 0f || totalScale != 1f || arcY != 0f || arcRot != 0f
+            if (moved) {
+                c.save()
+                if (arcY != 0f) c.translate(0f, arcY)
+                if (ang + arcRot != 0f) c.rotate(ang + arcRot, cx, cy)
+                if (totalScale != 1f) c.scale(totalScale, totalScale, cx, cy)
+            }
             val col = if (on) p.accent else if (lit > 0.05f) blendColor(p.hint, p.text, lit) else p.hint
             Icons.draw(c, kind, cx, cy, s, col, bgc, d)
-            if (ang != 0f || grow != 1f) c.restore()
+            if (moved) c.restore()
         }
         if (editing) {
             // El que arrastras va debajo del dedo, un poco más grande

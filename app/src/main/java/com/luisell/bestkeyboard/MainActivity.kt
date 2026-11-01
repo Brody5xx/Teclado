@@ -122,8 +122,9 @@ class MainActivity : UiActivity() {
 
 
     private fun askPhotos() {
-        if (Screenshots.hasPermission(this)) { refreshMic(); return }
-        if (Screenshots.hasPartial(this)) {
+        val need = Screenshots.missing(this)
+        if (need.isEmpty()) { refreshMic(); return }
+        if (Screenshots.hasPermission(this) == false && Screenshots.hasPartial(this)) {
             // Dio "solo algunas fotos": hay que cambiarlo a "Permitir todo" en los ajustes de la app
             toast("Toca Permisos → Fotos y videos → \"Permitir todo\".", "Tap Permissions → Photos and videos → \"Allow all\".")
             try {
@@ -131,7 +132,7 @@ class MainActivity : UiActivity() {
             } catch (_: Exception) { }
             return
         }
-        requestPermissions(arrayOf(Screenshots.permission()), REQ_PHOTOS)
+        requestPermissions(need, REQ_PHOTOS)
     }
 
     private fun cameraGranted() = checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -328,7 +329,7 @@ class MainActivity : UiActivity() {
 
     private fun refreshMic() {
         if (::micBtn.isInitialized) micBtn.text = if (micGranted()) tr("✓  Micrófono permitido", "✓  Microphone allowed") else tr("Permitir el micrófono", "Allow the microphone")
-        if (::photosBtn.isInitialized) photosBtn.text = if (Screenshots.hasPermission(this)) tr("✓  Capturas de pantalla permitidas", "✓  Screenshots allowed")
+        if (::photosBtn.isInitialized) photosBtn.text = if (Screenshots.missing(this).isEmpty()) tr("✓  Capturas de pantalla permitidas", "✓  Screenshots allowed")
             else tr("Permitir ver mis capturas", "Allow seeing my screenshots")
         if (::smsBtn.isInitialized) smsBtn.text = if (smsGranted()) tr("✓  Códigos de SMS permitidos", "✓  SMS codes allowed") else tr("Permitir leer códigos de SMS", "Allow reading SMS codes")
         if (::camBtn.isInitialized) camBtn.text = if (cameraGranted()) tr("✓  Cámara permitida", "✓  Camera allowed") else tr("Permitir la cámara", "Allow the camera")
@@ -880,6 +881,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.9" to tr("•  La línea de luz de la barra de arriba ahora es horizontal, abajo de los botones.\n•  Los botones se mueven en arco, como una rueda: el del medio sube y crece, los de los lados bajan y se inclinan.\n•  Grabaciones de pantalla: si grabas la pantalla, el teclado te sugiere el video para pegarlo, igual que las capturas.",
+            "•  The top bar light line is now horizontal, under the buttons.\n•  Buttons move in an arc, like a wheel: the middle one rises and grows, the side ones drop and tilt.\n•  Screen recordings: if you record your screen, the keyboard suggests the video to paste, just like screenshots."),
         "10.8" to tr("•  Barra de arriba: al deslizarla sale una línea de luz en el medio y el botón que pasa por ahí crece, como elegir un personaje en un videojuego.",
             "•  Top bar: when you swipe it, a line of light shows in the middle and the button passing over it grows, like picking a character in a video game."),
         "10.7" to tr("•  Portapapeles: al seleccionar, cada nota tiene un rombo ◇ (vacío o con palomita).\n•  Agregar o editar en el portapapeles abre una caja grande con varias líneas y el botón «✓ Guardar».",

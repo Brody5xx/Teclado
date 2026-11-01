@@ -295,6 +295,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         clipboard?.addPrimaryClipChangedListener(clipListener)
         try {
             contentResolver.registerContentObserver(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, mediaObserver)
+            contentResolver.registerContentObserver(android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI, true, mediaObserver)
         } catch (_: Exception) { }
         try {
             contentResolver.registerContentObserver(android.net.Uri.parse("content://sms"), true, smsObserver)
@@ -735,13 +736,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val usedId = prefs.getLong(Prefs.SHOT_USED, -1L)
         val px = (48 * resources.displayMetrics.density).toInt()
         shotIo.execute {
-            val s = Screenshots.findRecent(app)
+            val s = Screenshots.findNewest(app)
             val thumb = if (s != null && s.id != usedId) Screenshots.thumbnail(app, s, px) else null // puede faltar: se muestra 🖼
             handler.post {
                 if (s != null && s.id != usedId) {
                     shot = s
                     shotAsk = false
-                    if (quick == null) kv?.setChip(thumb, L.t("Captura de pantalla", "Screenshot"))
+                    if (quick == null) kv?.setChip(thumb,
+                        if (s.isVideo) L.t("▶ Grabación de pantalla", "▶ Screen recording") else L.t("Captura de pantalla", "Screenshot"))
+                } else if (!Screenshots.hasVideoPermission(app) && prefs.getInt("shot_video_asks", 0) < 2) {
+                    // Ya ve las fotos, pero falta el permiso de videos (para las grabaciones de pantalla)
+                    if (!shotAsk) prefs.edit().putInt("shot_video_asks", prefs.getInt("shot_video_asks", 0) + 1).apply()
+                    shot = null
+                    shotAsk = true
+                    if (quick == null) kv?.setChip(null, L.t("Activar sugerencia de grabaciones", "Turn on screen recording suggestions"))
                 } else clearShot()
             }
         }
@@ -883,6 +891,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val s = shot ?: return
         prefs.edit().putLong(Prefs.SHOT_USED, s.id).apply()
         clearShot()
+        if (s.isVideo) { pasteUri(s.uri, s.mime); return }
         ClipStore.addImage(this, s.uri, s.mime) { item ->
             if (item != null) pasteImage(item)
             else Toast.makeText(this, L.t("No se pudo abrir la captura.", "Couldn't open the screenshot."), Toast.LENGTH_SHORT).show()
@@ -1416,7 +1425,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (Build.VERSION.SDK_INT >= 25 && ei != null) {
             val accepted = ei.contentMimeTypes ?: emptyArray()
             if (accepted.any { ClipDescription.compareMimeTypes(mime, it) }) {
-                val info = InputContentInfo(uri, ClipDescription("Imagen", arrayOf(mime)), null)
+                val info = InputContentInfo(uri, ClipDescription(if (mime.startsWith("video")) "Video" else "Imagen", arrayOf(mime)), null)
                 val ok = try {
                     ic.commitContent(info, InputConnection.INPUT_CONTENT_GRANT_READ_URI_PERMISSION, null)
                 } catch (_: Exception) { false }
@@ -1424,10 +1433,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
         }
         try {
-            clipboard?.setPrimaryClip(ClipData.newUri(contentResolver, "Imagen", uri))
+            val video = mime.startsWith("video")
+            clipboard?.setPrimaryClip(ClipData.newUri(contentResolver, if (video) "Video" else "Imagen", uri))
             Toast.makeText(
                 this,
-                L.t("Esta app no recibe imágenes desde el teclado. Ya está copiada: mantén presionado donde escribes y toca Pegar.", "This app doesn't accept images from the keyboard. It's copied: long-press where you type and tap Paste."),
+                if (video) L.t("Esta app no recibe videos desde el teclado. Ya está copiado: mantén presionado donde escribes y toca Pegar (o compártelo desde la galería).",
+                    "This app doesn't accept videos from the keyboard. It's copied: long-press where you type and tap Paste (or share it from the gallery).") else L.t("Esta app no recibe imágenes desde el teclado. Ya está copiada: mantén presionado donde escribes y toca Pegar.", "This app doesn't accept images from the keyboard. It's copied: long-press where you type and tap Paste."),
                 Toast.LENGTH_LONG,
             ).show()
         } catch (_: Exception) { }
