@@ -134,6 +134,13 @@
             android:name=".AutoSitesReceiver"
             android:exported="false" />
 
+        <activity
+            android:name=".ShortcutsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TicketPhotosActivity"
+            android:exported="false" />
+
         <!-- Copia de seguridad automática cada semana -->
         <receiver
             android:name=".AutoBackupReceiver"

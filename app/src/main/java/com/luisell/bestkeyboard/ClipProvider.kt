@@ -30,6 +30,12 @@ class ClipProvider : ContentProvider() {
         val name = uri.lastPathSegment ?: throw FileNotFoundException()
         if (!name.matches(Regex("[A-Za-z0-9._-]+")) || name.startsWith(".")) throw FileNotFoundException()
         val ctx = context ?: throw FileNotFoundException()
+        // La hoja de horas en PDF (solo para compartir)
+        if (name.startsWith("timesheet_") && name.endsWith(".pdf")) {
+            val sf = File(Timesheet.shareDir(ctx), name)
+            if (!sf.exists()) throw FileNotFoundException()
+            return sf
+        }
         val f = File(ClipStore.clipsDir(ctx), name)
         if (!f.exists() || name.endsWith(".json") || name.endsWith(".tmp")) throw FileNotFoundException()
         return f
@@ -41,6 +47,7 @@ class ClipProvider : ContentProvider() {
             n.endsWith(".jpg") -> "image/jpeg"
             n.endsWith(".gif") -> "image/gif"
             n.endsWith(".webp") -> "image/webp"
+            n.endsWith(".pdf") -> "application/pdf"
             else -> "image/png"
         }
     }

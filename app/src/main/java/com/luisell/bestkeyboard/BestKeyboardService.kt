@@ -1029,16 +1029,35 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val t = VoiceText.process(raw, voiceLang)
         if (t.isEmpty()) return
         if (voiceEnglish) {
-            // Hablaste en español: se escribe en inglés
-            val tr = voiceTrans ?: Translation("es", "en").also { voiceTrans = it }
-            val go = { tr.translate(t, { out -> handler.post { commitVoiceText(out) } }, { handler.post { commitVoiceText(t) } }) }
-            if (tr.ready) go() else tr.prepare({ handler.post { go() } }, { handler.post {
-                voicePanel?.setStatus(L.t("No se pudo traducir (la primera vez necesita internet).", "Couldn't translate (the first time needs internet)."))
-                commitVoiceText(t)
-            } })
+            // Hablaste en español: se escribe en inglés. Con la clave de Gemini sale en inglés técnico y profesional
+            val key = prefs.getString(Prefs.GEMINI_KEY, "")?.trim().orEmpty()
+            if (key.isNotEmpty()) {
+                voicePanel?.setStatus(L.t("Pasando a inglés…", "Translating to English…"))
+                CloudText.ask("Translate the following Spanish into clear, natural, professional English, as a field technician " +
+                    "would write it in a work message (use correct technical terms). Keep the meaning, do not add anything. " +
+                    "Answer ONLY with the English text, no quotes, no notes.\n\nText:\n" + t, key) { list, _ ->
+                    val out = list?.firstOrNull()?.trim()?.trim('"', '“', '”')
+                    handler.post {
+                        voicePanel?.setStatus(L.t("Habla en español: se escribe en inglés.", "Speak Spanish: it's typed in English."))
+                        if (!out.isNullOrEmpty()) commitVoiceText(out) else mlTranslateVoice(t)
+                    }
+                }
+                return
+            }
+            mlTranslateVoice(t)
             return
         }
         commitVoiceText(t)
+    }
+
+    /** Traducción dentro del teléfono (sin clave). */
+    private fun mlTranslateVoice(t: String) {
+        val tr = voiceTrans ?: Translation("es", "en").also { voiceTrans = it }
+        val go = { tr.translate(t, { out -> handler.post { commitVoiceText(out) } }, { handler.post { commitVoiceText(t) } }) }
+        if (tr.ready) go() else tr.prepare({ handler.post { go() } }, { handler.post {
+            voicePanel?.setStatus(L.t("No se pudo traducir (la primera vez necesita internet).", "Couldn't translate (the first time needs internet)."))
+            commitVoiceText(t)
+        } })
     }
 
     private var voiceEnglish = false
@@ -2118,7 +2137,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (ic == null) return
                 autoSpace = false
                 val before = if (doubleSpace && !isPassword && lastWasSpace && !codeOn) ic.getTextBeforeCursor(2, 0) else null
-                if (before != null && before.length == 2 && before[1] == ' ' && before[0].isLetterOrDigit()) {
+                val sc = if (!isPassword && !codeOn) Shortcuts.match(prefs, ic.getTextBeforeCursor(40, 0)) else null
+                if (sc != null) {
+                    // ⚡ Atajo: "/ok" + espacio → la frase completa
+                    ic.beginBatchEdit()
+                    ic.deleteSurroundingText(sc.first.length, 0)
+                    ic.commitText(sc.second + " ", 1)
+                    ic.endBatchEdit()
+                    lastWasSpace = true
+                } else if (before != null && before.length == 2 && before[1] == ' ' && before[0].isLetterOrDigit()) {
                     // Doble espacio = punto y espacio
                     ic.deleteSurroundingText(1, 0)
                     ic.commitText(". ", 1)
@@ -3179,7 +3206,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         panel.show(L.t("🗂️ Mis tickets", "🗂️ My tickets") + "  ·  " + L.t("próximo: ", "next: ") + WorkStore.nextNumber(prefs), rows,
             L.t("Aquí se guardan los tickets que creas con 📋 Notas → Ticket. Toca uno para escribirlo y usarlo de base.",
                 "Tickets you create with 📋 Notes → Ticket are saved here. Tap one to type it and use it as a base."),
-            listOf(L.t("📋 Ticket nuevo", "📋 New ticket") to { showMode(0); startTicket() }))
+            listOf(L.t("📋 Ticket nuevo", "📋 New ticket") to { showMode(0); startTicket() },
+                L.t("📸 Enviar con fotos", "📸 Send with photos") to {
+                    showMode(0)
+                    try {
+                        startActivity(Intent(this, TicketPhotosActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                    } catch (_: Exception) { }
+                }))
     }
 
     // ---------------------------------------------------------------- Mi jornada
@@ -3223,6 +3256,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 showMode(0)
             })
         }
+        buttons.add(L.t("📄 Hoja de horas (PDF)", "📄 Timesheet (PDF)") to { askTimesheet() })
         buttons.add(L.t("✏️ Editar botones", "✏️ Edit buttons") to {
             showMode(0)
             try {
@@ -3370,6 +3404,38 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         return sb.toString()
     }
 
+    /** 📄 ¿De qué semana quieres la hoja de horas? */
+    private fun askTimesheet() {
+        showMode(0)
+        val bar = infoBar ?: return
+        val en = ticketLang() == "en"
+        bar.show(L.t("📄 Hoja de horas", "📄 Timesheet"),
+            L.t("Se crea un PDF con tus días, horas, sitios, almuerzo y horas extra, listo para mandar por WhatsApp o correo.",
+                "A PDF is made with your days, hours, sites, lunch and overtime, ready to send by WhatsApp or email."),
+            listOf(
+                L.t("Esta semana", "This week") to { closeInfo(); sendTimesheet(WorkDay.weekStart(), en) },
+                L.t("Semana pasada", "Last week") to { closeInfo(); sendTimesheet(WorkDay.weekStart() - 7L * 24 * 3600 * 1000, en) },
+                (if (en) "En español" else "In English") to { closeInfo(); sendTimesheet(WorkDay.weekStart(), !en) },
+                L.t("Cerrar", "Close") to { closeInfo() },
+            ))
+    }
+
+    private fun sendTimesheet(weekStart: Long, english: Boolean) {
+        val app = applicationContext
+        // Al cambiar de horario (DST) la semana pasada puede quedar a las 23:00: se ajusta al día
+        val c = java.util.Calendar.getInstance().apply {
+            timeInMillis = weekStart + 6 * 3600 * 1000L
+            set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        }
+        shotIo.execute {
+            val name = try { Timesheet.build(app, c.timeInMillis, english) } catch (_: Exception) { null }
+            handler.post {
+                if (name == null) Toast.makeText(this, L.t("No se pudo crear el PDF.", "Couldn't create the PDF."), Toast.LENGTH_SHORT).show()
+                else Timesheet.share(this, name, english)
+            }
+        }
+    }
+
     private fun startWeek(outLang: String) {
         showMode(0)
         val bar = infoBar ?: return
@@ -3378,6 +3444,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         bar.show(L.t("📊 Resumen de la semana", "📊 Week summary"), text, listOf(
             L.t("Escribir", "Type it") to { insertText(text); closeInfo() },
             L.t("Copiar", "Copy") to { aiCopy(text) },
+            L.t("📄 PDF", "📄 PDF") to { closeInfo(); sendTimesheet(WorkDay.weekStart(), en) },
             (if (en) "En español" else "In English") to { startWeek(if (en) "es" else "en") },
             L.t("Cerrar", "Close") to { closeInfo() },
         ))

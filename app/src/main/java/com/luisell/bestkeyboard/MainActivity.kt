@@ -648,6 +648,9 @@ class MainActivity : UiActivity() {
                 "The ___ part gets selected so you can fill it in.",
         ), 13f, faded = true)
         button(tr("Abrir Frases", "Open Phrases"), primary = true) { startActivity(Intent(this, PhrasesActivity::class.java)) }
+        text(tr("⚡ Atajos de texto: escribe /voy + espacio y se cambia por «Voy en camino, llego en unos minutos.». Tú creas los tuyos.",
+            "⚡ Text shortcuts: type /omw + space and it becomes «On my way, I'll be there in a few minutes.». Create your own."), 13f, faded = true)
+        button(tr("⚡ Atajos de texto", "⚡ Text shortcuts")) { startActivity(Intent(this, ShortcutsActivity::class.java)) }
 
         // ---- Tickets del trabajo
         card(tr("Tickets del trabajo", "Work tickets"), Icons.TICKETS)
@@ -882,6 +885,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "11.6" to tr("•  📄 Hoja de horas en PDF (Mi jornada y Resumen de la semana): días, horas, sitios, almuerzo y horas extra, lista para mandar.\n•  📸 Ticket con fotos (Mis tickets): elige las fotos de ese día y mándalas junto con el ticket.\n•  🗣️ Escribir en inglés (micrófono): con tu clave de Gemini lo dictado sale en inglés técnico y profesional.\n•  ⚡ Atajos de texto: escribe /voy + espacio y se cambia por tu frase completa (Ajustes → Frases rápidas).",
+            "•  📄 PDF timesheet (My workday and Week summary): days, hours, sites, lunch and overtime, ready to send.\n•  📸 Ticket with photos (My tickets): pick that day's photos and send them with the ticket.\n•  🗣️ Type in English (mic): with your Gemini key, dictation comes out in professional technical English.\n•  ⚡ Text shortcuts: type /omw + space and it becomes your full phrase (Settings → Quick phrases)."),
         "11.5" to tr("•  🤖 Llegada y salida automáticas (Mis sitios): al llegar a uno de tus sitios y quedarte unos minutos se anota «Llegué» con la hora en que entraste; al irte se anota «Salí». Siempre con un aviso para «Deshacer».\n•  ⏰ Horas extra: aviso al pasar tus horas normales del día (8 h, 9 h o 10 h) y las horas extra del día y de la semana (más de 40 h).",
             "•  🤖 Automatic arrival and departure (My sites): when you arrive at one of your sites and stay a few minutes, «Arrived» is logged with the time you got there; when you leave, «Left» is logged. Always with an «Undo» alert.\n•  ⏰ Overtime: alert when you pass your regular daily hours (8, 9 or 10 h) and overtime shown for the day and the week (over 40 h)."),
         "11.4.1" to tr("•  Ejemplos nuevos y genéricos en toda la app (sin nombres de lugares reales).",

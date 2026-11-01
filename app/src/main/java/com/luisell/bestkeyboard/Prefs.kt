@@ -110,6 +110,7 @@ object Prefs {
     const val GUIDE_SEEN = "guide_seen"
     /** Mis sitios (lista JSON). */
     const val SITES = "sites"
+    const val SHORTCUTS = "shortcuts"          // ⚡ atajos de texto (/ok → frase)
     const val AUTO_SITES = "auto_sites"        // llegada y salida automáticas (geocercas)
     const val AUTO_ENTER = "auto_enter"        // a qué hora entraste a cada sitio (para la hora de llegada)
     const val OVERTIME_DAY = "overtime_day"    // horas normales por día ("0" = sin aviso)
