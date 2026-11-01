@@ -881,6 +881,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "11.3.2" to tr("•  Mi jornada: el almuerzo descuenta siempre 30 minutos, cualquier día (aunque sea corto o tomes más o menos). Los botones 🍔 y ↩️ sirven para anotar cuánto tomaste.",
+            "•  My workday: lunch always deducts 30 minutes, any day (even short ones or if you take more or less). The 🍔 and ↩️ buttons log how long you took."),
         "11.3.1" to tr("•  Mi jornada: el almuerzo ahora viene como «No pagado»: se descuentan 30 minutos de tus horas (o el tiempo real si marcas 🍔 y ↩️).",
             "•  My workday: lunch now defaults to «Unpaid»: 30 minutes are subtracted from your hours (or the real time if you log 🍔 and ↩️)."),
         "11.3" to tr("•  Barra de arriba: ahora se ve el nombre completo de cada botón.\n•  Mi jornada cuenta el almuerzo: botones «🍔 Salí a almorzar» y «↩️ Regresé». Si no lo marcas, cuenta un tiempo fijo (30 min, 45 min o 1 hora). Puedes elegir si es pagado o no pagado en ✏️ Editar botones.",

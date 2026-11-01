@@ -34,12 +34,17 @@ object WorkDay {
         private set
     var lunchAutoMin = 30
         private set
+    /** true = siempre se descuenta el tiempo fijo, cualquier día y aunque tomes más o menos. */
+    var lunchAlways = true
+        private set
 
     /** [site] = el nombre del sitio (de "Mis sitios"), si se sabe. */
     class Event(val time: Long, val kind: String, val site: String = "")
     /** [lunch] = tiempo de almuerzo; [lunchAuto] = no lo marcaste y se contó el tiempo fijo. */
     class Summary(val total: Long, val site: Long, val driving: Long, val running: Boolean,
-                  val lunch: Long = 0L, val lunchAuto: Boolean = false, val onLunch: Boolean = false)
+                  val lunch: Long = 0L, val lunchAuto: Boolean = false, val onLunch: Boolean = false,
+                  /** Lo que se descontó de tus horas. */
+                  val deducted: Long = 0L)
 
     /** El nombre de fábrica de cada botón. */
     fun defaultLabel(kind: String): String = when (kind) {
@@ -63,6 +68,7 @@ object WorkDay {
         icon = p.getString(Prefs.WORKDAY_ICON, "truck") ?: "truck"
         lunchPaid = p.getBoolean(Prefs.LUNCH_PAID, false)
         lunchAutoMin = (p.getString(Prefs.LUNCH_AUTO, "30") ?: "30").toIntOrNull() ?: 30
+        lunchAlways = (p.getString(Prefs.LUNCH_RULE, "always") ?: "always") == "always"
         val raw = p.getString(Prefs.WORKDAY_BTNS, "") ?: ""
         if (raw == cfgRaw) return
         cfgRaw = raw
@@ -212,13 +218,20 @@ object WorkDay {
         if (lunchAt >= 0) lunch += maxOf(0, end - lunchAt)
         // No lo marcaste: si fue un día de 5 horas o más, cuenta el tiempo fijo que elegiste
         var auto = false
-        if (lunch == 0L && lunchAutoMin > 0 && total >= 5L * 3600_000) { lunch = lunchAutoMin * 60_000L; auto = true }
-        if (!lunchPaid && lunch > 0) {
-            // No pagado: no cuenta como horas trabajadas
-            site = maxOf(0, site - minOf(site, lunch))
-            total = maxOf(0, total - lunch)
+        val fixed = lunchAutoMin * 60_000L
+        if (lunch == 0L && fixed > 0 && (lunchAlways || total >= 5L * 3600_000)) { lunch = fixed; auto = true }
+        // Lo que se descuenta: siempre el tiempo fijo (cualquier día), o lo que marcaste
+        val cut = when {
+            lunchPaid -> 0L
+            lunchAlways -> fixed
+            else -> lunch
         }
-        return Summary(total, site, maxOf(0, total - site), running, lunch, auto, onLunch)
+        if (cut > 0) {
+            // No pagado: no cuenta como horas trabajadas
+            site = maxOf(0, site - minOf(site, cut))
+            total = maxOf(0, total - cut)
+        }
+        return Summary(total, site, maxOf(0, total - site), running, lunch, auto, onLunch, cut)
     }
 
     /** Todos los días que tienen algo anotado (inicio del día → eventos), del más viejo al más nuevo. */
@@ -295,8 +308,8 @@ object WorkDay {
         val tot = if (english) "Total: ${dur(s.total)} (on site ${dur(s.site)}, driving ${dur(s.driving)})"
             else "Total: ${dur(s.total)} (en el sitio ${dur(s.site)}, manejando ${dur(s.driving)})"
         val lunch = if (s.lunch <= 0) emptyList() else listOf(
-            if (english) "Lunch: ${dur(s.lunch)}" + (if (s.lunchAuto) " (not logged)" else "") + (if (lunchPaid) " (paid)" else " (unpaid, not counted)")
-            else "Almuerzo: ${dur(s.lunch)}" + (if (s.lunchAuto) " (no marcado)" else "") + (if (lunchPaid) " (pagado)" else " (no pagado, no cuenta)"))
+            if (english) "Lunch: ${dur(s.lunch)}" + (if (s.lunchAuto) " (not logged)" else "") + (if (lunchPaid) " (paid)" else " (unpaid, ${dur(s.deducted)} deducted)")
+            else "Almuerzo: ${dur(s.lunch)}" + (if (s.lunchAuto) " (no marcado)" else "") + (if (lunchPaid) " (pagado)" else " (no pagado, se descuentan ${dur(s.deducted)})"))
         return (lines + tot + lunch).joinToString("\n")
     }
 }

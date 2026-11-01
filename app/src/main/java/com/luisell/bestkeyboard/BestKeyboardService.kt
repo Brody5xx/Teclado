@@ -3195,7 +3195,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     "Total ${WorkDay.dur(sum.total)}\nOn site ${WorkDay.dur(sum.site)} · Driving ${WorkDay.dur(sum.driving)}") +
                     (if (sum.lunch > 0) "\n" + (if (sum.onLunch) L.t("🍔 Almorzando: ", "🍔 At lunch: ") else L.t("🍔 Almuerzo: ", "🍔 Lunch: ")) + WorkDay.dur(sum.lunch) +
                         (if (sum.lunchAuto) L.t(" (fijo, no marcado)", " (fixed, not logged)") else "") +
-                        (if (WorkDay.lunchPaid) L.t(" · pagado", " · paid") else L.t(" · no pagado", " · unpaid")) else "")))
+                        (if (WorkDay.lunchPaid) L.t(" · pagado", " · paid") else L.t(" · se descuentan ", " · deducted ") + WorkDay.dur(sum.deducted)) else "")))
         }
         for (e in events) {
             rows.add(ListPanel.Row(WorkStore.time(e.time), WorkDay.labelOf(e),

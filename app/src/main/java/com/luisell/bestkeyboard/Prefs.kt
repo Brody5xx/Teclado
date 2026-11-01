@@ -121,6 +121,7 @@ object Prefs {
     /** El ícono de Mi jornada: truck, clock, stopwatch, briefcase, calendar, hardhat o building. */
     const val WORKDAY_ICON = "workday_icon"
     const val LUNCH_PAID = "lunch_paid"        // true = el almuerzo es pagado (solo se anota, no se resta)
+    const val LUNCH_RULE = "lunch_rule"        // "always" = siempre descuenta el tiempo fijo; "real" = lo que marques
     const val LUNCH_AUTO = "lunch_auto"        // "0" / "30" / "45" / "60": si no lo marcas, cuenta este tiempo
     /** Si hoy vas manejando: "yyyy-MM-dd:yes" o ":no" (se pregunta una vez al día). */
     const val DRIVING_DAY = "driving_day"
