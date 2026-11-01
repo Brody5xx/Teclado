@@ -15,7 +15,8 @@ object WorkDay {
     const val LEAVE = "leave"
     const val HOME = "home"
 
-    class Event(val time: Long, val kind: String)
+    /** [site] = el nombre del sitio (de "Mis sitios"), si se sabe. */
+    class Event(val time: Long, val kind: String, val site: String = "")
     class Summary(val total: Long, val site: Long, val driving: Long, val running: Boolean)
 
     fun label(kind: String): String = when (kind) {
@@ -35,28 +36,44 @@ object WorkDay {
 
     private fun all(p: SharedPreferences): MutableList<Event> = try {
         val a = JSONArray(p.getString(Prefs.WORKDAY, "[]"))
-        MutableList(a.length()) { val o = a.getJSONObject(it); Event(o.optLong("t"), o.optString("k")) }
+        MutableList(a.length()) { val o = a.getJSONObject(it); Event(o.optLong("t"), o.optString("k"), o.optString("s")) }
     } catch (_: Exception) { ArrayList() }
 
     private fun save(p: SharedPreferences, list: List<Event>) {
         // Solo los últimos 70 días
         val limit = System.currentTimeMillis() - 70L * 24 * 3600 * 1000
         val a = JSONArray()
-        for (e in list.filter { it.time > limit }.sortedBy { it.time }) a.put(JSONObject().put("t", e.time).put("k", e.kind))
+        for (e in list.filter { it.time > limit }.sortedBy { it.time }) a.put(JSONObject().put("t", e.time).put("k", e.kind).put("s", e.site))
         p.edit().putString(Prefs.WORKDAY, a.toString()).apply()
     }
 
     fun day(p: SharedPreferences, day: Long = System.currentTimeMillis()): List<Event> =
         all(p).filter { WorkStore.sameDay(it.time, day) }.sortedBy { it.time }
 
-    fun add(p: SharedPreferences, kind: String) = save(p, all(p) + Event(System.currentTimeMillis(), kind))
+    /** Anota un evento ahora y devuelve su hora. */
+    fun add(p: SharedPreferences, kind: String, site: String = ""): Long {
+        val t = System.currentTimeMillis()
+        save(p, all(p) + Event(t, kind, site))
+        return t
+    }
+
+    /** Le pone el sitio a un evento (cuando el GPS ya supo dónde estás, o lo elegiste tú). */
+    fun setSite(p: SharedPreferences, time: Long, site: String) =
+        save(p, all(p).map { if (it.time == time) Event(it.time, it.kind, site) else it })
+
+    /** El nombre que se ve: "📍 Llegué a RUMC". */
+    fun labelOf(e: Event): String = if (e.site.isEmpty()) label(e.kind) else when (e.kind) {
+        ARRIVE -> L.t("📍 Llegué a ${e.site}", "📍 Arrived at ${e.site}")
+        LEAVE -> L.t("🚪 Salí de ${e.site}", "🚪 Left ${e.site}")
+        else -> label(e.kind) + " · " + e.site
+    }
 
     fun remove(p: SharedPreferences, time: Long) = save(p, all(p).filter { it.time != time })
 
     /** Mueve la hora de un evento [minutes] minutos (por si se te olvidó tocarlo a tiempo). */
     fun shift(p: SharedPreferences, time: Long, minutes: Int): Long {
         val nt = time + minutes * 60_000L
-        save(p, all(p).map { if (it.time == time) Event(nt, it.kind) else it })
+        save(p, all(p).map { if (it.time == time) Event(nt, it.kind, it.site) else it })
         return nt
     }
 
@@ -112,7 +129,10 @@ object WorkDay {
     fun text(events: List<Event>, english: Boolean): String {
         if (events.isEmpty()) return ""
         val s = summary(events)
-        val lines = events.map { (if (english) ticketLabel(it.kind) else label(it.kind).drop(2).trim()) + ": " + WorkStore.time(it.time) }
+        val lines = events.map {
+            (if (english) ticketLabel(it.kind) else label(it.kind).drop(2).trim()) + ": " + WorkStore.time(it.time) +
+                (if (it.site.isNotEmpty()) " (${it.site})" else "")
+        }
         val tot = if (english) "Total: ${dur(s.total)} (on site ${dur(s.site)}, driving ${dur(s.driving)})"
             else "Total: ${dur(s.total)} (en el sitio ${dur(s.site)}, manejando ${dur(s.driving)})"
         return (lines + tot).joinToString("\n")

@@ -104,6 +104,13 @@ object Prefs {
     const val WORKDAY = "workday"
     /** Ya viste la guía rápida. */
     const val GUIDE_SEEN = "guide_seen"
+    /** Mis sitios (lista JSON). */
+    const val SITES = "sites"
+    /** Lista de materiales (los tuyos) y lo que usaste hoy. */
+    const val MATERIALS = "materials"
+    const val MATERIALS_TODAY = "materials_today"
+    /** Mostrar "Mi jornada" en la pantalla de bloqueo (notificación con botones). */
+    const val WORKDAY_NOTIF = "workday_notif"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

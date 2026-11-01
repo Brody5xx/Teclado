@@ -3,4 +3,5 @@
     <string name="app_name">Best Keyboard</string>
     <string name="subtype_es">Español</string>
     <string name="subtype_en">English</string>
+    <string name="widget_workday_desc">Mi jornada / My workday</string>
 </resources>

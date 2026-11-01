@@ -7,6 +7,12 @@ import java.text.Normalizer
  * "casa" → 🏠, "jajaja" → 😂, "te quiero" → ❤️, "estoy cansado" → 😴.
  */
 object EmojiSearch {
+    // Se preparan una sola vez (antes se armaban en cada letra que escribías)
+    private val MARKS = Regex("\\p{Mn}+")
+    val SPACES = Regex("\\s+")
+    private val NON_WORD = Regex("[^a-z0-9ñ']+")
+    private val LAUGH = Regex("^(j+[aeiou]+){2,}j*$")
+    private val LAUGH2 = Regex("^(js)+j?$")
 
     /** Palabras y frases de emociones (van primero que el diccionario de emojis). */
     private val FEELINGS: Map<String, String> = buildMap {
@@ -51,7 +57,7 @@ object EmojiSearch {
     private var mainName: HashMap<String, String>? = null
 
     fun norm(s: String): String =
-        Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "").trim()
+        Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD).replace(MARKS, "").trim()
 
     private fun buildIndex(): Boolean {
         if (index != null) return true
@@ -76,7 +82,7 @@ object EmojiSearch {
         val cats = EmojiData.categories ?: return emptyList()
         val q = norm(query)
         if (q.isEmpty()) return emptyList()
-        val words = q.split(Regex("\\s+")).filter { it.isNotEmpty() }
+        val words = q.split(SPACES).filter { it.isNotEmpty() }
         val scored = ArrayList<Pair<Int, String>>()
         var order = 0
         for (c in cats) for (e in c) {
@@ -114,7 +120,7 @@ object EmojiSearch {
     fun suggest(before: CharSequence): String? {
         if (!buildIndex()) return null
         val words = norm(before.takeLast(60).toString())
-            .split(Regex("[^a-z0-9ñ']+")).filter { it.isNotEmpty() }
+            .split(NON_WORD).filter { it.isNotEmpty() }
         if (words.isEmpty()) return null
         for (n in 3 downTo 2) {
             if (words.size >= n) FEELINGS[words.takeLast(n).joinToString(" ")]?.let { return it }
@@ -122,7 +128,7 @@ object EmojiSearch {
         val w = words.last()
         if (w.length < 2) return null
         // Risas largas: "jajajajaja", "jejeje", "jsjsjs"
-        if (Regex("^(j+[aeiou]+){2,}j*$").matches(w) || Regex("^(js)+j?$").matches(w)) return "😂"
+        if (LAUGH.matches(w) || LAUGH2.matches(w)) return "😂"
         FEELINGS[w]?.let { return it }
         val candidates = listOfNotNull(w, w.removeSuffix("s").takeIf { it != w && it.length > 2 },
             w.removeSuffix("es").takeIf { it != w && it.length > 2 },

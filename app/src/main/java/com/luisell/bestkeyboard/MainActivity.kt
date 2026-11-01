@@ -81,6 +81,7 @@ class MainActivity : UiActivity() {
         setContentView(buildUi())
         handleAsk(intent)
         TicketReminder.schedule(this)
+        WorkdayCenter.refresh(this)
         prefs.registerOnSharedPreferenceChangeListener(reminderListener)
         // La primera vez, la guía rápida
         if (savedInstanceState == null && !prefs.getBoolean(Prefs.GUIDE_SEEN, false)) {
@@ -128,9 +129,10 @@ class MainActivity : UiActivity() {
 
     /** Cambias el aviso del ticket: se vuelve a programar (y pide permiso para notificaciones). */
     private val reminderListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == Prefs.REMINDER || key == Prefs.REMINDER_HOUR) {
+        if (key == Prefs.WORKDAY_NOTIF) WorkdayCenter.refresh(this)
+        if (key == Prefs.REMINDER || key == Prefs.REMINDER_HOUR || key == Prefs.WORKDAY_NOTIF) {
             TicketReminder.schedule(this)
-            if (prefs.getBoolean(Prefs.REMINDER, false) && android.os.Build.VERSION.SDK_INT >= 33 &&
+            if ((prefs.getBoolean(Prefs.REMINDER, false) || prefs.getBoolean(Prefs.WORKDAY_NOTIF, true)) && android.os.Build.VERSION.SDK_INT >= 33 &&
                 checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
             }
@@ -639,6 +641,25 @@ class MainActivity : UiActivity() {
             "17" to "5 PM", "18" to "6 PM", "19" to "7 PM", "20" to "8 PM", "21" to "9 PM",
         ))
 
+        // ---- Mi jornada: widget, pantalla de bloqueo y mis sitios
+        card(tr("Mi jornada", "My workday"), Icons.TRUCK, keywords = "horas horario widget bloqueo camioneta sitios gps hours lock screen truck sites")
+        text(tr(
+            "Anota 🛻 Comencé, 📍 Llegué, 🚪 Salí y 🏠 Casa desde el teclado, desde el widget o desde la pantalla de bloqueo.",
+            "Log 🛻 Started, 📍 Arrived, 🚪 Left and 🏠 Home from the keyboard, the widget or the lock screen."), 13f, faded = true)
+        button(tr("➕ Poner el widget en la pantalla de inicio", "➕ Add the widget to the home screen"), primary = true) {
+            val am = getSystemService(android.appwidget.AppWidgetManager::class.java)
+            val ok = try {
+                am != null && am.isRequestPinAppWidgetSupported &&
+                    am.requestPinAppWidget(android.content.ComponentName(this, WorkdayWidget::class.java), null, null)
+            } catch (_: Exception) { false }
+            if (!ok) toast("Mantén presionada la pantalla de inicio → Widgets → Best Keyboard → Mi jornada.",
+                "Long-press the home screen → Widgets → Best Keyboard → My workday.")
+        }
+        switch(tr("Mostrar Mi jornada en la pantalla de bloqueo", "Show My workday on the lock screen"), Prefs.WORKDAY_NOTIF, true,
+            tr("Mientras estás trabajando sale una notificación con el tiempo corriendo y los botones Llegué / Salí / Casa, que puedes tocar sin desbloquear.",
+                "While you're working, a notification shows the running time and the Arrived / Left / Home buttons, which you can tap without unlocking."))
+        button(tr("📍 Mis sitios", "📍 My sites")) { startActivity(Intent(this, SitesActivity::class.java)) }
+
         // ---- Palabra de la semana
         card(tr("Palabra de la semana", "Word of the week"), Icons.BOOK)
         val ww = WeeklyWord.current()
@@ -792,6 +813,18 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.0" to tr(
+            "•  🏠 Widget de Mi jornada y botones en la pantalla de bloqueo.\n" +
+                "•  📍 Mis sitios: al tocar «Llegué», el GPS sabe en qué sitio estás.\n" +
+                "•  🧰 Materiales: toca lo que usaste y se arma el Equipment List.\n" +
+                "•  💬 Respuestas rápidas con IA (corta, formal y en el otro idioma).\n" +
+                "•  ⚡ Más rápido al escribir.",
+            "•  🏠 My workday widget and buttons on the lock screen.\n" +
+                "•  📍 My sites: when you tap «Arrived», GPS knows which site you're at.\n" +
+                "•  🧰 Materials: tap what you used and the Equipment List is built.\n" +
+                "•  💬 Quick AI replies (short, formal and in the other language).\n" +
+                "•  ⚡ Faster while typing.",
+        ),
         "9.9.1" to tr("•  Una sola cámara: el escáner lee el texto y los códigos de barras y QR a la vez.\n•  Los tickets dicen «del trabajo» (sin nombre de compañía).",
             "•  One camera: the scanner reads text and barcodes/QR codes at the same time.\n•  Tickets say «work» (no company name)."),
         "9.9" to tr(

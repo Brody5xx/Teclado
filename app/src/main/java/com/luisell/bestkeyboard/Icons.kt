@@ -76,6 +76,9 @@ object Icons {
     const val TICKETS = 59
     const val BOOK = 60
     const val TRUCK = 61
+    const val BOX = 62
+    const val REPLY = 63
+    const val PIN = 64
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -467,6 +470,49 @@ object Icons {
                 c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
                 for (yy in 0..1) for (xx in 0..2)
                     c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            BOX -> {
+                // Caja (materiales)
+                path.reset()
+                path.moveTo(cx, cy - s * 0.95f)
+                path.lineTo(cx + s * 0.9f, cy - s * 0.5f)
+                path.lineTo(cx + s * 0.9f, cy + s * 0.5f)
+                path.lineTo(cx, cy + s * 0.95f)
+                path.lineTo(cx - s * 0.9f, cy + s * 0.5f)
+                path.lineTo(cx - s * 0.9f, cy - s * 0.5f)
+                path.close()
+                c.drawPath(path, st)
+                c.drawLine(cx - s * 0.9f, cy - s * 0.5f, cx, cy - s * 0.05f, st)
+                c.drawLine(cx + s * 0.9f, cy - s * 0.5f, cx, cy - s * 0.05f, st)
+                c.drawLine(cx, cy - s * 0.05f, cx, cy + s * 0.95f, st)
+            }
+            REPLY -> {
+                // Globo con flecha de responder
+                r.set(cx - s * 0.95f, cy - s * 0.8f, cx + s * 0.95f, cy + s * 0.5f)
+                c.drawRoundRect(r, s * 0.35f, s * 0.35f, st)
+                path.reset()
+                path.moveTo(cx - s * 0.4f, cy + s * 0.5f)
+                path.lineTo(cx - s * 0.55f, cy + s * 0.95f)
+                path.lineTo(cx, cy + s * 0.5f)
+                c.drawPath(path, st)
+                path.reset()
+                path.moveTo(cx - s * 0.1f, cy - s * 0.5f)
+                path.lineTo(cx - s * 0.45f, cy - s * 0.2f)
+                path.lineTo(cx - s * 0.1f, cy + s * 0.1f)
+                c.drawPath(path, st)
+                path.reset()
+                path.moveTo(cx - s * 0.42f, cy - s * 0.2f)
+                path.quadTo(cx + s * 0.45f, cy - s * 0.25f, cx + s * 0.5f, cy + s * 0.15f)
+                c.drawPath(path, st)
+            }
+            PIN -> {
+                // Marcador de mapa (mis sitios)
+                path.reset()
+                path.moveTo(cx, cy + s * 0.98f)
+                path.cubicTo(cx - s * 0.95f, cy - s * 0.05f, cx - s * 0.75f, cy - s * 0.98f, cx, cy - s * 0.98f)
+                path.cubicTo(cx + s * 0.75f, cy - s * 0.98f, cx + s * 0.95f, cy - s * 0.05f, cx, cy + s * 0.98f)
+                c.drawPath(path, st)
+                c.drawCircle(cx, cy - s * 0.3f, s * 0.25f, fl)
             }
             TRUCK -> {
                 // Camioneta (mi jornada)

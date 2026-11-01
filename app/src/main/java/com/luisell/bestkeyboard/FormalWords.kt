@@ -107,7 +107,7 @@ object FormalWords {
         for (n in starts.size downTo 1) {
             val start = starts[n - 1]
             val piece = core.substring(start)
-            val key = EmojiSearch.norm(piece).replace(Regex("\\s+"), " ")
+            val key = EmojiSearch.norm(piece).replace(EmojiSearch.SPACES, " ")
             val formal = MAP[key] ?: continue
             if (EmojiSearch.norm(formal) == key) continue
             val out = if (piece[0].isUpperCase()) formal.replaceFirstChar { it.uppercaseChar() } else formal

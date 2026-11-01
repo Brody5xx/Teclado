@@ -47,6 +47,9 @@ class SearchBar(context: Context) : LinearLayout(context) {
     /** true = apunte para la libreta del día (Enter lo guarda). */
     var note = false
         private set
+    /** true = nombre de un material nuevo (Enter lo guarda). */
+    var material = false
+        private set
 
     val inputInfo = EditorInfo().apply {
         inputType = InputType.TYPE_CLASS_TEXT
@@ -105,11 +108,13 @@ class SearchBar(context: Context) : LinearLayout(context) {
     }
 
     /** Abre la búsqueda de emojis ([gif] = false) o de GIFs. */
-    fun start(gif: Boolean, noteMode: Boolean = false) {
+    fun start(gif: Boolean, noteMode: Boolean = false, materialMode: Boolean = false) {
+        material = materialMode
         gifs = gif
         note = noteMode
         glass.kind = if (noteMode) Icons.NOTEBOOK else Icons.SEARCH
         when {
+            materialMode -> L.bindHint(box, "Nombre del material (ej. Cat 6A cable)", "Material name (e.g. Cat 6A cable)")
             noteMode -> L.bindHint(box, "Apunta algo…", "Write a note…")
             gif -> L.bindHint(box, "Buscar GIFs", "Search GIFs")
             else -> L.bindHint(box, "Buscar emojis", "Search emojis")
@@ -136,6 +141,12 @@ class SearchBar(context: Context) : LinearLayout(context) {
     /** Emojis encontrados (en GIFs: un aviso para tocar Buscar). */
     fun showResults(list: List<String>) {
         results.removeAllViews()
+        if (material) {
+            resultsScroll.visibility = GONE
+            hint.visibility = VISIBLE
+            hint.text = L.t("Escribe el material y toca Enter para agregarlo a tu lista.", "Type the material and tap Enter to add it to your list.")
+            return
+        }
         if (note) {
             resultsScroll.visibility = GONE
             hint.visibility = VISIBLE

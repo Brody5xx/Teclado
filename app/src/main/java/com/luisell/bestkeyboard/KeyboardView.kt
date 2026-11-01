@@ -87,6 +87,9 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_TICKETS = 48
         const val TOOL_WORD = 49
         const val TOOL_WORKDAY = 50
+        const val TOOL_MATERIALS = 51
+        const val TOOL_REPLY = 52
+        const val TOOL_SITES = 53
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -1477,6 +1480,9 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_TICKETS -> Icons.TICKETS
         TOOL_WORD -> Icons.BOOK
         TOOL_WORKDAY -> Icons.TRUCK
+        TOOL_MATERIALS -> Icons.BOX
+        TOOL_REPLY -> Icons.REPLY
+        TOOL_SITES -> Icons.PIN
         else -> -1
     }
 

@@ -82,6 +82,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var slotTyped = -1
     /** La casilla de la barra que tiene un emoji sugerido (o -1). */
     private var emojiSlot = -1
+    /** El texto antes del cursor, leído una vez por actualización de sugerencias. */
+    private var sugBefore: CharSequence? = null
     /** La casilla con una palabra más formal sugerida (o -1) y qué cambiaría. */
     private var formalSlot = -1
     private var formalMatch: FormalWords.Match? = null
@@ -159,6 +161,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var notebookPanel: ListPanel? = null
     private var ticketsPanel: ListPanel? = null
     private var workdayPanel: ListPanel? = null
+    private var materialsPanel: ListPanel? = null
     /** Barra arriba del teclado con el mensaje traducido. */
     private var infoBar: InfoBar? = null
     private var readTrans: Translation? = null
@@ -410,7 +413,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_VOICE,
                     KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN, KeyboardView.TOOL_PHRASES,
                     KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT, KeyboardView.TOOL_BARCODE,
-                    KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS, KeyboardView.TOOL_WORKDAY -> onToolbar(tool)
+                    KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS, KeyboardView.TOOL_WORKDAY,
+                    KeyboardView.TOOL_MATERIALS -> onToolbar(tool)
                     else -> { showMode(0); onToolbar(tool) }
                 }
             }
@@ -494,6 +498,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         wd.onFeedback = { onKeyFeedback() }
         box.addView(wd, FrameLayout.LayoutParams(-1, -1))
         workdayPanel = wd
+        val mt = ListPanel(this)
+        mt.visibility = View.GONE
+        mt.onBack = { showMode(0) }
+        mt.onFeedback = { onKeyFeedback() }
+        box.addView(mt, FrameLayout.LayoutParams(-1, -1))
+        materialsPanel = mt
         scanPanel = sp
         panelBox = box
 
@@ -547,15 +557,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         srch.visibility = View.GONE
         srch.actions = object : SearchBar.Actions {
             override fun onSearchText(text: String) {
-                if (!srch.gifs && !srch.note) srch.showResults(EmojiSearch.search(text))
+                if (!srch.gifs && !srch.note && !srch.material) srch.showResults(EmojiSearch.search(text))
                 updateAutoCaps()
                 scheduleUpdate()
             }
             override fun onSearchClose() {
                 val gif = srch.gifs
                 val note = srch.note
+                val mat = srch.material
                 stopSearch()
-                showMode(if (note) 10 else if (gif) 9 else 1)
+                showMode(if (mat) 13 else if (note) 10 else if (gif) 9 else 1)
             }
             override fun onSearchPick(emoji: String) {
                 currentInputConnection?.commitText(emoji, 1)
@@ -667,6 +678,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         notebookPanel?.let { it.visibility = if (m == 10) View.VISIBLE else View.GONE; if (m == 10) refreshNotebook() }
         ticketsPanel?.let { it.visibility = if (m == 11) View.VISIBLE else View.GONE; if (m == 11) refreshTickets() }
         workdayPanel?.let { it.visibility = if (m == 12) View.VISIBLE else View.GONE; if (m == 12) refreshWorkday() }
+        materialsPanel?.let { it.visibility = if (m == 13) View.VISIBLE else View.GONE; if (m == 13) refreshMaterials() }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
 
@@ -1488,6 +1500,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Ajustes que se guardan solos mientras escribes (no son cambios de personalización). */
     private val quietPrefs = setOf(
+        Prefs.WORKDAY, Prefs.SITES, Prefs.MATERIALS, Prefs.MATERIALS_TODAY,
         Prefs.NOTEBOOK, Prefs.TICKETS, Prefs.TICKET_NEXT, Prefs.WORD_SHOWN,
         Prefs.CLIP_LAST_SIG, Prefs.QUICK_DONE, Prefs.SHOT_USED, Prefs.SHOT_ASKS, Prefs.LANG, Prefs.TR_SRC,
         Prefs.BAR_TOOLS, Prefs.MORE_TOOLS, Prefs.BAR_TOOLS2, Prefs.MORE_TOOLS2, Prefs.SIZE, Prefs.LAST_FIELD,
@@ -1581,6 +1594,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         notebookPanel?.applyPalette(pal)
         ticketsPanel?.applyPalette(pal)
         workdayPanel?.applyPalette(pal)
+        materialsPanel?.applyPalette(pal)
         infoBar?.applyPalette(pal)
         searchBar?.applyPalette(pal)
         if (floatFrame != null && prefs.getBoolean(Prefs.FLOAT, false) != floating) applyFloat()
@@ -1767,8 +1781,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun updateSuggestions() {
         updateWordSuggestions()
+        // Se lee el texto una sola vez para las dos sugerencias (más rápido al escribir)
+        sugBefore = try { target()?.getTextBeforeCursor(80, 0) } catch (_: Exception) { null }
         addFormalSuggestion()
         addEmojiSuggestion()
+        sugBefore = null
     }
 
     /** Si escribiste algo informal ("arreglé", "ya sirve"), sugiere la forma formal con ✨. */
@@ -1777,7 +1794,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || page == Page.NUM) return
         if (!suggestOn || !fieldSuggest || !prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)) return
         val ic = target() ?: return
-        val before = ic.getTextBeforeCursor(80, 0) ?: return
+        val before = sugBefore ?: ic.getTextBeforeCursor(80, 0) ?: return
         val m = FormalWords.match(before)
             ?: (if (prefs.getBoolean(Prefs.WORD_WEEK, true)) WeeklyWord.match(before) else null)
             ?: return
@@ -1815,7 +1832,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || page == Page.NUM) return
         if (!suggestOn || !fieldSuggest || !prefs.getBoolean(Prefs.EMOJI_SUGGEST, true)) return
         val ic = target() ?: return
-        val before = ic.getTextBeforeCursor(60, 0) ?: return
+        val before = sugBefore ?: ic.getTextBeforeCursor(60, 0) ?: return
         if (before.isEmpty()) return
         // Solo justo después de la palabra o de un espacio (no después de un punto o un emoji)
         val last = before.last()
@@ -2241,6 +2258,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_NOTEBOOK -> showMode(10)
             KeyboardView.TOOL_TICKETS -> showMode(11)
             KeyboardView.TOOL_WORKDAY -> showMode(12)
+            KeyboardView.TOOL_MATERIALS -> showMode(13)
+            KeyboardView.TOOL_REPLY -> startReplies()
+            KeyboardView.TOOL_SITES -> {
+                showMode(0)
+                try {
+                    startActivity(Intent(this, SitesActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                } catch (_: Exception) { }
+            }
             KeyboardView.TOOL_WORD -> showWord()
             KeyboardView.TOOL_REVIEW -> startReview()
             KeyboardView.TOOL_FORMAL -> startFormalWord()
@@ -2884,10 +2909,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Las horas de "Mi jornada" de hoy, para que el ticket las use. */
     private fun workdayHint(): String {
+        val sb = StringBuilder()
         val ev = WorkDay.day(prefs)
-        if (ev.isEmpty()) return ""
-        return "Times recorded today with the time tracker (use them for Arrival Time / Departure Time unless the notes say otherwise):\n" +
-            WorkDay.text(ev, true) + "\n"
+        if (ev.isNotEmpty()) {
+            sb.append("Times recorded today with the time tracker (use them for Arrival Time / Departure Time unless the notes say otherwise):\n")
+            sb.append(WorkDay.text(ev, true)).append("\n")
+            val site = ev.lastOrNull { it.kind == WorkDay.ARRIVE && it.site.isNotEmpty() }?.site
+            if (site != null) {
+                val addr = SiteStore.find(prefs, site)?.address ?: ""
+                sb.append("Location (from GPS): ").append(site).append(if (addr.isNotEmpty()) " — $addr" else "").append("\n")
+            }
+        }
+        val mats = Materials.text(prefs)
+        if (mats.isNotEmpty()) sb.append("Materials the technician marked as used today (include them in the Equipment List):\n").append(mats).append("\n")
+        return sb.toString()
     }
 
     /** Los tickets del trabajo van en inglés; si no usas ese formato, en el idioma del teclado. */
@@ -3107,16 +3142,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     "Total ${WorkDay.dur(sum.total)}\nOn site ${WorkDay.dur(sum.site)} · Driving ${WorkDay.dur(sum.driving)}")))
         }
         for (e in events) {
-            rows.add(ListPanel.Row(WorkStore.time(e.time), WorkDay.label(e.kind),
+            rows.add(ListPanel.Row(WorkStore.time(e.time), WorkDay.labelOf(e),
                 onTap = { adjustEvent(e.time, e.kind) },
-                onDelete = { WorkDay.remove(prefs, e.time); refreshWorkday() }))
+                onDelete = { WorkDay.remove(prefs, e.time); WorkdayCenter.refresh(this); refreshWorkday() }))
         }
         val next = WorkDay.nextKind(events)
         val kinds = listOf(WorkDay.START, WorkDay.ARRIVE, WorkDay.LEAVE, WorkDay.HOME)
         val order = listOf(next) + kinds.filter { it != next }
         val buttons = ArrayList<Pair<String, () -> Unit>>()
         for (k in order) buttons.add(WorkDay.label(k) to {
-            WorkDay.add(prefs, k)
+            WorkdayCenter.record(this, k) { refreshWorkday() }
             refreshWorkday()
         })
         if (events.isNotEmpty()) {
@@ -3131,18 +3166,122 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             buttons)
     }
 
+    // ---------------------------------------------------------------- Materiales
+
+    private fun refreshMaterials() {
+        val panel = materialsPanel ?: return
+        val used = Materials.today(prefs)
+        val custom = Materials.custom(prefs).toSet()
+        // Los que ya usaste hoy van primero
+        val names = used.keys.toList() + Materials.all(prefs).filter { it !in used }
+        val rows = names.map { n ->
+            val q = used[n] ?: 0
+            ListPanel.Row(if (q > 0) "✓ x$q" else " ", n,
+                onTap = { adjustMaterial(n) },
+                onDelete = if (q > 0) ({ Materials.set(prefs, n, 0); refreshMaterials() })
+                    else if (n in custom) ({ Materials.removeCustom(prefs, n); refreshMaterials() }) else null)
+        }
+        val buttons = ArrayList<Pair<String, () -> Unit>>()
+        if (used.isNotEmpty()) buttons.add(L.t("✍️ Escribir lista", "✍️ Type list") to { insertText(Materials.text(prefs)); showMode(0) })
+        buttons.add(L.t("➕ Material nuevo", "➕ New material") to { startSearch(gif = false, material = true) })
+        if (used.isNotEmpty()) buttons.add(L.t("Limpiar", "Clear") to { Materials.clear(prefs); refreshMaterials() })
+        panel.show(L.t("🧰 Materiales de hoy", "🧰 Today's materials") + if (used.isEmpty()) "" else " (${used.size})", rows,
+            L.t("Toca un material para poner la cantidad.", "Tap a material to set the quantity."), buttons)
+    }
+
+    private fun adjustMaterial(name: String) {
+        val bar = infoBar ?: return
+        fun showBar() {
+            val q = Materials.today(prefs)[name] ?: 0
+            val step: (Int) -> Unit = { d -> Materials.change(prefs, name, d); refreshMaterials(); showBar() }
+            bar.show("$name: $q", L.t("Toca para sumar o restar.", "Tap to add or subtract."), listOf(
+                L.t("Listo", "Done") to { closeInfo() },
+                "+1" to { step(1) }, "+5" to { step(5) }, "+10" to { step(10) }, "+50" to { step(50) }, "+100" to { step(100) },
+                "−1" to { step(-1) }, "−10" to { step(-10) },
+                L.t("Poner en 0", "Set to 0") to { Materials.set(prefs, name, 0); refreshMaterials(); showBar() },
+            ))
+        }
+        showBar()
+    }
+
+    // ---------------------------------------------------------------- Respuestas rápidas
+
+    /** Copias el mensaje que te llegó y la IA te da 3 respuestas: corta, formal y en el otro idioma. */
+    private fun startReplies() {
+        if (isPassword) return
+        showMode(0)
+        val title = L.t("💬 Respuestas rápidas", "💬 Quick replies")
+        val ic = currentInputConnection
+        val sel = try { ic?.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null }
+        val msg = if (!sel.isNullOrEmpty()) sel else try {
+            clipboard?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
+        } catch (_: Exception) { null }
+        val bar = infoBar ?: return
+        if (msg.isNullOrEmpty()) {
+            bar.show(title, L.t("Mantén presionado el mensaje que te llegó y toca Copiar. Después toca este botón.",
+                "Long-press the message you got and tap Copy. Then tap this button."), listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        val key = aiKey(title) ?: return
+        val my = ++aiSeq
+        bar.show(title, L.t("Pensando respuestas…", "Thinking of replies…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+        val prompt = "Someone sent this message to a low-voltage field technician (he works with coworkers and supervisors):\n\"\"\"\n" + msg +
+            "\n\"\"\"\nWrite 3 possible replies he could send, as himself, first person:\n" +
+            "1) SHORT: very short and friendly, same language as the message.\n" +
+            "2) FORMAL: professional and clear, same language as the message.\n" +
+            "3) OTHER: professional, but in the other language (Spanish if the message is in English, English if it is in Spanish).\n" +
+            "Do not invent facts; if something is unknown, keep it general. No markdown.\n" +
+            "Answer exactly in this format:\nSHORT: ...\nFORMAL: ...\nOTHER: ..."
+        CloudText.ask(prompt, key) { list, err ->
+            if (my != aiSeq) return@ask
+            val raw = list?.firstOrNull()?.replace("**", "")?.trim()
+            if (raw.isNullOrEmpty()) {
+                bar.show(title, err ?: L.t("No se pudo.", "Couldn't do it."), listOf(L.t("Reintentar", "Retry") to { startReplies() }, L.t("Cerrar", "Close") to { closeInfo() }))
+                return@ask
+            }
+            fun part(tag: String, nextTags: List<String>): String {
+                val i = raw.indexOf("$tag:")
+                if (i < 0) return ""
+                var end = raw.length
+                for (n in nextTags) { val j = raw.indexOf("$n:", i + 1); if (j > 0 && j < end) end = j }
+                return raw.substring(i + tag.length + 1, end).trim()
+            }
+            val short = part("SHORT", listOf("FORMAL", "OTHER"))
+            val formal = part("FORMAL", listOf("SHORT", "OTHER"))
+            val other = part("OTHER", listOf("SHORT", "FORMAL"))
+            val opts = listOf(L.t("1 Corta", "1 Short") to short, L.t("2 Formal", "2 Formal") to formal, L.t("3 Otro idioma", "3 Other language") to other)
+                .filter { it.second.isNotEmpty() }
+            if (opts.isEmpty()) { bar.show(title, raw, listOf(L.t("Copiar", "Copy") to { aiCopy(raw) }, L.t("Cerrar", "Close") to { closeInfo() })); return@ask }
+            val body = opts.joinToString("\n\n") { "${it.first}:\n${it.second}" }
+            val buttons = ArrayList<Pair<String, () -> Unit>>()
+            for (o in opts) buttons.add(o.first to { insertText(o.second); closeInfo() })
+            buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+            bar.show(title, body, buttons)
+        }
+    }
+
     /** Cambiar la hora de un evento (si se te olvidó tocarlo a tiempo). */
     private fun adjustEvent(time: Long, kind: String) {
         val bar = infoBar ?: return
         var t = time
         fun showBar() {
-            bar.show(WorkDay.label(kind) + ": " + WorkStore.time(t), L.t("Cambia la hora si se te olvidó tocarlo a tiempo.", "Change the time if you forgot to tap it on time."), listOf(
+            val buttons = arrayListOf<Pair<String, () -> Unit>>(
                 L.t("Listo", "Done") to { closeInfo() },
-                "−15 min" to { t = WorkDay.shift(prefs, t, -15); refreshWorkday(); showBar() },
-                "−5 min" to { t = WorkDay.shift(prefs, t, -5); refreshWorkday(); showBar() },
-                "+5 min" to { t = WorkDay.shift(prefs, t, 5); refreshWorkday(); showBar() },
-                "+15 min" to { t = WorkDay.shift(prefs, t, 15); refreshWorkday(); showBar() },
-            ))
+                "−15 min" to { t = WorkDay.shift(prefs, t, -15); WorkdayCenter.refresh(this); refreshWorkday(); showBar() },
+                "−5 min" to { t = WorkDay.shift(prefs, t, -5); WorkdayCenter.refresh(this); refreshWorkday(); showBar() },
+                "+5 min" to { t = WorkDay.shift(prefs, t, 5); WorkdayCenter.refresh(this); refreshWorkday(); showBar() },
+                "+15 min" to { t = WorkDay.shift(prefs, t, 15); WorkdayCenter.refresh(this); refreshWorkday(); showBar() },
+            )
+            // En "Llegué" y "Salí" puedes elegir el sitio a mano
+            if (kind == WorkDay.ARRIVE || kind == WorkDay.LEAVE) {
+                for (site in SiteStore.all(prefs)) buttons.add("📍 " + site.name to {
+                    WorkDay.setSite(prefs, t, site.name); WorkdayCenter.refresh(this); refreshWorkday(); closeInfo()
+                })
+            }
+            bar.show(WorkDay.label(kind) + ": " + WorkStore.time(t),
+                L.t("Cambia la hora si se te olvidó tocarlo a tiempo" + (if (kind == WorkDay.ARRIVE || kind == WorkDay.LEAVE) ", o elige el sitio." else "."),
+                    "Change the time if you forgot to tap it on time" + (if (kind == WorkDay.ARRIVE || kind == WorkDay.LEAVE) ", or pick the site." else ".")),
+                buttons)
         }
         showBar()
     }
@@ -3386,15 +3525,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // ---------------------------------------------------------------- Buscar emojis y GIFs
 
-    private fun startSearch(gif: Boolean, note: Boolean = false) {
+    private fun startSearch(gif: Boolean, note: Boolean = false, material: Boolean = false) {
         val bar = searchBar ?: return
         if (translating) stopTranslate()
         if (spellOn) stopSpell(keepSelection = true)
         closeInfo()
         showMode(0)
-        searching = if (note) 3 else if (gif) 2 else 1
+        searching = if (material) 4 else if (note) 3 else if (gif) 2 else 1
         bar.visibility = View.VISIBLE
-        bar.start(gif, note)
+        bar.start(gif, note, material)
         lastCorrection = null
         autoSpace = false
         lastWasSpace = false
@@ -3419,6 +3558,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bar = searchBar ?: return
         val q = bar.text().trim()
         val gif = bar.gifs
+        if (bar.material) {
+            if (q.isNotEmpty()) Materials.addCustom(prefs, q)
+            stopSearch()
+            showMode(13)
+            return
+        }
         if (bar.note) {
             // Guardar el apunte y seguir apuntando
             if (q.isNotEmpty()) {

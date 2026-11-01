@@ -88,6 +88,35 @@
             </intent-filter>
         </receiver>
 
+        <!-- Mi jornada: widget, botones y "Llegué" con GPS -->
+        <receiver
+            android:name=".WorkdayWidget"
+            android:exported="false"
+            android:label="Mi jornada">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_workday_info" />
+        </receiver>
+        <receiver
+            android:name=".WorkdayReceiver"
+            android:exported="false" />
+        <activity
+            android:name=".WorkdayActionActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- Mis sitios -->
+        <activity
+            android:name=".SitesActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Guía rápida -->
         <activity
             android:name=".GuideActivity"

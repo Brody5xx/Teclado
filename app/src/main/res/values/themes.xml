@@ -5,4 +5,15 @@
         <item name="android:colorPrimaryDark">#1557B0</item>
         <item name="android:colorAccent">#1A73E8</item>
     </style>
+    <!-- Botones del widget "Mi jornada" -->
+    <style name="WidgetBtn">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:background">@drawable/widget_btn</item>
+    </style>
 </resources>
