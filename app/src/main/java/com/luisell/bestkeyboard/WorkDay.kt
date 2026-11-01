@@ -19,12 +19,60 @@ object WorkDay {
     class Event(val time: Long, val kind: String, val site: String = "")
     class Summary(val total: Long, val site: Long, val driving: Long, val running: Boolean)
 
-    fun label(kind: String): String = when (kind) {
+    /** El nombre de fábrica de cada botón. */
+    fun defaultLabel(kind: String): String = when (kind) {
         START -> L.t("🛻 Comencé (camioneta)", "🛻 Started (truck)")
         ARRIVE -> L.t("📍 Llegué al sitio", "📍 Arrived on site")
         LEAVE -> L.t("🚪 Salí del sitio", "🚪 Left the site")
         else -> L.t("🏠 Llegué a casa", "🏠 Home")
     }
+
+    val ALL_KINDS = listOf(START, ARRIVE, LEAVE, HOME)
+
+    // ---- Botones a tu gusto: cuáles se ven y cómo se llaman (se guardan en Prefs.WORKDAY_BTNS)
+    private var cfgRaw: String? = null
+    private var on: Set<String> = ALL_KINDS.toSet()
+    private var names: Map<String, String> = emptyMap()
+
+    /** Lee cómo personalizaste los botones (rápido: solo si cambió). */
+    fun config(p: SharedPreferences) {
+        val raw = p.getString(Prefs.WORKDAY_BTNS, "") ?: ""
+        if (raw == cfgRaw) return
+        cfgRaw = raw
+        val o = try { JSONObject(raw.ifEmpty { "{}" }) } catch (_: Exception) { JSONObject() }
+        val en = HashSet<String>()
+        val nm = HashMap<String, String>()
+        for (k in ALL_KINDS) {
+            val b = o.optJSONObject(k)
+            if (b == null || b.optBoolean("on", true)) en.add(k)
+            val n = b?.optString("name", "")?.trim() ?: ""
+            if (n.isNotEmpty()) nm[k] = n
+        }
+        on = if (en.isEmpty()) setOf(ARRIVE) else en
+        names = nm
+    }
+
+    fun saveConfig(p: SharedPreferences, enabled: Set<String>, custom: Map<String, String>) {
+        val o = JSONObject()
+        for (k in ALL_KINDS) o.put(k, JSONObject().put("on", k in enabled).put("name", custom[k] ?: ""))
+        p.edit().putString(Prefs.WORKDAY_BTNS, o.toString()).apply()
+        config(p)
+    }
+
+    fun isOn(kind: String) = kind in on
+    fun customName(kind: String): String = names[kind] ?: ""
+
+    /** Los botones que usas, en orden. */
+    fun enabledKinds(): List<String> = ALL_KINDS.filter { it in on }
+
+    /** El que cierra el día (Casa; si no lo usas, Salí; si tampoco, el último que tengas). */
+    fun finalKind(): String = enabledKinds().last()
+
+    /** El nombre que se ve: el tuyo, o el de fábrica. */
+    fun label(kind: String): String = names[kind] ?: defaultLabel(kind)
+
+    /** El nombre sin el emoji del principio ("Llegué al sitio"). */
+    fun plainLabel(kind: String): String = label(kind).replace(Regex("^[^\\p{L}\\p{N}]+"), "").trim().ifEmpty { label(kind) }
 
     /** En inglés, para el ticket. */
     fun ticketLabel(kind: String): String = when (kind) {
@@ -47,8 +95,10 @@ object WorkDay {
         p.edit().putString(Prefs.WORKDAY, a.toString()).apply()
     }
 
-    fun day(p: SharedPreferences, day: Long = System.currentTimeMillis()): List<Event> =
-        all(p).filter { WorkStore.sameDay(it.time, day) }.sortedBy { it.time }
+    fun day(p: SharedPreferences, day: Long = System.currentTimeMillis()): List<Event> {
+        config(p)
+        return all(p).filter { WorkStore.sameDay(it.time, day) }.sortedBy { it.time }
+    }
 
     /** Anota un evento ahora y devuelve su hora. */
     fun add(p: SharedPreferences, kind: String, site: String = ""): Long {
@@ -62,7 +112,7 @@ object WorkDay {
         save(p, all(p).map { if (it.time == time) Event(it.time, it.kind, site) else it })
 
     /** El nombre que se ve: "📍 Llegué a RUMC". */
-    fun labelOf(e: Event): String = if (e.site.isEmpty()) label(e.kind) else when (e.kind) {
+    fun labelOf(e: Event): String = if (e.site.isEmpty()) label(e.kind) else if (names[e.kind] != null) label(e.kind) + " · " + e.site else when (e.kind) {
         ARRIVE -> L.t("📍 Llegué a ${e.site}", "📍 Arrived at ${e.site}")
         LEAVE -> L.t("🚪 Salí de ${e.site}", "🚪 Left ${e.site}")
         else -> label(e.kind) + " · " + e.site
@@ -78,18 +128,17 @@ object WorkDay {
     }
 
     /** Lo que toca después (para poner ese botón primero). */
-    fun nextKind(events: List<Event>): String = when (events.lastOrNull()?.kind) {
-        null -> START
-        START -> ARRIVE
-        ARRIVE -> LEAVE
-        LEAVE -> HOME
-        else -> START
+    fun nextKind(events: List<Event>): String {
+        val seq = enabledKinds()
+        val last = events.lastOrNull()?.kind ?: return seq.first()
+        val i = seq.indexOf(last)
+        return if (i < 0) seq.first() else seq[(i + 1) % seq.size]
     }
 
     fun summary(events: List<Event>, now: Long = System.currentTimeMillis()): Summary {
         if (events.isEmpty()) return Summary(0, 0, 0, false)
         val first = events.first().time
-        val running = events.last().kind != HOME
+        val running = events.last().kind != finalKind()
         val end = if (running) now else events.last().time
         var site = 0L
         var arrivedAt = -1L
@@ -106,6 +155,7 @@ object WorkDay {
 
     /** Todos los días que tienen algo anotado (inicio del día → eventos), del más viejo al más nuevo. */
     fun byDay(p: SharedPreferences): List<Pair<Long, List<Event>>> {
+        config(p)
         val map = java.util.TreeMap<Long, MutableList<Event>>()
         for (e in all(p)) {
             val c = Calendar.getInstance().apply { timeInMillis = e.time }
@@ -171,7 +221,7 @@ object WorkDay {
         if (events.isEmpty()) return ""
         val s = summary(events)
         val lines = events.map {
-            (if (english) ticketLabel(it.kind) else label(it.kind).drop(2).trim()) + ": " + WorkStore.time(it.time) +
+            (if (english) ticketLabel(it.kind) else plainLabel(it.kind)) + ": " + WorkStore.time(it.time) +
                 (if (it.site.isNotEmpty()) " (${it.site})" else "")
         }
         val tot = if (english) "Total: ${dur(s.total)} (on site ${dur(s.site)}, driving ${dur(s.driving)})"

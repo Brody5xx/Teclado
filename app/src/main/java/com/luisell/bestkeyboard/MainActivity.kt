@@ -695,6 +695,9 @@ class MainActivity : UiActivity() {
             tr("Así puedes tocar 🛻 Comencé desde la pantalla de bloqueo, sin desbloquear.", "So you can tap 🛻 Start from the lock screen, without unlocking."))
         text(tr("También hay un botón en los ajustes rápidos: desliza la barra de arriba del teléfono hacia abajo, toca el lápiz ✏️ y arrastra «Comencé / Mi jornada».",
             "There's also a Quick Settings button: swipe down from the top of the phone, tap the pencil ✏️ and drag «Start / My workday»."), 12f, faded = true)
+        button(tr("✏️ Editar botones (nombres y cuáles se ven)", "✏️ Edit buttons (names and which ones show)")) {
+            startActivity(Intent(this, WorkdayButtonsActivity::class.java))
+        }
         button(tr("📍 Mis sitios", "📍 My sites")) { startActivity(Intent(this, SitesActivity::class.java)) }
         button(tr("📄 Exportar mis horas (Excel / Sheets)", "📄 Export my hours (Excel / Sheets)")) {
             try {
@@ -877,6 +880,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.5" to tr("•  Mi jornada a tu gusto: cambia el nombre de los botones y quita los que no uses (por ejemplo «Comencé» si no vas en camioneta).",
+            "•  My workday your way: rename the buttons and hide the ones you don't use (for example «Started» if you don't ride a truck)."),
         "10.4" to tr(
             "•  ✨ 19 temas animados nuevos: Amor (corazones), Otoño (hojas), Fiesta (confeti), Olas, Lámpara de lava, Circuito, Synthwave, Nubes, Meteoros, Luces, Brillantina, Arcoíris vivo, Navidad, Noche violeta, Lluvia neón, Volcán, Bosque mágico, Tropical y Cerezo nocturno. Ya son 27 animados y 55 temas en total.\n" +
                 "•  12 efectos nuevos al tocar: Voltear, Latido de corazón, Liga, Romper, Humo, Espiral, Flor, Moneda, Globo, Mariposa, Falla digital y Salpicar. Ya son 46.",

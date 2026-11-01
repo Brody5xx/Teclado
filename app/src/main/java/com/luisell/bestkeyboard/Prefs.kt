@@ -113,6 +113,8 @@ object Prefs {
     const val WORKDAY_NOTIF = "workday_notif"
     /** La notificación de Mi jornada se queda siempre (con el botón 🛻 Comencé antes de empezar). */
     const val WORKDAY_ALWAYS = "workday_always"
+    /** Botones de Mi jornada: cuáles se ven y sus nombres (JSON). */
+    const val WORKDAY_BTNS = "workday_buttons"
     /** Si hoy vas manejando: "yyyy-MM-dd:yes" o ":no" (se pregunta una vez al día). */
     const val DRIVING_DAY = "driving_day"
     /** Respaldo automático: carpeta elegida, contraseña (cifrada) y la última vez. */

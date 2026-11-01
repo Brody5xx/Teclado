@@ -135,6 +135,12 @@
             </intent-filter>
         </receiver>
 
+        <!-- Botones de Mi jornada (nombres y cuáles se ven) -->
+        <activity
+            android:name=".WorkdayButtonsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Mis sitios -->
         <activity
             android:name=".SitesActivity"

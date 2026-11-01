@@ -116,14 +116,14 @@ object WorkdayCenter {
     private fun status(ctx: Context): Pair<String, String> {
         val ev = WorkDay.day(Prefs.get(ctx))
         val s = WorkDay.summary(ev)
-        if (ev.isEmpty()) return L.t("🛻 Mi jornada", "🛻 My workday") to L.t("Toca 🛻 al subir a la camioneta", "Tap 🛻 when you get in the truck")
+        if (ev.isEmpty()) return L.t("🛻 Mi jornada", "🛻 My workday") to L.t("Toca «", "Tap «") + WorkDay.label(WorkDay.enabledKinds().first()) + L.t("» para empezar", "» to start")
         val last = ev.last()
         val title = L.t("🛻 Mi jornada · ", "🛻 My workday · ") + WorkDay.dur(s.total)
         val text = when (last.kind) {
             WorkDay.ARRIVE -> (if (last.site.isNotEmpty()) L.t("📍 En ${last.site}", "📍 At ${last.site}") else L.t("📍 En el sitio", "📍 On site")) +
                 L.t(" desde ", " since ") + WorkStore.time(last.time)
-            WorkDay.HOME -> L.t("🏠 Terminaste · en el sitio ", "🏠 Done · on site ") + WorkDay.dur(s.site)
-            else -> L.t("🛻 Manejando desde ", "🛻 Driving since ") + WorkStore.time(last.time)
+            WorkDay.finalKind() -> L.t("✅ Terminaste · en el sitio ", "✅ Done · on site ") + WorkDay.dur(s.site)
+            else -> WorkDay.label(last.kind) + " · " + WorkStore.time(last.time)
         }
         return title to text
     }
@@ -134,7 +134,7 @@ object WorkdayCenter {
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         val p = Prefs.get(ctx)
         val ev = WorkDay.day(p)
-        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.HOME
+        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.finalKind()
         val always = p.getBoolean(Prefs.WORKDAY_ALWAYS, true)
         if (!p.getBoolean(Prefs.WORKDAY_NOTIF, true) || (!running && !always)) { nm.cancel(NOTIF_ID); return }
         if (Build.VERSION.SDK_INT >= 26) {
@@ -156,11 +156,9 @@ object WorkdayCenter {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         if (running) b.setShowWhen(true).setWhen(ev.first().time).setUsesChronometer(true) else b.setShowWhen(false)
         // Sin empezar (o ya terminaste): solo el botón 🛻 Comencé, listo en la pantalla de bloqueo
-        val next = if (!running) listOf(WorkDay.START) else when (ev.last().kind) {
-            WorkDay.START -> listOf(WorkDay.ARRIVE, WorkDay.HOME)
-            WorkDay.ARRIVE -> listOf(WorkDay.LEAVE)
-            else -> listOf(WorkDay.ARRIVE, WorkDay.HOME)
-        }
+        // Lo que sigue y, si es otro, el botón que cierra el día
+        val next = if (!running) listOf(WorkDay.enabledKinds().first())
+            else listOf(WorkDay.nextKind(ev), WorkDay.finalKind()).distinct()
         for ((i, k) in next.withIndex()) {
             @Suppress("DEPRECATION")
             b.addAction(Notification.Action.Builder(null, WorkDay.label(k), intentFor(ctx, k, 200 + i)).build())
@@ -186,7 +184,7 @@ object WorkdayCenter {
         val (title, text) = status(ctx)
         v.setTextViewText(R.id.w_title, if (ev.isEmpty()) title else L.t("🛻 Mi jornada", "🛻 My workday"))
         v.setTextViewText(R.id.w_status, text)
-        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.HOME
+        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.finalKind()
         if (ev.isNotEmpty()) {
             val elapsed = WorkDay.summary(ev).total
             v.setChronometer(R.id.w_timer, SystemClock.elapsedRealtime() - elapsed, null, running)
@@ -194,7 +192,7 @@ object WorkdayCenter {
         } else v.setViewVisibility(R.id.w_timer, View.GONE)
         val next = WorkDay.nextKind(ev)
         val ids = listOf(R.id.w_start to WorkDay.START, R.id.w_arrive to WorkDay.ARRIVE, R.id.w_leave to WorkDay.LEAVE, R.id.w_home to WorkDay.HOME)
-        val names = mapOf(
+        val short = mapOf(
             WorkDay.START to L.t("🛻\nComencé", "🛻\nStart"),
             WorkDay.ARRIVE to L.t("📍\nLlegué", "📍\nArrived"),
             WorkDay.LEAVE to L.t("🚪\nSalí", "🚪\nLeft"),
@@ -202,7 +200,10 @@ object WorkdayCenter {
         )
         for ((i, pair) in ids.withIndex()) {
             val (id, k) = pair
-            v.setTextViewText(id, names[k])
+            // Los botones que quitaste no salen; los que renombraste salen con tu nombre
+            v.setViewVisibility(id, if (WorkDay.isOn(k)) View.VISIBLE else View.GONE)
+            val custom = WorkDay.customName(k)
+            v.setTextViewText(id, if (custom.isEmpty()) short[k] else custom.replaceFirst(" ", "\n"))
             v.setInt(id, "setBackgroundResource", if (k == next) R.drawable.widget_btn_next else R.drawable.widget_btn)
             v.setTextColor(id, if (k == next) 0xFF0B1020.toInt() else 0xFFFFFFFF.toInt())
             v.setOnClickPendingIntent(id, intentFor(ctx, k, 100 + i))
@@ -269,9 +270,9 @@ class WorkdayTile : android.service.quicksettings.TileService() {
         val t = qsTile ?: return
         L.set(Prefs.get(this).getString(Prefs.LANG, "es") ?: "es")
         val ev = WorkDay.day(Prefs.get(this))
-        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.HOME
+        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.finalKind()
         val next = WorkDay.nextKind(ev)
-        t.label = WorkDay.label(next).drop(2).trim()
+        t.label = WorkDay.plainLabel(next)
         if (Build.VERSION.SDK_INT >= 29) t.subtitle = if (running) L.t("Mi jornada · ", "Workday · ") + WorkDay.dur(WorkDay.summary(ev).total) else L.t("Mi jornada", "My workday")
         t.state = if (running) android.service.quicksettings.Tile.STATE_ACTIVE else android.service.quicksettings.Tile.STATE_INACTIVE
         t.updateTile()

@@ -704,7 +704,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         workdayPanel?.let { it.visibility = if (m == 12) View.VISIBLE else View.GONE; if (m == 12) refreshWorkday() }
         materialsPanel?.let { it.visibility = if (m == 13) View.VISIBLE else View.GONE; if (m == 13) refreshMaterials() }
         drivePanel?.let { it.visibility = if (m == 14) View.VISIBLE else View.GONE
-            if (m == 14) it.open(if (WorkDay.day(prefs).lastOrNull()?.kind == WorkDay.LEAVE) WorkDay.HOME else WorkDay.ARRIVE) }
+            if (m == 14) it.open(WorkDay.nextKind(WorkDay.day(prefs))) }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
 
@@ -3178,13 +3178,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 onDelete = { WorkDay.remove(prefs, e.time); WorkdayCenter.refresh(this); refreshWorkday() }))
         }
         val next = WorkDay.nextKind(events)
-        val kinds = listOf(WorkDay.START, WorkDay.ARRIVE, WorkDay.LEAVE, WorkDay.HOME)
+        val kinds = WorkDay.enabledKinds()
         val order = listOf(next) + kinds.filter { it != next }
         val buttons = ArrayList<Pair<String, () -> Unit>>()
         for (k in order) buttons.add(WorkDay.label(k) to {
             WorkdayCenter.record(this, k) { refreshWorkday() }
             refreshWorkday()
-            if (k == WorkDay.START) askDriving()
+            if (k == WorkDay.START || (k == WorkDay.enabledKinds().first() && k != WorkDay.ARRIVE)) askDriving()
         })
         if (events.isNotEmpty()) {
             buttons.add(L.t("✍️ Escribir resumen", "✍️ Type summary") to {
@@ -3192,9 +3192,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 showMode(0)
             })
         }
+        buttons.add(L.t("✏️ Editar botones", "✏️ Edit buttons") to {
+            showMode(0)
+            try {
+                startActivity(Intent(this, WorkdayButtonsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+            } catch (_: Exception) { }
+        })
         panel.show(L.t("🛻 Mi jornada", "🛻 My workday") + "  ·  " + L.t("semana ", "week ") + WorkDay.dur(WorkDay.weekTotal(prefs)), rows,
-            L.t("Toca 🛻 Comencé cuando subes a la camioneta. Luego 📍 Llegué al sitio, 🚪 Salí del sitio y 🏠 Llegué a casa. Si se te olvidó, toca la hora para cambiarla.",
-                "Tap 🛻 Started when you get in the truck. Then 📍 Arrived on site, 🚪 Left the site and 🏠 Home. If you forgot, tap the time to change it."),
+            L.t("Toca los botones de abajo para anotar tu día: " + WorkDay.enabledKinds().joinToString(", ") { WorkDay.label(it) } + ". Si se te olvidó, toca la hora para cambiarla. Con ✏️ Editar botones les cambias el nombre o quitas los que no uses.",
+                "Tap the buttons below to log your day: " + WorkDay.enabledKinds().joinToString(", ") { WorkDay.label(it) } + ". If you forgot, tap the time to change it. With ✏️ Edit buttons you can rename them or remove the ones you don't use."),
             buttons)
     }
 
