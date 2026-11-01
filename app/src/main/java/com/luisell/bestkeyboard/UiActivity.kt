@@ -183,7 +183,13 @@ abstract class UiActivity : Activity() {
     }
 
     /** Colores del tema Hacker (teclas y lluvia de código). El último es arcoíris. */
-    protected fun hackerSwatches() {
+    /** Colores del tema Hacker, dentro de su propia sección (para poder esconderla). */
+    protected fun hackerSwatches(): LinearLayout {
+        val outer = col
+        val section = LinearLayout(this)
+        section.orientation = LinearLayout.VERTICAL
+        outer.addView(section, LinearLayout.LayoutParams(-1, -2))
+        col = section
         divider()
         val t = TextView(this)
         t.text = tr("Color del tema Hacker", "Hacker theme color")
@@ -222,6 +228,74 @@ abstract class UiActivity : Activity() {
         hs.addView(row)
         col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(4) })
         text(tr("Al elegir un color se pone el tema Hacker. El último es arcoíris 🌈.", "Picking a color switches to the Hacker theme. The last one is rainbow 🌈."), 12f, faded = true)
+        col = outer
+        return section
+    }
+
+    /** Abre una sección deslizándola hacia abajo (crece suave y aparece). */
+    protected fun slideOpen(v: View) {
+        if (v.visibility == View.VISIBLE && v.tag != "closing") return
+        v.animate().cancel()
+        (v.getTag(android.R.id.progress) as? android.animation.Animator)?.cancel()
+        v.tag = "opening"
+        val parentW = (v.parent as? View)?.width ?: 0
+        v.measure(View.MeasureSpec.makeMeasureSpec(maxOf(parentW, 1), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+        val target = v.measuredHeight
+        val start = if (v.visibility == View.VISIBLE) v.height else 0
+        v.layoutParams = v.layoutParams.apply { height = start }
+        v.visibility = View.VISIBLE
+        v.alpha = if (start == 0) 0f else v.alpha
+        v.translationY = if (start == 0) -dpf(14f) else v.translationY
+        val a = android.animation.ValueAnimator.ofInt(start, target)
+        a.duration = 380
+        a.interpolator = android.view.animation.DecelerateInterpolator(1.8f)
+        a.addUpdateListener {
+            val h = it.animatedValue as Int
+            v.layoutParams = v.layoutParams.apply { height = h }
+            val f = it.animatedFraction
+            v.alpha = maxOf(v.alpha, f)
+            v.translationY = -dpf(14f) * (1f - f)
+        }
+        a.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                if (v.tag != "opening") return
+                v.layoutParams = v.layoutParams.apply { height = LinearLayout.LayoutParams.WRAP_CONTENT }
+                v.alpha = 1f
+                v.translationY = 0f
+                v.tag = null
+            }
+        })
+        v.setTag(android.R.id.progress, a)
+        a.start()
+    }
+
+    /** Cierra una sección deslizándola hacia arriba y la esconde. */
+    protected fun slideClose(v: View) {
+        if (v.visibility != View.VISIBLE || v.tag == "closing") return
+        (v.getTag(android.R.id.progress) as? android.animation.Animator)?.cancel()
+        v.tag = "closing"
+        val start = v.height
+        val a = android.animation.ValueAnimator.ofInt(start, 0)
+        a.duration = 280
+        a.interpolator = android.view.animation.AccelerateInterpolator(1.4f)
+        a.addUpdateListener {
+            v.layoutParams = v.layoutParams.apply { height = it.animatedValue as Int }
+            val f = it.animatedFraction
+            v.alpha = 1f - f
+            v.translationY = -dpf(14f) * f
+        }
+        a.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                if (v.tag != "closing") return
+                v.visibility = View.GONE
+                v.layoutParams = v.layoutParams.apply { height = LinearLayout.LayoutParams.WRAP_CONTENT }
+                v.translationY = 0f
+                v.alpha = 1f
+                v.tag = null
+            }
+        })
+        v.setTag(android.R.id.progress, a)
+        a.start()
     }
 
     /** Tarjeta con un mini teclado dibujado con los colores del tema. */

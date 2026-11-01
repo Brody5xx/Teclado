@@ -18,7 +18,19 @@ import android.widget.TextView
 class StyleActivity : UiActivity() {
 
     private lateinit var preview: KeyboardView
-    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> applyPreview() }
+    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        applyPreview()
+        if (key == Prefs.THEME) showHackerColors(animate = true)
+    }
+    /** Los colores del tema Hacker: solo se ven con el tema Hacker. */
+    private var hackerSection: android.view.View? = null
+
+    private fun showHackerColors(animate: Boolean) {
+        val v = hackerSection ?: return
+        val on = prefs.getString(Prefs.THEME, "auto") == "hacker"
+        if (!animate) { v.visibility = if (on) android.view.View.VISIBLE else android.view.View.GONE; return }
+        if (on) slideOpen(v) else slideClose(v)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(android.R.style.Theme_Material_NoActionBar)
@@ -120,7 +132,8 @@ class StyleActivity : UiActivity() {
             tr("El primero (multicolor) es el del tema. El último es arcoíris 🌈.", "The first (multicolor) is the theme's. The last one is rainbow 🌈."))
         colorSwatches(tr("Color de las letras", "Letter color"), Prefs.TEXT_COLOR, Palette.TEXT_COLORS,
             tr("El primero (multicolor) es el del tema.", "The first (multicolor) is the theme's."))
-        hackerSwatches()
+        hackerSection = hackerSwatches()
+        showHackerColors(animate = false)
 
         card(tr("Teclas", "Keys"), Icons.SHAPES)
         chips(tr("Forma", "Shape"), Prefs.KEY_SHAPE, "normal", listOf(
