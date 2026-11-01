@@ -29,7 +29,10 @@ class StyleActivity : UiActivity() {
         val v = hackerSection ?: return
         val on = prefs.getString(Prefs.THEME, "auto") == "hacker"
         if (!animate) { v.visibility = if (on) android.view.View.VISIBLE else android.view.View.GONE; return }
-        if (on) slideOpen(v) else slideClose(v)
+        // Si algo falla con la animación, solo se muestra o esconde (nunca se cierra la pantalla)
+        try { if (on) slideOpen(v) else slideClose(v) } catch (_: Exception) {
+            v.visibility = if (on) android.view.View.VISIBLE else android.view.View.GONE
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

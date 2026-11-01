@@ -232,11 +232,14 @@ abstract class UiActivity : Activity() {
         return section
     }
 
+    /** La animación que está corriendo en cada sección (para cancelarla si cambias rápido). */
+    private val slideAnims = HashMap<View, android.animation.Animator>()
+
     /** Abre una sección deslizándola hacia abajo (crece suave y aparece). */
     protected fun slideOpen(v: View) {
         if (v.visibility == View.VISIBLE && v.tag != "closing") return
         v.animate().cancel()
-        (v.getTag(android.R.id.progress) as? android.animation.Animator)?.cancel()
+        slideAnims.remove(v)?.cancel()
         v.tag = "opening"
         val parentW = (v.parent as? View)?.width ?: 0
         v.measure(View.MeasureSpec.makeMeasureSpec(maxOf(parentW, 1), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
@@ -265,14 +268,14 @@ abstract class UiActivity : Activity() {
                 v.tag = null
             }
         })
-        v.setTag(android.R.id.progress, a)
+        slideAnims[v] = a
         a.start()
     }
 
     /** Cierra una sección deslizándola hacia arriba y la esconde. */
     protected fun slideClose(v: View) {
         if (v.visibility != View.VISIBLE || v.tag == "closing") return
-        (v.getTag(android.R.id.progress) as? android.animation.Animator)?.cancel()
+        slideAnims.remove(v)?.cancel()
         v.tag = "closing"
         val start = v.height
         val a = android.animation.ValueAnimator.ofInt(start, 0)
@@ -294,7 +297,7 @@ abstract class UiActivity : Activity() {
                 v.tag = null
             }
         })
-        v.setTag(android.R.id.progress, a)
+        slideAnims[v] = a
         a.start()
     }
 

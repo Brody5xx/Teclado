@@ -731,6 +731,7 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.8.1" to tr("•  Arreglado: Estilo se cerraba al elegir otro tema.", "•  Fixed: Style closed when picking another theme."),
         "9.8" to tr("•  En Estilo, los colores del tema Hacker solo salen cuando eliges el tema Hacker, y aparecen deslizándose hacia abajo.",
             "•  In Style, the Hacker theme colors only show when you pick the Hacker theme, and they slide down into view."),
         "9.7" to tr(
