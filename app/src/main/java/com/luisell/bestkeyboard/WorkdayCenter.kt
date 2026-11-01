@@ -120,6 +120,7 @@ object WorkdayCenter {
         val last = ev.last()
         val title = WorkDay.title() + " · " + WorkDay.dur(s.total)
         val text = when (last.kind) {
+            WorkDay.LUNCH -> L.t("🍔 Almorzando desde ", "🍔 At lunch since ") + WorkStore.time(last.time)
             WorkDay.ARRIVE -> (if (last.site.isNotEmpty()) L.t("📍 En ${last.site}", "📍 At ${last.site}") else L.t("📍 En el sitio", "📍 On site")) +
                 L.t(" desde ", " since ") + WorkStore.time(last.time)
             WorkDay.finalKind() -> L.t("✅ Terminaste · en el sitio ", "✅ Done · on site ") + WorkDay.dur(s.site)
@@ -134,7 +135,7 @@ object WorkdayCenter {
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         val p = Prefs.get(ctx)
         val ev = WorkDay.day(p)
-        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.finalKind()
+        val running = WorkDay.isRunning(ev)
         val always = p.getBoolean(Prefs.WORKDAY_ALWAYS, true)
         if (!p.getBoolean(Prefs.WORKDAY_NOTIF, true) || (!running && !always)) { nm.cancel(NOTIF_ID); return }
         if (Build.VERSION.SDK_INT >= 26) {
@@ -158,7 +159,8 @@ object WorkdayCenter {
         // Sin empezar (o ya terminaste): solo el botón 🛻 Comencé, listo en la pantalla de bloqueo
         // Lo que sigue y, si es otro, el botón que cierra el día
         val next = if (!running) listOf(WorkDay.enabledKinds().first())
-            else listOf(WorkDay.nextKind(ev), WorkDay.finalKind()).distinct()
+            else if (WorkDay.onBreak(ev)) listOf(WorkDay.BACK, WorkDay.finalKind())
+            else listOf(WorkDay.nextKind(ev), WorkDay.LUNCH, WorkDay.finalKind()).distinct()
         for ((i, k) in next.withIndex()) {
             @Suppress("DEPRECATION")
             b.addAction(Notification.Action.Builder(null, WorkDay.label(k), intentFor(ctx, k, 200 + i)).build())
@@ -184,7 +186,7 @@ object WorkdayCenter {
         val (title, text) = status(ctx)
         v.setTextViewText(R.id.w_title, if (ev.isEmpty()) title else WorkDay.title())
         v.setTextViewText(R.id.w_status, text)
-        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.finalKind()
+        val running = WorkDay.isRunning(ev)
         if (ev.isNotEmpty()) {
             val elapsed = WorkDay.summary(ev).total
             v.setChronometer(R.id.w_timer, SystemClock.elapsedRealtime() - elapsed, null, running)
@@ -270,7 +272,7 @@ class WorkdayTile : android.service.quicksettings.TileService() {
         val t = qsTile ?: return
         L.set(Prefs.get(this).getString(Prefs.LANG, "es") ?: "es")
         val ev = WorkDay.day(Prefs.get(this))
-        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.finalKind()
+        val running = WorkDay.isRunning(ev)
         val next = WorkDay.nextKind(ev)
         t.label = WorkDay.plainLabel(next)
         t.icon = android.graphics.drawable.Icon.createWithResource(this, WorkDay.iconRes())

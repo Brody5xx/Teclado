@@ -2309,8 +2309,17 @@ class KeyboardView(context: Context) : View(context) {
         text.isFakeBoldText = true
         if (la > 0.01f && selE >= 0) {
             label = Tools.ALL.firstOrNull { it.tool == labelTool }?.label?.substringBefore(" (")?.trim() ?: ""
-            if (label.length > 18) label = label.take(17).trimEnd() + "…"
+            // El nombre completo: si no cabe, la letra se achica un poco (y solo si es larguísimo se corta)
+            val maxW = width * 0.66f
             labelW = text.measureText(label)
+            if (labelW > maxW) {
+                text.textSize = maxOf(10f * d, text.textSize * maxW / labelW)
+                labelW = text.measureText(label)
+                while (labelW > maxW && label.length > 4) {
+                    label = label.dropLast(2).trimEnd() + "…"
+                    labelW = text.measureText(label)
+                }
+            }
         }
         val gap = 6f * d
         val ext = if (label.isEmpty()) 0f else (labelW + gap) / 2f * la

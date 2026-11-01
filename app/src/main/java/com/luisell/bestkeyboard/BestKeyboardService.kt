@@ -3192,7 +3192,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (events.isNotEmpty()) {
             rows.add(ListPanel.Row(L.t("Hoy", "Today") + (if (sum.running) L.t(" · en curso", " · in progress") else ""),
                 L.t("Total ${WorkDay.dur(sum.total)}\nEn el sitio ${WorkDay.dur(sum.site)} · Manejando ${WorkDay.dur(sum.driving)}",
-                    "Total ${WorkDay.dur(sum.total)}\nOn site ${WorkDay.dur(sum.site)} · Driving ${WorkDay.dur(sum.driving)}")))
+                    "Total ${WorkDay.dur(sum.total)}\nOn site ${WorkDay.dur(sum.site)} · Driving ${WorkDay.dur(sum.driving)}") +
+                    (if (sum.lunch > 0) "\n" + (if (sum.onLunch) L.t("🍔 Almorzando: ", "🍔 At lunch: ") else L.t("🍔 Almuerzo: ", "🍔 Lunch: ")) + WorkDay.dur(sum.lunch) +
+                        (if (sum.lunchAuto) L.t(" (fijo, no marcado)", " (fixed, not logged)") else "") +
+                        (if (WorkDay.lunchPaid) L.t(" · pagado", " · paid") else L.t(" · no pagado", " · unpaid")) else "")))
         }
         for (e in events) {
             rows.add(ListPanel.Row(WorkStore.time(e.time), WorkDay.labelOf(e),
@@ -3201,7 +3204,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         val next = WorkDay.nextKind(events)
         val kinds = WorkDay.enabledKinds()
-        val order = listOf(next) + kinds.filter { it != next }
+        var order = listOf(next) + kinds.filter { it != next }
+        // Almuerzo: mientras trabajas sale «🍔 Salí a almorzar»; si estás almorzando, «↩️ Regresé» va primero
+        if (WorkDay.isRunning(events)) {
+            order = if (WorkDay.onBreak(events)) listOf(WorkDay.BACK) + order
+                else listOf(next, WorkDay.LUNCH) + order.drop(1)
+        }
         val buttons = ArrayList<Pair<String, () -> Unit>>()
         for (k in order) buttons.add(WorkDay.label(k) to {
             WorkdayCenter.record(this, k) { refreshWorkday() }
@@ -3282,7 +3290,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val en = english ?: L.english
         statusEnglish = en
         val ev = WorkDay.day(prefs)
-        val last = ev.lastOrNull()
+        val last = WorkDay.lastMain(ev)
         val site = ev.lastOrNull { it.kind == WorkDay.ARRIVE && it.site.isNotEmpty() }?.site ?: ""
         val now = System.currentTimeMillis()
         fun t(ms: Long) = WorkStore.time(ms)

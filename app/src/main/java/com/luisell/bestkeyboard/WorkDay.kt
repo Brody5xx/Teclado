@@ -14,16 +14,40 @@ object WorkDay {
     const val ARRIVE = "arrive"
     const val LEAVE = "leave"
     const val HOME = "home"
+    /** Almuerzo o descanso (no cuentan en el orden de los botones). */
+    const val LUNCH = "lunch"
+    const val BACK = "back"
+
+    fun isBreak(kind: String) = kind == LUNCH || kind == BACK
+
+    /** El último evento que no es almuerzo. */
+    fun lastMain(events: List<Event>): Event? = events.lastOrNull { !isBreak(it.kind) }
+
+    /** ¿Estás almorzando ahora? */
+    fun onBreak(events: List<Event>): Boolean = events.lastOrNull { isBreak(it.kind) }?.kind == LUNCH
+
+    /** ¿El día está en curso (empezaste y no has terminado)? */
+    fun isRunning(events: List<Event>): Boolean = events.isNotEmpty() && lastMain(events)?.kind != finalKind()
+
+    // ---- Almuerzo: pagado o no, y cuánto contar si no lo marcas
+    var lunchPaid = true
+        private set
+    var lunchAutoMin = 30
+        private set
 
     /** [site] = el nombre del sitio (de "Mis sitios"), si se sabe. */
     class Event(val time: Long, val kind: String, val site: String = "")
-    class Summary(val total: Long, val site: Long, val driving: Long, val running: Boolean)
+    /** [lunch] = tiempo de almuerzo; [lunchAuto] = no lo marcaste y se contó el tiempo fijo. */
+    class Summary(val total: Long, val site: Long, val driving: Long, val running: Boolean,
+                  val lunch: Long = 0L, val lunchAuto: Boolean = false, val onLunch: Boolean = false)
 
     /** El nombre de fábrica de cada botón. */
     fun defaultLabel(kind: String): String = when (kind) {
         START -> L.t("🛻 Comencé (camioneta)", "🛻 Started (truck)")
         ARRIVE -> L.t("📍 Llegué al sitio", "📍 Arrived on site")
         LEAVE -> L.t("🚪 Salí del sitio", "🚪 Left the site")
+        LUNCH -> L.t("🍔 Salí a almorzar", "🍔 Lunch break")
+        BACK -> L.t("↩️ Regresé del almuerzo", "↩️ Back from lunch")
         else -> L.t("🏠 Llegué a casa", "🏠 Home")
     }
 
@@ -37,6 +61,8 @@ object WorkDay {
     /** Lee cómo personalizaste los botones (rápido: solo si cambió). */
     fun config(p: SharedPreferences) {
         icon = p.getString(Prefs.WORKDAY_ICON, "truck") ?: "truck"
+        lunchPaid = p.getBoolean(Prefs.LUNCH_PAID, true)
+        lunchAutoMin = (p.getString(Prefs.LUNCH_AUTO, "30") ?: "30").toIntOrNull() ?: 30
         val raw = p.getString(Prefs.WORKDAY_BTNS, "") ?: ""
         if (raw == cfgRaw) return
         cfgRaw = raw
@@ -90,7 +116,7 @@ object WorkDay {
     fun finalKind(): String = enabledKinds().last()
 
     /** El nombre que se ve: el tuyo, o el de fábrica. */
-    fun label(kind: String): String = names[kind] ?: defaultLabel(kind)
+    fun label(kind: String): String = (if (isBreak(kind)) null else names[kind]) ?: defaultLabel(kind)
 
     /** El nombre sin el emoji del principio ("Llegué al sitio"). */
     fun plainLabel(kind: String): String = label(kind).replace(Regex("^[^\\p{L}\\p{N}]+"), "").trim().ifEmpty { label(kind) }
@@ -100,6 +126,8 @@ object WorkDay {
         START -> "Start (truck)"
         ARRIVE -> "Arrival Time"
         LEAVE -> "Departure Time"
+        LUNCH -> "Lunch Start"
+        BACK -> "Lunch End"
         else -> "Home"
     }
 
@@ -151,7 +179,7 @@ object WorkDay {
     /** Lo que toca después (para poner ese botón primero). */
     fun nextKind(events: List<Event>): String {
         val seq = enabledKinds()
-        val last = events.lastOrNull()?.kind ?: return seq.first()
+        val last = lastMain(events)?.kind ?: return seq.first()
         val i = seq.indexOf(last)
         return if (i < 0) seq.first() else seq[(i + 1) % seq.size]
     }
@@ -159,8 +187,8 @@ object WorkDay {
     fun summary(events: List<Event>, now: Long = System.currentTimeMillis()): Summary {
         if (events.isEmpty()) return Summary(0, 0, 0, false)
         val first = events.first().time
-        val running = events.last().kind != finalKind()
-        val end = if (running) now else events.last().time
+        val running = isRunning(events)
+        val end = if (running) now else lastMain(events)?.time ?: events.last().time
         var site = 0L
         var arrivedAt = -1L
         for (e in events) {
@@ -170,8 +198,27 @@ object WorkDay {
             }
         }
         if (arrivedAt >= 0) site += maxOf(0, end - arrivedAt)
-        val total = maxOf(0, end - first)
-        return Summary(total, site, maxOf(0, total - site), running)
+        var total = maxOf(0, end - first)
+        // Almuerzo marcado: de «Salí a almorzar» a «Regresé» (si no has regresado, cuenta hasta ahora)
+        var lunch = 0L
+        var lunchAt = -1L
+        for (e in events) {
+            when (e.kind) {
+                LUNCH -> if (lunchAt < 0) lunchAt = e.time
+                BACK -> if (lunchAt >= 0) { lunch += e.time - lunchAt; lunchAt = -1 }
+            }
+        }
+        val onLunch = lunchAt >= 0 && running
+        if (lunchAt >= 0) lunch += maxOf(0, end - lunchAt)
+        // No lo marcaste: si fue un día de 5 horas o más, cuenta el tiempo fijo que elegiste
+        var auto = false
+        if (lunch == 0L && lunchAutoMin > 0 && total >= 5L * 3600_000) { lunch = lunchAutoMin * 60_000L; auto = true }
+        if (!lunchPaid && lunch > 0) {
+            // No pagado: no cuenta como horas trabajadas
+            site = maxOf(0, site - minOf(site, lunch))
+            total = maxOf(0, total - lunch)
+        }
+        return Summary(total, site, maxOf(0, total - site), running, lunch, auto, onLunch)
     }
 
     /** Todos los días que tienen algo anotado (inicio del día → eventos), del más viejo al más nuevo. */
@@ -203,7 +250,7 @@ object WorkDay {
     fun csv(p: SharedPreferences): String {
         val df = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
         val dn = java.text.SimpleDateFormat("EEEE", java.util.Locale.US)
-        val sb = StringBuilder("Date,Day,Start (truck),Arrival,Departure,Home,Sites,Total hours,On site hours,Driving hours\n")
+        val sb = StringBuilder("Date,Day,Start (truck),Arrival,Departure,Home,Sites,Total hours,On site hours,Driving hours,Lunch hours\n")
         fun q(s: String) = "\"" + s.replace("\"", "\"\"") + "\""
         for ((day, ev) in byDay(p)) {
             val sum = summary(ev, if (WorkStore.sameDay(day, System.currentTimeMillis())) System.currentTimeMillis() else ev.last().time)
@@ -211,7 +258,7 @@ object WorkDay {
             fun last(k: String) = ev.lastOrNull { it.kind == k }?.let { WorkStore.time(it.time) } ?: ""
             val sites = ev.map { it.site }.filter { it.isNotEmpty() }.distinct().joinToString(" / ")
             sb.append(listOf(df.format(day), dn.format(day), first(START), first(ARRIVE), last(LEAVE), last(HOME), q(sites),
-                hours(sum.total), hours(sum.site), hours(sum.driving)).joinToString(",")).append("\n")
+                hours(sum.total), hours(sum.site), hours(sum.driving), hours(sum.lunch)).joinToString(",")).append("\n")
         }
         return sb.toString()
     }
@@ -247,6 +294,9 @@ object WorkDay {
         }
         val tot = if (english) "Total: ${dur(s.total)} (on site ${dur(s.site)}, driving ${dur(s.driving)})"
             else "Total: ${dur(s.total)} (en el sitio ${dur(s.site)}, manejando ${dur(s.driving)})"
-        return (lines + tot).joinToString("\n")
+        val lunch = if (s.lunch <= 0) emptyList() else listOf(
+            if (english) "Lunch: ${dur(s.lunch)}" + (if (s.lunchAuto) " (not logged)" else "") + (if (lunchPaid) " (paid)" else " (unpaid, not counted)")
+            else "Almuerzo: ${dur(s.lunch)}" + (if (s.lunchAuto) " (no marcado)" else "") + (if (lunchPaid) " (pagado)" else " (no pagado, no cuenta)"))
+        return (lines + tot + lunch).joinToString("\n")
     }
 }

@@ -881,6 +881,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "11.3" to tr("•  Barra de arriba: ahora se ve el nombre completo de cada botón.\n•  Mi jornada cuenta el almuerzo: botones «🍔 Salí a almorzar» y «↩️ Regresé». Si no lo marcas, cuenta un tiempo fijo (30 min, 45 min o 1 hora). Puedes elegir si es pagado o no pagado en ✏️ Editar botones.",
+            "•  Top bar: each button's full name is now shown.\n•  My workday counts lunch: «🍔 Lunch break» and «↩️ Back from lunch» buttons. If you don't log it, a fixed time is counted (30 min, 45 min or 1 hour). Choose paid or unpaid in ✏️ Edit buttons."),
         "11.2" to tr("•  Barra de arriba más fluida: mientras deslizas solo se mueven los íconos; cuando se detiene (o dejas el dedo quieto), el botón del medio se abre suave con su nombre y luego se cierra solo.\n•  La barra se acomoda con un botón justo debajo de la luz.",
             "•  Smoother top bar: while you swipe only the icons move; when it stops (or you hold your finger still), the middle button opens smoothly with its name and then closes by itself.\n•  The bar settles with a button right under the light."),
         "11.1" to tr("•  Barra de arriba sin fin: sigue dando vueltas. Al pasar por el principio se frena un poquito (se ancla), vibra suave y sale una línea de luz que marca el final.\n•  El nombre del botón del medio ahora sale dentro de la barra, en una cápsula al lado del ícono, y los vecinos se apartan para hacerle espacio (ya no tapa las teclas).\n•  Al soltar, la barra se acomoda sola con los botones en su lugar.",
