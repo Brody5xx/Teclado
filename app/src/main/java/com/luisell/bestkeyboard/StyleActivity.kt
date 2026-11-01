@@ -161,6 +161,10 @@ class StyleActivity : UiActivity() {
             "sparks" to tr("Chispas", "Sparks"), "stars" to tr("Estrellas", "Stars"), "confetti" to tr("Confeti", "Confetti"),
             "hearts" to tr("Corazones", "Hearts"), "fire" to tr("Fuego", "Fire"), "snow" to tr("Nieve", "Snow"),
             "bubbles" to tr("Burbujitas", "Bubbles"), "fly" to tr("Letra voladora", "Flying letter"),
+            "drop" to tr("Hundir", "Press"), "swing" to tr("Columpio", "Swing"), "lightning" to tr("Rayo", "Lightning"),
+            "petals" to tr("Pétalos", "Petals"), "music" to tr("Notas musicales", "Music notes"), "emojis" to tr("Emoji sorpresa", "Surprise emoji"),
+            "ink" to tr("Tinta", "Ink"), "pulse" to tr("Latido", "Pulse"), "orbit" to tr("Órbita", "Orbit"),
+            "rainbow" to tr("Arcoíris", "Rainbow"), "pixel" to tr("Pixeles", "Pixels"),
         ))
         text(tr("Toca las teclas de arriba para ver el efecto.", "Tap the keys above to see the effect."), 12f, faded = true)
 

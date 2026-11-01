@@ -877,6 +877,16 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.3" to tr(
+            "•  ✨ 8 temas con fondo animado: Galaxia (estrellas fugaces), Invierno (nieve), Mar profundo (burbujas), Luciérnagas, Lluvia, Brasas, Aurora boreal y Sakura (pétalos).\n" +
+                "•  8 temas nuevos más: Vino, Esmeralda, Pizarra, Retro (ámbar), Hielo, Arena, Coral y Lila. Ya son 36.\n" +
+                "•  11 efectos nuevos al tocar: Hundir, Columpio, Rayo, Pétalos, Notas musicales, Emoji sorpresa, Tinta, Latido, Órbita, Arcoíris y Pixeles. Ya son 34.\n" +
+                "•  Muchos colores nuevos para teclas, letras, acento y el tema Hacker.",
+            "•  ✨ 8 themes with animated backgrounds: Galaxy (shooting stars), Winter (snow), Deep sea (bubbles), Fireflies, Rain, Embers, Northern lights and Sakura (petals).\n" +
+                "•  8 more new themes: Wine, Emerald, Slate, Retro (amber), Ice, Sand, Coral and Lilac. Now 36.\n" +
+                "•  11 new tap effects: Press, Swing, Lightning, Petals, Music notes, Surprise emoji, Ink, Pulse, Orbit, Rainbow and Pixels. Now 34.\n" +
+                "•  Lots of new colors for keys, letters, accent and the Hacker theme.",
+        ),
         "10.2" to tr(
             "•  📲 Mensajes de estado con un toque (ya llegué, voy saliendo…) con la hora y el sitio.\n" +
                 "•  📊 Resumen de la semana: horas por día, sitios y tickets.\n" +

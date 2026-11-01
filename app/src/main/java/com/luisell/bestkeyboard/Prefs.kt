@@ -224,14 +224,14 @@ class Palette(
         )
 
         private fun dark(bg: Long, key: Long, pressed: Long, special: Long, accent: Long, accentP: Long, onAccent: Long,
-                         text: Long, hint: Long, bg2: Long = bg) =
+                         text: Long, hint: Long, bg2: Long = bg, effect: String = "", mono: Boolean = false) =
             Palette(true, bg.toInt(), key.toInt(), pressed.toInt(), special.toInt(), accent.toInt(), accentP.toInt(),
-                onAccent.toInt(), text.toInt(), hint.toInt(), special.toInt(), 0x66000000, bg2.toInt())
+                onAccent.toInt(), text.toInt(), hint.toInt(), special.toInt(), 0x66000000, bg2.toInt(), effect, mono)
 
         private fun light(bg: Long, key: Long, pressed: Long, special: Long, accent: Long, accentP: Long,
-                          text: Long, hint: Long, bg2: Long = bg) =
+                          text: Long, hint: Long, bg2: Long = bg, effect: String = "") =
             Palette(false, bg.toInt(), key.toInt(), pressed.toInt(), special.toInt(), accent.toInt(), accentP.toInt(),
-                0xFFFFFFFF.toInt(), text.toInt(), hint.toInt(), key.toInt(), 0x33000000, bg2.toInt())
+                0xFFFFFFFF.toInt(), text.toInt(), hint.toInt(), key.toInt(), 0x33000000, bg2.toInt(), effect)
 
         /** Temas para elegir en los ajustes: id → (nombre en español, nombre en inglés, colores). */
         val THEMES: List<Triple<String, Pair<String, String>, Palette?>> = listOf(
@@ -275,6 +275,40 @@ class Palette(
                 light(0xFFEDE7F6, 0xFFFFFFFF, 0xFFD1C4E9, 0xFFDCD2EE, 0xFF7E57C2, 0xFF5E35B1, 0xFF2A1F3D, 0xFF7A6D90, 0xFFF3E5F5)),
             Triple("peach", "Durazno" to "Peach",
                 light(0xFFFFF0E6, 0xFFFFFFFF, 0xFFFFD6BF, 0xFFFFDCCB, 0xFFFF7043, 0xFFF4511E, 0xFF4A2A1C, 0xFF9A7765)),
+            // ---- Temas con animación de fondo ✨
+            Triple("galaxy", "✨ Galaxia" to "✨ Galaxy",
+                dark(0xFF070A1F, 0x55262C5C, 0xAA4A4F9A, 0x66161A40, 0xFFB388FF, 0xFFD1B3FF, 0xFF120A2A, 0xFFF1EEFF, 0xFFA7A2D8, 0xFF1B0A33, effect = "stars")),
+            Triple("winter", "✨ Invierno" to "✨ Winter",
+                dark(0xFF0D1B2A, 0x661B3550, 0xAA3A5F86, 0x66132840, 0xFF90CAF9, 0xFFBBDEFB, 0xFF0D1B2A, 0xFFEAF4FF, 0xFF9DB4CC, 0xFF1B2F48, effect = "snow")),
+            Triple("deepsea", "✨ Mar profundo" to "✨ Deep sea",
+                dark(0xFF00121C, 0x5503334A, 0xAA0B5A7A, 0x66022A3D, 0xFF4DD0E1, 0xFF80DEEA, 0xFF002A33, 0xFFE0F7FA, 0xFF7FB4C2, 0xFF003344, effect = "bubbles")),
+            Triple("fireflies", "✨ Luciérnagas" to "✨ Fireflies",
+                dark(0xFF07140C, 0x55143322, 0xAA2A5A3E, 0x660E2A1A, 0xFFE6EE9C, 0xFFF0F4C3, 0xFF1A2200, 0xFFF1F8E9, 0xFF97B39E, 0xFF0F2416, effect = "fireflies")),
+            Triple("storm", "✨ Lluvia" to "✨ Rain",
+                dark(0xFF111820, 0x66222E3B, 0xAA3E5064, 0x661A2430, 0xFF81D4FA, 0xFFB3E5FC, 0xFF0A1A26, 0xFFE8EFF5, 0xFF8FA0B0, 0xFF1C2733, effect = "rain")),
+            Triple("embers", "✨ Brasas" to "✨ Embers",
+                dark(0xFF140604, 0x5533120A, 0xAA5A2414, 0x66280D07, 0xFFFF9100, 0xFFFFB74D, 0xFF2A1000, 0xFFFFF0E0, 0xFFC79A84, 0xFF2A0A03, effect = "embers")),
+            Triple("northern", "✨ Aurora boreal" to "✨ Northern lights",
+                dark(0xFF050B18, 0x55142035, 0xAA2A3D5E, 0x660C1628, 0xFF69F0AE, 0xFFB9F6CA, 0xFF002618, 0xFFEFFFF7, 0xFF95A9C2, 0xFF0A1630, effect = "aurora")),
+            Triple("sakura", "✨ Sakura" to "✨ Sakura",
+                light(0xFFFFEEF3, 0xFFFFFFFF, 0xFFFFCCDA, 0xFFFFD9E4, 0xFFEC407A, 0xFFD81B60, 0xFF4A2433, 0xFF9C6B7D, 0xFFFFF7FA, effect = "petals")),
+            // ---- Más temas de colores
+            Triple("wine", "Vino" to "Wine",
+                dark(0xFF1A0910, 0xFF33141F, 0xFF4F2232, 0xFF2A0F19, 0xFFFF6E9C, 0xFFFF9EBD, 0xFF33061A, 0xFFFFEAF1, 0xFFC08E9F)),
+            Triple("emerald", "Esmeralda" to "Emerald",
+                dark(0xFF041A14, 0xFF0B3328, 0xFF16503F, 0xFF082A20, 0xFF00E5A0, 0xFF64FFCB, 0xFF00261A, 0xFFE6FFF6, 0xFF86B8A6)),
+            Triple("slate", "Pizarra" to "Slate",
+                dark(0xFF1C232B, 0xFF2C3640, 0xFF3F4C59, 0xFF242D36, 0xFF90A4AE, 0xFFB0BEC5, 0xFF111A1F, 0xFFECEFF1, 0xFF98A6B0)),
+            Triple("retro", "Retro (ámbar)" to "Retro (amber)",
+                dark(0xFF0D0802, 0xFF1F1405, 0xFF3A260A, 0xFF170F04, 0xFFFFB300, 0xFFFFCA28, 0xFF1A1000, 0xFFFFC34D, 0xFFA77A2C, mono = true)),
+            Triple("ice", "Hielo" to "Ice",
+                light(0xFFE8F6FB, 0xFFFFFFFF, 0xFFC7E9F5, 0xFFD3EEF7, 0xFF0097C7, 0xFF00779E, 0xFF0B2E3B, 0xFF5D8796, 0xFFF4FCFF)),
+            Triple("sand", "Arena" to "Sand",
+                light(0xFFF5EDE0, 0xFFFFFDF8, 0xFFE8D9BF, 0xFFEDE2CE, 0xFFB7791F, 0xFF975A16, 0xFF3D2E1A, 0xFF8A7458)),
+            Triple("coral", "Coral" to "Coral",
+                light(0xFFFFECE8, 0xFFFFFFFF, 0xFFFFCFC4, 0xFFFFDAD2, 0xFFFF5A4E, 0xFFE53935, 0xFF4A201B, 0xFF9C6A63)),
+            Triple("lilac", "Lila" to "Lilac",
+                light(0xFFF3EBFF, 0xFFFFFFFF, 0xFFE0CCFF, 0xFFE8DAFF, 0xFF9C4DFF, 0xFF7C2DE0, 0xFF2E1A4A, 0xFF7E6A9A)),
         )
 
         /** Aplica los colores que elegiste (acento, teclas, letras) encima del tema. */
@@ -318,23 +352,31 @@ class Palette(
         val KEY_COLORS = listOf(
             "FF000000", "FF1C1C1E", "FF2F3139", "FF5F6368", "FFFFFFFF", "FFF1F3F4", "FF0D47A1", "FF1E88E5",
             "FF00ACC1", "FF00897B", "FF43A047", "FF7CB342", "FFFDD835", "FFFB8C00", "FFE53935", "FFD81B60",
-            "FF8E24AA", "FF5E35B1", "FF6D4C41", "FFFFCDD2", "FFC8E6C9", "FFBBDEFB", "FFE1BEE7", "rainbow",
+            "FF8E24AA", "FF5E35B1", "FF6D4C41", "FFFFCDD2", "FFC8E6C9", "FFBBDEFB", "FFE1BEE7",
+            "FF263238", "FF37474F", "FF004D40", "FF1A237E", "FF311B92", "FF4A148C", "FF880E4F", "FFB71C1C",
+            "FFBF360C", "FFE65100", "FFF57F17", "FF33691E", "FF006064", "FFFFF9C4", "FFFFE0B2", "FFD7CCC8",
+            "FFB2EBF2", "FFF8BBD0", "rainbow",
         )
         val TEXT_COLORS = listOf(
             "FFFFFFFF", "FF000000", "FF9AA0A6", "FF4FD1FF", "FF2979FF", "FF7C4DFF", "FFE040FB", "FFFF4081",
             "FFFF1744", "FFFF6D00", "FFFFD54F", "FFC6FF00", "FF00E676", "FF1DE9B6",
+            "FF263238", "FF5D4037", "FF1565C0", "FF6A1B9A", "FFAD1457", "FFFF8A80", "FFFFAB40", "FFFFFF8D",
+            "FFB9F6CA", "FF84FFFF", "FF80D8FF", "FFB388FF", "FFFF80AB", "FFE0E0E0",
         )
 
         /** Colores para el tema Hacker (el último es arcoíris). */
         val HACKER_COLORS = listOf(
             "FF00FF66", "FF00E5FF", "FF2979FF", "FF7C4DFF", "FFE040FB", "FFFF4081", "FFFF1744", "FFFF6D00",
-            "FFFFC400", "FFC6FF00", "FFFFFFFF", "rainbow",
+            "FFFFC400", "FFC6FF00", "FFFFFFFF", "FF1DE9B6", "FF00B0FF", "FFD500F9", "FFFF9100", "FFFFEA00",
+            "FFB2FF59", "FFFF8A80", "rainbow",
         )
 
         /** Colores de acento para elegir (además del que trae el tema). */
         val ACCENTS = listOf(
             0xFF4FD1FF, 0xFF8AB4F8, 0xFF2979FF, 0xFF7C4DFF, 0xFFB388FF, 0xFFE040FB, 0xFFFF4081, 0xFFFF1744,
             0xFFFF6D00, 0xFFFF8A65, 0xFFFFD54F, 0xFFC6FF00, 0xFF69F0AE, 0xFF00E676, 0xFF1DE9B6, 0xFFFFFFFF,
+            0xFF00B0FF, 0xFF651FFF, 0xFFD500F9, 0xFFF50057, 0xFFFF9100, 0xFFFFEA00, 0xFF76FF03, 0xFF00BFA5,
+            0xFF90A4AE, 0xFFBCAAA4, 0xFFF48FB1, 0xFF80CBC4,
         ).map { it.toInt() }
     }
 }
