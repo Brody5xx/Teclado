@@ -877,6 +877,12 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.4" to tr(
+            "•  ✨ 19 temas animados nuevos: Amor (corazones), Otoño (hojas), Fiesta (confeti), Olas, Lámpara de lava, Circuito, Synthwave, Nubes, Meteoros, Luces, Brillantina, Arcoíris vivo, Navidad, Noche violeta, Lluvia neón, Volcán, Bosque mágico, Tropical y Cerezo nocturno. Ya son 27 animados y 55 temas en total.\n" +
+                "•  12 efectos nuevos al tocar: Voltear, Latido de corazón, Liga, Romper, Humo, Espiral, Flor, Moneda, Globo, Mariposa, Falla digital y Salpicar. Ya son 46.",
+            "•  ✨ 19 new animated themes: Love (hearts), Autumn (leaves), Party (confetti), Waves, Lava lamp, Circuit, Synthwave, Clouds, Meteors, Lights, Glitter, Living rainbow, Christmas, Violet night, Neon rain, Volcano, Magic forest, Tropical and Night blossom. Now 27 animated and 55 themes in total.\n" +
+                "•  12 new tap effects: Flip, Heartbeat, Rubber, Shatter, Smoke, Spiral, Flower, Coin, Balloon, Butterfly, Glitch and Splash. Now 46.",
+        ),
         "10.3" to tr(
             "•  ✨ 8 temas con fondo animado: Galaxia (estrellas fugaces), Invierno (nieve), Mar profundo (burbujas), Luciérnagas, Lluvia, Brasas, Aurora boreal y Sakura (pétalos).\n" +
                 "•  8 temas nuevos más: Vino, Esmeralda, Pizarra, Retro (ámbar), Hielo, Arena, Coral y Lila. Ya son 36.\n" +
