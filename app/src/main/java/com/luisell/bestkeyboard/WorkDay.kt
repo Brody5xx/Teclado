@@ -30,7 +30,7 @@ object WorkDay {
     fun isRunning(events: List<Event>): Boolean = events.isNotEmpty() && lastMain(events)?.kind != finalKind()
 
     // ---- Almuerzo: pagado o no, y cuánto contar si no lo marcas
-    var lunchPaid = true
+    var lunchPaid = false
         private set
     var lunchAutoMin = 30
         private set
@@ -61,7 +61,7 @@ object WorkDay {
     /** Lee cómo personalizaste los botones (rápido: solo si cambió). */
     fun config(p: SharedPreferences) {
         icon = p.getString(Prefs.WORKDAY_ICON, "truck") ?: "truck"
-        lunchPaid = p.getBoolean(Prefs.LUNCH_PAID, true)
+        lunchPaid = p.getBoolean(Prefs.LUNCH_PAID, false)
         lunchAutoMin = (p.getString(Prefs.LUNCH_AUTO, "30") ?: "30").toIntOrNull() ?: 30
         val raw = p.getString(Prefs.WORKDAY_BTNS, "") ?: ""
         if (raw == cfgRaw) return

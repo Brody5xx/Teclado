@@ -84,9 +84,9 @@ class WorkdayButtonsActivity : UiActivity() {
             "While you work you'll see «🍔 Lunch break» and then «↩️ Back from lunch». If you don't log it one day, the fixed time below is counted (only on days of 5 hours or more)."), 12f, faded = true)
         segmented(tr("Si no lo marcas", "If not logged"), Prefs.LUNCH_AUTO, "30",
             listOf("0" to tr("Nada", "None"), "30" to "30 min", "45" to "45 min", "60" to tr("1 hora", "1 hour"))) { WorkDay.config(prefs); WorkdayCenter.refresh(this) }
-        segmented(tr("Tipo de almuerzo", "Lunch type"), Prefs.LUNCH_PAID + "_s", if (prefs.getBoolean(Prefs.LUNCH_PAID, true)) "paid" else "unpaid",
+        segmented(tr("Tipo de almuerzo", "Lunch type"), Prefs.LUNCH_PAID + "_s", if (prefs.getBoolean(Prefs.LUNCH_PAID, false)) "paid" else "unpaid",
             listOf("paid" to tr("Pagado", "Paid"), "unpaid" to tr("No pagado", "Unpaid"))) {
-            prefs.edit().putBoolean(Prefs.LUNCH_PAID, prefs.getString(Prefs.LUNCH_PAID + "_s", "paid") != "unpaid").apply()
+            prefs.edit().putBoolean(Prefs.LUNCH_PAID, prefs.getString(Prefs.LUNCH_PAID + "_s", "unpaid") != "unpaid").apply()
             WorkDay.config(prefs); WorkdayCenter.refresh(this)
         }
         text(tr("Pagado: solo se anota cuánto duró. No pagado: se resta de tus horas trabajadas.",
