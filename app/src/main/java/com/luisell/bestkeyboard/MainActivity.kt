@@ -881,6 +881,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "11.0" to tr("•  Barra de arriba: al deslizarla, el nombre del botón que está en la luz sale en una burbujita debajo.\n•  Ajustes → Estilo → Barra de arriba: elige qué tanto se curva la rueda, qué tanto brilla la línea de luz y si quieres ver el nombre.",
+            "•  Top bar: when you swipe it, the name of the button in the light shows in a little bubble below.\n•  Settings → Style → Top bar: choose how much the wheel curves, how bright the light line is and whether to show the name."),
         "10.9" to tr("•  La línea de luz de la barra de arriba ahora es horizontal, abajo de los botones.\n•  Los botones se mueven en arco, como una rueda: el del medio sube y crece, los de los lados bajan y se inclinan.\n•  Grabaciones de pantalla: si grabas la pantalla, el teclado te sugiere el video para pegarlo, igual que las capturas.",
             "•  The top bar light line is now horizontal, under the buttons.\n•  Buttons move in an arc, like a wheel: the middle one rises and grows, the side ones drop and tilt.\n•  Screen recordings: if you record your screen, the keyboard suggests the video to paste, just like screenshots."),
         "10.8" to tr("•  Barra de arriba: al deslizarla sale una línea de luz en el medio y el botón que pasa por ahí crece, como elegir un personaje en un videojuego.",

@@ -1615,6 +1615,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
         v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f }
         v.keyAnim = prefs.getString(Prefs.KEY_ANIM, "pop") ?: "pop"
+        v.stripArc = when (prefs.getString(Prefs.STRIP_ARC, "normal")) { "none" -> 0f; "soft" -> 0.45f; "strong" -> 1.8f; else -> 1f }
+        v.stripNames = prefs.getBoolean(Prefs.STRIP_NAMES, true)
+        v.stripLight = when (prefs.getString(Prefs.STRIP_LIGHT, "normal")) { "off" -> 0f; "soft" -> 0.55f; "bright" -> 1.5f; else -> 1f }
         vibStyle = "system" // la única que funciona en todos los teléfonos (las otras quedan de respaldo)
         vibStrength = prefs.getString(Prefs.VIB_STRENGTH, "medium")
         soundStyle = prefs.getString(Prefs.SOUND_STYLE, "modern")

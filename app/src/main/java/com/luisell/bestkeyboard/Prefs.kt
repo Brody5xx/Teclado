@@ -12,6 +12,9 @@ object Prefs {
     const val TEXT_COLOR = "text_color"  // color de las letras: "" (del tema) o un color
     const val KEY_SHAPE = "key_shape"    // square / normal / round / pill
     const val LABEL_SIZE = "label_size"  // small / normal / big
+    const val STRIP_ARC = "strip_arc"      // none / soft / normal / strong (curva de la barra de arriba)
+    const val STRIP_NAMES = "strip_names"  // nombre del botón del medio al deslizar
+    const val STRIP_LIGHT = "strip_light"  // off / soft / normal / bright (línea de luz)
     const val KEY_ANIM = "key_anim"      // none / pop / ripple / glow
     const val VIB_STYLE = "vib_style"    // system / modern / classic
     const val SOUND_STYLE = "sound_style" // modern / classic

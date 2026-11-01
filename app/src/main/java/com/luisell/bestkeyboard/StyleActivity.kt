@@ -151,6 +151,14 @@ class StyleActivity : UiActivity() {
         switch(tr("Fila de números arriba", "Number row on top"), Prefs.NUMBER_ROW, true)
         switch(tr("Letra grande al tocar", "Big letter on tap"), Prefs.PREVIEW, true)
 
+        card(tr("Barra de arriba", "Top bar"), Icons.MENU)
+        text(tr("Cómo se mueve la barra de botones de arriba cuando la deslizas.", "How the top button bar moves when you swipe it."), 12f, faded = true)
+        segmented(tr("Curva de rueda", "Wheel curve"), Prefs.STRIP_ARC, "normal",
+            listOf("none" to tr("Plana", "Flat"), "soft" to tr("Suave", "Soft"), "normal" to "Normal", "strong" to tr("Fuerte", "Strong")))
+        segmented(tr("Línea de luz", "Light line"), Prefs.STRIP_LIGHT, "normal",
+            listOf("off" to tr("Apagada", "Off"), "soft" to tr("Suave", "Soft"), "normal" to "Normal", "bright" to tr("Brillante", "Bright")))
+        switch(tr("Nombre del botón del medio", "Name of the middle button"), Prefs.STRIP_NAMES, true)
+
         card(tr("Animación al tocar", "Tap animation"), Icons.RIPPLE)
         chipGrid(tr("Efecto", "Effect"), Prefs.KEY_ANIM, "pop", listOf(
             "none" to tr("Ninguno", "None"), "random" to tr("🎲 Sorpresa", "🎲 Surprise"), "pop" to tr("Rebote", "Bounce"),

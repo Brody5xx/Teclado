@@ -242,6 +242,14 @@ class KeyboardView(context: Context) : View(context) {
         set(v) { field = v; invalidate() }
     /** Animación al tocar: none / pop / ripple / glow. */
     var keyAnim = "pop"
+    /** Cuánto se curva la barra de arriba al deslizarla (0 = plana). */
+    var stripArc = 1f
+    /** Qué tanto brilla la línea de luz (0 = apagada). */
+    var stripLight = 1f
+    /** Mostrar el nombre del botón que pasa por la luz del medio. */
+    var stripNames = true
+    private var nameTool = -1
+    private var nameNear = 0f
     private var labelMul = 1f
 
     /** Qué sonido toca la última tecla: letra, borrar o espacio/enter. */
@@ -1305,11 +1313,39 @@ class KeyboardView(context: Context) : View(context) {
             if (anims.isNotEmpty()) postInvalidateOnAnimation()
         }
         if (gesturing && gCount > 1) drawTrail(c, p)
+        drawStripName(c, p)
         val ak = activeKey
         if (altKeys != null) drawAlts(c, p)
         else if (ak != null && showPreview && ak.code == 0 && !longPressed) drawPreview(c, ak, p)
         if (spaceCursor) drawSlideHint(c)
         if (resizing) drawResize(c, p)
+    }
+
+    /** El nombre del botón que está en la luz del medio, en una burbujita debajo de la barra. */
+    private fun drawStripName(c: Canvas, p: Palette) {
+        if (!stripNames || nameTool < 0 || stripGlow < 0.02f || showingSuggestions || showingShot || editing) return
+        val a = (stripGlow * ((nameNear - 0.5f) * 2f).coerceIn(0f, 1f)).coerceIn(0f, 1f)
+        if (a < 0.02f) return
+        val info = Tools.ALL.firstOrNull { it.tool == nameTool } ?: return
+        val name = info.label.substringBefore(" (").trim()
+        if (name.isEmpty()) return
+        val mid = width / 2f
+        text.textSize = 12.5f * d
+        text.isFakeBoldText = true
+        val tw = text.measureText(name)
+        val h = 22f * d
+        // Sube un poquito mientras aparece
+        val top = stripH + 3f * d + (1f - a) * 4f * d
+        tmp.set(mid - tw / 2f - 11f * d, top, mid + tw / 2f + 11f * d, top + h)
+        fill.color = alphaOf(p.special, 0.96f * a)
+        c.drawRoundRect(tmp, h / 2f, h / 2f, fill)
+        st(alphaOf(p.accent, 0.9f * a))
+        stroke.strokeWidth = 1.2f * d
+        c.drawRoundRect(tmp, h / 2f, h / 2f, stroke)
+        text.color = alphaOf(p.text, a)
+        text.getFontMetrics(fm)
+        c.drawText(name, mid, tmp.centerY() - (fm.ascent + fm.descent) / 2f, text)
+        text.isFakeBoldText = false
     }
 
     /** El costado vacío del modo una mano: flecha para cambiar de lado y botón para agrandar. */
@@ -2126,9 +2162,9 @@ class KeyboardView(context: Context) : View(context) {
         lastGlowMs = ms
         stripGlow = if (target > stripGlow) minOf(1f, stripGlow + dtg / 140f) else maxOf(0f, stripGlow - dtg / 320f)
         val mid = width / 2f
-        if (stripGlow > 0.01f) {
+        if (stripGlow > 0.01f && stripLight > 0f) {
             // Línea fina de luz HORIZONTAL abajo de la barra, quieta en el medio: brilla en el centro y se apaga a los lados
-            val g = stripGlow
+            val g = (stripGlow * stripLight).coerceAtMost(1f)
             val half = width * 0.36f * (0.4f + 0.6f * g)
             val y = stripH - 1.2f * d
             // Brillo suave que sube desde la línea
@@ -2151,6 +2187,8 @@ class KeyboardView(context: Context) : View(context) {
             tmp.set(width - 3f * d, cy - stripH * 0.22f, width - 1f * d, cy + stripH * 0.22f)
             c.drawRoundRect(tmp, d, d, fill)
         }
+        nameTool = -1
+        nameNear = 0f
         for (n in tools.indices) {
             val i = tools[n]
             if (editing && i == editTool) continue
@@ -2175,8 +2213,9 @@ class KeyboardView(context: Context) : View(context) {
             val near = if (stripGlow > 0.01f) (1f - kotlin.math.abs(cx - mid) / step).coerceIn(0f, 1f) else 0f
             val grow = 1f + 0.42f * near * near * stripGlow
             val lit = near * stripGlow
+            if (!editing && near > nameNear) { nameNear = near; nameTool = i }
             // Rueda: los botones van en arco (el del medio arriba, los de los lados bajan, se achican y se inclinan)
-            val dxn = ((cx - mid) / (width / 2f)).coerceIn(-1.2f, 1.2f)
+            val dxn = ((cx - mid) / (width / 2f)).coerceIn(-1.2f, 1.2f) * kotlin.math.sqrt(stripArc)
             val arcY = stripGlow * dxn * dxn * stripH * 0.22f
             val arcScale = 1f - stripGlow * 0.18f * dxn * dxn
             val arcRot = stripGlow * dxn * 16f
