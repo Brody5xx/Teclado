@@ -162,6 +162,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var ticketsPanel: ListPanel? = null
     private var workdayPanel: ListPanel? = null
     private var materialsPanel: ListPanel? = null
+    private var drivePanel: DrivePanel? = null
+    /** "No mostrar el modo manejando" hasta el próximo evento de la jornada (tocaste ⌨️ Teclado). */
+    private var driveSkipEvent = -1L
     /** Barra arriba del teclado con el mensaje traducido. */
     private var infoBar: InfoBar? = null
     private var readTrans: Translation? = null
@@ -414,7 +417,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN, KeyboardView.TOOL_PHRASES,
                     KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT, KeyboardView.TOOL_BARCODE,
                     KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS, KeyboardView.TOOL_WORKDAY,
-                    KeyboardView.TOOL_MATERIALS -> onToolbar(tool)
+                    KeyboardView.TOOL_MATERIALS, KeyboardView.TOOL_DRIVE -> onToolbar(tool)
                     else -> { showMode(0); onToolbar(tool) }
                 }
             }
@@ -504,6 +507,27 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         mt.onFeedback = { onKeyFeedback() }
         box.addView(mt, FrameLayout.LayoutParams(-1, -1))
         materialsPanel = mt
+        val drv = DrivePanel(this)
+        drv.visibility = View.GONE
+        drv.actions = object : DrivePanel.Actions {
+            override fun onDriveVoice() = showMode(3)
+            override fun onDriveStatus() = startStatus()
+            override fun onDriveWorkday(kind: String) {
+                WorkdayCenter.record(this@BestKeyboardService, kind) { e -> WorkdayCenter.toastFor(this@BestKeyboardService, e) }
+                showMode(0)
+            }
+            override fun onDriveKeyboard() {
+                driveSkipEvent = WorkDay.day(prefs).lastOrNull()?.time ?: -1L
+                showMode(0)
+            }
+            override fun onDriveNotDriving() {
+                setDriving(false)
+                showMode(0)
+            }
+            override fun onDriveFeedback() = onKeyFeedback()
+        }
+        box.addView(drv, FrameLayout.LayoutParams(-1, -1))
+        drivePanel = drv
         scanPanel = sp
         panelBox = box
 
@@ -679,6 +703,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ticketsPanel?.let { it.visibility = if (m == 11) View.VISIBLE else View.GONE; if (m == 11) refreshTickets() }
         workdayPanel?.let { it.visibility = if (m == 12) View.VISIBLE else View.GONE; if (m == 12) refreshWorkday() }
         materialsPanel?.let { it.visibility = if (m == 13) View.VISIBLE else View.GONE; if (m == 13) refreshMaterials() }
+        drivePanel?.let { it.visibility = if (m == 14) View.VISIBLE else View.GONE
+            if (m == 14) it.open(if (WorkDay.day(prefs).lastOrNull()?.kind == WorkDay.LEAVE) WorkDay.HOME else WorkDay.ARRIVE) }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
     }
 
@@ -1409,6 +1435,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
         if (prefs.getBoolean(Prefs.FLOAT, false)) handler.post { applyFloat() }
         if (!isPassword) maybeShowWord()
+        if (!isPassword) handler.postDelayed({ if (isInputViewShown && mode == 0) maybeDriving() }, 350)
 
         val type = info.inputType
         val cls = type and InputType.TYPE_MASK_CLASS
@@ -1595,6 +1622,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ticketsPanel?.applyPalette(pal)
         workdayPanel?.applyPalette(pal)
         materialsPanel?.applyPalette(pal)
+        drivePanel?.applyPalette(pal)
         infoBar?.applyPalette(pal)
         searchBar?.applyPalette(pal)
         if (floatFrame != null && prefs.getBoolean(Prefs.FLOAT, false) != floating) applyFloat()
@@ -2260,6 +2288,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_WORKDAY -> showMode(12)
             KeyboardView.TOOL_MATERIALS -> showMode(13)
             KeyboardView.TOOL_REPLY -> startReplies()
+            KeyboardView.TOOL_STATUS -> startStatus()
+            KeyboardView.TOOL_WEEK -> startWeek(ticketLang())
+            KeyboardView.TOOL_DRIVE -> showMode(14)
             KeyboardView.TOOL_SITES -> {
                 showMode(0)
                 try {
@@ -3153,6 +3184,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         for (k in order) buttons.add(WorkDay.label(k) to {
             WorkdayCenter.record(this, k) { refreshWorkday() }
             refreshWorkday()
+            if (k == WorkDay.START) askDriving()
         })
         if (events.isNotEmpty()) {
             buttons.add(L.t("✍️ Escribir resumen", "✍️ Type summary") to {
@@ -3164,6 +3196,130 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             L.t("Toca 🛻 Comencé cuando subes a la camioneta. Luego 📍 Llegué al sitio, 🚪 Salí del sitio y 🏠 Llegué a casa. Si se te olvidó, toca la hora para cambiarla.",
                 "Tap 🛻 Started when you get in the truck. Then 📍 Arrived on site, 🚪 Left the site and 🏠 Home. If you forgot, tap the time to change it."),
             buttons)
+    }
+
+    // ---------------------------------------------------------------- Modo manejando
+
+    private fun today(): String = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+
+    /** null = todavía no contestaste hoy; true/false = si vas manejando. */
+    private fun drivingToday(): Boolean? {
+        val v = prefs.getString(Prefs.DRIVING_DAY, "") ?: ""
+        if (!v.startsWith(today() + ":")) return null
+        return v.endsWith(":yes")
+    }
+
+    private fun setDriving(on: Boolean) {
+        prefs.edit().putString(Prefs.DRIVING_DAY, today() + ":" + if (on) "yes" else "no").apply()
+    }
+
+    /** ¿Vas en camino ahora mismo? (después de Comencé o de Salí del sitio) */
+    private fun traveling(): Boolean {
+        val k = WorkDay.day(prefs).lastOrNull()?.kind
+        return k == WorkDay.START || k == WorkDay.LEAVE
+    }
+
+    /** Pregunta una vez al día si vas manejando tú. */
+    private fun askDriving() {
+        val bar = infoBar ?: return
+        bar.show(L.t("🛻 ¿Vas manejando tú?", "🛻 Are you driving?"),
+            L.t("Si manejas, el teclado te enseña botones grandes y la voz primero mientras vas en camino.",
+                "If you drive, the keyboard shows big buttons and voice first while you're on the road."),
+            listOf(
+                L.t("Sí, yo manejo", "Yes, I'm driving") to { setDriving(true); closeInfo(); showMode(14) },
+                L.t("No, voy de pasajero", "No, I'm a passenger") to { setDriving(false); closeInfo() },
+            ))
+    }
+
+    /** Al abrir el teclado: si vas en camino y manejas, abre el modo manejando (o pregunta). */
+    private fun maybeDriving() {
+        if (!traveling()) return
+        val last = WorkDay.day(prefs).lastOrNull()?.time ?: return
+        if (last == driveSkipEvent) return
+        when (drivingToday()) {
+            null -> askDriving()
+            true -> showMode(14)
+            false -> Unit
+        }
+    }
+
+    // ---------------------------------------------------------------- Mensajes de estado
+
+    private var statusEnglish = false
+
+    /** Mensajes listos para el supervisor, con la hora y el sitio de tu jornada. */
+    private fun startStatus(english: Boolean? = null) {
+        showMode(0)
+        val bar = infoBar ?: return
+        val en = english ?: L.english
+        statusEnglish = en
+        val ev = WorkDay.day(prefs)
+        val last = ev.lastOrNull()
+        val site = ev.lastOrNull { it.kind == WorkDay.ARRIVE && it.site.isNotEmpty() }?.site ?: ""
+        val now = System.currentTimeMillis()
+        fun t(ms: Long) = WorkStore.time(ms)
+        fun tx(es: String, eng: String) = if (en) eng else es
+        val msgs = ArrayList<String>()
+        if (last?.kind == WorkDay.ARRIVE) {
+            msgs.add(if (site.isNotEmpty()) tx("Ya llegué a $site (${t(last.time)}).", "I arrived at $site (${t(last.time)}).")
+                else tx("Ya llegué al sitio (${t(last.time)}).", "I arrived on site (${t(last.time)})."))
+            msgs.add(tx("Ya estoy trabajando en " + site.ifEmpty { "el sitio" } + ". Les aviso cuando termine.",
+                "I'm working at " + site.ifEmpty { "the site" } + " now. I'll let you know when I'm done."))
+        }
+        if (last?.kind == WorkDay.LEAVE || last?.kind == WorkDay.ARRIVE) {
+            msgs.add(if (site.isNotEmpty()) tx("Terminé en $site, voy saliendo (${t(now)}).", "I finished at $site, heading out now (${t(now)}).")
+                else tx("Terminé aquí, voy saliendo (${t(now)}).", "I'm done here, heading out now (${t(now)})."))
+        }
+        msgs.add(tx("Voy en camino.", "I'm on my way."))
+        for (s in SiteStore.all(prefs).take(3)) msgs.add(tx("Voy en camino a ${s.name}.", "On my way to ${s.name}."))
+        msgs.add(tx("Llego en 15 minutos.", "I'll be there in 15 minutes."))
+        msgs.add(tx("Llego en 30 minutos.", "I'll be there in 30 minutes."))
+        msgs.add(tx("Voy a llegar un poco tarde, llego como a las ${t(now + 20 * 60_000L)}.", "I'm running a little late, I'll be there around ${t(now + 20 * 60_000L)}."))
+        msgs.add(tx("Voy de regreso a casa.", "I'm heading home."))
+        val buttons = ArrayList<Pair<String, () -> Unit>>()
+        buttons.add((if (en) "🇪🇸 Español" else "🇺🇸 English") to { startStatus(!en) })
+        for (m in msgs.distinct()) buttons.add(m to { insertText(m); closeInfo() })
+        buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+        bar.show(L.t("📲 Mensaje de estado", "📲 Status message"), "", buttons)
+    }
+
+    // ---------------------------------------------------------------- Resumen de la semana
+
+    private fun weekText(english: Boolean): String {
+        val start = WorkDay.weekStart()
+        val dayFmt = java.text.SimpleDateFormat("EEEE MM/dd", if (english) java.util.Locale.US else java.util.Locale("es"))
+        val sb = StringBuilder()
+        sb.append(if (english) "Week of " else "Semana del ").append(java.text.SimpleDateFormat("MM/dd/yyyy", java.util.Locale.US).format(start)).append("\n\n")
+        var total = 0L
+        var site = 0L
+        for ((day, ev) in WorkDay.byDay(prefs)) {
+            if (day < start) continue
+            val sum = WorkDay.summary(ev, if (WorkStore.sameDay(day, System.currentTimeMillis())) System.currentTimeMillis() else ev.last().time)
+            total += sum.total
+            site += sum.site
+            val sites = ev.map { it.site }.filter { it.isNotEmpty() }.distinct().joinToString(", ")
+            sb.append(dayFmt.format(day).replaceFirstChar { it.uppercase() }).append(": ").append(WorkDay.dur(sum.total))
+                .append(if (english) " (on site " else " (en el sitio ").append(WorkDay.dur(sum.site)).append(")")
+                .append(if (sites.isNotEmpty()) " · $sites" else "").append("\n")
+        }
+        sb.append("\n").append(if (english) "Total: " else "Total: ").append(WorkDay.dur(total))
+            .append(if (english) " (on site " else " (en el sitio ").append(WorkDay.dur(site)).append(")")
+        val tickets = WorkStore.tickets(prefs).filter { it.time >= start }.map { it.num }.sorted()
+        if (tickets.isNotEmpty()) sb.append("\n").append(if (english) "Tickets: " else "Tickets: ").append(tickets.joinToString(", "))
+        return sb.toString()
+    }
+
+    private fun startWeek(outLang: String) {
+        showMode(0)
+        val bar = infoBar ?: return
+        val en = outLang == "en"
+        val text = weekText(en)
+        bar.show(L.t("📊 Resumen de la semana", "📊 Week summary"), text, listOf(
+            L.t("Escribir", "Type it") to { insertText(text); closeInfo() },
+            L.t("Copiar", "Copy") to { aiCopy(text) },
+            (if (en) "En español" else "In English") to { startWeek(if (en) "es" else "en") },
+            L.t("Cerrar", "Close") to { closeInfo() },
+        ))
     }
 
     // ---------------------------------------------------------------- Materiales

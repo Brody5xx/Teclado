@@ -104,6 +104,47 @@ object WorkDay {
         return Summary(total, site, maxOf(0, total - site), running)
     }
 
+    /** Todos los días que tienen algo anotado (inicio del día → eventos), del más viejo al más nuevo. */
+    fun byDay(p: SharedPreferences): List<Pair<Long, List<Event>>> {
+        val map = java.util.TreeMap<Long, MutableList<Event>>()
+        for (e in all(p)) {
+            val c = Calendar.getInstance().apply { timeInMillis = e.time }
+            c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0); c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0)
+            map.getOrPut(c.timeInMillis) { ArrayList() }.add(e)
+        }
+        return map.entries.map { it.key to it.value.sortedBy { e -> e.time } }
+    }
+
+    /** El lunes de esta semana a las 0:00. */
+    fun weekStart(): Long {
+        val c = Calendar.getInstance()
+        c.firstDayOfWeek = Calendar.MONDAY
+        c.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0); c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0)
+        if (c.timeInMillis > System.currentTimeMillis()) c.add(Calendar.DAY_OF_YEAR, -7)
+        return c.timeInMillis
+    }
+
+    /** Horas en número (8.25) para la hoja de cálculo. */
+    fun hours(ms: Long): String = String.format(java.util.Locale.US, "%.2f", ms / 3_600_000.0)
+
+    /** Archivo CSV (se abre en Excel o Google Sheets) con todos los días guardados. */
+    fun csv(p: SharedPreferences): String {
+        val df = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val dn = java.text.SimpleDateFormat("EEEE", java.util.Locale.US)
+        val sb = StringBuilder("Date,Day,Start (truck),Arrival,Departure,Home,Sites,Total hours,On site hours,Driving hours\n")
+        fun q(s: String) = "\"" + s.replace("\"", "\"\"") + "\""
+        for ((day, ev) in byDay(p)) {
+            val sum = summary(ev, if (WorkStore.sameDay(day, System.currentTimeMillis())) System.currentTimeMillis() else ev.last().time)
+            fun first(k: String) = ev.firstOrNull { it.kind == k }?.let { WorkStore.time(it.time) } ?: ""
+            fun last(k: String) = ev.lastOrNull { it.kind == k }?.let { WorkStore.time(it.time) } ?: ""
+            val sites = ev.map { it.site }.filter { it.isNotEmpty() }.distinct().joinToString(" / ")
+            sb.append(listOf(df.format(day), dn.format(day), first(START), first(ARRIVE), last(LEAVE), last(HOME), q(sites),
+                hours(sum.total), hours(sum.site), hours(sum.driving)).joinToString(",")).append("\n")
+        }
+        return sb.toString()
+    }
+
     /** Total de la semana (lunes a domingo). */
     fun weekTotal(p: SharedPreferences): Long {
         val c = Calendar.getInstance()

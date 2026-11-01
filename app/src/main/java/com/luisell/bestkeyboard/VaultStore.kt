@@ -67,6 +67,11 @@ object VaultStore {
         return String(c.doFinal(data.copyOfRange(1 + n, data.size)), Charsets.UTF_8)
     }
 
+    /** Cifra un texto corto con la llave del teléfono (para guardar la contraseña del respaldo automático). */
+    fun seal(plain: String): String = android.util.Base64.encodeToString(encrypt(plain), android.util.Base64.NO_WRAP)
+
+    fun unseal(sealed: String): String? = try { decrypt(android.util.Base64.decode(sealed, android.util.Base64.NO_WRAP)) } catch (_: Exception) { null }
+
     /** Lee los datos (solo si el archivo cambió desde la última vez). */
     fun load(ctx: Context) {
         val f = file(ctx)

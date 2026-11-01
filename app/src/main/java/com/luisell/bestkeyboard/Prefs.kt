@@ -113,6 +113,12 @@ object Prefs {
     const val WORKDAY_NOTIF = "workday_notif"
     /** La notificación de Mi jornada se queda siempre (con el botón 🛻 Comencé antes de empezar). */
     const val WORKDAY_ALWAYS = "workday_always"
+    /** Si hoy vas manejando: "yyyy-MM-dd:yes" o ":no" (se pregunta una vez al día). */
+    const val DRIVING_DAY = "driving_day"
+    /** Respaldo automático: carpeta elegida, contraseña (cifrada) y la última vez. */
+    const val AUTO_BACKUP_DIR = "auto_backup_dir"
+    const val AUTO_BACKUP_PW = "auto_backup_pw"
+    const val AUTO_BACKUP_LAST = "auto_backup_last"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

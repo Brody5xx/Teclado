@@ -79,6 +79,9 @@ object Icons {
     const val BOX = 62
     const val REPLY = 63
     const val MAP_PIN = 64
+    const val SEND = 65
+    const val WEEK = 66
+    const val STEER = 67
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -470,6 +473,32 @@ object Icons {
                 c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
                 for (yy in 0..1) for (xx in 0..2)
                     c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            SEND -> {
+                // Avión de papel (mensaje de estado)
+                path.reset()
+                path.moveTo(cx - s * 0.95f, cy - s * 0.1f)
+                path.lineTo(cx + s * 0.95f, cy - s * 0.85f)
+                path.lineTo(cx + s * 0.35f, cy + s * 0.9f)
+                path.lineTo(cx - s * 0.05f, cy + s * 0.15f)
+                path.close()
+                c.drawPath(path, st)
+                c.drawLine(cx - s * 0.05f, cy + s * 0.15f, cx + s * 0.95f, cy - s * 0.85f, st)
+            }
+            WEEK -> {
+                // Barras (resumen de la semana)
+                val heights = floatArrayOf(0.5f, 0.9f, 0.65f, 1.3f, 0.8f)
+                for ((k, hh) in heights.withIndex()) {
+                    val x = cx - s * 0.8f + k * s * 0.4f
+                    c.drawLine(x, cy + s * 0.85f, x, cy + s * 0.85f - hh * s * 1.2f, st)
+                }
+            }
+            STEER -> {
+                // Volante (modo manejando)
+                c.drawCircle(cx, cy, s * 0.92f, st)
+                c.drawCircle(cx, cy, s * 0.2f, fl)
+                c.drawLine(cx - s * 0.92f, cy - s * 0.05f, cx + s * 0.92f, cy - s * 0.05f, st)
+                c.drawLine(cx, cy, cx, cy + s * 0.92f, st)
             }
             BOX -> {
                 // Caja (materiales)

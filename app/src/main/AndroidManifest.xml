@@ -126,6 +126,15 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- Copia de seguridad automática cada semana -->
+        <receiver
+            android:name=".AutoBackupReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Mis sitios -->
         <activity
             android:name=".SitesActivity"

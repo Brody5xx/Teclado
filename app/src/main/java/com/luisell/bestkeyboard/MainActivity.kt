@@ -61,6 +61,8 @@ class MainActivity : UiActivity() {
         const val EXTRA_ASK_LOCATION = "pedir_ubicacion"
         private const val REQ_LOCATION = 22
         private const val REQ_NOTIF = 23
+        private const val REQ_AUTO = 24
+        private const val REQ_HOURS = 25
         private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
         private const val REQ_CAMERA = 8
@@ -82,6 +84,7 @@ class MainActivity : UiActivity() {
         handleAsk(intent)
         TicketReminder.schedule(this)
         WorkdayCenter.refresh(this)
+        AutoBackup.schedule(this)
         prefs.registerOnSharedPreferenceChangeListener(reminderListener)
         // Mi jornada en la pantalla de bloqueo necesita permiso de notificaciones (se pide una vez)
         if (android.os.Build.VERSION.SDK_INT >= 33 && prefs.getBoolean(Prefs.WORKDAY_NOTIF, true) && !prefs.getBoolean("asked_notif", false) &&
@@ -197,7 +200,7 @@ class MainActivity : UiActivity() {
     private var backupPassword = ""
 
     /** Pide la contraseña del respaldo ([export] = guardar; si no, para abrir uno). */
-    private fun askBackupPassword(export: Boolean, data: ByteArray? = null) {
+    private fun askBackupPassword(export: Boolean, data: ByteArray? = null, auto: Boolean = false) {
         val box = LinearLayout(this)
         box.orientation = LinearLayout.VERTICAL
         box.setPadding(dp(20), dp(8), dp(20), dp(4))
@@ -231,6 +234,14 @@ class MainActivity : UiActivity() {
                 if (export) {
                     if (pw != p2.text.toString()) { toast("Las contraseñas no son iguales.", "The passwords don't match."); return@setPositiveButton }
                     backupPassword = pw
+                    if (auto) {
+                        // Elige la carpeta donde se guardará cada semana (puede ser de Google Drive)
+                        try {
+                            @Suppress("DEPRECATION")
+                            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), REQ_AUTO)
+                        } catch (_: Exception) { toast("No se pudo abrir el selector de carpetas.", "Couldn't open the folder picker.") }
+                        return@setPositiveButton
+                    }
                     try {
                         @Suppress("DEPRECATION")
                         startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
@@ -255,6 +266,21 @@ class MainActivity : UiActivity() {
         val uri = data?.data ?: return
         if (resultCode != RESULT_OK) return
         when (requestCode) {
+            REQ_AUTO -> {
+                val pw = backupPassword
+                backupPassword = ""
+                Thread {
+                    AutoBackup.turnOn(this, uri, pw)
+                    runOnUiThread {
+                        toast("¡Listo! Se guarda una copia cada semana en esa carpeta.", "Done! A copy is saved every week in that folder.")
+                        recreate()
+                    }
+                }.start()
+            }
+            REQ_HOURS -> try {
+                contentResolver.openOutputStream(uri, "wt")?.use { it.write(WorkDay.csv(prefs).toByteArray(Charsets.UTF_8)) }
+                toast("Horas guardadas. Ábrelo con Excel o Google Sheets.", "Hours saved. Open it with Excel or Google Sheets.")
+            } catch (_: Exception) { toast("No se pudo guardar el archivo.", "Couldn't save the file.") }
             REQ_EXPORT -> try {
                 val bytes = Backup.export(this, backupPassword)
                 contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
@@ -670,6 +696,14 @@ class MainActivity : UiActivity() {
         text(tr("También hay un botón en los ajustes rápidos: desliza la barra de arriba del teléfono hacia abajo, toca el lápiz ✏️ y arrastra «Comencé / Mi jornada».",
             "There's also a Quick Settings button: swipe down from the top of the phone, tap the pencil ✏️ and drag «Start / My workday»."), 12f, faded = true)
         button(tr("📍 Mis sitios", "📍 My sites")) { startActivity(Intent(this, SitesActivity::class.java)) }
+        button(tr("📄 Exportar mis horas (Excel / Sheets)", "📄 Export my hours (Excel / Sheets)")) {
+            try {
+                val name = "mis-horas-" + java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.US).format(java.util.Date()) + ".csv"
+                @Suppress("DEPRECATION")
+                startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("text/csv").putExtra(Intent.EXTRA_TITLE, name), REQ_HOURS)
+            } catch (_: Exception) { }
+        }
 
         // ---- Palabra de la semana
         card(tr("Palabra de la semana", "Word of the week"), Icons.BOOK)
@@ -739,6 +773,25 @@ class MainActivity : UiActivity() {
                 @Suppress("DEPRECATION")
                 startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), REQ_IMPORT)
             } catch (_: Exception) { }
+        }
+        // Copia automática cada semana
+        subTitle(tr("Copia automática cada semana", "Automatic weekly backup"))
+        if (AutoBackup.enabled(this)) {
+            val last = prefs.getLong(Prefs.AUTO_BACKUP_LAST, 0L)
+            text(tr("✅ Prendida. Última copia: ", "✅ On. Last copy: ") +
+                (if (last > 0) java.text.DateFormat.getDateTimeInstance().format(java.util.Date(last)) else tr("todavía no", "not yet")), 13f)
+            button(tr("Hacer una copia ahora", "Make a copy now")) {
+                Thread {
+                    val ok = AutoBackup.runNow(this)
+                    runOnUiThread { toast(if (ok) "Copia guardada." else "No se pudo guardar. Vuelve a elegir la carpeta.",
+                        if (ok) "Backup saved." else "Couldn't save. Pick the folder again.") }
+                }.start()
+            }
+            button(tr("Apagar copia automática", "Turn off automatic backup")) { AutoBackup.turnOff(this); recreate() }
+        } else {
+            text(tr("Elige una contraseña y una carpeta (por ejemplo, de Google Drive). Cada semana se guarda sola una copia nueva y se quedan las 4 más recientes.",
+                "Pick a password and a folder (for example, in Google Drive). Every week a new copy is saved by itself, keeping the 4 most recent."), 12f, faded = true)
+            button(tr("Prender copia automática", "Turn on automatic backup")) { askBackupPassword(true, auto = true) }
         }
 
         // ---- Sugerencias rápidas: copiado y códigos
@@ -824,6 +877,18 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.2" to tr(
+            "•  📲 Mensajes de estado con un toque (ya llegué, voy saliendo…) con la hora y el sitio.\n" +
+                "•  📊 Resumen de la semana: horas por día, sitios y tickets.\n" +
+                "•  📄 Exportar tus horas a Excel / Google Sheets.\n" +
+                "•  🛻 Modo manejando: pregunta si manejas y te da botones grandes y la voz.\n" +
+                "•  💾 Copia de seguridad automática cada semana.",
+            "•  📲 One-tap status messages (arrived, heading out…) with the time and site.\n" +
+                "•  📊 Week summary: hours per day, sites and tickets.\n" +
+                "•  📄 Export your hours to Excel / Google Sheets.\n" +
+                "•  🛻 Driving mode: asks if you drive and gives you big buttons and voice.\n" +
+                "•  💾 Automatic weekly backup.",
+        ),
         "10.1" to tr(
             "•  Mi jornada en la pantalla de bloqueo con el botón 🛻 Comencé (sin desbloquear).\n" +
                 "•  Botón de Mi jornada en los ajustes rápidos del teléfono.\n" +
