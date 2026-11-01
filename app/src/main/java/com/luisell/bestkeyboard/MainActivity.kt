@@ -880,6 +880,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.7" to tr("•  Portapapeles: al seleccionar, cada nota tiene un rombo ◇ (vacío o con palomita).\n•  Agregar o editar en el portapapeles abre una caja grande con varias líneas y el botón «✓ Guardar».",
+            "•  Clipboard: when selecting, each note has a diamond ◇ (empty or checked).\n•  Adding or editing in the clipboard opens a big multi-line box with a «✓ Save» button."),
         "10.6" to tr(
             "•  Mi jornada: elige el ícono (camioneta, reloj, cronómetro, maletín, calendario, casco o edificio).\n" +
                 "•  Portapapeles como Gboard: mantén presionado para seleccionar varios (los demás tiemblan), fijar, borrar o editar lo que copiaste.\n" +

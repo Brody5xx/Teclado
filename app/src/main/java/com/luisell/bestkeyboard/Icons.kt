@@ -89,6 +89,9 @@ object Icons {
     const val BUILDING = 72
     const val CHECK = 73
     const val TRASH = 74
+    /** Rombo para seleccionar: vacío (sin marcar) y lleno con palomita (marcado). */
+    const val SEL_OFF = 75
+    const val SEL_ON = 76
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -480,6 +483,36 @@ object Icons {
                 c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
                 for (yy in 0..1) for (xx in 0..2)
                     c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            SEL_OFF -> {
+                // Rombo vacío (diseño propio del teclado)
+                path.reset()
+                path.moveTo(cx, cy - s)
+                path.lineTo(cx + s, cy)
+                path.lineTo(cx, cy + s)
+                path.lineTo(cx - s, cy)
+                path.close()
+                fl.color = bg
+                c.drawPath(path, fl)
+                fl.color = color
+                c.drawPath(path, st)
+            }
+            SEL_ON -> {
+                // Rombo lleno con una palomita
+                path.reset()
+                path.moveTo(cx, cy - s * 1.1f)
+                path.lineTo(cx + s * 1.1f, cy)
+                path.lineTo(cx, cy + s * 1.1f)
+                path.lineTo(cx - s * 1.1f, cy)
+                path.close()
+                c.drawPath(path, fl)
+                st.color = bg
+                path.reset()
+                path.moveTo(cx - s * 0.45f, cy)
+                path.lineTo(cx - s * 0.1f, cy + s * 0.35f)
+                path.lineTo(cx + s * 0.5f, cy - s * 0.35f)
+                c.drawPath(path, st)
+                st.color = color
             }
             CHECK -> {
                 path.reset()

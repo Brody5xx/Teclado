@@ -603,6 +603,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 EmojiData.addRecent(emoji)
             }
             override fun onSearchFeedback() = onKeyFeedback()
+            override fun onSearchSave() = saveClipEdit()
         }
         searchBar = srch
         searching = 0
@@ -3694,6 +3695,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // ---------------------------------------------------------------- Buscar emojis y GIFs
 
+    /** Guarda lo que escribiste o editaste en el portapapeles y regresa al portapapeles. */
+    private fun saveClipEdit() {
+        val bar = searchBar ?: return
+        val full = bar.text()
+        val item = clipEditing
+        if (full.isNotBlank()) { if (item != null) ClipStore.editText(item, full) else ClipStore.addManual(full) }
+        clipEditing = null
+        stopSearch()
+        showMode(2)
+    }
+
     /** Lo que estás editando del portapapeles (null = agregando algo nuevo). */
     private var clipEditing: ClipItem? = null
 
@@ -3731,12 +3743,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val q = bar.text().trim()
         val gif = bar.gifs
         if (bar.clip) {
-            val full = bar.text()
-            val item = clipEditing
-            if (full.isNotBlank()) { if (item != null) ClipStore.editText(item, full) else ClipStore.addManual(full) }
-            clipEditing = null
-            stopSearch()
-            showMode(2)
+            // En el portapapeles, Enter hace una línea nueva (se guarda con «✓ Guardar»)
+            bar.connection.commitText("\n", 1)
             return
         }
         if (bar.material) {

@@ -26,6 +26,8 @@ class SearchBar(context: Context) : LinearLayout(context) {
         fun onSearchClose()
         fun onSearchPick(emoji: String)
         fun onSearchFeedback()
+        /** "✓ Guardar" (al escribir o editar algo del portapapeles). */
+        fun onSearchSave() {}
     }
 
     var actions: Actions? = null
@@ -40,6 +42,8 @@ class SearchBar(context: Context) : LinearLayout(context) {
     private val resultsScroll = HorizontalScrollView(context)
     private val hint = TextView(context)
     private val field = LinearLayout(context)
+    private val saveBtn = TextView(context)
+    private var fieldRow: LinearLayout? = null
     private var silent = false
     /** true = GIFs (resultados al tocar Buscar); false = emojis (mientras escribes). */
     var gifs = false
@@ -82,6 +86,7 @@ class SearchBar(context: Context) : LinearLayout(context) {
         clear.setOnClickListener { actions?.onSearchFeedback(); setText("") }
         field.addView(clear, LayoutParams(d(36f), d(36f)))
         row.addView(field, LayoutParams(0, d(42f), 1f).apply { leftMargin = d(6f) })
+        fieldRow = row
         addView(row, LayoutParams(-1, -2))
 
         results.orientation = HORIZONTAL
@@ -91,7 +96,18 @@ class SearchBar(context: Context) : LinearLayout(context) {
         hint.textSize = 13f
         hint.gravity = Gravity.CENTER_VERTICAL
         hint.setPadding(d(14f), 0, d(14f), 0)
-        addView(hint, LayoutParams(-1, d(36f)))
+        val bottom = LinearLayout(context)
+        bottom.orientation = HORIZONTAL
+        bottom.gravity = Gravity.CENTER_VERTICAL
+        bottom.addView(hint, LayoutParams(0, d(36f), 1f))
+        saveBtn.textSize = 14f
+        saveBtn.gravity = Gravity.CENTER
+        saveBtn.setTypeface(saveBtn.typeface, android.graphics.Typeface.BOLD)
+        saveBtn.setPadding(d(18f), 0, d(18f), 0)
+        saveBtn.setOnClickListener { actions?.onSearchFeedback(); actions?.onSearchSave() }
+        saveBtn.visibility = GONE
+        bottom.addView(saveBtn, LayoutParams(-2, d(36f)).apply { rightMargin = d(6f) })
+        addView(bottom, LayoutParams(-1, -2).apply { topMargin = d(2f); bottomMargin = d(2f) })
 
         connection = box.onCreateInputConnection(inputInfo)
             ?: android.view.inputmethod.BaseInputConnection(box, true)
@@ -115,9 +131,21 @@ class SearchBar(context: Context) : LinearLayout(context) {
     fun start(gif: Boolean, noteMode: Boolean = false, materialMode: Boolean = false, clipText: String? = null) {
         material = materialMode
         clip = clipText != null
-        // Para el portapapeles caben varias líneas
+        // Para el portapapeles: una caja grande, con varias líneas, para escribir y leer cómodo
         box.isSingleLine = !clip
-        box.maxLines = if (clip) 4 else 1
+        box.inputType = if (clip) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            else InputType.TYPE_CLASS_TEXT
+        box.maxLines = if (clip) 9 else 1
+        box.minLines = if (clip) 6 else 1
+        box.gravity = if (clip) Gravity.TOP or Gravity.START else Gravity.CENTER_VERTICAL or Gravity.START
+        box.isVerticalScrollBarEnabled = clip
+        field.gravity = if (clip) Gravity.TOP else Gravity.CENTER_VERTICAL
+        field.setPadding(d(10f), if (clip) d(8f) else 0, d(4f), if (clip) d(8f) else 0)
+        field.layoutParams = (field.layoutParams as LayoutParams).apply { height = if (clip) d(200f) else d(42f) }
+        fieldRow?.gravity = if (clip) Gravity.TOP else Gravity.CENTER_VERTICAL
+        box.layoutParams = (box.layoutParams as LayoutParams).apply { height = if (clip) LayoutParams.MATCH_PARENT else LayoutParams.WRAP_CONTENT }
+        saveBtn.visibility = if (clip) VISIBLE else GONE
+        L.bind(saveBtn, "✓ Guardar", "✓ Save")
         gifs = gif
         note = noteMode
         glass.kind = if (clip) Icons.PENCIL else if (noteMode) Icons.NOTEBOOK else Icons.SEARCH
@@ -153,7 +181,7 @@ class SearchBar(context: Context) : LinearLayout(context) {
         if (clip) {
             resultsScroll.visibility = GONE
             hint.visibility = VISIBLE
-            hint.text = L.t("Toca Enter para guardarlo en el portapapeles.", "Tap Enter to save it in the clipboard.")
+            hint.text = L.t("Enter = nueva línea", "Enter = new line")
             return
         }
         if (material) {
@@ -207,5 +235,7 @@ class SearchBar(context: Context) : LinearLayout(context) {
         bg.setStroke(d(1.5f), p.accent)
         field.background = bg
         hint.setTextColor(p.hint)
+        saveBtn.setTextColor(p.onAccent)
+        saveBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(18f).toFloat())
     }
 }

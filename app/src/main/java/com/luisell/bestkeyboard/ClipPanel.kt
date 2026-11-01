@@ -96,12 +96,15 @@ class ClipPanel(context: Context) : FrameLayout(context) {
             h.box.background = if (sel) android.graphics.drawable.GradientDrawable().apply {
                 setColor(palette.keyPressed); cornerRadius = d(9f).toFloat(); setStroke(d(2f), palette.accent)
             } else PanelUi.pressable(palette.key, palette.keyPressed, d(9f).toFloat())
-            h.check.visibility = if (sel) VISIBLE else GONE
-            h.check.color = palette.onAccent
-            h.check.bgColor = palette.accent
-            h.check.background = PanelUi.rounded(palette.accent, d(11f).toFloat())
+            // Seleccionando: rombo vacío en los que no están marcados, rombo con palomita en los marcados
+            h.check.visibility = if (selecting) VISIBLE else GONE
+            h.check.kind = if (sel) Icons.SEL_ON else Icons.SEL_OFF
+            h.check.color = if (sel) palette.accent else palette.text
+            h.check.bgColor = if (sel) palette.onAccent else palette.key
+            h.check.background = null
+            h.check.invalidate()
             h.text.setTextColor(palette.text)
-            h.pin.visibility = if (it.pinned) VISIBLE else GONE
+            h.pin.visibility = if (it.pinned && !selecting) VISIBLE else GONE
             h.pin.color = palette.accent
             h.pin.bgColor = palette.bg
             h.pin.background = PanelUi.rounded(palette.bg, d(10f).toFloat())
@@ -241,11 +244,11 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         box.addView(pin, FrameLayout.LayoutParams(d(20f), d(20f), Gravity.TOP or Gravity.END).apply {
             topMargin = d(2f); rightMargin = d(4f)
         })
-        val check = IconView(context, Icons.CHECK, 5f)
+        val check = IconView(context, Icons.SEL_OFF, 7f)
         check.isClickable = false
         check.visibility = GONE
-        box.addView(check, FrameLayout.LayoutParams(d(22f), d(22f), Gravity.TOP or Gravity.START).apply {
-            topMargin = d(4f); leftMargin = d(4f)
+        box.addView(check, FrameLayout.LayoutParams(d(26f), d(26f), Gravity.TOP or Gravity.END).apply {
+            topMargin = d(4f); rightMargin = d(4f)
         })
         val h = Holder(box, text, image, pin, check)
         box.tag = h
