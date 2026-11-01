@@ -82,8 +82,13 @@ class WorkdayButtonsActivity : UiActivity() {
         card(tr("Almuerzo", "Lunch"), Icons.CLOCK)
         text(tr("Mientras trabajas sale el botón «🍔 Salí a almorzar» y después «↩️ Regresé», para anotar cuánto tomaste.",
             "While you work you'll see «🍔 Lunch break» and then «↩️ Back from lunch», to log how long you took."), 12f, faded = true)
-        segmented(tr("Tiempo fijo", "Fixed time"), Prefs.LUNCH_AUTO, "30",
-            listOf("0" to tr("Nada", "None"), "30" to "30 min", "45" to "45 min", "60" to tr("1 hora", "1 hour"))) { WorkDay.config(prefs); WorkdayCenter.refresh(this) }
+        segmented(tr("Tiempo que te descuentan", "Time deducted"), Prefs.LUNCH_AUTO, "30",
+            listOf("15" to "15 min", "30" to "30 min", "45" to "45 min", "60" to tr("1 hora", "1 hour"))) { WorkDay.config(prefs); WorkdayCenter.refresh(this); recreate() }
+        // Cualquier otro tiempo (20 min, 1 h 30…), escrito por ti
+        val curMin = (prefs.getString(Prefs.LUNCH_AUTO, "30") ?: "30").toIntOrNull() ?: 30
+        val custom = curMin !in listOf(15, 30, 45, 60)
+        button(if (custom) tr("✓ Otro tiempo: ", "✓ Other time: ") + minText(curMin) + tr("  (toca para cambiar)", "  (tap to change)")
+            else tr("✏️ Otro tiempo…", "✏️ Other time…")) { askLunchMinutes(curMin) }
         segmented(tr("Tipo de almuerzo", "Lunch type"), Prefs.LUNCH_PAID + "_s", if (prefs.getBoolean(Prefs.LUNCH_PAID, false)) "paid" else "unpaid",
             listOf("paid" to tr("Pagado", "Paid"), "unpaid" to tr("No pagado", "Unpaid"))) {
             prefs.edit().putBoolean(Prefs.LUNCH_PAID, prefs.getString(Prefs.LUNCH_PAID + "_s", "unpaid") != "unpaid").apply()
@@ -142,6 +147,44 @@ class WorkdayButtonsActivity : UiActivity() {
             }
             iconRow.addView(box, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
         }
+    }
+
+    private fun minText(m: Int): String = when {
+        m == 0 -> tr("nada", "none")
+        m < 60 -> "$m min"
+        m % 60 == 0 -> "${m / 60} h"
+        else -> "${m / 60} h ${m % 60} min"
+    }
+
+    /** Escribes cuántos minutos te descuentan de almuerzo. */
+    private fun askLunchMinutes(cur: Int) {
+        val box = EditText(this).apply {
+            setText(cur.toString())
+            setSelection(text.length)
+            isSingleLine = true
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            textSize = 18f
+            setTextColor(TEXT)
+            setHintTextColor(SUB)
+            hint = tr("Minutos (ej. 20)", "Minutes (e.g. 20)")
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
+        }
+        val wrap = LinearLayout(this).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(box, LinearLayout.LayoutParams(-1, -2)) }
+        AlertDialog.Builder(this)
+            .setTitle(tr("¿Cuántos minutos te descuentan?", "How many minutes are deducted?"))
+            .setMessage(tr("Escribe los minutos de almuerzo (0 = nada, 90 = 1 hora y media).", "Type the lunch minutes (0 = none, 90 = an hour and a half)."))
+            .setView(wrap)
+            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
+                val m = box.text.toString().trim().toIntOrNull()
+                if (m == null || m < 0 || m > 240) { toast("Escribe un número de 0 a 240.", "Type a number from 0 to 240."); return@setPositiveButton }
+                prefs.edit().putString(Prefs.LUNCH_AUTO, m.toString()).apply()
+                WorkDay.config(prefs)
+                WorkdayCenter.refresh(this)
+                recreate()
+            }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
     }
 
     private fun save() {
