@@ -2229,7 +2229,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_READ -> readMessage()
             KeyboardView.TOOL_TICKET -> startTicket()
             KeyboardView.TOOL_BARCODE, KeyboardView.TOOL_SCAN -> {
-                scanPanel?.codeMode = action == KeyboardView.TOOL_BARCODE
+                scanPanel?.codeMode = false
                 if (hasPermission(android.Manifest.permission.CAMERA)) {
                     showMode(4)
                 } else {
@@ -2890,7 +2890,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             WorkDay.text(ev, true) + "\n"
     }
 
-    /** Los tickets de DVSS van en inglés; si no usas ese formato, en el idioma del teclado. */
+    /** Los tickets del trabajo van en inglés; si no usas ese formato, en el idioma del teclado. */
     private fun ticketLang() = if (prefs.getBoolean(Prefs.TICKET_FORMAT, true)) "en" else lang
 
     private fun runTicket(outLang: String) {
@@ -2900,8 +2900,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val my = ++aiSeq
         bar.show(title, L.t("Escribiendo el ticket…", "Writing the ticket…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
         val num = WorkStore.nextNumber(prefs)
-        val dvss = prefs.getBoolean(Prefs.TICKET_FORMAT, true)
-        val format = if (!dvss) "" else
+        val workFormat = prefs.getBoolean(Prefs.TICKET_FORMAT, true)
+        val format = if (!workFormat) "" else
             "Use exactly this layout (field names in English even if the text is in another language):\n" +
             "Ticket $num\nDate: ${WorkStore.ticketDate(System.currentTimeMillis())}\nLocation: ...\nArrival Time: ...\nDeparture Time: ...\n" +
             "Job Description:\n...\nEquipment List:\n- ...\n" +
@@ -2912,7 +2912,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val prompt = "You help a low-voltage field technician (access control, card readers, maglocks, door automation, " +
             "IP cameras, NVR, fiber optics, Cat 6 cabling) write work tickets for coworkers and supervisors.\n" +
             "Turn the rough notes below into a clear, professional and detailed work ticket written in " +
-            (if (dvss && outLang == "en") "professional technical English" else langName(outLang)) + ".\n" + format +
+            (if (workFormat && outLang == "en") "professional technical English" else langName(outLang)) + ".\n" + format +
             "Rules:\n- Keep every fact (sites, door numbers, rooms, times, names, part names). Do not invent facts.\n" +
             "- Expand abbreviations and fix spelling.\n- First person, past tense, short clear sentences, in a logical order " +
             "(arrival, work done, tests, result, pending items).\n- Plain text only. No markdown, no asterisks.\n" +

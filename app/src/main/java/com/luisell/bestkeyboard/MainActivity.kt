@@ -614,7 +614,7 @@ class MainActivity : UiActivity() {
 
         // ---- Tickets del trabajo
         card(tr("Tickets del trabajo", "Work tickets"), Icons.TICKETS)
-        switch(tr("Usar el formato de mis tickets (DVSS)", "Use my ticket format (DVSS)"), Prefs.TICKET_FORMAT, true,
+        switch(tr("Usar el formato de mis tickets del trabajo", "Use my work ticket format"), Prefs.TICKET_FORMAT, true,
             tr("En inglés técnico con Date, Location, Arrival/Departure Time, Job Description y Equipment List. Los «Service Call» usan Issue Reported, Issue Found, Action Taken y Next Steps.",
                 "Technical English with Date, Location, Arrival/Departure Time, Job Description and Equipment List. «Service Call» tickets use Issue Reported, Issue Found, Action Taken and Next Steps."))
         text(tr("Número del próximo ticket (sigue contando, nunca se reinicia):", "Next ticket number (keeps counting, never resets):"), 13f, faded = true)
@@ -792,6 +792,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "9.9.1" to tr("•  Una sola cámara: el escáner lee el texto y los códigos de barras y QR a la vez.\n•  Los tickets dicen «del trabajo» (sin nombre de compañía).",
+            "•  One camera: the scanner reads text and barcodes/QR codes at the same time.\n•  Tickets say «work» (no company name)."),
         "9.9" to tr(
             "•  🛻 Mi jornada: Comencé (camioneta), Llegué al sitio, Salí del sitio y Llegué a casa, con tus horas del día y de la semana.\n" +
                 "•  🇺🇸 En el micrófono: habla en español y se escribe en inglés.\n" +
@@ -811,14 +813,14 @@ class MainActivity : UiActivity() {
             "•  📷 Escanear códigos de barras y QR (número de serie, MAC).\n" +
                 "•  🕐 Hora, fecha y lugar con un toque.\n" +
                 "•  📒 Libreta del día: tus apuntes se vuelven el ticket del día.\n" +
-                "•  🗂️ Mis tickets con número que sigue contando, y formato DVSS.\n" +
+                "•  🗂️ Mis tickets con número que sigue contando, y formato del trabajo.\n" +
                 "•  ⏰ Aviso diario: ✅ TICKET REGISTERED / ❌ NO TICKET.\n" +
                 "•  📖 Palabra de la semana.\n" +
                 "•  Mantén presionado un botón de la barra de arriba para acomodarlo (los demás tiemblan).",
             "•  📷 Scan barcodes and QR codes (serial number, MAC).\n" +
                 "•  🕐 Time, date and place with one tap.\n" +
                 "•  📒 Day notebook: your notes become the day's ticket.\n" +
-                "•  🗂️ My tickets with a number that keeps counting, and DVSS format.\n" +
+                "•  🗂️ My tickets with a number that keeps counting, and work ticket format.\n" +
                 "•  ⏰ Daily reminder: ✅ TICKET REGISTERED / ❌ NO TICKET.\n" +
                 "•  📖 Word of the week.\n" +
                 "•  Press and hold a top-bar button to move it (the others wiggle).",

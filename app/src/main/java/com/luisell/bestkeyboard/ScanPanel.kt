@@ -144,7 +144,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         codesScroll.isHorizontalScrollBarEnabled = false
         codesScroll.addView(codesRow)
         codesScroll.visibility = GONE
-        addView(codesScroll, LayoutParams(-1, -2, Gravity.BOTTOM).apply { setMargins(d(8f), 0, d(8f), d(16f)) })
+        addView(codesScroll, LayoutParams(-1, -2, Gravity.TOP).apply { setMargins(d(66f), d(10f), d(66f), 0) })
 
         // Arriba en medio: Texto | Código
         modeRow.orientation = LinearLayout.HORIZONTAL
@@ -163,6 +163,8 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         L.bind(modeText, "Texto", "Text")
         L.bind(modeCode, "Código", "Code")
         addView(modeRow, LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = d(14f) })
+        // Una sola cámara: lee el texto y también los códigos de barras y QR a la vez
+        modeRow.visibility = GONE
         paintMode()
     }
 
@@ -173,8 +175,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
             t.background = if (on) PanelUi.rounded(accent, d(17f).toFloat()) else null
         }
         if (busy || photo.visibility == VISIBLE) return
-        hint.text = if (codeMode) L.t("Apunta al código de barras o QR y toma la foto", "Point at the barcode or QR and take the photo")
-        else L.t("Apunta al texto y toma la foto", "Point at the text and take the photo")
+        hint.text = L.t("Apunta al texto o al código (barras o QR) y toma la foto", "Point at the text or code (barcode or QR) and take the photo")
     }
 
     fun applyPalette(p: Palette) {
@@ -300,10 +301,18 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         photo.setPhoto(bmp)
         photo.visibility = VISIBLE
         hint.visibility = VISIBLE
-        if (codeMode) { readCodes(bmp); return }
-        hint.text = L.t("Leyendo el texto…", "Reading the text…")
-        recognizer.process(InputImage.fromBitmap(bmp, 0))
+        hint.text = L.t("Leyendo…", "Reading…")
+        val img = InputImage.fromBitmap(bmp, 0)
+        found.clear()
+        codesRow.removeAllViews()
+        codesScroll.visibility = GONE
+        // Los códigos de barras y QR se leen al mismo tiempo que el texto
+        barcodes.process(img).addOnSuccessListener { list ->
+            addCodes(list.mapNotNull { it.rawValue?.trim() }.filter { it.isNotEmpty() })
+        }
+        recognizer.process(img)
             .addOnSuccessListener { result ->
+                addCodes(codesInText(result.text))
                 val words = ArrayList<WordsView.Word>()
                 var line = 0
                 for (block in result.textBlocks) for (l in block.lines) {
@@ -315,7 +324,8 @@ class ScanPanel(context: Context) : FrameLayout(context) {
                 }
                 busy = false
                 if (words.isEmpty()) {
-                    hint.text = L.t("No encontré texto. Prueba con más luz o más cerca.", "No text found. Try more light or get closer.")
+                    hint.text = if (found.isNotEmpty()) L.t("Toca el código para escribirlo", "Tap the code to type it")
+                        else L.t("No encontré texto ni códigos. Prueba con más luz o más cerca.", "No text or codes found. Try more light or get closer.")
                     return@addOnSuccessListener
                 }
                 hint.visibility = GONE
@@ -327,6 +337,32 @@ class ScanPanel(context: Context) : FrameLayout(context) {
                 busy = false
                 hint.text = L.t("No se pudo leer el texto. Inténtalo otra vez.", "Couldn't read the text. Try again.")
             }
+    }
+
+    private val found = LinkedHashSet<String>()
+
+    /** Agrega códigos encontrados (sin repetir) como botones arriba de la foto. */
+    private fun addCodes(list: List<String>) {
+        var changed = false
+        for (c in list) if (found.add(c)) changed = true
+        if (!changed) return
+        codesRow.removeAllViews()
+        for (c in found) {
+            val b = TextView(context)
+            b.text = c
+            b.textSize = 14f
+            b.maxLines = 1
+            b.ellipsize = TextUtils.TruncateAt.MIDDLE
+            b.maxWidth = d(240f)
+            b.gravity = Gravity.CENTER
+            b.setPadding(d(14f), 0, d(14f), 0)
+            b.setTextColor(onAccent)
+            b.background = PanelUi.pressable(accent, accent and 0xCCFFFFFF.toInt(), d(20f).toFloat())
+            b.setOnClickListener { actions?.onScanFeedback(); actions?.onScanInsert(c) }
+            codesRow.addView(b, LinearLayout.LayoutParams(-2, d(40f)).apply { rightMargin = d(8f) })
+        }
+        codesScroll.visibility = VISIBLE
+        if (photo.visibility == VISIBLE && resultBar.visibility != VISIBLE) hint.text = L.t("Toca el código para escribirlo", "Tap the code to type it")
     }
 
     /** Lee códigos de barras y QR; si no hay, busca una MAC o un número de serie escrito. */

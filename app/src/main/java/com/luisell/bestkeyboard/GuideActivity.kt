@@ -45,8 +45,8 @@ class GuideActivity : UiActivity() {
                 "Toca 😀: arriba puedes buscar emojis y el botón GIF abre los GIFs y stickers. Mientras escribes, el teclado te sugiere emojis (casa → 🏠).",
                 "Tap 😀: at the top you can search emojis and the GIF button opens GIFs and stickers. While you type, it suggests emojis (house → 🏠).")),
             Step(Icons.TICKET, tr("Notas → Ticket", "Notes → Ticket"), tr(
-                "Escribe rápido con tus palabras y toca 📋: la IA lo vuelve un ticket formal con tu formato DVSS. También puedes 🎤 dictar el reporte hablando.",
-                "Type quickly in your own words and tap 📋: the AI turns it into a formal ticket in your DVSS format. You can also 🎤 dictate the report.")),
+                "Escribe rápido con tus palabras y toca 📋: la IA lo vuelve un ticket formal con tu formato del trabajo. También puedes 🎤 dictar el reporte hablando.",
+                "Type quickly in your own words and tap 📋: the AI turns it into a formal ticket in your work format. You can also 🎤 dictate the report.")),
             Step(Icons.NOTEBOOK, tr("Libreta y Mis tickets", "Notebook and My tickets"), tr(
                 "📒 Apunta cosas durante el día y al final «Crear ticket del día». 🗂️ Mis tickets guarda cada ticket con su número.",
                 "📒 Note things during the day and at the end «Create the day's ticket». 🗂️ My tickets saves each ticket with its number.")),
@@ -57,8 +57,8 @@ class GuideActivity : UiActivity() {
                 "Las ✨ sugerencias cambian palabras sencillas por formales (arreglé → reparé). ✅ «Revisar antes de enviar» revisa todo el mensaje.",
                 "✨ suggestions swap simple words for formal ones (fixed → repaired). ✅ «Review before sending» checks the whole message.")),
             Step(Icons.BARCODE, tr("Escanear", "Scan"), tr(
-                "El escáner lee texto de una foto o, en «Código», códigos de barras y QR: números de serie y MAC sin escribirlos.",
-                "The scanner reads text from a photo or, in «Code», barcodes and QR codes: serial numbers and MACs without typing.")),
+                "Con una sola foto, el escáner lee el texto y también los códigos de barras y QR: números de serie y MAC sin escribirlos.",
+                "With one photo, the scanner reads the text and also barcodes and QR codes: serial numbers and MACs without typing.")),
             Step(Icons.TRANSLATE, tr("Traducir", "Translate"), tr(
                 "Escribe en español y sale en inglés, traduce un mensaje que te llegó, o en el micrófono toca «Escribir en inglés» para dictar en español y que salga en inglés.",
                 "Type in Spanish and get English, translate a message you got, or in the mic tap «Type in English» to speak Spanish and get English.")),

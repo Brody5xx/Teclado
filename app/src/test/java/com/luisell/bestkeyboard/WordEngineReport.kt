@@ -29,7 +29,7 @@ class WordEngineReport {
             "hloa", "hola", "graicas", "trabjo", "cmara", "camaras", "puerta", "instalacion",
             "cable", "cableado", "fibra", "electrico", "electrica", "hospital", "supermercado",
             "mañna", "nesecito", "ayer", "asi", "dia", "vamoss", "q", "xq", "ok", "jajaja",
-            "RUMC", "DVSS", "Mendoza", "Luisell", "acceso", "conexion", "revisar", "cambie",
+            "RUMC", "IDF", "Mendoza", "Luisell", "acceso", "conexion", "revisar", "cambie",
             "haser", "vien", "osea", "aveces", "tecnico", "door", "the", "meeting",
         )
         for (w in esCases) sb.append("  $w -> ${eng.correction(w, "es") ?: "(sin cambio)"}\n")
