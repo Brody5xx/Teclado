@@ -12,6 +12,13 @@
         <item name="android:layout_weight">1</item>
         <item name="android:gravity">center</item>
         <item name="android:textSize">12sp</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeMinTextSize">7sp</item>
+        <item name="android:autoSizeMaxTextSize">13sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:lineSpacingMultiplier">0.9</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:paddingBottom">2dp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">#FFFFFF</item>
         <item name="android:background">@drawable/widget_btn</item>

@@ -111,6 +111,8 @@ object Prefs {
     const val MATERIALS_TODAY = "materials_today"
     /** Mostrar "Mi jornada" en la pantalla de bloqueo (notificación con botones). */
     const val WORKDAY_NOTIF = "workday_notif"
+    /** La notificación de Mi jornada se queda siempre (con el botón 🛻 Comencé antes de empezar). */
+    const val WORKDAY_ALWAYS = "workday_always"
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)

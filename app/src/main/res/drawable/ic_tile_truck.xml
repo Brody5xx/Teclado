@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Camioneta (ícono de Mi jornada en la notificación y los ajustes rápidos) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,6h10v4h4.2l3.3,3.6V17h-1.6a2.4,2.4 0,0 1,-4.8 0H9.4a2.4,2.4 0,0 1,-4.8 0H3V6zM15,11.5V14h4l-2.3,-2.5H15zM7,15.6a1.4,1.4 0,1 0,0 2.8a1.4,1.4 0,1 0,0 -2.8zM16.5,15.6a1.4,1.4 0,1 0,0 2.8a1.4,1.4 0,1 0,0 -2.8z" />
+</vector>

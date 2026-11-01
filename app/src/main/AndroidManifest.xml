@@ -102,7 +102,22 @@
         </receiver>
         <receiver
             android:name=".WorkdayReceiver"
-            android:exported="false" />
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <!-- Botón de Mi jornada en los ajustes rápidos del teléfono -->
+        <service
+            android:name=".WorkdayTile"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_truck"
+            android:label="Mi jornada"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
         <activity
             android:name=".WorkdayActionActivity"
             android:exported="false"

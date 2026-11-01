@@ -83,6 +83,12 @@ class MainActivity : UiActivity() {
         TicketReminder.schedule(this)
         WorkdayCenter.refresh(this)
         prefs.registerOnSharedPreferenceChangeListener(reminderListener)
+        // Mi jornada en la pantalla de bloqueo necesita permiso de notificaciones (se pide una vez)
+        if (android.os.Build.VERSION.SDK_INT >= 33 && prefs.getBoolean(Prefs.WORKDAY_NOTIF, true) && !prefs.getBoolean("asked_notif", false) &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            prefs.edit().putBoolean("asked_notif", true).apply()
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
+        }
         // La primera vez, la guía rápida
         if (savedInstanceState == null && !prefs.getBoolean(Prefs.GUIDE_SEEN, false)) {
             prefs.edit().putBoolean(Prefs.GUIDE_SEEN, true).apply()
@@ -129,7 +135,7 @@ class MainActivity : UiActivity() {
 
     /** Cambias el aviso del ticket: se vuelve a programar (y pide permiso para notificaciones). */
     private val reminderListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == Prefs.WORKDAY_NOTIF) WorkdayCenter.refresh(this)
+        if (key == Prefs.WORKDAY_NOTIF || key == Prefs.WORKDAY_ALWAYS) WorkdayCenter.refresh(this)
         if (key == Prefs.REMINDER || key == Prefs.REMINDER_HOUR || key == Prefs.WORKDAY_NOTIF) {
             TicketReminder.schedule(this)
             if ((prefs.getBoolean(Prefs.REMINDER, false) || prefs.getBoolean(Prefs.WORKDAY_NOTIF, true)) && android.os.Build.VERSION.SDK_INT >= 33 &&
@@ -266,6 +272,7 @@ class MainActivity : UiActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         refreshMic()
         when (requestCode) {
+            REQ_NOTIF -> WorkdayCenter.refresh(this)
             REQ_PHOTOS -> if (Screenshots.hasPermission(this)) toast("¡Listo! Toma una captura y abre el teclado.", "Done! Take a screenshot and open the keyboard.")
                 else toast("Sin ese permiso no puedo sugerir tus capturas.", "Without that permission I can't suggest your screenshots.")
             REQ_CAMERA -> if (cameraGranted()) toast("¡Listo! Vuelve a donde escribías y toca el escáner.", "Done! Go back to where you were typing and tap the scanner.")
@@ -658,6 +665,10 @@ class MainActivity : UiActivity() {
         switch(tr("Mostrar Mi jornada en la pantalla de bloqueo", "Show My workday on the lock screen"), Prefs.WORKDAY_NOTIF, true,
             tr("Mientras estás trabajando sale una notificación con el tiempo corriendo y los botones Llegué / Salí / Casa, que puedes tocar sin desbloquear.",
                 "While you're working, a notification shows the running time and the Arrived / Left / Home buttons, which you can tap without unlocking."))
+        switch(tr("Dejarla siempre (con 🛻 Comencé antes de empezar)", "Keep it always (with 🛻 Start before you begin)"), Prefs.WORKDAY_ALWAYS, true,
+            tr("Así puedes tocar 🛻 Comencé desde la pantalla de bloqueo, sin desbloquear.", "So you can tap 🛻 Start from the lock screen, without unlocking."))
+        text(tr("También hay un botón en los ajustes rápidos: desliza la barra de arriba del teléfono hacia abajo, toca el lápiz ✏️ y arrastra «Comencé / Mi jornada».",
+            "There's also a Quick Settings button: swipe down from the top of the phone, tap the pencil ✏️ and drag «Start / My workday»."), 12f, faded = true)
         button(tr("📍 Mis sitios", "📍 My sites")) { startActivity(Intent(this, SitesActivity::class.java)) }
 
         // ---- Palabra de la semana
@@ -813,6 +824,14 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.1" to tr(
+            "•  Mi jornada en la pantalla de bloqueo con el botón 🛻 Comencé (sin desbloquear).\n" +
+                "•  Botón de Mi jornada en los ajustes rápidos del teléfono.\n" +
+                "•  El widget se ve completo aunque sea pequeño.",
+            "•  My workday on the lock screen with the 🛻 Start button (no unlocking).\n" +
+                "•  My workday button in the phone's Quick Settings.\n" +
+                "•  The widget looks complete even when small.",
+        ),
         "10.0" to tr(
             "•  🏠 Widget de Mi jornada y botones en la pantalla de bloqueo.\n" +
                 "•  📍 Mis sitios: al tocar «Llegué», el GPS sabe en qué sitio estás.\n" +

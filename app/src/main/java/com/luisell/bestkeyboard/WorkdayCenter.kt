@@ -30,6 +30,7 @@ import android.widget.Toast
  */
 object WorkdayCenter {
     const val ACTION = "com.luisell.bestkeyboard.WORKDAY"
+    const val ACTION_REFRESH = "com.luisell.bestkeyboard.WORKDAY_REFRESH"
     const val EXTRA_KIND = "kind"
     private const val CHANNEL = "workday"
     private const val NOTIF_ID = 4712
@@ -81,7 +82,25 @@ object WorkdayCenter {
     fun refresh(ctx: Context) {
         try { updateWidgets(ctx) } catch (_: Exception) { }
         try { updateNotification(ctx) } catch (_: Exception) { }
+        try {
+            if (Build.VERSION.SDK_INT >= 24) android.service.quicksettings.TileService.requestListeningState(ctx, ComponentName(ctx, WorkdayTile::class.java))
+        } catch (_: Exception) { }
+        scheduleMorning(ctx)
     }
+
+    /** Cada madrugada se pone en cero (para que la notificación de ayer no se quede). */
+    private fun scheduleMorning(ctx: Context) {
+        val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+        val c = java.util.Calendar.getInstance()
+        c.set(java.util.Calendar.HOUR_OF_DAY, 3); c.set(java.util.Calendar.MINUTE, 0); c.set(java.util.Calendar.SECOND, 0)
+        if (c.timeInMillis <= System.currentTimeMillis()) c.add(java.util.Calendar.DAY_OF_YEAR, 1)
+        val pi = PendingIntent.getBroadcast(ctx, 4713, Intent(ctx, WorkdayReceiver::class.java).setAction(ACTION_REFRESH),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        try { am.setWindow(android.app.AlarmManager.RTC, c.timeInMillis, 30 * 60 * 1000L, pi) } catch (_: Exception) { }
+    }
+
+    /** Qué toca después (para la tarjeta de ajustes rápidos). */
+    fun nextFor(ctx: Context): String = WorkDay.nextKind(WorkDay.day(Prefs.get(ctx)))
 
     private fun intentFor(ctx: Context, kind: String, req: Int): PendingIntent {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -116,7 +135,8 @@ object WorkdayCenter {
         val p = Prefs.get(ctx)
         val ev = WorkDay.day(p)
         val running = ev.isNotEmpty() && ev.last().kind != WorkDay.HOME
-        if (!running || !p.getBoolean(Prefs.WORKDAY_NOTIF, true)) { nm.cancel(NOTIF_ID); return }
+        val always = p.getBoolean(Prefs.WORKDAY_ALWAYS, true)
+        if (!p.getBoolean(Prefs.WORKDAY_NOTIF, true) || (!running && !always)) { nm.cancel(NOTIF_ID); return }
         if (Build.VERSION.SDK_INT >= 26) {
             val ch = NotificationChannel(CHANNEL, L.t("Mi jornada", "My workday"), NotificationManager.IMPORTANCE_LOW)
             ch.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -126,17 +146,17 @@ object WorkdayCenter {
         val (title, text) = status(ctx)
         @Suppress("DEPRECATION")
         val b = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(ctx, CHANNEL) else Notification.Builder(ctx)
-        b.setSmallIcon(android.R.drawable.ic_menu_recent_history)
+        b.setSmallIcon(R.drawable.ic_tile_truck)
             .setContentTitle(title)
             .setContentText(text)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
-            .setShowWhen(true)
-            .setWhen(ev.first().time)
-            .setUsesChronometer(true)
-        val last = ev.last().kind
-        val next = when (last) {
+            .setContentIntent(PendingIntent.getActivity(ctx, 98, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        if (running) b.setShowWhen(true).setWhen(ev.first().time).setUsesChronometer(true) else b.setShowWhen(false)
+        // Sin empezar (o ya terminaste): solo el botón 🛻 Comencé, listo en la pantalla de bloqueo
+        val next = if (!running) listOf(WorkDay.START) else when (ev.last().kind) {
             WorkDay.START -> listOf(WorkDay.ARRIVE, WorkDay.HOME)
             WorkDay.ARRIVE -> listOf(WorkDay.LEAVE)
             else -> listOf(WorkDay.ARRIVE, WorkDay.HOME)
@@ -209,6 +229,10 @@ class WorkdayWidget : AppWidgetProvider() {
 /** Botones del widget y de la notificación (menos "Llegué", que necesita el GPS). */
 class WorkdayReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
+        if (intent.action == WorkdayCenter.ACTION_REFRESH || intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            WorkdayCenter.refresh(ctx)
+            return
+        }
         val kind = intent.getStringExtra(WorkdayCenter.EXTRA_KIND) ?: return
         val pending = goAsync()
         WorkdayCenter.record(ctx, kind) { e ->
@@ -228,5 +252,38 @@ class WorkdayActionActivity : Activity() {
             WorkdayCenter.toastFor(applicationContext, e)
             finish()
         }
+    }
+}
+
+/**
+ * Botón en los ajustes rápidos (deslizas la barra de arriba del teléfono, también con la pantalla bloqueada):
+ * un toque anota lo que sigue en tu jornada (Comencé → Llegué → Salí → Casa).
+ */
+class WorkdayTile : android.service.quicksettings.TileService() {
+    override fun onStartListening() {
+        super.onStartListening()
+        paint()
+    }
+
+    private fun paint() {
+        val t = qsTile ?: return
+        L.set(Prefs.get(this).getString(Prefs.LANG, "es") ?: "es")
+        val ev = WorkDay.day(Prefs.get(this))
+        val running = ev.isNotEmpty() && ev.last().kind != WorkDay.HOME
+        val next = WorkDay.nextKind(ev)
+        t.label = WorkDay.label(next).drop(2).trim()
+        if (Build.VERSION.SDK_INT >= 29) t.subtitle = if (running) L.t("Mi jornada · ", "Workday · ") + WorkDay.dur(WorkDay.summary(ev).total) else L.t("Mi jornada", "My workday")
+        t.state = if (running) android.service.quicksettings.Tile.STATE_ACTIVE else android.service.quicksettings.Tile.STATE_INACTIVE
+        t.updateTile()
+    }
+
+    override fun onClick() {
+        super.onClick()
+        val kind = WorkdayCenter.nextFor(this)
+        WorkdayCenter.record(this, kind) { e ->
+            WorkdayCenter.toastFor(applicationContext, e)
+            paint()
+        }
+        paint()
     }
 }
