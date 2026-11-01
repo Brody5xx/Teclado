@@ -1482,7 +1482,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_WORKDAY -> Icons.TRUCK
         TOOL_MATERIALS -> Icons.BOX
         TOOL_REPLY -> Icons.REPLY
-        TOOL_SITES -> Icons.PIN
+        TOOL_SITES -> Icons.MAP_PIN
         else -> -1
     }
 

@@ -78,7 +78,7 @@ object Icons {
     const val TRUCK = 61
     const val BOX = 62
     const val REPLY = 63
-    const val PIN = 64
+    const val MAP_PIN = 64
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -505,7 +505,7 @@ object Icons {
                 path.quadTo(cx + s * 0.45f, cy - s * 0.25f, cx + s * 0.5f, cy + s * 0.15f)
                 c.drawPath(path, st)
             }
-            PIN -> {
+            MAP_PIN -> {
                 // Marcador de mapa (mis sitios)
                 path.reset()
                 path.moveTo(cx, cy + s * 0.98f)
