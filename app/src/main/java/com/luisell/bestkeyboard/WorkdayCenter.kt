@@ -86,6 +86,8 @@ object WorkdayCenter {
                         if (short.isNotEmpty()) {
                             WorkDay.setSite(p, t, short)
                             SiteStore.setNew(p, SiteStore.NewPlace(t, short, full, loc.latitude, loc.longitude))
+                            // Para saber solo cuándo te vas de este lugar nuevo
+                            AutoSites.register(ctx)
                         }
                         refresh(ctx)
                         done?.invoke(WorkDay.Event(t, kind, short))
@@ -103,6 +105,39 @@ object WorkdayCenter {
             if (Build.VERSION.SDK_INT >= 24) android.service.quicksettings.TileService.requestListeningState(ctx, ComponentName(ctx, WorkdayTile::class.java))
         } catch (_: Exception) { }
         scheduleMorning(ctx)
+        try { scheduleOvertime(ctx) } catch (_: Exception) { }
+    }
+
+    const val ACTION_OVERTIME = "com.luisell.bestkeyboard.WORKDAY_OVERTIME"
+
+    /** Programa el aviso de "ya llevas 8 horas" para la hora justa. */
+    private fun scheduleOvertime(ctx: Context) {
+        val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+        val pi = PendingIntent.getBroadcast(ctx, 4714, Intent(ctx, WorkdayReceiver::class.java).setAction(ACTION_OVERTIME),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        am.cancel(pi)
+        val p = Prefs.get(ctx)
+        val ev = WorkDay.day(p)
+        if (WorkDay.dayHours <= 0 || !WorkDay.isRunning(ev)) return
+        if (p.getString(Prefs.OVERTIME_SENT, "") == todayKey()) return
+        val left = WorkDay.dayHours * 3600_000L - WorkDay.summary(ev).total
+        if (left <= 0) { overtimeAlert(ctx); return }
+        try { am.setWindow(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + left, 2 * 60_000L, pi) } catch (_: Exception) { }
+    }
+
+    private fun todayKey() = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+
+    /** "⏰ Ya llevas 8 horas: desde ahora es tiempo extra" (una vez al día). */
+    fun overtimeAlert(ctx: Context) {
+        val p = Prefs.get(ctx)
+        L.set(p.getString(Prefs.LANG, "es") ?: "es")
+        val ev = WorkDay.day(p)
+        if (WorkDay.dayHours <= 0 || !WorkDay.isRunning(ev) || p.getString(Prefs.OVERTIME_SENT, "") == todayKey()) return
+        if (WorkDay.summary(ev).total < WorkDay.dayHours * 3600_000L - 60_000L) { scheduleOvertime(ctx); return }
+        p.edit().putString(Prefs.OVERTIME_SENT, todayKey()).apply()
+        AutoSites.notify(ctx, L.t("⏰ Ya llevas ${WorkDay.dayHours} horas", "⏰ You've worked ${WorkDay.dayHours} hours"),
+            L.t("Desde ahora es tiempo extra. Semana: ${WorkDay.dur(WorkDay.weekTotal(p))}.", "From now on it's overtime. Week: ${WorkDay.dur(WorkDay.weekTotal(p))}."),
+            null, 4721)
     }
 
     /** Cada madrugada se pone en cero (para que la notificación de ayer no se quede). */
@@ -249,8 +284,11 @@ class WorkdayWidget : AppWidgetProvider() {
 /** Botones del widget y de la notificación (menos "Llegué", que necesita el GPS). */
 class WorkdayReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
+        if (intent.action == WorkdayCenter.ACTION_OVERTIME) { WorkdayCenter.overtimeAlert(ctx); return }
         if (intent.action == WorkdayCenter.ACTION_REFRESH || intent.action == Intent.ACTION_BOOT_COMPLETED) {
             WorkdayCenter.refresh(ctx)
+            // Al prender el teléfono las geocercas se borran: se vuelven a poner
+            if (intent.action == Intent.ACTION_BOOT_COMPLETED) AutoSites.register(ctx)
             return
         }
         val kind = intent.getStringExtra(WorkdayCenter.EXTRA_KIND) ?: return

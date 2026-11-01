@@ -78,6 +78,13 @@ class WorkdayButtonsActivity : UiActivity() {
         col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
         paintIcons()
 
+        // ---- Horas extra
+        card(tr("Horas extra", "Overtime"), Icons.STOPWATCH)
+        segmented(tr("Horas normales por día", "Regular hours per day"), Prefs.OVERTIME_DAY, "8",
+            listOf("0" to tr("Sin aviso", "Off"), "8" to "8 h", "9" to "9 h", "10" to "10 h")) { WorkDay.config(prefs); WorkdayCenter.refresh(this) }
+        text(tr("Al pasar esas horas te llega un aviso y Mi jornada te muestra las horas extra. En la semana, lo que pase de 40 horas.",
+            "When you pass those hours you get an alert and My workday shows the overtime. For the week, anything over 40 hours."), 12f, faded = true)
+
         // ---- Almuerzo
         card(tr("Almuerzo", "Lunch"), Icons.CLOCK)
         text(tr("Mientras trabajas sale el botón «🍔 Salí a almorzar» y después «↩️ Regresé», para anotar cuánto tomaste.",

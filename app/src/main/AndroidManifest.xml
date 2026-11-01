@@ -19,6 +19,8 @@
     <!-- Escribir dónde estás en el ticket (solo cuando tocas el botón) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Llegada y salida automáticas (solo si lo prendes en Mis sitios) -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <!-- Aviso diario del ticket -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -126,6 +128,11 @@
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- Llegada y salida automáticas (geocercas de Mis sitios) -->
+        <receiver
+            android:name=".AutoSitesReceiver"
+            android:exported="false" />
 
         <!-- Copia de seguridad automática cada semana -->
         <receiver

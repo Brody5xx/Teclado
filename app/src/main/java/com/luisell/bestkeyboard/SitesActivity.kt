@@ -59,6 +59,10 @@ class SitesActivity : UiActivity() {
 
         text(tr("Cuando tocas «📍 Llegué al sitio», el teclado usa el GPS para saber en cuál estás y lo pone en tu jornada y en el ticket (Location).",
             "When you tap «📍 Arrived on site», the keyboard uses GPS to know which one you're at and puts it in your workday and ticket (Location)."), 13f, faded = true)
+        // ---- Llegada y salida automáticas
+        autoBtn = button("") { toggleAuto() }
+        autoHelp = text("", 12f, faded = true)
+        paintAuto()
         button(tr("📍 Guardar donde estoy ahora", "📍 Save where I am now"), primary = true) { saveHere() }
         button(tr("➕ Agregar por dirección", "➕ Add by address")) { addByAddress() }
         SiteStore.getNew(prefs)?.let { n ->
@@ -78,7 +82,71 @@ class SitesActivity : UiActivity() {
         }
     }
 
+    private lateinit var autoBtn: TextView
+    private lateinit var autoHelp: TextView
+
+    private fun paintAuto() {
+        val on = AutoSites.isOn(this)
+        val ready = AutoSites.ready(this)
+        autoBtn.text = when {
+            !on -> tr("🤖 Llegada y salida automáticas: Apagado", "🤖 Automatic arrival and departure: Off")
+            ready -> tr("🤖 Llegada y salida automáticas: ✓ Encendido", "🤖 Automatic arrival and departure: ✓ On")
+            else -> tr("⚠️ Falta un permiso (toca para darlo)", "⚠️ A permission is missing (tap to give it)")
+        }
+        autoHelp.text = if (!on) tr("Si lo prendes, cuando llegues a uno de tus sitios y te quedes unos minutos se anota «Llegué» con la hora en que entraste, y cuando te vayas se anota «Salí». Siempre te llega un aviso con «Deshacer».",
+            "If you turn it on, when you arrive at one of your sites and stay a few minutes, «Arrived» is logged with the time you got there, and when you leave, «Left» is logged. You always get an alert with «Undo».")
+        else if (!ready) tr("Para que funcione con el teclado cerrado, en Ubicación elige «Permitir todo el tiempo». El teléfono usa geocercas, que gastan muy poca batería.",
+            "To work with the keyboard closed, under Location choose «Allow all the time». The phone uses geofences, which use very little battery.")
+        else tr("Funciona con los sitios guardados de abajo. Usa muy poca batería. Si un día no estás trabajando, toca «Deshacer» en el aviso.",
+            "Works with the saved sites below. Uses very little battery. If you're not working one day, tap «Undo» on the alert.")
+    }
+
+    private fun toggleAuto() {
+        val on = AutoSites.isOn(this)
+        if (on && AutoSites.ready(this)) {
+            prefs.edit().putBoolean(Prefs.AUTO_SITES, false).apply()
+            AutoSites.register(this)
+            paintAuto()
+            return
+        }
+        prefs.edit().putBoolean(Prefs.AUTO_SITES, true).apply()
+        askAutoPermissions()
+    }
+
+    private fun askAutoPermissions() {
+        when {
+            !WorkdayCenter.hasLocation(this) ->
+                requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 41)
+            !AutoSites.hasBackground(this) -> AlertDialog.Builder(this)
+                .setTitle(tr("Un permiso más", "One more permission"))
+                .setMessage(tr("En la pantalla que se abre, toca «Permitir todo el tiempo». Así el teléfono sabe cuándo llegas o te vas aunque el teclado esté cerrado.",
+                    "On the screen that opens, tap «Allow all the time». That way the phone knows when you arrive or leave even with the keyboard closed."))
+                .setPositiveButton(tr("Continuar", "Continue")) { _, _ ->
+                    requestPermissions(arrayOf("android.permission.ACCESS_BACKGROUND_LOCATION"), 42)
+                }
+                .setNegativeButton(tr("Ahora no", "Not now"), null)
+                .show()
+            else -> {
+                AutoSites.register(this)
+                toast("¡Listo! Ya se anota solo cuando llegas y te vas.", "Done! Arrivals and departures are now logged automatically.")
+            }
+        }
+        paintAuto()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if ((requestCode == 41 || requestCode == 42) && AutoSites.isOn(this)) askAutoPermissions()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::autoBtn.isInitialized) paintAuto()
+        if (AutoSites.isOn(this)) AutoSites.register(this)
+    }
+
     private fun refresh() {
+        AutoSites.register(this)
         list.removeAllViews()
         val sites = SiteStore.all(prefs)
         if (sites.isEmpty()) {

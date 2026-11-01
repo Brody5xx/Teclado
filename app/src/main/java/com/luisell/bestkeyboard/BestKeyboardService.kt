@@ -3193,6 +3193,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             rows.add(ListPanel.Row(L.t("Hoy", "Today") + (if (sum.running) L.t(" · en curso", " · in progress") else ""),
                 L.t("Total ${WorkDay.dur(sum.total)}\nEn el sitio ${WorkDay.dur(sum.site)} · Manejando ${WorkDay.dur(sum.driving)}",
                     "Total ${WorkDay.dur(sum.total)}\nOn site ${WorkDay.dur(sum.site)} · Driving ${WorkDay.dur(sum.driving)}") +
+                    (if (WorkDay.overtime(sum.total) > 0) "\n" + L.t("⏰ Horas extra: ", "⏰ Overtime: ") + WorkDay.dur(WorkDay.overtime(sum.total)) else "") +
                     (if (sum.lunch > 0) "\n" + (if (sum.onLunch) L.t("🍔 Almorzando: ", "🍔 At lunch: ") else L.t("🍔 Almuerzo: ", "🍔 Lunch: ")) + WorkDay.dur(sum.lunch) +
                         (if (sum.lunchAuto) L.t(" (fijo, no marcado)", " (fixed, not logged)") else "") +
                         (if (WorkDay.lunchPaid) L.t(" · pagado", " · paid") else L.t(" · se descuentan ", " · deducted ") + WorkDay.dur(sum.deducted)) else "")))
@@ -3228,7 +3229,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 startActivity(Intent(this, WorkdayButtonsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
             } catch (_: Exception) { }
         })
-        panel.show(WorkDay.title() + "  ·  " + L.t("semana ", "week ") + WorkDay.dur(WorkDay.weekTotal(prefs)), rows,
+        val wk = WorkDay.weekTotal(prefs)
+        val wkOt = WorkDay.weekOvertime(wk)
+        panel.show(WorkDay.title() + "  ·  " + L.t("semana ", "week ") + WorkDay.dur(wk) + (if (wkOt > 0) L.t(" (+${WorkDay.dur(wkOt)} extra)", " (+${WorkDay.dur(wkOt)} OT)") else ""), rows,
             L.t("Toca los botones de abajo para anotar tu día: " + WorkDay.enabledKinds().joinToString(", ") { WorkDay.label(it) } + ". Si se te olvidó, toca la hora para cambiarla. Con ✏️ Editar botones les cambias el nombre o quitas los que no uses.",
                 "Tap the buttons below to log your day: " + WorkDay.enabledKinds().joinToString(", ") { WorkDay.label(it) } + ". If you forgot, tap the time to change it. With ✏️ Edit buttons you can rename them or remove the ones you don't use."),
             buttons)

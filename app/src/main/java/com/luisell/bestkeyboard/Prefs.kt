@@ -110,6 +110,10 @@ object Prefs {
     const val GUIDE_SEEN = "guide_seen"
     /** Mis sitios (lista JSON). */
     const val SITES = "sites"
+    const val AUTO_SITES = "auto_sites"        // llegada y salida automáticas (geocercas)
+    const val AUTO_ENTER = "auto_enter"        // a qué hora entraste a cada sitio (para la hora de llegada)
+    const val OVERTIME_DAY = "overtime_day"    // horas normales por día ("0" = sin aviso)
+    const val OVERTIME_SENT = "overtime_sent"  // día en que ya se avisó de horas extra
     const val SITE_NEW = "site_new"            // lugar nuevo (no guardado) donde tocaste «Llegué»: para preguntar si lo guardas
     /** Lista de materiales (los tuyos) y lo que usaste hoy. */
     const val MATERIALS = "materials"

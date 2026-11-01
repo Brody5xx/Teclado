@@ -340,6 +340,7 @@ class MainActivity : UiActivity() {
         refreshStatus()
         refreshMic()
         WordStore.load(this) { refreshLearned() }
+        if (AutoSites.isOn(this)) AutoSites.register(this)
     }
 
     private fun refreshLearned() {
@@ -881,6 +882,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "11.5" to tr("•  🤖 Llegada y salida automáticas (Mis sitios): al llegar a uno de tus sitios y quedarte unos minutos se anota «Llegué» con la hora en que entraste; al irte se anota «Salí». Siempre con un aviso para «Deshacer».\n•  ⏰ Horas extra: aviso al pasar tus horas normales del día (8 h, 9 h o 10 h) y las horas extra del día y de la semana (más de 40 h).",
+            "•  🤖 Automatic arrival and departure (My sites): when you arrive at one of your sites and stay a few minutes, «Arrived» is logged with the time you got there; when you leave, «Left» is logged. Always with an «Undo» alert.\n•  ⏰ Overtime: alert when you pass your regular daily hours (8, 9 or 10 h) and overtime shown for the day and the week (over 40 h)."),
         "11.4.1" to tr("•  Ejemplos nuevos y genéricos en toda la app (sin nombres de lugares reales).",
             "•  New generic examples throughout the app (no real place names)."),
         "11.4" to tr("•  Mi jornada: al tocar «📍 Llegué al sitio» en un lugar que no tienes guardado, el GPS busca la dirección y la anota («Llegué a 123 Main St»).\n•  Luego te pregunta «¿Guardar este sitio?»: le pones nombre una vez y la próxima vez lo reconoce solo (y lo de hoy también cambia al nombre nuevo).",

@@ -34,6 +34,17 @@ object WorkDay {
         private set
     var lunchAutoMin = 30
         private set
+    /** Horas normales por día (después son horas extra). 0 = sin horas extra. */
+    var dayHours = 8
+        private set
+    const val WEEK_HOURS = 40
+
+    /** Horas extra del día (0 si no hay). */
+    fun overtime(total: Long): Long = if (dayHours <= 0) 0L else maxOf(0L, total - dayHours * 3600_000L)
+
+    /** Horas extra de la semana (pasando de 40). */
+    fun weekOvertime(total: Long): Long = if (dayHours <= 0) 0L else maxOf(0L, total - WEEK_HOURS * 3600_000L)
+
     /** true = siempre se descuenta el tiempo fijo, cualquier día y aunque tomes más o menos. */
     var lunchAlways = true
         private set
@@ -69,6 +80,7 @@ object WorkDay {
         lunchPaid = p.getBoolean(Prefs.LUNCH_PAID, false)
         lunchAutoMin = (p.getString(Prefs.LUNCH_AUTO, "30") ?: "30").toIntOrNull() ?: 30
         lunchAlways = (p.getString(Prefs.LUNCH_RULE, "always") ?: "always") == "always"
+        dayHours = (p.getString(Prefs.OVERTIME_DAY, "8") ?: "8").toIntOrNull() ?: 8
         val raw = p.getString(Prefs.WORKDAY_BTNS, "") ?: ""
         if (raw == cfgRaw) return
         cfgRaw = raw
@@ -156,6 +168,12 @@ object WorkDay {
     }
 
     /** Anota un evento ahora y devuelve su hora. */
+    /** Anota un evento a una hora que ya pasó (llegada/salida automática). */
+    fun addAt(p: SharedPreferences, kind: String, site: String, time: Long): Long {
+        save(p, all(p) + Event(time, kind, site))
+        return time
+    }
+
     fun add(p: SharedPreferences, kind: String, site: String = ""): Long {
         val t = System.currentTimeMillis()
         save(p, all(p) + Event(t, kind, site))
@@ -311,8 +329,10 @@ object WorkDay {
             (if (english) ticketLabel(it.kind) else plainLabel(it.kind)) + ": " + WorkStore.time(it.time) +
                 (if (it.site.isNotEmpty()) " (${it.site})" else "")
         }
-        val tot = if (english) "Total: ${dur(s.total)} (on site ${dur(s.site)}, driving ${dur(s.driving)})"
-            else "Total: ${dur(s.total)} (en el sitio ${dur(s.site)}, manejando ${dur(s.driving)})"
+        val ot = overtime(s.total)
+        val tot = (if (english) "Total: ${dur(s.total)} (on site ${dur(s.site)}, driving ${dur(s.driving)})"
+            else "Total: ${dur(s.total)} (en el sitio ${dur(s.site)}, manejando ${dur(s.driving)})") +
+            (if (ot > 0) (if (english) "\nOvertime: ${dur(ot)}" else "\nHoras extra: ${dur(ot)}") else "")
         val lunch = if (s.lunch <= 0) emptyList() else listOf(
             if (english) "Lunch: ${dur(s.lunch)}" + (if (s.lunchAuto) " (not logged)" else "") + (if (lunchPaid) " (paid)" else " (unpaid, ${dur(s.deducted)} deducted)")
             else "Almuerzo: ${dur(s.lunch)}" + (if (s.lunchAuto) " (no marcado)" else "") + (if (lunchPaid) " (pagado)" else " (no pagado, se descuentan ${dur(s.deducted)})"))
