@@ -36,6 +36,7 @@ object WorkDay {
 
     /** Lee cómo personalizaste los botones (rápido: solo si cambió). */
     fun config(p: SharedPreferences) {
+        icon = p.getString(Prefs.WORKDAY_ICON, "truck") ?: "truck"
         val raw = p.getString(Prefs.WORKDAY_BTNS, "") ?: ""
         if (raw == cfgRaw) return
         cfgRaw = raw
@@ -58,6 +59,26 @@ object WorkDay {
         p.edit().putString(Prefs.WORKDAY_BTNS, o.toString()).apply()
         config(p)
     }
+
+    // ---- El ícono de Mi jornada (camioneta, reloj, maletín…)
+    private var icon = "truck"
+    val ICONS = listOf("truck", "clock", "stopwatch", "briefcase", "calendar", "hardhat", "building")
+
+    fun iconId() = icon
+    fun iconEmoji(id: String = icon) = when (id) {
+        "clock" -> "⏰"; "stopwatch" -> "⏱️"; "briefcase" -> "💼"; "calendar" -> "📅"; "hardhat" -> "👷"; "building" -> "🏢"; else -> "🛻"
+    }
+    fun iconKind(id: String = icon) = when (id) {
+        "clock" -> Icons.CLOCK; "stopwatch" -> Icons.STOPWATCH; "briefcase" -> Icons.BRIEFCASE; "calendar" -> Icons.CALENDAR
+        "hardhat" -> Icons.HARDHAT; "building" -> Icons.BUILDING; else -> Icons.TRUCK
+    }
+    fun iconRes(id: String = icon) = when (id) {
+        "clock" -> R.drawable.ic_wd_clock; "stopwatch" -> R.drawable.ic_wd_stopwatch; "briefcase" -> R.drawable.ic_wd_briefcase
+        "calendar" -> R.drawable.ic_wd_calendar; "hardhat" -> R.drawable.ic_wd_hardhat; "building" -> R.drawable.ic_wd_building
+        else -> R.drawable.ic_tile_truck
+    }
+    /** "🛻 Mi jornada" con el ícono que elegiste. */
+    fun title() = iconEmoji() + " " + L.t("Mi jornada", "My workday")
 
     fun isOn(kind: String) = kind in on
     fun customName(kind: String): String = names[kind] ?: ""

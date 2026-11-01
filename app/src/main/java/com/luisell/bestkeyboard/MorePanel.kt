@@ -21,7 +21,9 @@ import kotlin.math.abs
 
 /** Todos los botones de la barra de arriba. Se pueden acomodar entre la barra y "Más opciones". */
 object Tools {
-    class Info(val tool: Int, val icon: Int, val es: String, val en: String, val opens: Boolean) {
+    class Info(val tool: Int, private val baseIcon: Int, val es: String, val en: String, val opens: Boolean) {
+        /** Mi jornada usa el ícono que elegiste. */
+        val icon get() = if (tool == KeyboardView.TOOL_WORKDAY) WorkDay.iconKind() else baseIcon
         val label get() = L.t(es, en)
     }
 

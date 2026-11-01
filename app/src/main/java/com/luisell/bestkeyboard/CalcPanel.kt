@@ -29,6 +29,7 @@ class CalcPanel(context: Context) : FrameLayout(context) {
     private val expr = StringBuilder()
     private val exprView = TextView(context)
     private val resultView = TextView(context)
+    private val backBtn = IconView(context, Icons.BACK, 7.5f)
     private val keys = ArrayList<Pair<TextView, Int>>() // (botón, tipo: 0 número, 1 operación, 2 igual/insertar)
 
     init {
@@ -49,7 +50,13 @@ class CalcPanel(context: Context) : FrameLayout(context) {
         resultView.maxLines = 1
         display.addView(exprView, LinearLayout.LayoutParams(-1, -2))
         display.addView(resultView, LinearLayout.LayoutParams(-1, -2))
-        body.addView(display, LinearLayout.LayoutParams(-1, -2))
+        val top = LinearLayout(context)
+        top.orientation = LinearLayout.HORIZONTAL
+        top.gravity = Gravity.CENTER_VERTICAL
+        backBtn.setOnClickListener { actions?.onCalcFeedback(); actions?.onCalcBack() }
+        top.addView(backBtn, LinearLayout.LayoutParams(d(40f), d(36f)))
+        top.addView(display, LinearLayout.LayoutParams(0, -2, 1f))
+        body.addView(top, LinearLayout.LayoutParams(-1, -2))
 
         val grid = listOf(
             listOf("C", "(", ")", "÷"),
@@ -179,6 +186,9 @@ class CalcPanel(context: Context) : FrameLayout(context) {
         setBackgroundColor(p.bg)
         exprView.setTextColor(p.hint)
         resultView.setTextColor(p.text)
+        backBtn.color = p.text
+        backBtn.bgColor = p.bg
+        backBtn.background = PanelUi.pressable(p.special, p.keyPressed, d(18f).toFloat())
         val r = d(12f).toFloat()
         for ((t, type) in keys) {
             when (type) {

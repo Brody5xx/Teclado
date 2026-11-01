@@ -82,6 +82,13 @@ object Icons {
     const val SEND = 65
     const val WEEK = 66
     const val STEER = 67
+    const val STOPWATCH = 68
+    const val BRIEFCASE = 69
+    const val CALENDAR = 70
+    const val HARDHAT = 71
+    const val BUILDING = 72
+    const val CHECK = 73
+    const val TRASH = 74
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -473,6 +480,62 @@ object Icons {
                 c.drawLine(cx - s * 0.4f, cy - s * 0.5f, cx + s * 0.4f, cy - s * 0.5f, st)
                 for (yy in 0..1) for (xx in 0..2)
                     c.drawCircle(cx - s * 0.4f + xx * s * 0.4f, cy + s * 0.05f + yy * s * 0.45f, s * 0.09f, fl)
+            }
+            CHECK -> {
+                path.reset()
+                path.moveTo(cx - s * 0.6f, cy)
+                path.lineTo(cx - s * 0.15f, cy + s * 0.45f)
+                path.lineTo(cx + s * 0.65f, cy - s * 0.45f)
+                c.drawPath(path, st)
+            }
+            TRASH -> {
+                // Bote de basura
+                c.drawLine(cx - s * 0.85f, cy - s * 0.6f, cx + s * 0.85f, cy - s * 0.6f, st)
+                c.drawLine(cx - s * 0.3f, cy - s * 0.85f, cx + s * 0.3f, cy - s * 0.85f, st)
+                path.reset()
+                path.moveTo(cx - s * 0.65f, cy - s * 0.6f)
+                path.lineTo(cx - s * 0.5f, cy + s * 0.95f)
+                path.lineTo(cx + s * 0.5f, cy + s * 0.95f)
+                path.lineTo(cx + s * 0.65f, cy - s * 0.6f)
+                c.drawPath(path, st)
+                c.drawLine(cx - s * 0.2f, cy - s * 0.25f, cx - s * 0.2f, cy + s * 0.6f, st)
+                c.drawLine(cx + s * 0.2f, cy - s * 0.25f, cx + s * 0.2f, cy + s * 0.6f, st)
+            }
+            STOPWATCH -> {
+                c.drawCircle(cx, cy + s * 0.12f, s * 0.8f, st)
+                c.drawLine(cx - s * 0.25f, cy - s * 0.95f, cx + s * 0.25f, cy - s * 0.95f, st)
+                c.drawLine(cx, cy - s * 0.95f, cx, cy - s * 0.68f, st)
+                c.drawLine(cx, cy + s * 0.12f, cx + s * 0.3f, cy - s * 0.25f, st)
+            }
+            BRIEFCASE -> {
+                r.set(cx - s * 0.95f, cy - s * 0.45f, cx + s * 0.95f, cy + s * 0.85f)
+                c.drawRoundRect(r, s * 0.18f, s * 0.18f, st)
+                r.set(cx - s * 0.38f, cy - s * 0.85f, cx + s * 0.38f, cy - s * 0.45f)
+                c.drawRoundRect(r, s * 0.12f, s * 0.12f, st)
+                c.drawLine(cx - s * 0.95f, cy + s * 0.12f, cx + s * 0.95f, cy + s * 0.12f, st)
+            }
+            CALENDAR -> {
+                r.set(cx - s * 0.9f, cy - s * 0.7f, cx + s * 0.9f, cy + s * 0.9f)
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, st)
+                c.drawLine(cx - s * 0.9f, cy - s * 0.25f, cx + s * 0.9f, cy - s * 0.25f, st)
+                c.drawLine(cx - s * 0.45f, cy - s * 0.95f, cx - s * 0.45f, cy - s * 0.55f, st)
+                c.drawLine(cx + s * 0.45f, cy - s * 0.95f, cx + s * 0.45f, cy - s * 0.55f, st)
+                c.drawCircle(cx - s * 0.35f, cy + s * 0.3f, s * 0.12f, fl)
+            }
+            HARDHAT -> {
+                r.set(cx - s * 0.75f, cy - s * 0.85f, cx + s * 0.75f, cy + s * 0.65f)
+                c.drawArc(r, 180f, 180f, false, st)
+                c.drawLine(cx - s * 0.98f, cy - s * 0.1f, cx + s * 0.98f, cy - s * 0.1f, st)
+                c.drawLine(cx, cy - s * 0.85f, cx, cy - s * 0.35f, st)
+                c.drawLine(cx - s * 0.98f, cy - s * 0.1f, cx - s * 0.98f, cy + s * 0.25f, st)
+                c.drawLine(cx + s * 0.98f, cy - s * 0.1f, cx + s * 0.98f, cy + s * 0.25f, st)
+            }
+            BUILDING -> {
+                r.set(cx - s * 0.75f, cy - s * 0.95f, cx + s * 0.25f, cy + s * 0.95f)
+                c.drawRect(r, st)
+                r.set(cx + s * 0.25f, cy - s * 0.3f, cx + s * 0.9f, cy + s * 0.95f)
+                c.drawRect(r, st)
+                for (yy in 0..2) for (xx in 0..1) c.drawCircle(cx - s * 0.48f + xx * s * 0.45f, cy - s * 0.55f + yy * s * 0.5f, s * 0.09f, fl)
             }
             SEND -> {
                 // Avión de papel (mensaje de estado)

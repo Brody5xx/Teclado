@@ -2066,7 +2066,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_NOTEBOOK -> Icons.NOTEBOOK
         TOOL_TICKETS -> Icons.TICKETS
         TOOL_WORD -> Icons.BOOK
-        TOOL_WORKDAY -> Icons.TRUCK
+        TOOL_WORKDAY -> WorkDay.iconKind()
         TOOL_MATERIALS -> Icons.BOX
         TOOL_REPLY -> Icons.REPLY
         TOOL_SITES -> Icons.MAP_PIN

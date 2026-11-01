@@ -880,6 +880,16 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "10.6" to tr(
+            "•  Mi jornada: elige el ícono (camioneta, reloj, cronómetro, maletín, calendario, casco o edificio).\n" +
+                "•  Portapapeles como Gboard: mantén presionado para seleccionar varios (los demás tiemblan), fijar, borrar o editar lo que copiaste.\n" +
+                "•  ✏️ Lápiz en el portapapeles para agregar textos tuyos.\n" +
+                "•  Botón ← de atrás en todos los paneles.",
+            "•  My workday: pick the icon (truck, clock, stopwatch, briefcase, calendar, hard hat or building).\n" +
+                "•  Clipboard like Gboard: press and hold to select several (the others wiggle), pin, delete or edit what you copied.\n" +
+                "•  ✏️ Pencil in the clipboard to add your own texts.\n" +
+                "•  ← Back button on every panel.",
+        ),
         "10.5" to tr("•  Mi jornada a tu gusto: cambia el nombre de los botones y quita los que no uses (por ejemplo «Comencé» si no vas en camioneta).",
             "•  My workday your way: rename the buttons and hide the ones you don't use (for example «Started» if you don't ride a truck)."),
         "10.4" to tr(

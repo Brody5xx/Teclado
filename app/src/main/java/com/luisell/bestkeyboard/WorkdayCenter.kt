@@ -116,9 +116,9 @@ object WorkdayCenter {
     private fun status(ctx: Context): Pair<String, String> {
         val ev = WorkDay.day(Prefs.get(ctx))
         val s = WorkDay.summary(ev)
-        if (ev.isEmpty()) return L.t("🛻 Mi jornada", "🛻 My workday") to L.t("Toca «", "Tap «") + WorkDay.label(WorkDay.enabledKinds().first()) + L.t("» para empezar", "» to start")
+        if (ev.isEmpty()) return WorkDay.title() to L.t("Toca «", "Tap «") + WorkDay.label(WorkDay.enabledKinds().first()) + L.t("» para empezar", "» to start")
         val last = ev.last()
-        val title = L.t("🛻 Mi jornada · ", "🛻 My workday · ") + WorkDay.dur(s.total)
+        val title = WorkDay.title() + " · " + WorkDay.dur(s.total)
         val text = when (last.kind) {
             WorkDay.ARRIVE -> (if (last.site.isNotEmpty()) L.t("📍 En ${last.site}", "📍 At ${last.site}") else L.t("📍 En el sitio", "📍 On site")) +
                 L.t(" desde ", " since ") + WorkStore.time(last.time)
@@ -146,7 +146,7 @@ object WorkdayCenter {
         val (title, text) = status(ctx)
         @Suppress("DEPRECATION")
         val b = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(ctx, CHANNEL) else Notification.Builder(ctx)
-        b.setSmallIcon(R.drawable.ic_tile_truck)
+        b.setSmallIcon(WorkDay.iconRes())
             .setContentTitle(title)
             .setContentText(text)
             .setOngoing(true)
@@ -182,7 +182,7 @@ object WorkdayCenter {
         val p = Prefs.get(ctx)
         val ev = WorkDay.day(p)
         val (title, text) = status(ctx)
-        v.setTextViewText(R.id.w_title, if (ev.isEmpty()) title else L.t("🛻 Mi jornada", "🛻 My workday"))
+        v.setTextViewText(R.id.w_title, if (ev.isEmpty()) title else WorkDay.title())
         v.setTextViewText(R.id.w_status, text)
         val running = ev.isNotEmpty() && ev.last().kind != WorkDay.finalKind()
         if (ev.isNotEmpty()) {
@@ -273,6 +273,7 @@ class WorkdayTile : android.service.quicksettings.TileService() {
         val running = ev.isNotEmpty() && ev.last().kind != WorkDay.finalKind()
         val next = WorkDay.nextKind(ev)
         t.label = WorkDay.plainLabel(next)
+        t.icon = android.graphics.drawable.Icon.createWithResource(this, WorkDay.iconRes())
         if (Build.VERSION.SDK_INT >= 29) t.subtitle = if (running) L.t("Mi jornada · ", "Workday · ") + WorkDay.dur(WorkDay.summary(ev).total) else L.t("Mi jornada", "My workday")
         t.state = if (running) android.service.quicksettings.Tile.STATE_ACTIVE else android.service.quicksettings.Tile.STATE_INACTIVE
         t.updateTile()

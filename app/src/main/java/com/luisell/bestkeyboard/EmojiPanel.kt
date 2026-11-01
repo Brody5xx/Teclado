@@ -48,6 +48,7 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
     private val gifBtn = TextView(context)
     // Buscar sin salir del panel
     private val searchBack = IconView(context, Icons.BACK, 7.5f)
+    private val panelBack = IconView(context, Icons.BACK, 7.5f)
     private val searchClear = IconView(context, Icons.CLOSE, 5.5f)
     private val mini = MiniKeys(context)
     private var tabsBar: View? = null
@@ -81,6 +82,9 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         top.setPadding(d(6f), d(5f), d(6f), d(2f))
         searchBack.setOnClickListener { listener?.onPanelFeedback(); stopSearch() }
         searchBack.visibility = View.GONE
+        // Atrás (vuelve a las letras)
+        panelBack.setOnClickListener { listener?.onPanelFeedback(); listener?.onPanelBack() }
+        top.addView(panelBack, LinearLayout.LayoutParams(d(40f), d(36f)).apply { rightMargin = d(6f) })
         top.addView(searchBack, LinearLayout.LayoutParams(d(44f), d(36f)).apply { rightMargin = d(6f) })
         searchPill.orientation = LinearLayout.HORIZONTAL
         searchPill.gravity = Gravity.CENTER_VERTICAL
@@ -198,6 +202,7 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         query.setLength(0)
         overlay.hide()
         searchBack.visibility = View.VISIBLE
+        panelBack.visibility = View.GONE
         gifBtn.visibility = View.GONE
         tabsBar?.visibility = View.GONE
         mini.visibility = View.VISIBLE
@@ -208,6 +213,7 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         searching = false
         query.setLength(0)
         searchBack.visibility = View.GONE
+        panelBack.visibility = View.VISIBLE
         searchClear.visibility = View.GONE
         gifBtn.visibility = View.VISIBLE
         tabsBar?.visibility = View.VISIBLE
@@ -326,6 +332,9 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         searchPill.background = PanelUi.pressable(p.key, p.keyPressed, d(18f).toFloat())
         searchIcon.color = p.hint
         searchBack.color = p.text
+        panelBack.color = p.text
+        panelBack.bgColor = p.bg
+        panelBack.background = PanelUi.pressable(p.special, p.keyPressed, d(18f).toFloat())
         searchBack.background = PanelUi.pressable(p.special, p.keyPressed, d(18f).toFloat())
         searchClear.color = p.hint
         mini.applyPalette(p)

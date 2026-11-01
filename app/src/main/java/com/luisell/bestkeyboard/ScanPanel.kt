@@ -98,8 +98,10 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         closeBtn.setOnClickListener { actions?.onScanFeedback(); actions?.onScanClose() }
         addView(closeBtn, LayoutParams(d(48f), d(48f), Gravity.TOP or Gravity.END).apply { setMargins(0, d(10f), d(10f), 0) })
         circle(backBtn)
-        backBtn.visibility = GONE
-        backBtn.setOnClickListener { actions?.onScanFeedback(); retake() }
+        backBtn.setOnClickListener {
+            actions?.onScanFeedback()
+            if (photo.visibility == VISIBLE) retake() else actions?.onScanClose()
+        }
         addView(backBtn, LayoutParams(d(48f), d(48f), Gravity.TOP or Gravity.START).apply { setMargins(d(10f), d(10f), 0, 0) })
 
         hint.textSize = 15f
@@ -245,7 +247,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         photo.visibility = GONE
         preview.visibility = VISIBLE
         resultBar.visibility = GONE
-        backBtn.visibility = GONE
+        backBtn.visibility = VISIBLE
         shutter.visibility = VISIBLE
         gallery.visibility = VISIBLE
         hint.visibility = VISIBLE

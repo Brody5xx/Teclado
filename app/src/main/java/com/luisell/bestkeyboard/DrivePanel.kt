@@ -29,6 +29,7 @@ class DrivePanel(context: Context) : FrameLayout(context) {
     private fun d(v: Float) = PanelUi.dp(context, v)
 
     private val title = TextView(context)
+    private val backBtn = IconView(context, Icons.BACK, 7.5f)
     private val big = ArrayList<Pair<TextView, Boolean>>()
     private val notDriving = TextView(context)
     private val grid = LinearLayout(context)
@@ -41,7 +42,13 @@ class DrivePanel(context: Context) : FrameLayout(context) {
         title.textSize = 15f
         title.gravity = Gravity.CENTER
         title.setTypeface(title.typeface, Typeface.BOLD)
-        body.addView(title, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = d(6f) })
+        val head = LinearLayout(context)
+        head.orientation = LinearLayout.HORIZONTAL
+        head.gravity = Gravity.CENTER_VERTICAL
+        backBtn.setOnClickListener { actions?.onDriveFeedback(); actions?.onDriveKeyboard() }
+        head.addView(backBtn, LinearLayout.LayoutParams(d(40f), d(36f)))
+        head.addView(title, LinearLayout.LayoutParams(0, -2, 1f).apply { rightMargin = d(40f) })
+        body.addView(head, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = d(6f) })
         grid.orientation = LinearLayout.VERTICAL
         body.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
         notDriving.textSize = 13f
@@ -98,6 +105,9 @@ class DrivePanel(context: Context) : FrameLayout(context) {
         palette = p
         setBackgroundColor(p.bg)
         title.setTextColor(p.text)
+        backBtn.color = p.text
+        backBtn.bgColor = p.bg
+        backBtn.background = PanelUi.pressable(p.special, p.keyPressed, d(18f).toFloat())
         notDriving.setTextColor(p.hint)
         paint()
     }

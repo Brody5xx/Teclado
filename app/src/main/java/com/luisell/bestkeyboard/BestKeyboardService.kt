@@ -326,6 +326,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         cp.actions = object : ClipPanel.Actions {
             override fun onPasteText(text: String) = commitPanelText(text)
             override fun onPasteImage(item: ClipItem) = pasteImage(item)
+            override fun onClipWrite(item: ClipItem?) {
+                clipEditing = item
+                startSearch(gif = false, clipText = item?.text ?: "")
+            }
         }
         cp.visibility = View.GONE
         box.addView(cp, FrameLayout.LayoutParams(-1, -1))
@@ -581,7 +585,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         srch.visibility = View.GONE
         srch.actions = object : SearchBar.Actions {
             override fun onSearchText(text: String) {
-                if (!srch.gifs && !srch.note && !srch.material) srch.showResults(EmojiSearch.search(text))
+                if (!srch.gifs && !srch.note && !srch.material && !srch.clip) srch.showResults(EmojiSearch.search(text))
                 updateAutoCaps()
                 scheduleUpdate()
             }
@@ -589,8 +593,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 val gif = srch.gifs
                 val note = srch.note
                 val mat = srch.material
+                val clip = srch.clip
+                clipEditing = null
                 stopSearch()
-                showMode(if (mat) 13 else if (note) 10 else if (gif) 9 else 1)
+                showMode(if (clip) 2 else if (mat) 13 else if (note) 10 else if (gif) 9 else 1)
             }
             override fun onSearchPick(emoji: String) {
                 currentInputConnection?.commitText(emoji, 1)
@@ -1627,6 +1633,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         searchBar?.applyPalette(pal)
         if (floatFrame != null && prefs.getBoolean(Prefs.FLOAT, false) != floating) applyFloat()
         else if (floating) floatRoot?.background?.let { (it as? android.graphics.drawable.GradientDrawable)?.setColor(pal.bg) }
+        WorkDay.config(prefs)
         v.oneHand = when (prefs.getString(Prefs.ONE_HAND, "off")) { "left" -> 1; "right" -> 2; else -> 0 }
         val (barTools, moreTools) = Tools.load(this, prefs)
         v.setBarTools(barTools, moreTools)
@@ -3198,7 +3205,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 startActivity(Intent(this, WorkdayButtonsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
             } catch (_: Exception) { }
         })
-        panel.show(L.t("🛻 Mi jornada", "🛻 My workday") + "  ·  " + L.t("semana ", "week ") + WorkDay.dur(WorkDay.weekTotal(prefs)), rows,
+        panel.show(WorkDay.title() + "  ·  " + L.t("semana ", "week ") + WorkDay.dur(WorkDay.weekTotal(prefs)), rows,
             L.t("Toca los botones de abajo para anotar tu día: " + WorkDay.enabledKinds().joinToString(", ") { WorkDay.label(it) } + ". Si se te olvidó, toca la hora para cambiarla. Con ✏️ Editar botones les cambias el nombre o quitas los que no uses.",
                 "Tap the buttons below to log your day: " + WorkDay.enabledKinds().joinToString(", ") { WorkDay.label(it) } + ". If you forgot, tap the time to change it. With ✏️ Edit buttons you can rename them or remove the ones you don't use."),
             buttons)
@@ -3687,15 +3694,18 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // ---------------------------------------------------------------- Buscar emojis y GIFs
 
-    private fun startSearch(gif: Boolean, note: Boolean = false, material: Boolean = false) {
+    /** Lo que estás editando del portapapeles (null = agregando algo nuevo). */
+    private var clipEditing: ClipItem? = null
+
+    private fun startSearch(gif: Boolean, note: Boolean = false, material: Boolean = false, clipText: String? = null) {
         val bar = searchBar ?: return
         if (translating) stopTranslate()
         if (spellOn) stopSpell(keepSelection = true)
         closeInfo()
         showMode(0)
-        searching = if (material) 4 else if (note) 3 else if (gif) 2 else 1
+        searching = if (clipText != null) 5 else if (material) 4 else if (note) 3 else if (gif) 2 else 1
         bar.visibility = View.VISIBLE
-        bar.start(gif, note, material)
+        bar.start(gif, note, material, clipText)
         lastCorrection = null
         autoSpace = false
         lastWasSpace = false
@@ -3720,6 +3730,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bar = searchBar ?: return
         val q = bar.text().trim()
         val gif = bar.gifs
+        if (bar.clip) {
+            val full = bar.text()
+            val item = clipEditing
+            if (full.isNotBlank()) { if (item != null) ClipStore.editText(item, full) else ClipStore.addManual(full) }
+            clipEditing = null
+            stopSearch()
+            showMode(2)
+            return
+        }
         if (bar.material) {
             if (q.isNotEmpty()) Materials.addCustom(prefs, q)
             stopSearch()

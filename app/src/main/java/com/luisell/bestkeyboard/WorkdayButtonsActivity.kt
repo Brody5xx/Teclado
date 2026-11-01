@@ -52,7 +52,7 @@ class WorkdayButtonsActivity : UiActivity() {
         back.setOnClickListener { finish() }
         head.addView(back, LinearLayout.LayoutParams(dp(44), dp(44)))
         val title = TextView(this)
-        title.text = tr("Botones de Mi jornada", "My workday buttons")
+        title.text = tr("Mi jornada", "My workday")
         title.textSize = 24f
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD))
         title.setTextColor(TEXT)
@@ -67,6 +67,17 @@ class WorkdayButtonsActivity : UiActivity() {
             "Se cambian en el teclado, el widget, la pantalla de bloqueo y los ajustes rápidos.",
             "Turn on only the buttons you use and rename them however you like (you can put an emoji first). " +
                 "They change on the keyboard, the widget, the lock screen and Quick Settings."), 13f, faded = true)
+        // ---- Ícono de Mi jornada
+        card(tr("Ícono", "Icon"), Icons.CLOCK)
+        text(tr("El dibujito de Mi jornada en la barra del teclado, la notificación y los ajustes rápidos.",
+            "The Mi jornada picture on the keyboard bar, the notification and Quick Settings."), 12f, faded = true)
+        iconRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val hs = android.widget.HorizontalScrollView(this)
+        hs.isHorizontalScrollBarEnabled = false
+        hs.addView(iconRow)
+        col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        paintIcons()
+
         card(tr("Tus botones", "Your buttons"), Icons.TRUCK)
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         col.addView(list, LinearLayout.LayoutParams(-1, -2))
@@ -75,6 +86,44 @@ class WorkdayButtonsActivity : UiActivity() {
         }
         setContentView(sv)
         refresh()
+    }
+
+    private lateinit var iconRow: LinearLayout
+
+    private fun paintIcons() {
+        iconRow.removeAllViews()
+        val cur = prefs.getString(Prefs.WORKDAY_ICON, "truck") ?: "truck"
+        val names = mapOf(
+            "truck" to tr("Camioneta", "Truck"), "clock" to tr("Reloj", "Clock"), "stopwatch" to tr("Cronómetro", "Stopwatch"),
+            "briefcase" to tr("Maletín", "Briefcase"), "calendar" to tr("Calendario", "Calendar"), "hardhat" to tr("Casco", "Hard hat"),
+            "building" to tr("Edificio", "Building"),
+        )
+        for (id in WorkDay.ICONS) {
+            val box = LinearLayout(this)
+            box.orientation = LinearLayout.VERTICAL
+            box.gravity = Gravity.CENTER_HORIZONTAL
+            val sel = id == cur
+            val iv = IconView(this, WorkDay.iconKind(id), 11f)
+            iv.isClickable = false
+            iv.color = if (sel) 0xFF0B1020.toInt() else TEXT
+            iv.bgColor = if (sel) CYAN else CARD
+            iv.background = if (sel) GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(CYAN, VIOLET)).apply { shape = GradientDrawable.OVAL }
+                else GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(BG); setStroke(dp(1), LINE) }
+            box.addView(iv, LinearLayout.LayoutParams(dp(54), dp(54)))
+            val t = TextView(this)
+            t.text = names[id]
+            t.textSize = 11f
+            t.gravity = Gravity.CENTER
+            t.setTextColor(if (sel) TEXT else SUB)
+            box.addView(t, LinearLayout.LayoutParams(dp(70), -2).apply { topMargin = dp(4) })
+            box.setOnClickListener {
+                prefs.edit().putString(Prefs.WORKDAY_ICON, id).apply()
+                WorkDay.config(prefs)
+                WorkdayCenter.refresh(this)
+                paintIcons()
+            }
+            iconRow.addView(box, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
+        }
     }
 
     private fun save() {

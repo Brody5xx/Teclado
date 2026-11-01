@@ -108,19 +108,28 @@ class SearchBar(context: Context) : LinearLayout(context) {
     }
 
     /** Abre la búsqueda de emojis ([gif] = false) o de GIFs. */
-    fun start(gif: Boolean, noteMode: Boolean = false, materialMode: Boolean = false) {
+    /** Escribir o editar algo del portapapeles (Enter lo guarda). */
+    var clip = false
+        private set
+
+    fun start(gif: Boolean, noteMode: Boolean = false, materialMode: Boolean = false, clipText: String? = null) {
         material = materialMode
+        clip = clipText != null
+        // Para el portapapeles caben varias líneas
+        box.isSingleLine = !clip
+        box.maxLines = if (clip) 4 else 1
         gifs = gif
         note = noteMode
-        glass.kind = if (noteMode) Icons.NOTEBOOK else Icons.SEARCH
+        glass.kind = if (clip) Icons.PENCIL else if (noteMode) Icons.NOTEBOOK else Icons.SEARCH
         when {
+            clip -> L.bindHint(box, "Escribe lo que quieres guardar…", "Type what you want to save…")
             materialMode -> L.bindHint(box, "Nombre del material (ej. Cat 6A cable)", "Material name (e.g. Cat 6A cable)")
             noteMode -> L.bindHint(box, "Apunta algo…", "Write a note…")
             gif -> L.bindHint(box, "Buscar GIFs", "Search GIFs")
             else -> L.bindHint(box, "Buscar emojis", "Search emojis")
         }
-        setText("")
-        box.text?.let { Selection.setSelection(it, 0) }
+        setText(clipText ?: "")
+        if (clipText == null) box.text?.let { Selection.setSelection(it, 0) }
         box.resetBlink()
         showResults(emptyList())
     }
@@ -141,6 +150,12 @@ class SearchBar(context: Context) : LinearLayout(context) {
     /** Emojis encontrados (en GIFs: un aviso para tocar Buscar). */
     fun showResults(list: List<String>) {
         results.removeAllViews()
+        if (clip) {
+            resultsScroll.visibility = GONE
+            hint.visibility = VISIBLE
+            hint.text = L.t("Toca Enter para guardarlo en el portapapeles.", "Tap Enter to save it in the clipboard.")
+            return
+        }
         if (material) {
             resultsScroll.visibility = GONE
             hint.visibility = VISIBLE

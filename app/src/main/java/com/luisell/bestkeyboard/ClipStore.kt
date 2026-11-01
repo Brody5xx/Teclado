@@ -181,6 +181,44 @@ object ClipStore {
         }
     }
 
+    /** Cambia el texto de algo copiado (lo editaste en el portapapeles). */
+    fun editText(item: ClipItem, newText: String) {
+        val t = newText.take(MAX_TEXT)
+        if (t.isBlank()) { remove(item); return }
+        val i = items.indexOfFirst { it.id == item.id }
+        if (i < 0) return
+        items[i] = ClipItem(item.id, t, null, null, item.time, item.pinned, "t:" + sha1(t.toByteArray()))
+        changed()
+        save()
+    }
+
+    /** Agregas algo a mano con el lápiz (se queda fijado para que no se borre). */
+    fun addManual(text: String) {
+        if (text.isBlank()) return
+        val t = text.take(MAX_TEXT)
+        val hash = "t:" + sha1(t.toByteArray())
+        items.removeAll { it.hash == hash }
+        items.add(0, ClipItem(newId(), t, null, null, System.currentTimeMillis(), true, hash))
+        changed()
+        save()
+    }
+
+    /** Fija o quita de fijados varios a la vez. */
+    fun setPinned(list: Collection<ClipItem>, pinned: Boolean) {
+        for (it in list) it.pinned = pinned
+        changed()
+        save()
+    }
+
+    fun removeAll(list: Collection<ClipItem>) {
+        for (it in list.toList()) {
+            items.remove(it)
+            it.file?.let { f -> dir?.let { d -> io.execute { File(d, f).delete() } } }
+        }
+        changed()
+        save()
+    }
+
     fun togglePin(item: ClipItem) {
         item.pinned = !item.pinned
         changed()

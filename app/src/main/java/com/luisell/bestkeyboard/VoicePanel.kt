@@ -37,6 +37,7 @@ class VoicePanel(context: Context) : FrameLayout(context) {
     private val abc: TextView
     private val del: TextView
     private val reportBtn = TextView(context)
+    private val backBtn = IconView(context, Icons.BACK, 7.5f)
     private val enBtn = TextView(context)
     private var enOn = false
     private var reportOn = false
@@ -94,6 +95,11 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         body.addView(bar, LinearLayout.LayoutParams(-1, -2))
 
         addView(body, LayoutParams(-1, -1))
+        // Atrás (vuelve a las letras)
+        backBtn.setOnClickListener { listener?.onPanelFeedback(); listener?.onPanelBack() }
+        addView(backBtn, LayoutParams(PanelUi.dp(context, 40f), PanelUi.dp(context, 36f), Gravity.TOP or Gravity.START).apply {
+            setMargins(PanelUi.dp(context, 6f), PanelUi.dp(context, 6f), 0, 0)
+        })
         applyPalette(palette)
         setReport(false, false)
         setEnglish(false)
@@ -145,6 +151,9 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         mic.palette = p
         status.setTextColor(p.hint)
         partial.setTextColor(p.text)
+        backBtn.color = p.text
+        backBtn.bgColor = p.bg
+        backBtn.background = PanelUi.pressable(p.special, p.keyPressed, d(18f).toFloat())
         val r = d(7f).toFloat()
         for (b in listOf(abc, del)) { b.setTextColor(p.text); b.background = PanelUi.pressable(p.special, p.keyPressed, r) }
         langBtn.setTextColor(p.text)
