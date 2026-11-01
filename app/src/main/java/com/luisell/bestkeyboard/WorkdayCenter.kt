@@ -68,12 +68,29 @@ object WorkdayCenter {
         val site = if (kind == WorkDay.LEAVE) events.lastOrNull { it.kind == WorkDay.ARRIVE }?.site ?: "" else ""
         val t = WorkDay.add(p, kind, site)
         refresh(ctx)
-        if (kind == WorkDay.ARRIVE && SiteStore.all(p).isNotEmpty()) {
+        if (kind == WorkDay.ARRIVE && hasLocation(ctx)) {
+            // La hora ya quedó anotada; ahora el GPS busca dónde estás
             locate(ctx) { loc ->
                 val s = loc?.let { SiteStore.nearest(p, it.latitude, it.longitude) }
-                if (s != null) WorkDay.setSite(p, t, s.name)
-                refresh(ctx)
-                done?.invoke(WorkDay.Event(t, kind, s?.name ?: ""))
+                if (s != null || loc == null) {
+                    if (s != null) WorkDay.setSite(p, t, s.name)
+                    refresh(ctx)
+                    done?.invoke(WorkDay.Event(t, kind, s?.name ?: ""))
+                    return@locate
+                }
+                // Un lugar que no tienes guardado: busca la dirección y luego te pregunta si lo guardas
+                Thread {
+                    val full = SiteStore.addressOf(ctx, loc.latitude, loc.longitude)
+                    val short = if (full.isEmpty()) "" else SiteStore.shortAddress(full)
+                    main.post {
+                        if (short.isNotEmpty()) {
+                            WorkDay.setSite(p, t, short)
+                            SiteStore.setNew(p, SiteStore.NewPlace(t, short, full, loc.latitude, loc.longitude))
+                        }
+                        refresh(ctx)
+                        done?.invoke(WorkDay.Event(t, kind, short))
+                    }
+                }.start()
             }
         } else done?.invoke(WorkDay.Event(t, kind, site))
     }

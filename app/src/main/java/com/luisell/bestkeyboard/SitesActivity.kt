@@ -17,6 +17,8 @@ import java.util.Locale
 /** "Mis sitios": guarda los lugares donde trabajas para que «Llegué al sitio» sepa dónde estás. */
 class SitesActivity : UiActivity() {
 
+    companion object { const val EXTRA_NEW = "new_place" }
+
     private lateinit var list: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,11 +61,18 @@ class SitesActivity : UiActivity() {
             "When you tap «📍 Arrived on site», the keyboard uses GPS to know which one you're at and puts it in your workday and ticket (Location)."), 13f, faded = true)
         button(tr("📍 Guardar donde estoy ahora", "📍 Save where I am now"), primary = true) { saveHere() }
         button(tr("➕ Agregar por dirección", "➕ Add by address")) { addByAddress() }
+        SiteStore.getNew(prefs)?.let { n ->
+            button(tr("📍 Guardar el lugar nuevo de hoy: ", "📍 Save today's new place: ") + n.short) { askName(n.full.ifEmpty { n.short }, n.lat, n.lon, n.short) }
+        }
         card(tr("Sitios guardados", "Saved sites"), Icons.GLOBE)
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         col.addView(list, LinearLayout.LayoutParams(-1, -2))
         setContentView(sv)
         refresh()
+        // Viene de «📍 Lugar nuevo»: abre de una vez para ponerle nombre
+        SiteStore.getNew(prefs)?.let { n ->
+            if (intent?.getBooleanExtra(EXTRA_NEW, false) == true) askName(n.full.ifEmpty { n.short }, n.lat, n.lon, n.short)
+        }
         if (!WorkdayCenter.hasLocation(this)) {
             requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 31)
         }
@@ -138,7 +147,7 @@ class SitesActivity : UiActivity() {
         }
     }
 
-    private fun askName(address: String, lat: Double, lon: Double) {
+    private fun askName(address: String, lat: Double, lon: Double, fromNew: String = "") {
         val name = field(tr("Nombre (ej. RUMC, Hospital, Tienda 12)", "Name (e.g. RUMC, Hospital, Store 12)"))
         val addr = field(tr("Dirección", "Address"), address)
         val box = LinearLayout(this).apply {
@@ -154,6 +163,12 @@ class SitesActivity : UiActivity() {
                 val n = name.text.toString().trim()
                 if (n.isEmpty()) { toast("Ponle un nombre.", "Give it a name."); return@setPositiveButton }
                 SiteStore.add(prefs, SiteStore.Site(n, addr.text.toString().trim(), lat, lon))
+                if (fromNew.isNotEmpty()) {
+                    // Lo de hoy también cambia: "Llegué a 350 Engle St" → "Llegué a RUMC"
+                    WorkDay.renameSiteToday(prefs, fromNew, n)
+                    SiteStore.setNew(prefs, null)
+                    WorkdayCenter.refresh(this)
+                }
                 refresh()
                 toast("Sitio guardado.", "Site saved.")
             }

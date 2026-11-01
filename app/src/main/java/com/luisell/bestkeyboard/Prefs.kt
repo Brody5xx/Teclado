@@ -109,6 +109,7 @@ object Prefs {
     const val GUIDE_SEEN = "guide_seen"
     /** Mis sitios (lista JSON). */
     const val SITES = "sites"
+    const val SITE_NEW = "site_new"            // lugar nuevo (no guardado) donde tocaste «Llegué»: para preguntar si lo guardas
     /** Lista de materiales (los tuyos) y lo que usaste hoy. */
     const val MATERIALS = "materials"
     const val MATERIALS_TODAY = "materials_today"

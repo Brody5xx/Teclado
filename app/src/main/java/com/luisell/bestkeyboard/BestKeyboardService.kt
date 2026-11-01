@@ -518,7 +518,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             override fun onDriveVoice() = showMode(3)
             override fun onDriveStatus() = startStatus()
             override fun onDriveWorkday(kind: String) {
-                WorkdayCenter.record(this@BestKeyboardService, kind) { e -> WorkdayCenter.toastFor(this@BestKeyboardService, e) }
+                WorkdayCenter.record(this@BestKeyboardService, kind) { e -> WorkdayCenter.toastFor(this@BestKeyboardService, e); maybeAskSaveSite() }
                 showMode(0)
             }
             override fun onDriveKeyboard() {
@@ -1453,7 +1453,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
         if (prefs.getBoolean(Prefs.FLOAT, false)) handler.post { applyFloat() }
         if (!isPassword) maybeShowWord()
-        if (!isPassword) handler.postDelayed({ if (isInputViewShown && mode == 0) maybeDriving() }, 350)
+        if (!isPassword) handler.postDelayed({ if (isInputViewShown && mode == 0) { maybeDriving(); maybeAskSaveSite() } }, 350)
 
         val type = info.inputType
         val cls = type and InputType.TYPE_MASK_CLASS
@@ -3212,7 +3212,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         val buttons = ArrayList<Pair<String, () -> Unit>>()
         for (k in order) buttons.add(WorkDay.label(k) to {
-            WorkdayCenter.record(this, k) { refreshWorkday() }
+            WorkdayCenter.record(this, k) { refreshWorkday(); maybeAskSaveSite() }
             refreshWorkday()
             if (k == WorkDay.START || (k == WorkDay.enabledKinds().first() && k != WorkDay.ARRIVE)) askDriving()
         })
@@ -3268,6 +3268,28 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Al abrir el teclado: si vas en camino y manejas, abre el modo manejando (o pregunta). */
+    /** Llegaste a un lugar que no tienes guardado: pregunta si lo guardas en Mis sitios (una vez). */
+    private var siteAsked = 0L
+    private fun maybeAskSaveSite() {
+        val n = SiteStore.getNew(prefs) ?: return
+        if (n.time == siteAsked) return
+        val bar = infoBar ?: return
+        siteAsked = n.time
+        bar.show(L.t("📍 Lugar nuevo", "📍 New place"),
+            L.t("Llegaste a ${n.full.ifEmpty { n.short }} a las ${WorkStore.time(n.time)}. ¿Lo guardas en Mis sitios? Así la próxima vez lo reconozco solo.",
+                "You arrived at ${n.full.ifEmpty { n.short }} at ${WorkStore.time(n.time)}. Save it in My sites? Next time I'll recognize it by myself."),
+            listOf(
+                L.t("💾 Guardar y ponerle nombre", "💾 Save and name it") to {
+                    closeInfo()
+                    try {
+                        startActivity(Intent(this, SitesActivity::class.java).putExtra(SitesActivity.EXTRA_NEW, true)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                    } catch (_: Exception) { }
+                },
+                L.t("Ahora no", "Not now") to { SiteStore.setNew(prefs, null); closeInfo() },
+            ))
+    }
+
     private fun maybeDriving() {
         if (!traveling()) return
         val last = WorkDay.day(prefs).lastOrNull()?.time ?: return

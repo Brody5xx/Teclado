@@ -30,6 +30,31 @@ object SiteStore {
 
     fun find(p: SharedPreferences, name: String): Site? = all(p).firstOrNull { it.name == name }
 
+    // ---- Lugar nuevo: llegaste a un sitio que no tienes guardado (se pregunta si lo guardas)
+    class NewPlace(val time: Long, val short: String, val full: String, val lat: Double, val lon: Double)
+
+    fun setNew(p: SharedPreferences, n: NewPlace?) {
+        if (n == null) { p.edit().remove(Prefs.SITE_NEW).apply(); return }
+        p.edit().putString(Prefs.SITE_NEW, JSONObject().put("t", n.time).put("s", n.short).put("f", n.full)
+            .put("la", n.lat).put("lo", n.lon).toString()).apply()
+    }
+
+    /** El lugar nuevo de hoy (o null). */
+    fun getNew(p: SharedPreferences): NewPlace? = try {
+        val o = JSONObject(p.getString(Prefs.SITE_NEW, "") ?: "")
+        val n = NewPlace(o.optLong("t"), o.optString("s"), o.optString("f"), o.optDouble("la"), o.optDouble("lo"))
+        if (WorkStore.sameDay(n.time, System.currentTimeMillis())) n else { setNew(p, null); null }
+    } catch (_: Exception) { null }
+
+    /** "350 Engle St, Englewood, NJ 07631, USA" → "350 Engle St". */
+    fun shortAddress(full: String): String = full.substringBefore(",").trim().ifEmpty { full }
+
+    /** Busca la dirección de un punto del GPS (necesita internet; llamar en segundo plano). */
+    fun addressOf(ctx: android.content.Context, lat: Double, lon: Double): String = try {
+        @Suppress("DEPRECATION")
+        android.location.Geocoder(ctx, java.util.Locale.US).getFromLocation(lat, lon, 1)?.firstOrNull()?.getAddressLine(0) ?: ""
+    } catch (_: Exception) { "" }
+
     /** El sitio guardado más cerca de donde estás (si estás a menos de [RADIUS_M]). */
     fun nearest(p: SharedPreferences, lat: Double, lon: Double): Site? {
         var best: Site? = null

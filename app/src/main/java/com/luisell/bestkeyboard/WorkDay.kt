@@ -173,6 +173,12 @@ object WorkDay {
         else -> label(e.kind) + " · " + e.site
     }
 
+    /** Le cambia el nombre al sitio en los eventos de hoy ("350 Engle St" → "Englewood Hospital"). */
+    fun renameSiteToday(p: SharedPreferences, old: String, new: String) {
+        val now = System.currentTimeMillis()
+        save(p, all(p).map { if (it.site == old && WorkStore.sameDay(it.time, now)) Event(it.time, it.kind, new) else it })
+    }
+
     fun remove(p: SharedPreferences, time: Long) = save(p, all(p).filter { it.time != time })
 
     /** Mueve la hora de un evento [minutes] minutos (por si se te olvidó tocarlo a tiempo). */
