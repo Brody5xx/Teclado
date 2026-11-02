@@ -886,6 +886,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.1" to tr("•  ✨ 10 temas animados nuevos: Aura de poder, Aura azul, Fénix, Tormenta (con relámpagos), Fuegos artificiales, Galaxia espiral, Estanque, Panal sci-fi, Pulso neón y Ventisca.\n•  Los temas ahora están por categorías: Clásicos, Espacio, Naturaleza, Agua, Fuego y energía, Fiesta y amor, Tecnología y retro.\n•  Estilo más sencillo: los colores a tu gusto quedan escondidos en «🎨 Cambiar los colores del tema (opcional)», con un botón para volver a los del tema.",
+            "•  ✨ 10 new animated themes: Power aura, Blue aura, Phoenix, Storm (with lightning), Fireworks, Spiral galaxy, Pond, Sci-fi hive, Neon pulse and Blizzard.\n•  Themes are now grouped: Classic, Space, Nature, Water, Fire and energy, Party and love, Tech and retro.\n•  Simpler Style: custom colors are tucked into «🎨 Change the theme colors (optional)», with a button to go back to the theme's."),
         "12.0.2" to tr("•  Al cambiar de idioma con 🌐 todo se cambia al instante: la barra de información, los paneles abiertos y la búsqueda.\n•  La luz de las barras de scroll ahora es más larga y más fina.",
             "•  When you switch language with 🌐 everything changes instantly: the info bar, open panels and search.\n•  The scroll bar light is now longer and thinner."),
         "12.0.1" to tr("•  Barras de scroll nuevas en todos lados: una línea corta de luz igual a la de la barra de arriba (blanca en el centro y del color de tu tema).",

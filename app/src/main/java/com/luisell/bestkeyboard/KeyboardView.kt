@@ -480,6 +480,183 @@ class KeyboardView(context: Context) : View(context) {
                     c.drawRoundRect(tmp, cw * 0.11f, cw * 0.11f, fill)
                 }
             }
+            "aura" -> {
+                // ⚡ Aura de poder: llamas de energía que suben desde abajo, chispas y de vez en cuando un rayito
+                val col = p.accent
+                fill.shader = android.graphics.LinearGradient(0f, h, 0f, h * 0.25f, alphaOf(col, 0.42f), alphaOf(col, 0f), android.graphics.Shader.TileMode.CLAMP)
+                val n = 9
+                for (k in 0 until n) {
+                    val cx = w * (k + 0.5f) / n + 8f * d * kotlin.math.sin(t * 2.3f + k * 1.9f).toFloat()
+                    val fh = h * (0.45f + 0.25f * ((kotlin.math.sin(t * (3.1f + k * 0.37f) + k) + 1f) / 2f).toFloat())
+                    val fw = w / n * 0.75f
+                    val sway = 10f * d * kotlin.math.sin(t * 4f + k * 2.2f).toFloat()
+                    animPath.reset()
+                    animPath.moveTo(cx - fw, h)
+                    animPath.quadTo(cx - fw * 0.9f, h - fh * 0.55f, cx + sway, h - fh)
+                    animPath.quadTo(cx + fw * 0.9f, h - fh * 0.55f, cx + fw, h)
+                    animPath.close()
+                    c.drawPath(animPath, fill)
+                }
+                fill.shader = null
+                // Chispas que suben
+                for (i in 0 until 26) {
+                    val fx = ((i * 0.618f) % 1f) * w + 6f * d * kotlin.math.sin(t * 3f + i).toFloat()
+                    val sp = (70f + (i % 5) * 25f) * d
+                    val fy = h - ((t * sp + i * 53f * d) % (h * 1.1f))
+                    val a = (fy / h).coerceIn(0f, 1f)
+                    fill.color = alphaOf(if (i % 3 == 0) 0xFFFFFFFF.toInt() else col, 0.25f + 0.6f * a)
+                    c.drawCircle(fx, fy, (1.2f + (i % 3) * 0.6f) * d, fill)
+                }
+                // Rayito de energía cada ~2.5 s
+                val cyc = t / 2.5f
+                val u = cyc - kotlin.math.floor(cyc)
+                if (u < 0.12f) {
+                    val seed = kotlin.math.floor(cyc).toInt()
+                    var x = w * (((seed * 0.37f) % 1f + 1f) % 1f)
+                    var y = h
+                    stroke.color = alphaOf(0xFFFFFFFF.toInt(), 0.9f * (1f - u / 0.12f))
+                    stroke.strokeWidth = 1.6f * d
+                    for (j in 0 until 6) {
+                        val nx = x + (if ((seed + j) % 2 == 0) 1 else -1) * 14f * d
+                        val ny = y - h * 0.12f
+                        c.drawLine(x, y, nx, ny, stroke); x = nx; y = ny
+                    }
+                }
+            }
+            "storm" -> {
+                // ⛈️ Tormenta: lluvia, nubes oscuras y relámpagos que iluminan todo
+                for (i in 0 until 50) {
+                    val fx = ((i * 0.618f) % 1f) * w
+                    val sp = (500f + (i % 4) * 90f) * d
+                    val fy = ((t * sp + i * 71f * d) % (h + 30f * d)) - 15f * d
+                    stroke.color = alphaOf(0xFFB0C4DE.toInt(), 0.3f)
+                    stroke.strokeWidth = 1f * d
+                    c.drawLine(fx, fy, fx - 3f * d, fy + 12f * d, stroke)
+                }
+                val cyc = t / 4f
+                val u = cyc - kotlin.math.floor(cyc)
+                if (u < 0.1f) {
+                    val k = u / 0.1f
+                    fill.color = alphaOf(0xFFFFFFFF.toInt(), 0.22f * (1f - k))
+                    c.drawRect(0f, 0f, w, h, fill)
+                    val seed = kotlin.math.floor(cyc).toInt()
+                    var x = w * (0.2f + 0.6f * (((seed * 0.53f) % 1f + 1f) % 1f))
+                    var y = 0f
+                    stroke.color = alphaOf(0xFFFFFFFF.toInt(), 1f - k)
+                    stroke.strokeWidth = 2f * d
+                    for (j in 0 until 7) {
+                        val nx = x + (if ((seed * 3 + j) % 3 == 0) -1 else 1) * (8f + (j % 3) * 6f) * d
+                        val ny = y + h * 0.09f
+                        c.drawLine(x, y, nx, ny, stroke); x = nx; y = ny
+                    }
+                }
+            }
+            "fireworks" -> {
+                // 🎆 Fuegos artificiales que suben y explotan en colores
+                for (b in 0 until 4) {
+                    val period = 2.6f
+                    val cyc = (t + b * 0.65f) / period
+                    val u = cyc - kotlin.math.floor(cyc)
+                    val seed = kotlin.math.floor(cyc).toInt() * 7 + b * 13
+                    val bx = w * (0.15f + 0.7f * (((seed * 0.371f) % 1f + 1f) % 1f))
+                    val by = h * (0.18f + 0.3f * (((seed * 0.713f) % 1f + 1f) % 1f))
+                    val col = hue(seed * 47f)
+                    if (u < 0.22f) {
+                        val k = u / 0.22f
+                        fill.color = alphaOf(0xFFFFE0B2.toInt(), 0.9f)
+                        c.drawCircle(bx, h - (h - by) * k, 1.8f * d, fill)
+                    } else {
+                        val k = (u - 0.22f) / 0.78f
+                        val r = 70f * d * (1f - (1f - k) * (1f - k))
+                        for (j in 0 until 18) {
+                            val ang = j * (Math.PI * 2 / 18)
+                            val px = bx + r * kotlin.math.cos(ang).toFloat()
+                            val py = by + r * kotlin.math.sin(ang).toFloat() + 18f * d * k * k
+                            fill.color = alphaOf(if (j % 4 == 0) 0xFFFFFFFF.toInt() else col, 0.9f * (1f - k))
+                            c.drawCircle(px, py, 1.8f * d * (1f - k * 0.5f), fill)
+                        }
+                    }
+                }
+            }
+            "vortex" -> {
+                // 🌀 Galaxia en espiral que gira despacito
+                val cx = w / 2f
+                val cy = h * 0.45f
+                val maxR = maxOf(w, h) * 0.6f
+                fill.shader = android.graphics.RadialGradient(cx, cy, maxR * 0.35f, alphaOf(p.accent, 0.35f), alphaOf(p.accent, 0f), android.graphics.Shader.TileMode.CLAMP)
+                c.drawCircle(cx, cy, maxR * 0.35f, fill)
+                fill.shader = null
+                for (i in 0 until 160) {
+                    val f = i / 160f
+                    val r = maxR * Math.pow(f.toDouble(), 0.7).toFloat()
+                    val ang = i * 2.399f + t * (0.15f + 0.5f * (1f - f)) + (if (i % 2 == 0) 0f else Math.PI.toFloat())
+                    val arm = ang + r / (60f * d)
+                    val px = cx + r * kotlin.math.cos(arm.toDouble()).toFloat()
+                    val py = cy + r * 0.55f * kotlin.math.sin(arm.toDouble()).toFloat()
+                    fill.color = alphaOf(if (i % 5 == 0) p.accent else 0xFFFFFFFF.toInt(), 0.25f + 0.6f * (1f - f))
+                    c.drawCircle(px, py, (0.6f + 1.4f * (1f - f)) * d, fill)
+                }
+            }
+            "ripples" -> {
+                // 💧 Gotas que caen en un estanque y hacen ondas
+                for (k in 0 until 6) {
+                    val period = 3.2f
+                    val cyc = (t + k * 0.55f) / period
+                    val u = cyc - kotlin.math.floor(cyc)
+                    val seed = kotlin.math.floor(cyc).toInt() * 11 + k * 5
+                    val rx = w * (((seed * 0.371f) % 1f + 1f) % 1f)
+                    val ry = h * (((seed * 0.619f) % 1f + 1f) % 1f)
+                    for (ring in 0..1) {
+                        val uu = u - ring * 0.18f
+                        if (uu <= 0f) continue
+                        stroke.color = alphaOf(if (ring == 0) p.accent else 0xFFFFFFFF.toInt(), 0.45f * (1f - uu))
+                        stroke.strokeWidth = 1.2f * d
+                        tmp.set(rx - uu * 70f * d, ry - uu * 30f * d, rx + uu * 70f * d, ry + uu * 30f * d)
+                        c.drawOval(tmp, stroke)
+                    }
+                }
+            }
+            "hexgrid" -> {
+                // 🔷 Panal de hexágonos con una ola de luz que lo recorre
+                val r = 16f * d
+                val hw = r * 1.732f
+                var row = 0
+                var y = 0f
+                while (y < h + r) {
+                    var x = if (row % 2 == 0) 0f else hw / 2f
+                    while (x < w + hw) {
+                        val dist = kotlin.math.hypot((x - w / 2f).toDouble(), (y - h).toDouble()).toFloat()
+                        val wave = kotlin.math.sin(dist / (40f * d) - t * 2.2f).toFloat()
+                        val a = 0.06f + 0.5f * maxOf(0f, wave).let { it * it * it * it }
+                        animPath.reset()
+                        for (j in 0 until 6) {
+                            val ang = Math.PI / 6 + j * Math.PI / 3
+                            val px = x + r * 0.92f * kotlin.math.cos(ang).toFloat()
+                            val py = y + r * 0.92f * kotlin.math.sin(ang).toFloat()
+                            if (j == 0) animPath.moveTo(px, py) else animPath.lineTo(px, py)
+                        }
+                        animPath.close()
+                        stroke.color = alphaOf(p.accent, a)
+                        stroke.strokeWidth = 1.1f * d
+                        c.drawPath(animPath, stroke)
+                        x += hw
+                    }
+                    y += r * 1.5f
+                    row++
+                }
+            }
+            "pulse" -> {
+                // 💗 Pulso neón: anillos de luz que salen del centro
+                val cx = w / 2f
+                val cy = h * 0.5f
+                val maxR = maxOf(w, h) * 0.75f
+                for (k in 0 until 5) {
+                    val u = ((t * 0.35f + k / 5f) % 1f)
+                    stroke.color = alphaOf(if (k % 2 == 0) p.accent else 0xFFFFFFFF.toInt(), 0.5f * (1f - u))
+                    stroke.strokeWidth = (2.4f - 1.6f * u) * d
+                    c.drawCircle(cx, cy, maxR * u, stroke)
+                }
+            }
             "gradient" -> {
                 // Colores del arcoíris que van cambiando poco a poco
                 val h0 = (t * 20f) % 360f

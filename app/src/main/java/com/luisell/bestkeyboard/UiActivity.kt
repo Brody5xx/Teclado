@@ -66,38 +66,52 @@ abstract class UiActivity : Activity() {
     // ---------------------------------------------------------------- Temas
 
     /** Galería de temas: tarjetas con un mini teclado de cada tema (desliza a los lados). */
-    protected fun themeGallery(key: String = Prefs.THEME, label: String = tr("Tema", "Theme"), def: String = "auto") {
+    protected fun themeGallery(key: String = Prefs.THEME, label: String = tr("Tema", "Theme"), def: String = "auto", grouped: Boolean = true) {
         val t = TextView(this)
         t.text = label
         t.textSize = 15f
         t.setTextColor(TEXT)
         col.addView(t, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
-        val row = LinearLayout(this)
-        row.orientation = LinearLayout.HORIZONTAL
         val cards = ArrayList<ThemeCard>()
         val current = prefs.getString(key, def)
-        for ((id, names, pal) in Palette.THEMES) {
-            val c = ThemeCard(this, pal, tr(names.first, names.second))
-            c.chosen = id == current
-            c.setOnClickListener {
-                prefs.edit().putString(key, id).apply()
-                cards.forEach { it.chosen = false }
-                c.chosen = true
+        // Por categorías (Clásicos, Espacio, Naturaleza…), cada una en su fila que se desliza
+        val groups = if (grouped) Palette.CATEGORIES.indices.map { ci ->
+            Palette.CATEGORIES[ci] to Palette.THEMES.filter { Palette.categoryOf(it.third) == ci }
+        }.filter { it.second.isNotEmpty() } else listOf(null to Palette.THEMES)
+        for ((cat, themes) in groups) {
+            if (cat != null) {
+                val h = TextView(this)
+                h.text = tr(cat.first, cat.second) + "  ·  " + themes.size
+                h.textSize = 13f
+                h.setTextColor(SUB)
+                h.setTypeface(h.typeface, android.graphics.Typeface.BOLD)
+                col.addView(h, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
             }
-            cards.add(c)
-            row.addView(c, LinearLayout.LayoutParams(dp(104), dp(118)).apply { rightMargin = dp(10) })
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            for ((id, names, pal) in themes) {
+                val c = ThemeCard(this, pal, tr(names.first, names.second))
+                c.chosen = id == current
+                c.setOnClickListener {
+                    prefs.edit().putString(key, id).apply()
+                    cards.forEach { it.chosen = false }
+                    c.chosen = true
+                }
+                cards.add(c)
+                row.addView(c, LinearLayout.LayoutParams(dp(104), dp(118)).apply { rightMargin = dp(10) })
+            }
+            val hs = android.widget.HorizontalScrollView(this)
+            hs.isHorizontalScrollBarEnabled = false
+            hs.addView(row)
+            col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(4) })
         }
-        val hs = android.widget.HorizontalScrollView(this)
-        hs.isHorizontalScrollBarEnabled = false
-        hs.addView(row)
-        col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(6) })
     }
 
     /** Círculos de colores para el acento (Enter, botones encendidos…). */
     protected fun accentSwatches() {
         divider()
         val t = TextView(this)
-        t.text = tr("Color de acento", "Accent color")
+        t.text = tr("Color de los botones (Enter y lo encendido)", "Button color (Enter and what's on)")
         t.textSize = 15f
         t.setTextColor(TEXT)
         col.addView(t, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
@@ -134,7 +148,7 @@ abstract class UiActivity : Activity() {
         hs.isHorizontalScrollBarEnabled = false
         hs.addView(row)
         col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(4) })
-        text(tr("El primero (multicolor) usa el color que trae el tema.", "The first one (multicolor) uses the theme's own color."), 12f, faded = true)
+
     }
 
     /** Fila de colores para una opción ([key]); el primero (multicolor) = el del tema. */
@@ -179,7 +193,7 @@ abstract class UiActivity : Activity() {
         hs.isHorizontalScrollBarEnabled = false
         hs.addView(row)
         col.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(4) })
-        text(help, 12f, faded = true)
+        if (help.isNotEmpty()) text(help, 12f, faded = true)
     }
 
     /** Colores del tema Hacker (teclas y lluvia de código). El último es arcoíris. */

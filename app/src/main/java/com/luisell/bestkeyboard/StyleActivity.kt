@@ -136,17 +136,41 @@ class StyleActivity : UiActivity() {
         switch(tr("🌗 Tema de día y de noche", "🌗 Day and night theme"), Prefs.THEME_TIMED, false,
             tr("Si lo prendes, el teclado usa un tema de día y otro de noche, y cambia solo según la hora.",
                 "If on, the keyboard uses a day theme and a night theme, and switches by itself by the time."))
-        themeGallery(Prefs.THEME_DAY, tr("☀️ Tema de día", "☀️ Day theme"), "light")
+        themeGallery(Prefs.THEME_DAY, tr("☀️ Tema de día", "☀️ Day theme"), "light", grouped = false)
         segmented(tr("El día empieza a las", "Day starts at"), Prefs.DAY_FROM, "7",
             listOf("6" to "6 AM", "7" to "7 AM", "8" to "8 AM", "9" to "9 AM"))
-        themeGallery(Prefs.THEME_NIGHT, tr("🌙 Tema de noche", "🌙 Night theme"), "dark")
+        themeGallery(Prefs.THEME_NIGHT, tr("🌙 Tema de noche", "🌙 Night theme"), "dark", grouped = false)
         segmented(tr("La noche empieza a las", "Night starts at"), Prefs.NIGHT_FROM, "19",
             listOf("17" to "5 PM", "18" to "6 PM", "19" to "7 PM", "20" to "8 PM"))
+        // ---- 🎨 Colores a tu gusto: escondidos (el tema ya trae los suyos); solo si quieres cambiar alguno
+        divider()
+        val custom = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = android.view.View.GONE }
+        val anyCustom = !prefs.getString(Prefs.ACCENT, "").isNullOrEmpty() || !prefs.getString(Prefs.KEY_COLOR, "").isNullOrEmpty() ||
+            !prefs.getString(Prefs.TEXT_COLOR, "").isNullOrEmpty()
+        lateinit var openBtn: android.widget.TextView
+        fun label(open: Boolean) = (if (open) "▲  " else "▼  ") + tr("🎨 Cambiar los colores del tema (opcional)", "🎨 Change the theme colors (optional)") +
+            if (anyCustom) tr("  · tienes cambios", "  · you have changes") else ""
+        openBtn = button(label(false)) {
+            val open = custom.visibility != android.view.View.VISIBLE
+            try { if (open) slideOpen(custom) else slideClose(custom) } catch (_: Exception) {
+                custom.visibility = if (open) android.view.View.VISIBLE else android.view.View.GONE
+            }
+            openBtn.text = label(open)
+        }
+        text(tr("Cada tema ya trae sus colores. Ábrelo solo si quieres cambiar alguno. El primer círculo (de colores) deja el color del tema.",
+            "Each theme already has its colors. Open this only if you want to change one. The first (multicolor) circle keeps the theme's color."), 12f, faded = true)
+        col.addView(custom, LinearLayout.LayoutParams(-1, -2))
+        val mainCol = col
+        col = custom
         accentSwatches()
         colorSwatches(tr("Color de las teclas", "Key color"), Prefs.KEY_COLOR, Palette.KEY_COLORS,
-            tr("El primero (multicolor) es el del tema. El último es arcoíris 🌈.", "The first (multicolor) is the theme's. The last one is rainbow 🌈."))
-        colorSwatches(tr("Color de las letras", "Letter color"), Prefs.TEXT_COLOR, Palette.TEXT_COLORS,
-            tr("El primero (multicolor) es el del tema.", "The first (multicolor) is the theme's."))
+            tr("El último es arcoíris 🌈.", "The last one is rainbow 🌈."))
+        colorSwatches(tr("Color de las letras", "Letter color"), Prefs.TEXT_COLOR, Palette.TEXT_COLORS, "")
+        button(tr("↺ Volver a los colores del tema", "↺ Back to the theme colors")) {
+            prefs.edit().remove(Prefs.ACCENT).remove(Prefs.KEY_COLOR).remove(Prefs.TEXT_COLOR).apply()
+            recreate()
+        }
+        col = mainCol
         hackerSection = hackerSwatches()
         showHackerColors(animate = false)
 

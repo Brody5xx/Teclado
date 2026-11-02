@@ -377,6 +377,27 @@ class Palette(
                 light(0xFFD9FAF4, 0xCCFFFFFF, 0xFFB2F0E4, 0xBBC6F4EA, 0xFF00BFA5, 0xFF00897B, 0xFF0B3A33, 0xFF4F8A80, 0xFFB3EFFF, effect = "bubbles")),
             Triple("nightsakura", "✨ Cerezo nocturno" to "✨ Night blossom",
                 dark(0xFF140A12, 0x55301A2A, 0xAA54304A, 0x66221220, 0xFFF48FB1, 0xFFF8BBD0, 0xFF33101F, 0xFFFFEEF4, 0xFFC09AAE, 0xFF0E0A1E, effect = "petals")),
+            // ---- ✨ Temas animados nuevos
+            Triple("aura", "✨ Aura de poder" to "✨ Power aura",
+                dark(0xFF0C0800, 0x55281C05, 0xAA54400E, 0x661A1203, 0xFFFFC400, 0xFFFFE082, 0xFF241A00, 0xFFFFF8E1, 0xFFC8B27A, 0xFF2A1400, effect = "aura")),
+            Triple("aurablue", "✨ Aura azul" to "✨ Blue aura",
+                dark(0xFF020814, 0x55082040, 0xAA14407A, 0x66061628, 0xFF40C4FF, 0xFF80D8FF, 0xFF00203A, 0xFFE1F5FE, 0xFF8CB0CC, 0xFF04102A, effect = "aura")),
+            Triple("storm", "✨ Tormenta" to "✨ Storm",
+                dark(0xFF0A0E14, 0x551C2430, 0xAA34445A, 0x66121820, 0xFF90CAF9, 0xFFBBDEFB, 0xFF0A1A2A, 0xFFECF2F8, 0xFF8E9BAA, 0xFF141A24, effect = "storm")),
+            Triple("fireworks", "✨ Fuegos artificiales" to "✨ Fireworks",
+                dark(0xFF05030F, 0x55181430, 0xAA302A5C, 0x660E0B20, 0xFFFF4081, 0xFFFF80AB, 0xFF2A0012, 0xFFFFF0F6, 0xFFA59BC4, 0xFF0A0624, effect = "fireworks")),
+            Triple("vortex", "✨ Galaxia espiral" to "✨ Spiral galaxy",
+                dark(0xFF040312, 0x55141032, 0xAA2A2264, 0x660C0A24, 0xFFB388FF, 0xFFD1C4E9, 0xFF14082A, 0xFFF3EEFF, 0xFFA49BC8, 0xFF0A0420, effect = "vortex")),
+            Triple("pond", "✨ Estanque" to "✨ Pond",
+                dark(0xFF031414, 0x55082E2E, 0xAA14524E, 0x66062222, 0xFF64FFDA, 0xFFA7FFEB, 0xFF002A22, 0xFFE0FFF8, 0xFF86B2AA, 0xFF041E26, effect = "ripples")),
+            Triple("hexgrid", "✨ Panal sci-fi" to "✨ Sci-fi hive",
+                dark(0xFF02080C, 0x55082028, 0xAA144050, 0x66061820, 0xFF00E5FF, 0xFF84FFFF, 0xFF002A30, 0xFFE0FFFF, 0xFF7FAAB2, effect = "hexgrid", mono = true)),
+            Triple("pulse", "✨ Pulso neón" to "✨ Neon pulse",
+                dark(0xFF0E0414, 0x55281038, 0xAA4A1E66, 0x661A0A26, 0xFFFF2BD6, 0xFFFF7AE6, 0xFF2A0024, 0xFFFFEAFB, 0xFFB79AC8, 0xFF140428, effect = "pulse")),
+            Triple("emberstorm", "✨ Fénix" to "✨ Phoenix",
+                dark(0xFF140500, 0x55361005, 0xAA66200A, 0x66240A03, 0xFFFF3D00, 0xFFFF8A65, 0xFF2A0800, 0xFFFFEDE6, 0xFFC9978A, 0xFF2A1200, effect = "aura")),
+            Triple("winterstorm", "✨ Ventisca" to "✨ Blizzard",
+                dark(0xFF0B1420, 0x55182838, 0xAA2E4A66, 0x66101C28, 0xFFB3E5FC, 0xFFE1F5FE, 0xFF0A2030, 0xFFF0F8FF, 0xFF9AB0C2, 0xFF182838, effect = "snow")),
             // ---- Más temas de colores
             Triple("wine", "Vino" to "Wine",
                 dark(0xFF1A0910, 0xFF33141F, 0xFF4F2232, 0xFF2A0F19, 0xFFFF6E9C, 0xFFFF9EBD, 0xFF33061A, 0xFFFFEAF1, 0xFFC08E9F)),
@@ -395,6 +416,24 @@ class Palette(
             Triple("lilac", "Lila" to "Lilac",
                 light(0xFFF3EBFF, 0xFFFFFFFF, 0xFFE0CCFF, 0xFFE8DAFF, 0xFF9C4DFF, 0xFF7C2DE0, 0xFF2E1A4A, 0xFF7E6A9A)),
         )
+
+        /** Las categorías de la galería de temas: (nombre es, nombre en, efectos que entran). "" = sin animación. */
+        val CATEGORIES: List<Triple<String, String, Set<String>>> = listOf(
+            Triple("🎨 Clásicos (sin animación)", "🎨 Classic (no animation)", setOf("")),
+            Triple("🌌 Espacio", "🌌 Space", setOf("stars", "meteors", "vortex", "aurora")),
+            Triple("🌿 Naturaleza", "🌿 Nature", setOf("snow", "rain", "leaves", "petals", "fireflies", "clouds", "storm")),
+            Triple("🌊 Agua", "🌊 Water", setOf("bubbles", "waves", "ripples")),
+            Triple("🔥 Fuego y energía", "🔥 Fire and energy", setOf("embers", "lava", "aura")),
+            Triple("🎉 Fiesta y amor", "🎉 Party and love", setOf("confetti", "hearts", "fireworks", "glitter", "bokeh")),
+            Triple("💾 Tecnología y retro", "💾 Tech and retro", setOf("matrix", "circuit", "synthwave", "hexgrid", "pulse", "gradient")),
+        )
+
+        /** En qué categoría va un tema. */
+        fun categoryOf(pal: Palette?): Int {
+            val e = pal?.effect ?: ""
+            val i = CATEGORIES.indexOfFirst { e in it.third || (e.startsWith("matrix") && "matrix" in it.third) }
+            return if (i < 0) 0 else i
+        }
 
         /** Aplica los colores que elegiste (acento, teclas, letras) encima del tema. */
         fun custom(p: Palette, prefs: android.content.SharedPreferences): Palette {
