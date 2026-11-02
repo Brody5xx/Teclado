@@ -7,7 +7,13 @@ import org.json.JSONObject
 /** "Mis sitios": los lugares donde trabajas seguido, con su dirección y dónde están (GPS). */
 object SiteStore {
     /** [rate] = pago por hora especial en este sitio (0 = el normal). */
-    class Site(val name: String, val address: String, val lat: Double, val lon: Double, val rate: Double = 0.0)
+    /**
+     * [rate] = pago por hora especial en este sitio (0 = el normal).
+     * [kind] = "site" (un trabajo) o "start" (🛻 donde recoges y dejas la camioneta: al salir empieza tu día, al volver termina).
+     */
+    class Site(val name: String, val address: String, val lat: Double, val lon: Double, val rate: Double = 0.0, val kind: String = "site") {
+        val isStart get() = kind == "start"
+    }
 
     /** A cuántos metros cuenta como "estoy en ese sitio". */
     const val RADIUS_M = 400f
@@ -16,19 +22,23 @@ object SiteStore {
         val a = JSONArray(p.getString(Prefs.SITES, "[]"))
         (0 until a.length()).map {
             val o = a.getJSONObject(it)
-            Site(o.optString("n"), o.optString("a"), o.optDouble("la", 0.0), o.optDouble("lo", 0.0), o.optDouble("r", 0.0))
+            Site(o.optString("n"), o.optString("a"), o.optDouble("la", 0.0), o.optDouble("lo", 0.0), o.optDouble("r", 0.0), o.optString("k", "site"))
         }
     } catch (_: Exception) { emptyList() }
 
     private fun save(p: SharedPreferences, list: List<Site>) {
         val a = JSONArray()
-        for (s in list) a.put(JSONObject().put("n", s.name).put("a", s.address).put("la", s.lat).put("lo", s.lon).put("r", s.rate))
+        for (s in list) a.put(JSONObject().put("n", s.name).put("a", s.address).put("la", s.lat).put("lo", s.lon).put("r", s.rate).put("k", s.kind))
         p.edit().putString(Prefs.SITES, a.toString()).apply()
     }
 
     /** Pago por hora especial de un sitio (0 = el normal). */
     fun setRate(p: SharedPreferences, name: String, rate: Double) =
-        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, rate) else it })
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, rate, it.kind) else it })
+
+    /** Cambia el tipo: sitio de trabajo, o 🛻 punto de comienzo y fin del día. */
+    fun setKind(p: SharedPreferences, name: String, kind: String) =
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, kind) else it })
 
     fun add(p: SharedPreferences, site: Site) = save(p, all(p).filter { !it.name.equals(site.name, true) } + site)
     fun remove(p: SharedPreferences, name: String) = save(p, all(p).filter { it.name != name })
@@ -78,6 +88,7 @@ object SiteStore {
         val out = FloatArray(1)
         for (s in all(p)) {
             if (s.lat == 0.0 && s.lon == 0.0) continue
+            if (s.isStart) continue // el parqueo de la camioneta no es un sitio de trabajo
             android.location.Location.distanceBetween(lat, lon, s.lat, s.lon, out)
             if (out[0] < bestD) { bestD = out[0]; best = s }
         }

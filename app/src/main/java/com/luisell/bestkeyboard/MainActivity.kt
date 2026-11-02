@@ -940,6 +940,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.5" to tr("•  🛻 Parqueo de la camioneta (Mis sitios): guarda donde recoges y dejas la camioneta. Al salir de ahí empieza tu día solo, y al volver y quedarte, termina solo (con «Deshacer» y «Cambiar hora»).\n•  Toca un sitio guardado para cambiarle el pago o convertirlo en parqueo.",
+            "•  🛻 Truck parking (My sites): save where you pick up and drop off the truck. When you leave it your day starts by itself, and when you come back and stay, it ends by itself (with «Undo» and «Change time»).\n•  Tap a saved site to change its pay or turn it into the parking."),
         "12.4.5" to tr("•  La ✕ del aviso «Hubo un error» ahora sí lo quita.",
             "•  The ✕ on the «There was an error» card now closes it."),
         "12.4.4" to tr("•  Arreglado: la app se cerraba al cambiar la hora con «🕐 Reloj». Ahora sale un reloj redondo moderno.\n•  El calendario (días, meses y resumen) sale completo en el idioma de la app.",

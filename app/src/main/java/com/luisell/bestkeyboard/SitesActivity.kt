@@ -70,6 +70,9 @@ class SitesActivity : UiActivity() {
             "Inside buildings GPS sometimes jumps. If you «come back in» before that time, no departure is logged."), 12f, faded = true)
         paintAuto()
         button(tr("📍 Guardar donde estoy ahora", "📍 Save where I am now"), primary = true) { saveHere() }
+        button(tr("🛻 Guardar el parqueo de la camioneta (estoy aquí)", "🛻 Save the truck parking lot (I'm here)")) { saveHere(start = true) }
+        text(tr("El parqueo es donde recoges y dejas la camioneta: cuando sales de ahí empieza tu día, y cuando vuelves y te quedas, termina.",
+            "The parking lot is where you pick up and drop off the truck: when you leave it your day starts, and when you come back and stay, it ends."), 12f, faded = true)
         button(tr("➕ Agregar por dirección", "➕ Add by address")) { addByAddress() }
         SiteStore.getNew(prefs)?.let { n ->
             button(tr("📍 Guardar el lugar nuevo de hoy: ", "📍 Save today's new place: ") + n.short) { askName(n.full.ifEmpty { n.short }, n.lat, n.lon, n.short) }
@@ -213,17 +216,17 @@ class SitesActivity : UiActivity() {
             val c = LinearLayout(this)
             c.orientation = LinearLayout.VERTICAL
             val n = TextView(this)
-            n.text = "📍 " + s.name + if (s.rate > 0) "   ⭐ " + Pay.money(s.rate) + tr("/hora", "/hour") else ""
+            n.text = (if (s.isStart) "🛻 " else "📍 ") + s.name + if (s.rate > 0) "   ⭐ " + Pay.money(s.rate) + tr("/hora", "/hour") else ""
             n.textSize = 16f
             n.setTextColor(TEXT)
             c.addView(n)
             val a = TextView(this)
-            a.text = s.address.ifEmpty { tr("(sin dirección)", "(no address)") } +
+            a.text = (if (s.isStart) tr("Comienzo y fin del día · ", "Start and end of day · ") else "") + s.address.ifEmpty { tr("(sin dirección)", "(no address)") } +
                 if (s.lat == 0.0 && s.lon == 0.0) tr("  ·  ⚠️ sin GPS", "  ·  ⚠️ no GPS") else ""
             a.textSize = 12f
             a.setTextColor(SUB)
             c.addView(a)
-            c.setOnClickListener { askRate(s) }
+            c.setOnClickListener { siteOptions(s) }
             row.addView(c, LinearLayout.LayoutParams(0, -2, 1f))
             val del = IconView(this, Icons.CLOSE, 6f)
             del.color = SUB
@@ -231,6 +234,23 @@ class SitesActivity : UiActivity() {
             row.addView(del, LinearLayout.LayoutParams(dp(40), dp(40)))
             list.addView(row)
         }
+    }
+
+    /** Al tocar un sitio: su pago especial o cambiarlo a 🛻 parqueo (comienzo y fin del día). */
+    private fun siteOptions(s: SiteStore.Site) {
+        val opts = arrayOf(
+            tr("💵 Pago por hora en este sitio", "💵 Hourly pay at this site"),
+            if (s.isStart) tr("📍 Cambiar a sitio de trabajo normal", "📍 Change to a normal work site")
+            else tr("🛻 Usarlo como parqueo de la camioneta (comienzo y fin del día)", "🛻 Use it as the truck parking (start and end of day)"),
+        )
+        AlertDialog.Builder(this)
+            .setTitle((if (s.isStart) "🛻 " else "📍 ") + s.name)
+            .setItems(opts) { _, w ->
+                if (w == 0) askRate(s)
+                else { SiteStore.setKind(prefs, s.name, if (s.isStart) "site" else "start"); refresh() }
+            }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
     }
 
     /** Un sitio que paga más por hora (0 o vacío = el pago normal). */
@@ -262,7 +282,7 @@ class SitesActivity : UiActivity() {
         background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
     }
 
-    private fun saveHere() {
+    private fun saveHere(start: Boolean = false) {
         if (!WorkdayCenter.hasLocation(this)) {
             requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 31)
             return
@@ -275,13 +295,15 @@ class SitesActivity : UiActivity() {
                     @Suppress("DEPRECATION")
                     android.location.Geocoder(this, Locale.US).getFromLocation(loc.latitude, loc.longitude, 1)?.firstOrNull()?.getAddressLine(0)
                 } catch (_: Exception) { null } ?: ""
-                runOnUiThread { askName(addr, loc.latitude, loc.longitude) }
+                runOnUiThread { askName(addr, loc.latitude, loc.longitude, kind = if (start) "start" else "site") }
             }.start()
         }
     }
 
-    private fun askName(address: String, lat: Double, lon: Double, fromNew: String = "") {
-        val name = field(tr("Nombre (ej. Oficina central, Bodega, Tienda 12)", "Name (e.g. Main office, Warehouse, Store 12)"))
+    private fun askName(address: String, lat: Double, lon: Double, fromNew: String = "", kind: String = "site") {
+        val name = field(if (kind == "start") tr("Nombre (ej. Parqueo de la camioneta)", "Name (e.g. Truck parking)")
+            else tr("Nombre (ej. Oficina central, Bodega, Tienda 12)", "Name (e.g. Main office, Warehouse, Store 12)"),
+            if (kind == "start") tr("Parqueo de la camioneta", "Truck parking") else "")
         val addr = field(tr("Dirección", "Address"), address)
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -295,7 +317,9 @@ class SitesActivity : UiActivity() {
             .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
                 val n = name.text.toString().trim()
                 if (n.isEmpty()) { toast("Ponle un nombre.", "Give it a name."); return@setPositiveButton }
-                SiteStore.add(prefs, SiteStore.Site(n, addr.text.toString().trim(), lat, lon))
+                SiteStore.add(prefs, SiteStore.Site(n, addr.text.toString().trim(), lat, lon, kind = kind))
+                if (kind == "start" && !AutoSites.ready(this))
+                    toast("Prende «Llegada y salida automáticas» para que tu día empiece y termine solo.", "Turn on «Automatic arrival and departure» so your day starts and ends by itself.")
                 if (fromNew.isNotEmpty()) {
                     // Lo de hoy también cambia: "Llegué a 123 Main St" → "Llegué a Oficina central"
                     WorkDay.renameSiteToday(prefs, fromNew, n)

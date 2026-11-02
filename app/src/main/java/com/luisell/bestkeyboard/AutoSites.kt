@@ -116,7 +116,8 @@ object AutoSites {
                 // Pasaron los minutos de espera y no volviste a entrar: ahora sí se anota la salida
                 val o = try { JSONObject(p.getString(Prefs.AUTO_EXIT_PENDING, "") ?: "") } catch (_: Exception) { null } ?: return
                 p.edit().remove(Prefs.AUTO_EXIT_PENDING).apply()
-                left(ctx, o.optString("s"), o.optLong("t"))
+                val sn = o.optString("s")
+                if (SiteStore.find(p, sn)?.isStart == true) startFromParking(ctx, sn, o.optLong("t")) else left(ctx, sn, o.optLong("t"))
                 return
             }
             ACTION_HOME_AT -> {
@@ -152,6 +153,15 @@ object AutoSites {
             }
             val isNew = id.startsWith(NEW_ID)
             val site = id.removePrefix(SITE_ID).removePrefix(NEW_ID)
+            // 🛻 El parqueo de la camioneta: al salir empieza el día, al volver y quedarte termina
+            if (!isNew && SiteStore.find(p, site)?.isStart == true) {
+                when (ev.geofenceTransition) {
+                    Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site) }
+                    Geofence.GEOFENCE_TRANSITION_DWELL -> endAtParking(ctx, site, takeEnter(p, site) ?: (at - DWELL_MS))
+                    Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); if (WorkDay.day(p).isEmpty()) pendingExit(ctx, site, at) }
+                }
+                continue
+            }
             when (ev.geofenceTransition) {
                 Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site); falseExit(ctx, site, at) }
                 Geofence.GEOFENCE_TRANSITION_DWELL -> if (!isNew) arrived(ctx, site, takeEnter(p, site) ?: (at - DWELL_MS))
@@ -194,6 +204,35 @@ object AutoSites {
                 L.t("Desde las ${WorkStore.time(enterAt)}. ¿Estás trabajando?", "Since ${WorkStore.time(enterAt)}. Are you working?"),
                 L.t("Marcar llegada", "Log arrival") to markIntent(ctx, enterAt, site))
         }
+    }
+
+    /** 🛻 Saliste del parqueo con la camioneta: empieza tu día (a la hora en que saliste). */
+    private fun startFromParking(ctx: Context, site: String, at: Long) {
+        val p = Prefs.get(ctx)
+        if (WorkDay.day(p).isNotEmpty()) return // ya empezaste hoy
+        val first = WorkDay.enabledKinds().first()
+        val t = WorkDay.addAt(p, first, "", at)
+        WorkdayCenter.refresh(ctx)
+        notify(ctx, L.t("🛻 Empezó tu día", "🛻 Your day started"),
+            L.t("Saliste de $site a las ${WorkStore.time(t)}: anoté «${WorkDay.plainLabel(first)}».",
+                "You left $site at ${WorkStore.time(t)}: logged «${WorkDay.plainLabel(first)}»."),
+            listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
+    }
+
+    /** 🛻 Volviste al parqueo y dejaste la camioneta: termina tu día (a la hora en que llegaste). */
+    private fun endAtParking(ctx: Context, site: String, at: Long) {
+        val p = Prefs.get(ctx)
+        val day = WorkDay.day(p)
+        if (!WorkDay.isRunning(day)) return
+        val last = WorkDay.lastMain(day) ?: return
+        if (at <= last.time) return
+        val fin = WorkDay.finalKind()
+        val t = WorkDay.addAt(p, fin, "", at)
+        WorkdayCenter.refresh(ctx)
+        notify(ctx, L.t("🛻 Terminó tu día", "🛻 Your day ended"),
+            L.t("Llegaste a $site a las ${WorkStore.time(t)}: anoté «${WorkDay.plainLabel(fin)}». Hoy: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}.",
+                "You got to $site at ${WorkStore.time(t)}: logged «${WorkDay.plainLabel(fin)}». Today: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}."),
+            listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
     }
 
     /** Llegaste a casa: si la jornada sigue abierta, se cierra con la hora en que llegaste. */
