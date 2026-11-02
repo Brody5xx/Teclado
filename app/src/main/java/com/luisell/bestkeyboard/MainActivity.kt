@@ -886,6 +886,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.2.3" to tr("•  🕐 Recientes es su propia página: solo salen los emojis que tú usaste, y el último que usaste va primero.",
+            "•  🕐 Recent is its own page: only the emojis you used show up, and the last one you used goes first."),
         "12.2.2" to tr("•  Emojis: al tocar una categoría de abajo (🕐 Recientes, 😀, 🐶…) ahora va justo al principio de esa categoría.",
             "•  Emojis: tapping a category at the bottom (🕐 Recent, 😀, 🐶…) now goes right to the start of that category."),
         "12.2.1" to tr("•  Tu imagen o video de fondo ahora también se ve en emojis, GIFs, portapapeles y todos los paneles.\n•  Ventana nueva y moderna mientras se prepara el video, con barra de progreso y botón «Cancelar».",

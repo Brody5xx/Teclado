@@ -239,11 +239,18 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
         grid.setSelection(0)
     }
 
+    /** 🕐 Recientes es su propia página: solo los que tú usaste (el último que usaste va primero). */
+    private var showingRecents = false
+
     private fun build() {
         val cats = EmojiData.categories ?: return
+        if (showingRecents) {
+            items = EmojiData.recent.toList()
+            adapter.notifyDataSetChanged()
+            return
+        }
         val list = ArrayList<String>(2000)
         sectionStart[0] = 0
-        list.addAll(EmojiData.recent)
         for (c in cats.indices) {
             sectionStart[c + 1] = list.size
             for (e in cats[c]) list.add(e.text)
@@ -253,16 +260,18 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
     }
 
     private fun tabFor(position: Int): Int {
-        var t = 0
-        for (i in sectionStart.indices) if (position >= sectionStart[i]) t = i
-        // Sin recientes, la sección 0 está vacía: muestra caritas
-        if (t == 0 && EmojiData.recent.isEmpty()) t = 1
+        if (showingRecents) return 0
+        var t = 1
+        for (i in 1 until sectionStart.size) if (position >= sectionStart[i]) t = i
         return t
     }
 
     private fun jumpTo(tab: Int) {
         overlay.hide()
-        val pos = sectionStart.getOrElse(tab) { 0 }
+        // Recientes: su propia página; las demás categorías van seguidas
+        val recents = tab == 0
+        if (recents != showingRecents) { showingRecents = recents; build() }
+        val pos = if (recents) 0 else sectionStart.getOrElse(tab) { 0 }
         // La sección empieza arriba del todo (antes quedaba al final de la sección y había que tocar la de al lado)
         grid.setSelection(pos)
         grid.post { grid.smoothScrollToPositionFromTop(pos, 0, 0) }
