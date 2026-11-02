@@ -79,7 +79,7 @@ class GlowScrollbar(context: Context) : View(context) {
  * hacia las puntas y transparente en los extremos, con un brillo suave alrededor (como la luz de la barra de arriba).
  */
 object GlowLine {
-    const val LEN_DP = 30f
+    const val LEN_DP = 56f
     private val core = Paint(Paint.ANTI_ALIAS_FLAG)
     private val halo = Paint(Paint.ANTI_ALIAS_FLAG)
     private val r = RectF()
@@ -104,13 +104,13 @@ object GlowLine {
         halo.shader = haloShader
         halo.alpha = alpha
         c.save()
-        c.scale(7f * dens, len * 0.8f)
+        c.scale(4.5f * dens, len * 0.75f)
         c.drawCircle(0f, 0f, 1f, halo)
         c.restore()
         // La línea
         core.shader = coreShader
         core.alpha = alpha
-        val w = 0.9f * dens
+        val w = 0.55f * dens
         r.set(-w, -len / 2f, w, len / 2f)
         c.drawRoundRect(r, w, w, core)
         c.restore()

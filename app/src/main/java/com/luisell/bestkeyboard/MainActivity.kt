@@ -886,6 +886,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.0.2" to tr("•  Al cambiar de idioma con 🌐 todo se cambia al instante: la barra de información, los paneles abiertos y la búsqueda.\n•  La luz de las barras de scroll ahora es más larga y más fina.",
+            "•  When you switch language with 🌐 everything changes instantly: the info bar, open panels and search.\n•  The scroll bar light is now longer and thinner."),
         "12.0.1" to tr("•  Barras de scroll nuevas en todos lados: una línea corta de luz igual a la de la barra de arriba (blanca en el centro y del color de tu tema).",
             "•  New scroll bars everywhere: a short light line just like the top bar's (white in the center and in your theme color)."),
         "12.0" to tr("•  ✅ Pendientes: apunta lo que no se te puede olvidar y elige cuándo te aviso (a una hora o al llegar a uno de tus sitios).\n•  🧰 Checklist antes de salir: sale sola al tocar «Comencé»; marca lo que llevas.\n•  🧤 Modo guantes: teclas más grandes con un toque.\n•  📏 Convertidor: pies ↔ metros, pulgadas ↔ cm, °F ↔ °C, libras ↔ kg, millas ↔ km y total de cable (120 x 6 + 10%).",

@@ -638,6 +638,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
         mode = 0
         L.onChange {
+            // Todo en vivo: la barra de información y el panel abierto se vuelven a pintar en el otro idioma
+            if (infoBar?.visibility == View.VISIBLE) infoRegen?.let { r -> handler.post { r() } }
+            if (mode in 10..16) handler.post { showMode(mode) }
+            searchBar?.let { if (it.visibility == View.VISIBLE) it.setText(it.text()) }
             clipPanel?.refresh()
             tBar?.applyLang()
             if (shot != null || shotAsk) checkScreenshot()
@@ -3350,6 +3354,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Pregunta una vez al día si vas manejando tú. */
     private fun askDriving() {
         val bar = infoBar ?: return
+        infoRegen = { askDriving() }
         bar.show(L.t("🛻 ¿Vas manejando tú?", "🛻 Are you driving?"),
             L.t("Si manejas, el teclado te enseña botones grandes y la voz primero mientras vas en camino.",
                 "If you drive, the keyboard shows big buttons and voice first while you're on the road."),
@@ -3430,6 +3435,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         buttons.add((if (en) "🇪🇸 Español" else "🇺🇸 English") to { startStatus(!en) })
         for (m in msgs.distinct()) buttons.add(m to { insertText(m); closeInfo() })
         buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+        infoRegen = { startStatus(english) }
         bar.show(L.t("📲 Mensaje de estado", "📲 Status message"), "", buttons)
     }
 
@@ -3498,6 +3504,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         opts.add(L.t("Mañana 7 AM", "Tomorrow 7 AM") to { set(at(1, 7), "") })
         for (s in SiteStore.all(prefs).take(6)) opts.add(L.t("📍 Al llegar a ", "📍 At ") + s.name to { set(0L, s.name) })
         opts.add(L.t("Sin aviso", "No reminder") to { set(0L, "") })
+        infoRegen = { askTodoWhen(id) }
         bar.show(L.t("⏰ ¿Cuándo te aviso?", "⏰ When should I remind you?"), "", opts)
     }
 
@@ -3539,6 +3546,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             startSearch(gif = false, custom = "convert", customHint = L.t("Número en ", "Number in ") + Convert.from(u) to "Number in " + Convert.from(u),
                 info = L.t("Escribe el número. Enter lo escribe en tu texto.", "Type the number. Enter types it in your text."))
         })
+        infoRegen = { startConvert() }
         bar.show(L.t("📏 Convertidor", "📏 Converter"), L.t("¿Qué quieres convertir?", "What do you want to convert?"), opts + listOf(L.t("Cerrar", "Close") to { closeInfo() }))
     }
 
@@ -3558,6 +3566,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         showMode(0)
         val bar = infoBar ?: return
         val kinds = WorkDay.enabledKinds() + listOf(WorkDay.LUNCH, WorkDay.BACK)
+        infoRegen = { askLogAt() }
         bar.show(L.t("🕐 ¿Qué quieres anotar?", "🕐 What do you want to log?"),
             L.t("Elige y luego escribe la hora en que pasó (ej. 5:32pm).", "Pick one and then type the time it happened (e.g. 5:32pm)."),
             kinds.map { k -> WorkDay.label(k) to { closeInfo(); TimeSetActivity.open(this, kind = k) } } +
@@ -3576,6 +3585,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bar = infoBar ?: return
         val r = Pay.week(prefs, WorkDay.weekStart(weeksAgo))
         val thisWeek = weeksAgo == 0
+        infoRegen = { showPay(weeksAgo) }
         bar.show(if (thisWeek) L.t("💵 Esta semana (aprox.)", "💵 This week (approx.)") else L.t("💵 Semana pasada (aprox.)", "💵 Last week (approx.)"),
             Pay.text(r, Pay.config(prefs)),
             listOf(
@@ -3591,6 +3601,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         showMode(0)
         val bar = infoBar ?: return
         val en = ticketLang() == "en"
+        infoRegen = { askTimesheet() }
         bar.show(L.t("📄 Hoja de horas", "📄 Timesheet"),
             L.t("Se crea un PDF con tus días, horas, sitios, almuerzo y horas extra, listo para mandar por WhatsApp o correo.",
                 "A PDF is made with your days, hours, sites, lunch and overtime, ready to send by WhatsApp or email."),
@@ -3623,6 +3634,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bar = infoBar ?: return
         val en = outLang == "en"
         val text = weekText(en)
+        infoRegen = { startWeek(outLang) }
         bar.show(L.t("📊 Resumen de la semana", "📊 Week summary"), text, listOf(
             L.t("Escribir", "Type it") to { insertText(text); closeInfo() },
             L.t("Copiar", "Copy") to { aiCopy(text) },
@@ -3731,6 +3743,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bar = infoBar ?: return
         var t = time
         fun showBar() {
+            infoRegen = { showBar() }
             val buttons = arrayListOf<Pair<String, () -> Unit>>(
                 L.t("Listo", "Done") to { closeInfo() },
                 L.t("🕐 Escribir la hora", "🕐 Type the time") to { closeInfo(); showMode(0); TimeSetActivity.open(this, eventTime = t) },
@@ -3764,6 +3777,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val date = if (en) java.text.SimpleDateFormat("EEEE, MMMM d, yyyy", java.util.Locale.US).format(now)
             else java.text.SimpleDateFormat("EEEE d 'de' MMMM 'de' yyyy", java.util.Locale("es")).format(now)
         val put: (String) -> Unit = { t -> insertText(t); closeInfo() }
+        infoRegen = { showStamp() }
         bar.show(L.t("🕐 Hora, fecha y lugar", "🕐 Time, date and place"), "", listOf(
             time to { put(time) },
             L.t("Llegué a las $time", "Arrived at $time") to { put(L.t("Llegué a las $time", "Arrived at $time")) },
@@ -3830,6 +3844,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun showWord() {
         showMode(0)
         val w = WeeklyWord.current()
+        infoRegen = { showWord() }
         infoBar?.show(L.t("📖 Palabra de la semana", "📖 Word of the week"),
             "${w.title()}\n${w.meaningNow()}\n«${w.exampleNow()}»\n\n" +
                 L.t("Reto: úsala en al menos 3 conversaciones esta semana.", "Challenge: use it in at least 3 conversations this week."),
@@ -4087,7 +4102,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         } else showMode(1)
     }
 
+    /** Para volver a pintar la barra de información en el otro idioma (al cambiar con 🌐). */
+    private var infoRegen: (() -> Unit)? = null
+
     private fun closeInfo() {
+        infoRegen = null
         readTrans?.close()
         readTrans = null
         infoBar?.visibility = View.GONE
