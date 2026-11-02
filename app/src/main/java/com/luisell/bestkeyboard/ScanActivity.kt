@@ -81,10 +81,11 @@ class ScanActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        title = "Escanear texto"
+        L.set(Prefs.get(this).getString(Prefs.LANG, "es") ?: "es")
+        title = L.t("Escanear texto", "Scan text")
         setContentView(buildUi())
         galleryMode = intent?.getBooleanExtra(EXTRA_GALLERY, false) == true
-        if (galleryMode) status.text = "Elige una foto…"
+        if (galleryMode) status.text = L.t("Elige una foto…", "Pick a photo…")
         if (savedInstanceState == null) {
             if (galleryMode) openGallery() else openCamera()
         }
@@ -105,8 +106,8 @@ class ScanActivity : Activity() {
 
         val row = LinearLayout(this)
         row.orientation = LinearLayout.HORIZONTAL
-        row.addView(smallButton("📷  Tomar foto") { openCamera() }, LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(smallButton("🖼  Galería") { openGallery() }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
+        row.addView(smallButton(L.t("📷  Tomar foto", "📷  Take photo")) { openCamera() }, LinearLayout.LayoutParams(0, -2, 1f))
+        row.addView(smallButton(L.t("🖼  Galería", "🖼  Gallery")) { openGallery() }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
         col.addView(row, LinearLayout.LayoutParams(-1, -2))
 
         photo = ImageView(this)
@@ -117,28 +118,28 @@ class ScanActivity : Activity() {
 
         status = TextView(this)
         status.textSize = 15f
-        status.text = "Toma una foto del texto que quieres escribir (etiquetas, números de serie, papeles...)."
+        status.text = L.t("Toma una foto del texto que quieres escribir (etiquetas, números de serie, papeles...).", "Take a photo of the text you want to type (labels, serial numbers, papers...).")
         status.setPadding(0, dp(12), 0, dp(6))
         col.addView(status, LinearLayout.LayoutParams(-1, -2))
 
         edit = EditText(this)
-        edit.hint = "Aquí aparecerá el texto. Puedes corregirlo antes de insertarlo."
+        edit.hint = L.t("Aquí aparecerá el texto. Puedes corregirlo antes de insertarlo.", "The text will show up here. You can fix it before inserting it.")
         edit.minLines = 4
         edit.gravity = Gravity.TOP or Gravity.START
         edit.textSize = 16f
         col.addView(edit, LinearLayout.LayoutParams(-1, -2))
 
-        insertBtn = smallButton("⌨  Insertar donde estaba escribiendo") { insert() }
+        insertBtn = smallButton(L.t("⌨  Insertar donde estaba escribiendo", "⌨  Insert where I was typing")) { insert() }
         insertBtn.setTypeface(insertBtn.typeface, Typeface.BOLD)
         col.addView(insertBtn, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
-        copyBtn = smallButton("📋  Copiar el texto") { copy() }
+        copyBtn = smallButton(L.t("📋  Copiar el texto", "📋  Copy the text")) { copy() }
         col.addView(copyBtn, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
 
         val tip = TextView(this)
         tip.textSize = 13f
         tip.alpha = 0.7f
-        tip.text = "Consejos: buena luz, el texto derecho y que llene la foto. El texto se lee dentro del " +
-            "teléfono, sin internet."
+        tip.text = L.t("Consejos: buena luz, el texto derecho y que llene la foto. El texto se lee dentro del teléfono, sin internet.",
+            "Tips: good light, straight text that fills the photo. The text is read on the phone, no internet needed.")
         tip.setPadding(0, dp(14), 0, 0)
         col.addView(tip, LinearLayout.LayoutParams(-1, -2))
         setButtonsEnabled(false)
@@ -170,18 +171,18 @@ class ScanActivity : Activity() {
         try {
             startActivityForResult(i, REQ_CAMERA)
         } catch (_: ActivityNotFoundException) {
-            status.text = "No encontré la app de la cámara. Usa el botón Galería."
+            status.text = L.t("No encontré la app de la cámara. Usa el botón Galería.", "Couldn't find the camera app. Use the Gallery button.")
         } catch (_: SecurityException) {
-            status.text = "No se pudo abrir la cámara. Usa el botón Galería."
+            status.text = L.t("No se pudo abrir la cámara. Usa el botón Galería.", "Couldn't open the camera. Use the Gallery button.")
         }
     }
 
     private fun openGallery() {
         val i = Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE)
         try {
-            startActivityForResult(Intent.createChooser(i, "Elige una foto"), REQ_GALLERY)
+            startActivityForResult(Intent.createChooser(i, L.t("Elige una foto", "Pick a photo")), REQ_GALLERY)
         } catch (_: ActivityNotFoundException) {
-            status.text = "No encontré la galería."
+            status.text = L.t("No encontré la galería.", "Couldn't find the gallery.")
         }
     }
 
@@ -192,7 +193,7 @@ class ScanActivity : Activity() {
             // Volver al teclado con la foto, para elegir las palabras con las gotitas
             val uri = if (resultCode == RESULT_OK) data?.data else null
             if (uri == null) { finish(); return }
-            status.text = "Abriendo la foto…"
+            status.text = L.t("Abriendo la foto…", "Opening the photo…")
             io.execute {
                 val bmp = loadBitmap(uri, 2000)
                 main.post {
@@ -200,7 +201,7 @@ class ScanActivity : Activity() {
                         pendingPhoto = bmp
                         pendingPhotoAt = System.currentTimeMillis()
                     } else {
-                        Toast.makeText(this, "No se pudo abrir la foto.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, L.t("No se pudo abrir la foto.", "Couldn't open the photo."), Toast.LENGTH_SHORT).show()
                     }
                     finish()
                 }
@@ -212,7 +213,7 @@ class ScanActivity : Activity() {
             REQ_CAMERA -> {
                 val f = photoFile()
                 if (f.exists() && f.length() > 0) read(Uri.fromFile(f))
-                else status.text = "No llegó la foto. Inténtalo otra vez."
+                else status.text = L.t("No llegó la foto. Inténtalo otra vez.", "The photo didn't come through. Try again.")
             }
             REQ_GALLERY -> data?.data?.let { read(it) }
         }
@@ -220,29 +221,29 @@ class ScanActivity : Activity() {
 
     /** Lee el texto de la foto. */
     private fun read(uri: Uri) {
-        status.text = "Leyendo el texto…"
+        status.text = L.t("Leyendo el texto…", "Reading the text…")
         setButtonsEnabled(false)
         showPreview(uri)
         val image = try {
             InputImage.fromFilePath(this, uri)
         } catch (_: Exception) {
-            status.text = "No se pudo abrir la foto."
+            status.text = L.t("No se pudo abrir la foto.", "Couldn't open the photo.")
             return
         }
         recognizer.process(image)
             .addOnSuccessListener { result ->
                 val text = result.textBlocks.joinToString("\n") { it.text }.trim()
                 if (text.isEmpty()) {
-                    status.text = "No encontré texto en la foto. Prueba con más luz o más cerca."
+                    status.text = L.t("No encontré texto en la foto. Prueba con más luz o más cerca.", "No text found in the photo. Try with more light or closer.")
                 } else {
                     edit.setText(text)
                     edit.setSelection(text.length)
-                    status.text = "✅ Listo. Revisa el texto (puedes corregirlo o borrar lo que no quieras) y toca Insertar."
+                    status.text = L.t("✅ Listo. Revisa el texto (puedes corregirlo o borrar lo que no quieras) y toca Insertar.", "✅ Done. Check the text (you can fix it or delete what you don't want) and tap Insert.")
                     setButtonsEnabled(true)
                 }
             }
             .addOnFailureListener {
-                status.text = "No se pudo leer el texto. Inténtalo otra vez."
+                status.text = L.t("No se pudo leer el texto. Inténtalo otra vez.", "Couldn't read the text. Try again.")
             }
     }
 
@@ -312,7 +313,7 @@ class ScanActivity : Activity() {
         if (t.isEmpty()) return
         pending = t
         pendingAt = System.currentTimeMillis()
-        Toast.makeText(this, "Listo: el texto aparece donde estabas escribiendo.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, L.t("Listo: el texto aparece donde estabas escribiendo.", "Done: the text shows up where you were typing."), Toast.LENGTH_SHORT).show()
         finish()
     }
 
@@ -321,6 +322,6 @@ class ScanActivity : Activity() {
         if (t.isEmpty()) return
         (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
             .setPrimaryClip(ClipData.newPlainText("Texto escaneado", t))
-        Toast.makeText(this, "Copiado. También queda en tu portapapeles 📋.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, L.t("Copiado. También queda en tu portapapeles 📋.", "Copied. It's also in your clipboard 📋."), Toast.LENGTH_SHORT).show()
     }
 }

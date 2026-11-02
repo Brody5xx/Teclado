@@ -8,7 +8,56 @@ import java.util.Calendar
  */
 object WeeklyWord {
 
-    class Word(val word: String, val meaning: String, val example: String, val en: String, val replaces: List<String>)
+    class Word(val word: String, val meaning: String, val example: String, val en: String, val replaces: List<String>) {
+        /** En inglés: significado, ejemplo y palabras sencillas que puede reemplazar. */
+        val enMeaning get() = EN[word]?.first ?: meaning
+        val enExample get() = EN[word]?.second ?: example
+        val enReplaces get() = EN[word]?.third ?: emptyList()
+
+        /** Todo en el idioma del teclado. */
+        fun title() = if (L.english) "$en  ($word)" else "$word  ($en)"
+        fun meaningNow() = if (L.english) enMeaning else meaning
+        fun exampleNow() = if (L.english) enExample else example
+        fun typed() = (if (L.english) en else word).lowercase()
+    }
+
+    private val EN: Map<String, Triple<String, String, List<String>>> = mapOf(
+        "Afable" to Triple("Friendly and easy to talk to.", "The new neighbor was very affable with everyone in the building.", listOf("friendly", "nice")),
+        "Asertivo" to Triple("Says what they think clearly and respectfully.", "I was assertive and explained that we were short on material.", listOf("direct")),
+        "Perspicaz" to Triple("Notices details others miss.", "It was perceptive to notice the cable was mislabeled.", listOf("smart", "observant")),
+        "Cordial" to Triple("Kind and respectful, polite.", "The meeting was cordial and we reached an agreement.", listOf("polite", "friendly")),
+        "Pertinente" to Triple("To the point; fitting.", "He asked a very relevant question about the permits.", listOf("important", "on point")),
+        "Ecuánime" to Triple("Stays calm and fair.", "Even with problems, she stayed even-tempered.", listOf("calm")),
+        "Elocuente" to Triple("Speaks clearly and convincingly.", "His explanation was so eloquent that everyone understood.", listOf("well-spoken")),
+        "Ocurrente" to Triple("Has funny or clever ideas.", "My coworker is very witty, he always makes us laugh.", listOf("funny")),
+        "Diligente" to Triple("Does the work carefully and quickly.", "He was diligent and finished the installation early.", listOf("hardworking", "hard-working")),
+        "Sensato" to Triple("Thinks and acts with good judgment.", "It was sensible to wait for the supervisor before cutting the power.", listOf("reasonable")),
+        "Idóneo" to Triple("Perfect or just right for something.", "This is the ideal spot to install the camera.", listOf("perfect for", "best")),
+        "Escueto" to Triple("Short, with few words.", "His answer was brief but clear.", listOf("short")),
+        "Jovial" to Triple("Cheerful and in a good mood.", "He showed up cheerful even after starting early.", listOf("happy", "glad")),
+        "Atinado" to Triple("Right on target.", "That was a spot-on comment.", listOf("good point", "right")),
+        "Desenvuelto" to Triple("Handles things with ease and confidence.", "He was very self-assured talking to the client.", listOf("confident")),
+        "Sereno" to Triple("Calm, not upset.", "She stayed composed when the system went down.", listOf("calm")),
+        "Contundente" to Triple("Clear and firm, convincing.", "I gave a compelling answer about the budget.", listOf("firm", "strong")),
+        "Propicio" to Triple("Favorable, the right moment.", "It's a favorable moment to ask for the material.", listOf("good time", "good moment")),
+        "Tenaz" to Triple("Doesn't give up easily.", "He was tenacious until he found the fiber fault.", listOf("stubborn", "persistent")),
+        "Versátil" to Triple("Can do many different things.", "She's a versatile tech: cameras, fiber and access control.", listOf("all-around")),
+        "Apacible" to Triple("Calm and pleasant.", "It was a peaceful afternoon after a long day.", listOf("quiet", "calm")),
+        "Ingenioso" to Triple("Finds creative solutions.", "It was resourceful how he ran the cable without opening the ceiling.", listOf("creative", "clever")),
+        "Solidario" to Triple("Helps and supports others.", "My coworker was supportive and stayed to help me.", listOf("helpful")),
+        "Oportuno" to Triple("Comes at just the right time.", "Your call was very timely.", listOf("on time", "just in time")),
+        "Coherente" to Triple("Logical and well ordered.", "His report was clear and coherent.", listOf("makes sense", "logical")),
+        "Grato" to Triple("Pleasant, a pleasure.", "It was pleasant to work with your team.", listOf("nice", "good")),
+        "Prudente" to Triple("Thinks before acting to avoid problems.", "It was prudent to warn everyone before disconnecting the panel.", listOf("careful")),
+        "Genuino" to Triple("Real, sincere.", "His thanks were genuine.", listOf("real", "sincere")),
+        "Entusiasta" to Triple("Shows a lot of energy and joy.", "The new team is enthusiastic about the project.", listOf("excited", "eager")),
+        "Minucioso" to Triple("Takes care of every detail.", "I did a thorough check of all the doors.", listOf("detailed")),
+        "Resiliente" to Triple("Recovers quickly from problems.", "We were resilient after the change of plans.", listOf("tough", "strong")),
+        "Locuaz" to Triple("Talks a lot and easily.", "The client was very talkative and told us everything.", listOf("chatty")),
+        "Sutil" to Triple("Delicate, barely noticeable.", "I made a subtle suggestion.", listOf("discreet")),
+        "Ameno" to Triple("Pleasant and entertaining.", "The talk was very enjoyable.", listOf("fun", "entertaining")),
+        "Conciso" to Triple("Says a lot in few words.", "Be concise in the report: what you did and how it ended up.", listOf("to the point"))
+    )
 
     val WORDS = listOf(
         Word("Afable", "Amable y fácil de tratar.", "El nuevo vecino fue muy afable con todos en el edificio.", "Affable", listOf("amable", "buena onda")),
@@ -65,10 +114,11 @@ object WeeklyWord {
         val trailing = if (text.endsWith(" ")) 1 else 0
         val core = text.substring(0, text.length - trailing)
         val norm = EmojiSearch.norm(core)
-        for (r in w.replaces) {
+        // Escribes en español → la palabra en español; en inglés → la palabra en inglés
+        for ((r, word) in w.replaces.map { it to w.word } + w.enReplaces.map { it to w.en }) {
             val k = EmojiSearch.norm(r)
             if (norm.endsWith(k) && (norm.length == k.length || !norm[norm.length - k.length - 1].isLetter())) {
-                val out = w.word.lowercase() + if (trailing > 0) " " else ""
+                val out = word.lowercase() + if (trailing > 0) " " else ""
                 return FormalWords.Match(k.length + trailing, out)
             }
         }

@@ -2634,7 +2634,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     "For each line write the line, then below it '→ ' and what it does. At the end, say in 1–2 sentences what the whole program does. " +
                     "No markdown (no **, no #).\n\nCode:\n$src"
             else
-                "Eres un profesor de programación paciente. Explica este código de $codeLang línea por línea en español muy sencillo, para un principiante total. " +
+                "Eres un profesor de programación paciente. Explica este código de $codeLang línea por línea en ${aiLang()} muy sencillo, para un principiante total. " +
                     "Para cada línea escribe la línea y debajo '→ ' y lo que hace. Al final, di en 1–2 frases qué hace el programa completo. " +
                     "Sin markdown (sin **, sin #).\n\nCódigo:\n$src"
             codeAsk(prompt) { codeBar?.showResult(L.t("Explicación", "Explanation"), plain(it), null, false) }
@@ -2658,7 +2658,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 "Write $codeLang code that does this: $description\nUse clear names and short comments in English explaining each part. " +
                     "Keep it simple for a beginner. Reply ONLY with the code, no ``` and no explanations outside the code."
             else
-                "Escribe código en $codeLang que haga esto: $description\nUsa nombres claros y comentarios cortos en español que expliquen cada parte. " +
+                "Escribe código en $codeLang que haga esto: $description\nUsa nombres claros y comentarios cortos en ${aiLang()} que expliquen cada parte. " +
                     "Que sea sencillo para un principiante. Responde SOLO con el código, sin ``` y sin explicaciones fuera del código."
             codeAsk(prompt) { ans ->
                 val code = codeBlock(ans) ?: ans.trim()
@@ -2673,7 +2673,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 "This is $codeLang code and/or an error message. 1) Explain in simple English, for a beginner, what is wrong and why. " +
                     "2) Then give the complete fixed code between ``` and ```. No other markdown.\n\n$src"
             else
-                "Esto es código de $codeLang y/o un mensaje de error. 1) Explica en español sencillo, para un principiante, qué está mal y por qué. " +
+                "Esto es código de $codeLang y/o un mensaje de error. 1) Explica en ${aiLang()} sencillo, para un principiante, qué está mal y por qué. " +
                     "2) Luego da el código corregido completo entre ``` y ```. Sin otro markdown.\n\n$src"
             codeAsk(prompt) { ans ->
                 val code = codeBlock(ans)
@@ -2689,7 +2689,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 "I'm learning $codeLang. Give me ONE short hint (2–3 sentences) in simple English to move forward or fix this code, " +
                     "WITHOUT giving the full solution or writing the final code. No markdown.\n\n$src"
             else
-                "Estoy aprendiendo $codeLang. Dame UNA pista corta (2–3 frases) en español sencillo para avanzar o arreglar este código, " +
+                "Estoy aprendiendo $codeLang. Dame UNA pista corta (2–3 frases) en ${aiLang()} sencillo para avanzar o arreglar este código, " +
                     "SIN darme la solución completa ni escribir el código final. Sin markdown.\n\n$src"
             codeAsk(prompt) { codeBar?.showResult(L.t("Pista", "Hint"), plain(it), null, false) }
         }
@@ -3420,6 +3420,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         return sb.toString()
     }
 
+    /** El idioma en que la IA te contesta (el del teclado). */
+    private fun aiLang() = if (L.english) "inglés (English)" else "español"
+
     /** 🕐 Anotar algo de hoy con la hora que tú escribas (ej. «Llegué a casa» a las 5:32pm). */
     private fun askLogAt() {
         showMode(0)
@@ -3698,9 +3701,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         showMode(0)
         val w = WeeklyWord.current()
         infoBar?.show(L.t("📖 Palabra de la semana", "📖 Word of the week"),
-            "${w.word}  (${w.en})\n${w.meaning}\n«${w.example}»\n\n" +
+            "${w.title()}\n${w.meaningNow()}\n«${w.exampleNow()}»\n\n" +
                 L.t("Reto: úsala en al menos 3 conversaciones esta semana.", "Challenge: use it in at least 3 conversations this week."),
-            listOf(L.t("Escribirla", "Type it") to { insertText(w.word.lowercase()); closeInfo() }, L.t("Cerrar", "Close") to { closeInfo() }))
+            listOf(L.t("Escribirla", "Type it") to { insertText(w.typed()); closeInfo() }, L.t("Cerrar", "Close") to { closeInfo() }))
     }
 
     /** La primera vez que abres el teclado en la semana, te enseña la palabra nueva. */

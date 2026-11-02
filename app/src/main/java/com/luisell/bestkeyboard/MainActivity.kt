@@ -716,8 +716,8 @@ class MainActivity : UiActivity() {
         // ---- Palabra de la semana
         card(tr("Palabra de la semana", "Word of the week"), Icons.BOOK)
         val ww = WeeklyWord.current()
-        text("${ww.word}  (${ww.en})", 18f, bold = true)
-        text(ww.meaning + "\n«" + ww.example + "»", 13f)
+        text(tr("${ww.word}  (${ww.en})", "${ww.en}  (${ww.word})"), 18f, bold = true)
+        text(tr(ww.meaning, ww.enMeaning) + "\n«" + tr(ww.example, ww.enExample) + "»", 13f)
         text(tr("Reto: úsala en al menos 3 conversaciones esta semana. Cada lunes sale una nueva.",
             "Challenge: use it in at least 3 conversations this week. A new one comes every Monday."), 12f, faded = true)
         switch(tr("Mostrarla en el teclado y sugerirla", "Show it on the keyboard and suggest it"), Prefs.WORD_WEEK, true)
@@ -885,6 +885,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "11.9.1" to tr("•  Palabra de la semana en inglés completa (palabra, significado y ejemplo) cuando el teclado está en inglés.\n•  El escáner y las respuestas de la IA de código ahora salen en tu idioma.",
+            "•  Word of the week fully in English (word, meaning and example) when the keyboard is in English.\n•  The scanner and the code AI answers now use your language."),
         "11.9" to tr("•  🏠 Guarda tu casa en Mis sitios: al llegar se anota solo «Llegué a casa» con la hora real (solo en tu teléfono; en tickets y PDF solo dice «Casa»).\n•  🕐 Escribe la hora tú mismo (5:32pm, 532p o 17:32): en «Anotar con otra hora», al tocar una hora en Mi jornada y en el aviso de la noche.\n•  🌙 El aviso de la noche te sugiere la hora en que seguramente llegaste (tu salida + lo que tardas normalmente).",
             "•  🏠 Save your home in My sites: when you get there, «Home» is logged with the real time (only on your phone; tickets and PDF just say «Home»).\n•  🕐 Type the time yourself (5:32pm, 532p or 17:32): in «Log with another time», when tapping a time in My workday and in the night reminder.\n•  🌙 The night reminder suggests the time you probably got home (your departure + your usual drive)."),
         "11.8.1" to tr("•  🌙 Aviso de «¿Se te olvidó marcar Casa?»: ahora eliges la hora que quieras.",
