@@ -101,7 +101,7 @@ class WorkdayButtonsActivity : UiActivity() {
                 set(java.util.Calendar.HOUR_OF_DAY, m / 60); set(java.util.Calendar.MINUTE, m % 60) }.time) + tr("  (toca para cambiar)", "  (tap to change)")
         timeBtn = button(timeLabel(at)) {
             val cur = prefs.getInt(Prefs.NIGHT_TIME, 21 * 60)
-            android.app.TimePickerDialog(this, { _, h, m ->
+            android.app.TimePickerDialog(this, android.R.style.Theme_Material_Dialog, { _, h, m ->
                 prefs.edit().putInt(Prefs.NIGHT_TIME, h * 60 + m).apply()
                 timeBtn.text = timeLabel(h * 60 + m)
                 WorkdayCenter.refresh(this)

@@ -72,7 +72,7 @@ class MonthActivity : UiActivity() {
         // Nombres de los días (lunes primero)
         val names = GridLayout(this).apply { columnCount = 7 }
         val cell = (resources.displayMetrics.widthPixels - dp(28)) / 7
-        val dn = if (L.english) listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun") else listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
+        val dn = if (en) listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun") else listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
         for (n in dn) names.addView(TextView(this).apply { text = n; textSize = 11f; setTextColor(SUB); gravity = Gravity.CENTER },
             GridLayout.LayoutParams().apply { width = cell; height = dp(24) })
         root.addView(names, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(10) })
@@ -91,7 +91,7 @@ class MonthActivity : UiActivity() {
     }
 
     private fun paint() {
-        title.text = SimpleDateFormat("MMMM yyyy", if (L.english) Locale.US else Locale("es")).format(month.time).replaceFirstChar { it.uppercase() }
+        title.text = SimpleDateFormat("MMMM yyyy", if (en) Locale.US else Locale("es")).format(month.time).replaceFirstChar { it.uppercase() }
         grid.removeAllViews()
         val cell = (resources.displayMetrics.widthPixels - dp(28)) / 7
         val byDay = WorkDay.byDay(prefs).toMap()
@@ -154,7 +154,7 @@ class MonthActivity : UiActivity() {
         }
         val ev = byDay[chosen] ?: emptyList()
         val head = TextView(this).apply {
-            text = SimpleDateFormat("EEEE, MMMM d", if (L.english) Locale.US else Locale("es")).format(chosen).replaceFirstChar { it.uppercase() }
+            text = SimpleDateFormat("EEEE, MMMM d", if (en) Locale.US else Locale("es")).format(chosen).replaceFirstChar { it.uppercase() }
             textSize = 17f; setTextColor(TEXT); setTypeface(typeface, Typeface.BOLD)
         }
         detail.addView(head)
@@ -190,7 +190,7 @@ class MonthActivity : UiActivity() {
         })
         val now = System.currentTimeMillis()
         detail.addView(TextView(this).apply {
-            text = WorkDay.text(ev, false).let { if (WorkStore.sameDay(chosen, now)) it else it }
+            text = WorkDay.text(ev, en).let { if (WorkStore.sameDay(chosen, now)) it else it }
             textSize = 14f; setTextColor(TEXT)
             setLineSpacing(0f, 1.25f)
             setPadding(dp(14), dp(12), dp(14), dp(12))

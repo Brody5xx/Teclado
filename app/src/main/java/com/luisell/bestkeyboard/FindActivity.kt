@@ -82,13 +82,13 @@ class FindActivity : UiActivity() {
         setContentView(sv)
 
         // Todo lo que se puede buscar
-        for (t in WorkStore.tickets(prefs)) all.add(Hit("🗂️", tr("Ticket ", "Ticket ") + t.num + " · " + WorkStore.shortDate(t.time, L.english), t.text, t.time))
-        for (n in WorkStore.notes(prefs)) all.add(Hit("📒", tr("Libreta", "Notebook") + " · " + WorkStore.shortDate(n.time, L.english), n.text, n.time))
+        for (t in WorkStore.tickets(prefs)) all.add(Hit("🗂️", tr("Ticket ", "Ticket ") + t.num + " · " + WorkStore.shortDate(t.time, en), t.text, t.time))
+        for (n in WorkStore.notes(prefs)) all.add(Hit("📒", tr("Libreta", "Notebook") + " · " + WorkStore.shortDate(n.time, en), n.text, n.time))
         ClipStore.load(this) {
             runOnUiThread {
                 for (c in ClipStore.ordered()) {
                     val tx = c.text ?: continue
-                    all.add(Hit("📋", tr("Portapapeles", "Clipboard") + " · " + WorkStore.shortDate(c.time, L.english), tx, c.time))
+                    all.add(Hit("📋", tr("Portapapeles", "Clipboard") + " · " + WorkStore.shortDate(c.time, en), tx, c.time))
                 }
                 show(box.text.toString())
             }

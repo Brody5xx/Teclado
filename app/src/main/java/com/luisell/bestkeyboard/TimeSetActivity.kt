@@ -107,8 +107,13 @@ class TimeSetActivity : Activity() {
             }
             dlg.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
                 val c = Calendar.getInstance().apply { timeInMillis = base }
-                TimePickerDialog(this, { _, h, m -> save(p, ev, k, base, h, m); dlg.dismiss() },
-                    c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false).show()
+                // Reloj redondo moderno (el de ruedas se cerraba en algunos teléfonos)
+                try {
+                    TimePickerDialog(this, android.R.style.Theme_Material_Dialog, { _, h, m -> save(p, ev, k, base, h, m); dlg.dismiss() },
+                        c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false).show()
+                } catch (_: Exception) {
+                    Toast.makeText(this, L.t("Escribe la hora en la caja (ej. 5:32pm).", "Type the time in the box (e.g. 5:32pm)."), Toast.LENGTH_SHORT).show()
+                }
             }
         }
         dlg.show()

@@ -931,6 +931,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.4.4" to tr("•  Arreglado: la app se cerraba al cambiar la hora con «🕐 Reloj». Ahora sale un reloj redondo moderno.\n•  El calendario (días, meses y resumen) sale completo en el idioma de la app.",
+            "•  Fixed: the app closed when changing the time with «🕐 Clock». Now a modern round clock shows up.\n•  The calendar (days, months and summary) is fully in the app's language."),
         "12.4.3" to tr("•  Botón «🕐 Ver y cambiar mis horas» en la app (Mi jornada).\n•  Tocar el aviso de Mi jornada abre tus horas de hoy para cambiarlas.",
             "•  «🕐 See and change my hours» button in the app (My workday).\n•  Tapping the My workday notification opens today's hours so you can change them."),
         "12.4.2" to tr("•  Salida automática más segura: espera unos minutos (5, 10, 15 o 20) antes de anotarla; si vuelves a entrar antes, no se anota.\n•  Los avisos de llegada y salida automáticas traen «🕐 Cambiar hora».\n•  En el Calendario, toca cualquier hora de un día para cambiarla, o ✕ para borrarla.",

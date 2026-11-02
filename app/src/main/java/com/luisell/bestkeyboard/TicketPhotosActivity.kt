@@ -122,7 +122,7 @@ class TicketPhotosActivity : UiActivity() {
 
     private fun showTicket() {
         val t = tickets[idx]
-        ticketTitle.text = tr("Ticket ", "Ticket ") + t.num + "  ·  " + WorkStore.shortDate(t.time, L.english)
+        ticketTitle.text = tr("Ticket ", "Ticket ") + t.num + "  ·  " + WorkStore.shortDate(t.time, en)
         ticketText.text = t.text
         selected.clear()
         loadPhotos()
