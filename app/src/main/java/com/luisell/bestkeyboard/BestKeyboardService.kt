@@ -2444,6 +2444,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_TODO -> showMode(15)
             KeyboardView.TOOL_CHECK -> showMode(16)
             KeyboardView.TOOL_CONVERT -> startConvert()
+            KeyboardView.TOOL_SPEAK -> startSpeak()
             KeyboardView.TOOL_BGSOUND -> {
                 if (BgMedia.kind(this) != "video") {
                     Toast.makeText(this, L.t("Primero pon un video de fondo en Ajustes → Estilo.", "First set a background video in Settings → Style."), Toast.LENGTH_SHORT).show()
@@ -2978,6 +2979,42 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         for (w in words) { if (w in en) e++; if (w in es) sp++ }
         if (Regex("[áéíóúñ¿¡]").containsMatchIn(low)) sp += 2
         return e > sp
+    }
+
+    // ---------------------------------------------------------------- 🔊 Escuchar texto
+
+    /** Lee en voz alta lo que seleccionaste (o lo último que copiaste, o lo que acabas de escribir). */
+    private fun startSpeak(given: String? = null, englishIn: Boolean? = null, slow: Boolean = false) {
+        showMode(0)
+        val bar = infoBar ?: return
+        val ic = currentInputConnection
+        val text = given ?: run {
+            val sel = try { ic?.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null }
+            if (!sel.isNullOrEmpty()) return@run sel
+            val clip = try { clipboard?.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim() } catch (_: Exception) { null }
+            val before = try { ic?.getTextBeforeCursor(400, 0)?.toString()?.trim() } catch (_: Exception) { null }
+            // Lo que acabas de escribir (la última frase) o, si no hay, lo que copiaste
+            val last = before?.split(Regex("(?<=[.!?\n])\s+"))?.lastOrNull { it.isNotBlank() }?.trim()
+            last?.takeIf { it.isNotEmpty() } ?: clip
+        }?.take(1200)
+        if (text.isNullOrEmpty()) {
+            Toast.makeText(this, L.t("Selecciona un texto (o cópialo) y vuelve a tocar 🔊.", "Select a text (or copy it) and tap 🔊 again."), Toast.LENGTH_LONG).show()
+            return
+        }
+        // ¿En qué idioma está? Una sola palabra sin acentos: el idioma del teclado
+        val oneWord = !text.contains(' ')
+        val english = englishIn ?: if (oneWord && !Regex("[áéíóúñ¿¡]").containsMatchIn(text.lowercase())) L.english else looksEnglish(text)
+        Speak.rate = if (slow) 0.6f else 0.85f
+        Speak.say(this, text, english)
+        infoRegen = { startSpeak(text, english, slow) }
+        bar.show(L.t("🔊 Escuchar", "🔊 Listen") + "  ·  " + (if (english) "English" else "Español"), text,
+            listOf(
+                "🔊 English" to { startSpeak(text, true, slow) },
+                "🔊 Español" to { startSpeak(text, false, slow) },
+                (if (slow) L.t("🐇 Normal", "🐇 Normal") else L.t("🐢 Más despacio", "🐢 Slower")) to { startSpeak(text, english, !slow) },
+                L.t("⏹ Parar", "⏹ Stop") to { Speak.stop() },
+                L.t("Cerrar", "Close") to { Speak.stop(); closeInfo() },
+            ))
     }
 
     /** Traduce lo que seleccionaste o, si no hay nada, el último mensaje que copiaste. */

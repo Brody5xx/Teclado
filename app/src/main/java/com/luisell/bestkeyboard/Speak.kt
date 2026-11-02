@@ -12,6 +12,11 @@ object Speak {
     private var pending: Pair<String, Locale>? = null
 
     /** Dice [text] en inglés ([english] = true) o en español, un poquito despacio para que se entienda. */
+    /** Qué tan rápido habla (0.85 normal, 0.6 despacio). */
+    var rate = 0.85f
+
+    fun stop() { try { tts?.stop() } catch (_: Exception) { } }
+
     fun say(ctx: Context, text: String, english: Boolean) {
         val loc = if (english) Locale.US else Locale("es", "US")
         val t = tts
@@ -38,7 +43,7 @@ object Speak {
             // Si no hay voz en español de EE. UU., prueba la de España/México
             if (loc.language == "es") t.setLanguage(Locale("es"))
         }
-        t.setSpeechRate(0.85f)
+        t.setSpeechRate(rate)
         t.speak(text, TextToSpeech.QUEUE_FLUSH, null, "bk_word")
     }
 }

@@ -96,6 +96,7 @@ object Icons {
     const val TOOLBOX = 78
     const val GLOVE = 79
     const val RULER = 80
+    const val SOUNDWAVE = 81
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -517,6 +518,14 @@ object Icons {
                 path.lineTo(cx + s * 0.5f, cy - s * 0.35f)
                 c.drawPath(path, st)
                 st.color = color
+            }
+            SOUNDWAVE -> {
+                // Ondas de sonido (escuchar un texto)
+                val hs = floatArrayOf(0.35f, 0.7f, 1f, 0.6f, 0.3f)
+                for (k in 0..4) {
+                    val x = cx + (k - 2) * s * 0.45f
+                    c.drawLine(x, cy - s * 0.9f * hs[k], x, cy + s * 0.9f * hs[k], st)
+                }
             }
             TODO -> {
                 // Lista de pendientes: palomita, palomita, renglón vacío

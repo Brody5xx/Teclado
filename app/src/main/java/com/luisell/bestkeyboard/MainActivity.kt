@@ -927,6 +927,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.4" to tr("•  🔊 Escuchar texto: selecciona una palabra o frase (o cópiala) y toca 🔊 en la barra de arriba; el teléfono la lee en inglés o en español, también más despacio.",
+            "•  🔊 Listen to text: select a word or phrase (or copy it) and tap 🔊 on the top bar; the phone reads it in English or Spanish, slower too."),
         "12.3.2" to tr("•  Barra de arriba: cuando sale el nombre en la cápsula, toda la cápsula es de ese botón (ya no se toca el de al lado por accidente).",
             "•  Top bar: when the name shows in the capsule, the whole capsule belongs to that button (no more tapping the neighbor by accident)."),
         "12.3.1" to tr("•  📖 Palabra de la semana: botones 🔊 para escuchar cómo se dice en inglés y en español (y el ejemplo).",

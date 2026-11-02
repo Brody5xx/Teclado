@@ -98,6 +98,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_GLOVES = 59
         const val TOOL_CONVERT = 60
         const val TOOL_BGSOUND = 61
+        const val TOOL_SPEAK = 62
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -2419,6 +2420,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_GLOVES -> Icons.GLOVE
         TOOL_CONVERT -> Icons.RULER
         TOOL_BGSOUND -> Icons.SPEAKER
+        TOOL_SPEAK -> Icons.SOUNDWAVE
         else -> -1
     }
 
