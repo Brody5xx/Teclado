@@ -92,6 +92,10 @@ object Icons {
     /** Rombo para seleccionar: vacío (sin marcar) y lleno con palomita (marcado). */
     const val SEL_OFF = 75
     const val SEL_ON = 76
+    const val TODO = 77
+    const val TOOLBOX = 78
+    const val GLOVE = 79
+    const val RULER = 80
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -513,6 +517,56 @@ object Icons {
                 path.lineTo(cx + s * 0.5f, cy - s * 0.35f)
                 c.drawPath(path, st)
                 st.color = color
+            }
+            TODO -> {
+                // Lista de pendientes: palomita, palomita, renglón vacío
+                for (k in 0..2) {
+                    val y = cy + (k - 1) * s * 0.68f
+                    c.drawLine(cx - s * 0.15f, y, cx + s * 0.95f, y, st)
+                    if (k < 2) {
+                        path.reset()
+                        path.moveTo(cx - s * 0.95f, y)
+                        path.lineTo(cx - s * 0.72f, y + s * 0.22f)
+                        path.lineTo(cx - s * 0.4f, y - s * 0.22f)
+                        c.drawPath(path, st)
+                    } else c.drawCircle(cx - s * 0.68f, y, s * 0.17f, st)
+                }
+            }
+            TOOLBOX -> {
+                // Caja de herramientas con asa
+                r.set(cx - s * 0.95f, cy - s * 0.35f, cx + s * 0.95f, cy + s * 0.8f)
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, st)
+                r.set(cx - s * 0.38f, cy - s * 0.8f, cx + s * 0.38f, cy - s * 0.35f)
+                c.drawRoundRect(r, s * 0.12f, s * 0.12f, st)
+                c.drawLine(cx - s * 0.95f, cy + s * 0.1f, cx + s * 0.95f, cy + s * 0.1f, st)
+                c.drawLine(cx, cy - s * 0.02f, cx, cy + s * 0.22f, st)
+            }
+            GLOVE -> {
+                // Guante: palma y cuatro dedos
+                path.reset()
+                path.moveTo(cx - s * 0.55f, cy + s * 0.95f)
+                path.lineTo(cx - s * 0.6f, cy - s * 0.1f)
+                path.lineTo(cx - s * 0.95f, cy - s * 0.35f)
+                path.moveTo(cx + s * 0.6f, cy + s * 0.95f)
+                path.lineTo(cx + s * 0.65f, cy - s * 0.2f)
+                c.drawPath(path, st)
+                for (k in 0..3) {
+                    val x = cx - s * 0.45f + k * s * 0.36f
+                    c.drawLine(x, cy - s * 0.05f, x, cy - s * (0.7f + if (k == 1 || k == 2) 0.2f else 0f), st)
+                }
+                c.drawLine(cx - s * 0.62f, cy + s * 0.6f, cx + s * 0.62f, cy + s * 0.6f, st)
+            }
+            RULER -> {
+                // Regla inclinada con marcas
+                c.save()
+                c.rotate(-35f, cx, cy)
+                r.set(cx - s * 1.05f, cy - s * 0.35f, cx + s * 1.05f, cy + s * 0.35f)
+                c.drawRoundRect(r, s * 0.1f, s * 0.1f, st)
+                for (k in 0..4) {
+                    val x = cx - s * 0.7f + k * s * 0.35f
+                    c.drawLine(x, cy - s * 0.35f, x, cy - s * (if (k % 2 == 0) 0.0f else 0.12f), st)
+                }
+                c.restore()
             }
             CHECK -> {
                 path.reset()

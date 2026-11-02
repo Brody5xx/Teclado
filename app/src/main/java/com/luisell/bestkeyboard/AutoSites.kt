@@ -176,6 +176,7 @@ object AutoSites {
         if (WorkDay.isRunning(day)) {
             val t = WorkDay.addAt(p, WorkDay.ARRIVE, site, enterAt)
             WorkdayCenter.refresh(ctx)
+            Todos.arrivedAt(ctx, site)
             notify(ctx, L.t("📍 Llegaste a $site", "📍 You arrived at $site"),
                 L.t("Lo anoté solo: llegaste a las ${WorkStore.time(t)}.", "Logged automatically: you arrived at ${WorkStore.time(t)}."),
                 L.t("Deshacer", "Undo") to undoIntent(ctx, t))

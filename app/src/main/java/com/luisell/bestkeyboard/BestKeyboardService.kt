@@ -162,6 +162,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var ticketsPanel: ListPanel? = null
     private var workdayPanel: ListPanel? = null
     private var materialsPanel: ListPanel? = null
+    private var todoPanel: ListPanel? = null
+    private var checkPanel: ListPanel? = null
     private var drivePanel: DrivePanel? = null
     /** "No mostrar el modo manejando" hasta el próximo evento de la jornada (tocaste ⌨️ Teclado). */
     private var driveSkipEvent = -1L
@@ -423,7 +425,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN, KeyboardView.TOOL_PHRASES,
                     KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT, KeyboardView.TOOL_BARCODE,
                     KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS, KeyboardView.TOOL_WORKDAY,
-                    KeyboardView.TOOL_MATERIALS, KeyboardView.TOOL_DRIVE -> onToolbar(tool)
+                    KeyboardView.TOOL_MATERIALS, KeyboardView.TOOL_DRIVE, KeyboardView.TOOL_TODO, KeyboardView.TOOL_CHECK -> onToolbar(tool)
                     else -> { showMode(0); onToolbar(tool) }
                 }
             }
@@ -513,6 +515,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         mt.onFeedback = { onKeyFeedback() }
         box.addView(mt, FrameLayout.LayoutParams(-1, -1))
         materialsPanel = mt
+        // Pendientes (15) y checklist antes de salir (16)
+        val td = ListPanel(this)
+        td.visibility = View.GONE
+        td.onBack = { showMode(0) }
+        td.onFeedback = { onKeyFeedback() }
+        box.addView(td, FrameLayout.LayoutParams(-1, -1))
+        todoPanel = td
+        val ck = ListPanel(this)
+        ck.visibility = View.GONE
+        ck.onBack = { showMode(0) }
+        ck.onFeedback = { onKeyFeedback() }
+        box.addView(ck, FrameLayout.LayoutParams(-1, -1))
+        checkPanel = ck
         val drv = DrivePanel(this)
         drv.visibility = View.GONE
         drv.actions = object : DrivePanel.Actions {
@@ -587,7 +602,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         srch.visibility = View.GONE
         srch.actions = object : SearchBar.Actions {
             override fun onSearchText(text: String) {
-                if (!srch.gifs && !srch.note && !srch.material && !srch.clip) srch.showResults(EmojiSearch.search(text))
+                if (srch.custom == "convert") srch.setInfo(convertResult(text))
+                else if (srch.custom.isEmpty() && !srch.gifs && !srch.note && !srch.material && !srch.clip) srch.showResults(EmojiSearch.search(text))
                 updateAutoCaps()
                 scheduleUpdate()
             }
@@ -596,9 +612,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 val note = srch.note
                 val mat = srch.material
                 val clip = srch.clip
+                val custom = srch.custom
                 clipEditing = null
                 stopSearch()
-                showMode(if (clip) 2 else if (mat) 13 else if (note) 10 else if (gif) 9 else 1)
+                showMode(when (custom) { "todo" -> 15; "check" -> 16; "convert" -> 0; else -> if (clip) 2 else if (mat) 13 else if (note) 10 else if (gif) 9 else 1 })
             }
             override fun onSearchPick(emoji: String) {
                 currentInputConnection?.commitText(emoji, 1)
@@ -712,6 +729,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ticketsPanel?.let { it.visibility = if (m == 11) View.VISIBLE else View.GONE; if (m == 11) refreshTickets() }
         workdayPanel?.let { it.visibility = if (m == 12) View.VISIBLE else View.GONE; if (m == 12) refreshWorkday() }
         materialsPanel?.let { it.visibility = if (m == 13) View.VISIBLE else View.GONE; if (m == 13) refreshMaterials() }
+        todoPanel?.let { it.visibility = if (m == 15) View.VISIBLE else View.GONE; if (m == 15) refreshTodos() }
+        checkPanel?.let { it.visibility = if (m == 16) View.VISIBLE else View.GONE; if (m == 16) refreshChecklist() }
         drivePanel?.let { it.visibility = if (m == 14) View.VISIBLE else View.GONE
             if (m == 14) it.open(WorkDay.nextKind(WorkDay.day(prefs))) }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
@@ -1633,7 +1652,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         pal = withCustomColors(pal)
         v.palette = pal
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
-        v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f }
+        v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f } *
+            (if (prefs.getBoolean(Prefs.GLOVES, false)) 1.2f else 1f)
         v.keyAnim = prefs.getString(Prefs.KEY_ANIM, "pop") ?: "pop"
         v.stripArc = when (prefs.getString(Prefs.STRIP_ARC, "normal")) { "none" -> 0f; "soft" -> 0.45f; "strong" -> 1.8f; else -> 1f }
         v.stripNames = prefs.getBoolean(Prefs.STRIP_NAMES, true)
@@ -1663,6 +1683,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ticketsPanel?.applyPalette(pal)
         workdayPanel?.applyPalette(pal)
         materialsPanel?.applyPalette(pal)
+        todoPanel?.applyPalette(pal)
+        checkPanel?.applyPalette(pal)
         drivePanel?.applyPalette(pal)
         infoBar?.applyPalette(pal)
         searchBar?.applyPalette(pal)
@@ -1685,7 +1707,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         v.hackerOn = hacker
         // El teclado de computadora tiene 5 filas apretadas: teclas un poco más bajitas
         val hk = if (hacker && page != Page.NUM) 0.86f else 1f
-        v.keyHeightDp = (if (landscape) base * 0.78f else base) * hk
+        // 🧤 Modo guantes: teclas más altas y letras más grandes
+        val gloves = prefs.getBoolean(Prefs.GLOVES, false)
+        v.glovesOn = gloves
+        v.keyHeightDp = (if (landscape) base * 0.78f else base) * hk * (if (gloves) 1.28f else 1f)
         if (!v.resizing) v.heightScale = prefs.getFloat(Prefs.SIZE, 1f)
         v.showPreview = prefs.getBoolean(Prefs.PREVIEW, true)
 
@@ -2341,6 +2366,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_STATUS -> startStatus()
             KeyboardView.TOOL_WEEK -> startWeek(ticketLang())
             KeyboardView.TOOL_DRIVE -> showMode(14)
+            KeyboardView.TOOL_TODO -> showMode(15)
+            KeyboardView.TOOL_CHECK -> showMode(16)
+            KeyboardView.TOOL_CONVERT -> startConvert()
+            KeyboardView.TOOL_GLOVES -> {
+                val on = !prefs.getBoolean(Prefs.GLOVES, false)
+                prefs.edit().putBoolean(Prefs.GLOVES, on).apply()
+                applySettings()
+                Toast.makeText(this, if (on) L.t("🧤 Modo guantes: teclas grandes", "🧤 Glove mode: big keys") else L.t("Modo guantes apagado", "Glove mode off"), Toast.LENGTH_SHORT).show()
+            }
             KeyboardView.TOOL_SITES -> {
                 showMode(0)
                 try {
@@ -3259,7 +3293,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         for (k in order) buttons.add(WorkDay.label(k) to {
             WorkdayCenter.record(this, k) { refreshWorkday(); maybeAskSaveSite() }
             refreshWorkday()
-            if (k == WorkDay.START || (k == WorkDay.enabledKinds().first() && k != WorkDay.ARRIVE)) askDriving()
+            if (k == WorkDay.START || (k == WorkDay.enabledKinds().first() && k != WorkDay.ARRIVE)) {
+                askDriving()
+                // 🧰 ¿Llevas todo? (la checklist de antes de salir)
+                if (prefs.getBoolean(Prefs.CHECK_ON, true) && Todos.checkItems(prefs).isNotEmpty()) showMode(16)
+            }
         })
         if (events.isNotEmpty()) {
             buttons.add(L.t("✍️ Escribir resumen", "✍️ Type summary") to {
@@ -3422,6 +3460,97 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** El idioma en que la IA te contesta (el del teclado). */
     private fun aiLang() = if (L.english) "inglés (English)" else "español"
+
+    // ---------------------------------------------------------------- ✅ Pendientes y 🧰 checklist
+
+    private fun refreshTodos() {
+        val panel = todoPanel ?: return
+        val list = Todos.all(prefs).sortedWith(compareBy({ it.done }, { if (it.due > 0) it.due else Long.MAX_VALUE }))
+        val rows = list.map { i ->
+            ListPanel.Row(if (i.done) "✓" else "○", i.text + Todos.whenText(i).let { if (it.isEmpty() || i.done) "" else "\n$it" },
+                onTap = { Todos.toggle(this, i.id); refreshTodos() },
+                onCopy = if (i.done) null else ({ askTodoWhen(i.id) }),
+                onDelete = { Todos.remove(this, i.id); refreshTodos() },
+                copyLabel = "⏰")
+        }
+        panel.show(L.t("✅ Pendientes", "✅ To-dos") + if (list.any { !it.done }) " (${list.count { !it.done }})" else "", rows,
+            L.t("Apunta lo que no se te puede olvidar (ej. «llevar la escalera mañana»). Toca uno para marcarlo hecho.",
+                "Write down what you can't forget (e.g. «bring the ladder tomorrow»). Tap one to mark it done."),
+            listOf(L.t("➕ Pendiente nuevo", "➕ New to-do") to {
+                startSearch(gif = false, custom = "todo", customHint = "Ej. llevar la escalera mañana" to "E.g. bring the ladder tomorrow",
+                    info = L.t("Escríbelo y toca Enter. Después eliges cuándo te aviso.", "Type it and tap Enter. Then pick when to remind you."))
+            }))
+    }
+
+    /** ¿Cuándo te aviso? */
+    private fun askTodoWhen(id: Long) {
+        val bar = infoBar ?: return
+        val now = java.util.Calendar.getInstance()
+        fun at(daysAhead: Int, h: Int): Long = (now.clone() as java.util.Calendar).apply {
+            add(java.util.Calendar.DAY_OF_YEAR, daysAhead); set(java.util.Calendar.HOUR_OF_DAY, h)
+            set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
+        val set = { due: Long, site: String -> Todos.setDue(this, id, due, site); closeInfo(); refreshTodos() }
+        val opts = ArrayList<Pair<String, () -> Unit>>()
+        opts.add(L.t("En 1 hora", "In 1 hour") to { set(System.currentTimeMillis() + 3600_000L, "") })
+        if (now.get(java.util.Calendar.HOUR_OF_DAY) < 19) opts.add(L.t("Hoy 7 PM", "Today 7 PM") to { set(at(0, 19), "") })
+        opts.add(L.t("Mañana 6 AM", "Tomorrow 6 AM") to { set(at(1, 6), "") })
+        opts.add(L.t("Mañana 7 AM", "Tomorrow 7 AM") to { set(at(1, 7), "") })
+        for (s in SiteStore.all(prefs).take(6)) opts.add(L.t("📍 Al llegar a ", "📍 At ") + s.name to { set(0L, s.name) })
+        opts.add(L.t("Sin aviso", "No reminder") to { set(0L, "") })
+        bar.show(L.t("⏰ ¿Cuándo te aviso?", "⏰ When should I remind you?"), "", opts)
+    }
+
+    private fun refreshChecklist() {
+        val panel = checkPanel ?: return
+        val items = Todos.checkItems(prefs)
+        val done = Todos.checked(prefs)
+        val rows = items.map { n ->
+            ListPanel.Row(if (n in done) "✅" else "⬜", n,
+                onTap = { Todos.toggleCheck(prefs, n); refreshChecklist() },
+                onDelete = { Todos.setCheckItems(prefs, items.filter { it != n }); refreshChecklist() })
+        }
+        val all = items.isNotEmpty() && items.all { it in done }
+        panel.show(L.t("🧰 ¿Llevas todo?", "🧰 Got everything?") + " (${items.count { it in done }}/${items.size})" + if (all) " 👍" else "", rows,
+            L.t("Toca lo que ya llevas. Sale sola al tocar «Comencé». Se reinicia cada día.",
+                "Tap what you already have. It shows up when you tap «Started». It resets every day."),
+            listOf(L.t("➕ Agregar", "➕ Add") to {
+                startSearch(gif = false, custom = "check", customHint = "Ej. Escalera" to "E.g. Ladder",
+                    info = L.t("Escríbelo y toca Enter.", "Type it and tap Enter."))
+            }, L.t("Listo", "Done") to { showMode(0) }))
+    }
+
+    // ---------------------------------------------------------------- 📏 Convertidor
+
+    private var convertUnit: Convert.Unit? = null
+    private var convertCable = false
+
+    private fun startConvert() {
+        showMode(0)
+        val bar = infoBar ?: return
+        val opts = ArrayList<Pair<String, () -> Unit>>()
+        opts.add(L.t("🧵 Total de cable", "🧵 Cable total") to {
+            closeInfo(); convertCable = true; convertUnit = null
+            startSearch(gif = false, custom = "convert", customHint = "Ej. 120 x 6 + 10%" to "E.g. 120 x 6 + 10%",
+                info = L.t("Corridas en pies: «120 x 6» (6 de 120), «85, 90, 120» o con extra «+ 10%».", "Runs in feet: «120 x 6» (6 of 120), «85, 90, 120» or with extra «+ 10%»."))
+        })
+        for (u in Convert.UNITS) opts.add(L.t(u.es, u.en) to {
+            closeInfo(); convertCable = false; convertUnit = u
+            startSearch(gif = false, custom = "convert", customHint = L.t("Número en ", "Number in ") + Convert.from(u) to "Number in " + Convert.from(u),
+                info = L.t("Escribe el número. Enter lo escribe en tu texto.", "Type the number. Enter types it in your text."))
+        })
+        bar.show(L.t("📏 Convertidor", "📏 Converter"), L.t("¿Qué quieres convertir?", "What do you want to convert?"), opts + listOf(L.t("Cerrar", "Close") to { closeInfo() }))
+    }
+
+    /** El resultado mientras escribes (o para escribirlo en tu texto). */
+    private fun convertResult(text: String, forTyping: Boolean = false): String {
+        val q = text.trim().replace(",", if (convertCable) "," else ".")
+        if (q.isEmpty()) return if (forTyping) "" else L.t("Escribe un número…", "Type a number…")
+        if (convertCable) return Convert.cable(q) ?: if (forTyping) "" else L.t("No entendí. Ejemplo: 120 x 6 + 10%", "I didn't get it. Example: 120 x 6 + 10%")
+        val u = convertUnit ?: return ""
+        val v = q.toDoubleOrNull() ?: return if (forTyping) "" else L.t("Solo números (ej. 25.5)", "Numbers only (e.g. 25.5)")
+        val out = Convert.fmt(v) + " " + Convert.from(u) + " = " + Convert.fmt(u.f(v)) + " " + u.other
+        return if (forTyping) Convert.fmt(v) + " " + Convert.from(u) + " (" + Convert.fmt(u.f(v)) + " " + u.other + ")" else "= " + out
+    }
 
     /** 🕐 Anotar algo de hoy con la hora que tú escribas (ej. «Llegué a casa» a las 5:32pm). */
     private fun askLogAt() {
@@ -3876,19 +4005,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Lo que estás editando del portapapeles (null = agregando algo nuevo). */
     private var clipEditing: ClipItem? = null
 
-    private fun startSearch(gif: Boolean, note: Boolean = false, material: Boolean = false, clipText: String? = null) {
+    private fun startSearch(gif: Boolean, note: Boolean = false, material: Boolean = false, clipText: String? = null,
+                            custom: String = "", customHint: Pair<String, String>? = null, info: String = "") {
         val bar = searchBar ?: return
         if (translating) stopTranslate()
         if (spellOn) stopSpell(keepSelection = true)
         closeInfo()
         showMode(0)
-        searching = if (clipText != null) 5 else if (material) 4 else if (note) 3 else if (gif) 2 else 1
+        searching = if (custom.isNotEmpty()) 6 else if (clipText != null) 5 else if (material) 4 else if (note) 3 else if (gif) 2 else 1
         bar.visibility = View.VISIBLE
-        bar.start(gif, note, material, clipText)
+        bar.start(gif, note, material, clipText, custom, customHint, info)
         lastCorrection = null
         autoSpace = false
         lastWasSpace = false
-        page = Page.LETTERS
+        page = if (custom == "convert" && !convertCable) Page.SYM else Page.LETTERS
         rebuild()
         updateAutoCaps()
         scheduleUpdate()
@@ -3909,6 +4039,26 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bar = searchBar ?: return
         val q = bar.text().trim()
         val gif = bar.gifs
+        when (bar.custom) {
+            "todo" -> {
+                stopSearch()
+                if (q.isNotEmpty()) { val id = Todos.add(prefs, q); showMode(15); askTodoWhen(id) } else showMode(15)
+                return
+            }
+            "check" -> {
+                if (q.isNotEmpty()) Todos.setCheckItems(prefs, Todos.checkItems(prefs) + q)
+                stopSearch()
+                showMode(16)
+                return
+            }
+            "convert" -> {
+                val r = convertResult(q, forTyping = true)
+                stopSearch()
+                showMode(0)
+                if (r.isNotEmpty()) insertText(r)
+                return
+            }
+        }
         if (bar.clip) {
             // En el portapapeles, Enter hace una línea nueva (se guarda con «✓ Guardar»)
             bar.connection.commitText("\n", 1)

@@ -93,6 +93,10 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_STATUS = 54
         const val TOOL_WEEK = 55
         const val TOOL_DRIVE = 56
+        const val TOOL_TODO = 57
+        const val TOOL_CHECK = 58
+        const val TOOL_GLOVES = 59
+        const val TOOL_CONVERT = 60
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -210,6 +214,8 @@ class KeyboardView(context: Context) : View(context) {
 
     /** Teclado de computadora: Ctrl/Alt/Shift/Fn encendidos (una vez) o fijos (dos toques). */
     var hackerOn = false
+    /** 🧤 Modo guantes encendido (se pinta el botón). */
+    var glovesOn = false
         set(v) { if (field != v) { field = v; invalidate() } }
     private var modsOnce: Set<Int> = emptySet()
     private var modsLocked: Set<Int> = emptySet()
@@ -2184,6 +2190,10 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_STATUS -> Icons.SEND
         TOOL_WEEK -> Icons.WEEK
         TOOL_DRIVE -> Icons.STEER
+        TOOL_TODO -> Icons.TODO
+        TOOL_CHECK -> Icons.TOOLBOX
+        TOOL_GLOVES -> Icons.GLOVE
+        TOOL_CONVERT -> Icons.RULER
         else -> -1
     }
 
@@ -2369,7 +2379,7 @@ class KeyboardView(context: Context) : View(context) {
             }
             val kind = toolIcon(i)
             if (kind < 0) continue
-            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn)
+            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn) || (i == TOOL_GLOVES && glovesOn)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             // Modo acomodar: los demás tiemblan un poquito
             val ang = if (editing) (7.0 * kotlin.math.sin(now * 2 * Math.PI * 4.5 + i * 1.7)).toFloat() else 0f

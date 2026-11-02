@@ -128,7 +128,22 @@ class SearchBar(context: Context) : LinearLayout(context) {
     var clip = false
         private set
 
-    fun start(gif: Boolean, noteMode: Boolean = false, materialMode: Boolean = false, clipText: String? = null) {
+    /** "todo" (pendiente nuevo), "check" (cosa de la checklist) o "convert" (número a convertir). */
+    var custom = ""
+        private set
+    /** Lo que se ve abajo en los modos de arriba (el resultado de la conversión, por ejemplo). */
+    private var customInfo = ""
+
+    fun setInfo(text: String) {
+        customInfo = text
+        hint.visibility = VISIBLE
+        hint.text = text
+    }
+
+    fun start(gif: Boolean, noteMode: Boolean = false, materialMode: Boolean = false, clipText: String? = null,
+              customMode: String = "", customHint: Pair<String, String>? = null, info: String = "") {
+        custom = customMode
+        customInfo = info
         material = materialMode
         clip = clipText != null
         // Para el portapapeles: una caja grande, con varias líneas, para escribir y leer cómodo
@@ -148,8 +163,12 @@ class SearchBar(context: Context) : LinearLayout(context) {
         L.bind(saveBtn, "✓ Guardar", "✓ Save")
         gifs = gif
         note = noteMode
-        glass.kind = if (clip) Icons.PENCIL else if (noteMode) Icons.NOTEBOOK else Icons.SEARCH
+        glass.kind = when (customMode) {
+            "todo" -> Icons.TODO; "check" -> Icons.TOOLBOX; "convert" -> Icons.RULER
+            else -> if (clip) Icons.PENCIL else if (noteMode) Icons.NOTEBOOK else Icons.SEARCH
+        }
         when {
+            customHint != null -> L.bindHint(box, customHint.first, customHint.second)
             clip -> L.bindHint(box, "Escribe lo que quieres guardar…", "Type what you want to save…")
             materialMode -> L.bindHint(box, "Nombre del material (ej. Cat 6A cable)", "Material name (e.g. Cat 6A cable)")
             noteMode -> L.bindHint(box, "Apunta algo…", "Write a note…")
@@ -178,6 +197,12 @@ class SearchBar(context: Context) : LinearLayout(context) {
     /** Emojis encontrados (en GIFs: un aviso para tocar Buscar). */
     fun showResults(list: List<String>) {
         results.removeAllViews()
+        if (custom.isNotEmpty()) {
+            resultsScroll.visibility = GONE
+            hint.visibility = VISIBLE
+            hint.text = customInfo
+            return
+        }
         if (clip) {
             resultsScroll.visibility = GONE
             hint.visibility = VISIBLE

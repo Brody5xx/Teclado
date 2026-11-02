@@ -90,6 +90,7 @@ class WorkdayButtonsActivity : UiActivity() {
 
         // ---- 🌙 Cerrar el día
         card(tr("Cerrar el día", "Close the day"), Icons.CLOCK)
+        switch(tr("🧰 Enseñarme la checklist al tocar «Comencé»", "🧰 Show my checklist when I tap «Started»"), Prefs.CHECK_ON, true)
         switch(tr("Avisarme si no marqué «Casa»", "Remind me if I didn't log «Home»"), Prefs.NIGHT_REMIND, true)
         val at = prefs.getInt(Prefs.NIGHT_TIME, 21 * 60)
         lateinit var timeBtn: android.widget.TextView

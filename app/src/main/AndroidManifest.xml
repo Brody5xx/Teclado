@@ -129,6 +129,15 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- ✅ Avisos de pendientes -->
+        <receiver
+            android:name=".TodoReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Llegada y salida automáticas (geocercas de Mis sitios) -->
         <receiver
             android:name=".AutoSitesReceiver"

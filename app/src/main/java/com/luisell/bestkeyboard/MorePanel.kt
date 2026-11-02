@@ -64,6 +64,10 @@ object Tools {
         Info(KeyboardView.TOOL_NOTEBOOK, Icons.NOTEBOOK, "Libreta del día", "Day notebook", true),
         Info(KeyboardView.TOOL_TICKETS, Icons.TICKETS, "Mis tickets", "My tickets", true),
         Info(KeyboardView.TOOL_WORD, Icons.BOOK, "Palabra de la semana", "Word of the week", true),
+        Info(KeyboardView.TOOL_TODO, Icons.TODO, "Pendientes", "To-dos", true),
+        Info(KeyboardView.TOOL_CHECK, Icons.TOOLBOX, "Checklist antes de salir", "Pre-trip checklist", true),
+        Info(KeyboardView.TOOL_GLOVES, Icons.GLOVE, "Modo guantes", "Glove mode", false),
+        Info(KeyboardView.TOOL_CONVERT, Icons.RULER, "Convertidor", "Converter", true),
     )
 
     /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */

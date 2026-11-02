@@ -68,12 +68,17 @@ object WorkdayCenter {
         val site = if (kind == WorkDay.LEAVE) events.lastOrNull { it.kind == WorkDay.ARRIVE }?.site ?: "" else ""
         val t = WorkDay.add(p, kind, site)
         refresh(ctx)
+        // 🧰 Al empezar el día desde la pantalla de bloqueo o el widget: te recuerda tu checklist
+        if (kind == WorkDay.enabledKinds().first() && kind != WorkDay.ARRIVE && p.getBoolean(Prefs.CHECK_ON, true)) {
+            val items = Todos.checkItems(p).filter { it !in Todos.checked(p) }
+            if (items.isNotEmpty()) AutoSites.notify(ctx, L.t("🧰 ¿Llevas todo?", "🧰 Got everything?"), items.joinToString(" · "), null, 4723)
+        }
         if (kind == WorkDay.ARRIVE && hasLocation(ctx)) {
             // La hora ya quedó anotada; ahora el GPS busca dónde estás
             locate(ctx) { loc ->
                 val s = loc?.let { SiteStore.nearest(p, it.latitude, it.longitude) }
                 if (s != null || loc == null) {
-                    if (s != null) WorkDay.setSite(p, t, s.name)
+                    if (s != null) { WorkDay.setSite(p, t, s.name); Todos.arrivedAt(ctx, s.name) }
                     refresh(ctx)
                     done?.invoke(WorkDay.Event(t, kind, s?.name ?: ""))
                     return@locate

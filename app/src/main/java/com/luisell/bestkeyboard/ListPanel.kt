@@ -24,6 +24,8 @@ class ListPanel(context: Context) : FrameLayout(context) {
         val onTap: (() -> Unit)? = null,
         val onCopy: (() -> Unit)? = null,
         val onDelete: (() -> Unit)? = null,
+        /** El texto del botón de [onCopy] (si no, «Copiar»). */
+        val copyLabel: String? = null,
     )
 
     var onBack: (() -> Unit)? = null
@@ -122,7 +124,7 @@ class ListPanel(context: Context) : FrameLayout(context) {
             row.addView(col, LinearLayout.LayoutParams(0, -2, 1f))
             r.onCopy?.let { cp ->
                 val b = TextView(context)
-                b.text = L.t("Copiar", "Copy")
+                b.text = r.copyLabel ?: L.t("Copiar", "Copy")
                 b.textSize = 12f
                 b.gravity = Gravity.CENTER
                 b.setTextColor(p.text)

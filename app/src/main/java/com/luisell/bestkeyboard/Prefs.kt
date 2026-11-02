@@ -114,6 +114,11 @@ object Prefs {
     const val NIGHT_REMIND = "night_remind"    // 🌙 aviso si la jornada sigue abierta
     const val HOME_PLACE = "home_place"        // 🏠 dónde está tu casa (solo coordenadas, solo en el teléfono)
     const val NIGHT_TIME = "night_time"        // a qué hora (minutos desde las 0:00; 1260 = 9:00 PM)
+    const val TODOS = "todos"                  // ✅ pendientes
+    const val CHECKLIST = "checklist"          // 🧰 cosas para revisar antes de salir
+    const val CHECK_DONE = "check_done"        // lo que marcaste hoy
+    const val CHECK_ON = "check_on"            // enseñar la checklist al tocar «Comencé»
+    const val GLOVES = "gloves"                // 🧤 modo guantes (teclas grandes)
     const val SHORTCUTS = "shortcuts"          // ⚡ atajos de texto (/ok → frase)
     const val AUTO_SITES = "auto_sites"        // llegada y salida automáticas (geocercas)
     const val AUTO_ENTER = "auto_enter"        // a qué hora entraste a cada sitio (para la hora de llegada)
