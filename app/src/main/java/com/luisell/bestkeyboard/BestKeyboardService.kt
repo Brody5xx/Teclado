@@ -3929,7 +3929,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         infoBar?.show(L.t("📖 Palabra de la semana", "📖 Word of the week"),
             "${w.title()}\n${w.meaningNow()}\n«${w.exampleNow()}»\n\n" +
                 L.t("Reto: úsala en al menos 3 conversaciones esta semana.", "Challenge: use it in at least 3 conversations this week."),
-            listOf(L.t("Escribirla", "Type it") to { insertText(w.typed()); closeInfo() }, L.t("Cerrar", "Close") to { closeInfo() }))
+            listOf(
+                "🔊 " + w.en to { Speak.say(this, w.en, english = true) },
+                "🔊 " + w.word to { Speak.say(this, w.word, english = false) },
+                L.t("🔊 Ejemplo", "🔊 Example") to { Speak.say(this, w.exampleNow(), english = L.english) },
+                L.t("Escribirla", "Type it") to { insertText(w.typed()); closeInfo() },
+                L.t("Cerrar", "Close") to { closeInfo() }))
     }
 
     /** La primera vez que abres el teclado en la semana, te enseña la palabra nueva. */

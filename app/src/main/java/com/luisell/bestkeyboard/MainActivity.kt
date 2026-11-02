@@ -756,6 +756,8 @@ class MainActivity : UiActivity() {
         val ww = WeeklyWord.current()
         text(tr("${ww.word}  (${ww.en})", "${ww.en}  (${ww.word})"), 18f, bold = true)
         text(tr(ww.meaning, ww.enMeaning) + "\n«" + tr(ww.example, ww.enExample) + "»", 13f)
+        button("🔊 " + ww.en + tr("  (inglés)", "  (English)")) { Speak.say(this, ww.en, english = true) }
+        button("🔊 " + ww.word + tr("  (español)", "  (Spanish)")) { Speak.say(this, ww.word, english = false) }
         text(tr("Reto: úsala en al menos 3 conversaciones esta semana. Cada lunes sale una nueva.",
             "Challenge: use it in at least 3 conversations this week. A new one comes every Monday."), 12f, faded = true)
         switch(tr("Mostrarla en el teclado y sugerirla", "Show it on the keyboard and suggest it"), Prefs.WORD_WEEK, true)
@@ -925,6 +927,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.3.1" to tr("•  📖 Palabra de la semana: botones 🔊 para escuchar cómo se dice en inglés y en español (y el ejemplo).",
+            "•  📖 Word of the week: 🔊 buttons to hear how it sounds in English and Spanish (and the example)."),
         "12.3" to tr("•  💾 La copia de seguridad ahora guarda TODO: también el portapapeles (textos e imágenes fijadas), tu imagen o video de fondo, los emojis recientes, Mi jornada, tu pago, pendientes y atajos.\n•  Al restaurar en un teléfono nuevo se vuelven a programar los avisos y la llegada/salida automática, y te dice qué permisos dar otra vez.\n•  Guardar y restaurar ya no congela la pantalla.",
             "•  💾 The backup now saves EVERYTHING: also the clipboard (texts and pinned images), your background image or video, recent emojis, My workday, your pay, to-dos and shortcuts.\n•  When restoring on a new phone, reminders and automatic arrival/departure are scheduled again, and it tells you which permissions to give again.\n•  Saving and restoring no longer freezes the screen."),
         "12.2.3" to tr("•  🕐 Recientes es su propia página: solo salen los emojis que tú usaste, y el último que usaste va primero.",
