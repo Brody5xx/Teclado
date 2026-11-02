@@ -331,6 +331,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 clipEditing = item
                 startSearch(gif = false, clipText = item?.text ?: "")
             }
+            override fun onClipFind() = openFind()
         }
         cp.visibility = View.GONE
         box.addView(cp, FrameLayout.LayoutParams(-1, -1))
@@ -1624,7 +1625,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun applySettings() {
         val v = kv ?: return
-        val theme = prefs.getString(Prefs.THEME, "auto")
+        val theme = Prefs.theme(prefs)
         val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
         var pal = Palette.forTheme(theme, systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
@@ -3207,6 +3208,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             L.t("Aquí se guardan los tickets que creas con 📋 Notas → Ticket. Toca uno para escribirlo y usarlo de base.",
                 "Tickets you create with 📋 Notes → Ticket are saved here. Tap one to type it and use it as a base."),
             listOf(L.t("📋 Ticket nuevo", "📋 New ticket") to { showMode(0); startTicket() },
+                L.t("🔍 Buscar", "🔍 Search") to { openFind() },
                 L.t("📸 Enviar con fotos", "📸 Send with photos") to {
                     showMode(0)
                     try {
@@ -3266,6 +3268,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             })
         }
         buttons.add(L.t("📄 Hoja de horas (PDF)", "📄 Timesheet (PDF)") to { askTimesheet() })
+        buttons.add(L.t("📅 Calendario", "📅 Calendar") to {
+            showMode(0)
+            try { startActivity(Intent(this, MonthActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)) } catch (_: Exception) { }
+        })
         buttons.add(L.t("✏️ Editar botones", "✏️ Edit buttons") to {
             showMode(0)
             try {
@@ -3411,6 +3417,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val tickets = WorkStore.tickets(prefs).filter { it.time >= start }.map { it.num }.sorted()
         if (tickets.isNotEmpty()) sb.append("\n").append(if (english) "Tickets: " else "Tickets: ").append(tickets.joinToString(", "))
         return sb.toString()
+    }
+
+    /** 🔍 Buscar en tickets, libreta y portapapeles. */
+    private fun openFind() {
+        showMode(0)
+        try { startActivity(Intent(this, FindActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)) } catch (_: Exception) { }
     }
 
     /** 💵 El desglose del pago de la semana. */

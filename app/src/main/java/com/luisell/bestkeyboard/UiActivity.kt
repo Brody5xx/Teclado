@@ -66,21 +66,21 @@ abstract class UiActivity : Activity() {
     // ---------------------------------------------------------------- Temas
 
     /** Galería de temas: tarjetas con un mini teclado de cada tema (desliza a los lados). */
-    protected fun themeGallery() {
+    protected fun themeGallery(key: String = Prefs.THEME, label: String = tr("Tema", "Theme"), def: String = "auto") {
         val t = TextView(this)
-        t.text = tr("Tema", "Theme")
+        t.text = label
         t.textSize = 15f
         t.setTextColor(TEXT)
         col.addView(t, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
         val row = LinearLayout(this)
         row.orientation = LinearLayout.HORIZONTAL
         val cards = ArrayList<ThemeCard>()
-        val current = prefs.getString(Prefs.THEME, "auto")
+        val current = prefs.getString(key, def)
         for ((id, names, pal) in Palette.THEMES) {
             val c = ThemeCard(this, pal, tr(names.first, names.second))
             c.chosen = id == current
             c.setOnClickListener {
-                prefs.edit().putString(Prefs.THEME, id).apply()
+                prefs.edit().putString(key, id).apply()
                 cards.forEach { it.chosen = false }
                 c.chosen = true
             }

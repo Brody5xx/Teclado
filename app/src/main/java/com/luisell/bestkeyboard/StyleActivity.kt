@@ -20,14 +20,14 @@ class StyleActivity : UiActivity() {
     private lateinit var preview: KeyboardView
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         applyPreview()
-        if (key == Prefs.THEME) showHackerColors(animate = true)
+        if (key == Prefs.THEME || key == Prefs.THEME_TIMED || key == Prefs.THEME_DAY || key == Prefs.THEME_NIGHT) showHackerColors(animate = true)
     }
     /** Los colores del tema Hacker: solo se ven con el tema Hacker. */
     private var hackerSection: android.view.View? = null
 
     private fun showHackerColors(animate: Boolean) {
         val v = hackerSection ?: return
-        val on = prefs.getString(Prefs.THEME, "auto") == "hacker"
+        val on = Prefs.theme(prefs) == "hacker" || prefs.getString(Prefs.THEME, "auto") == "hacker"
         if (!animate) { v.visibility = if (on) android.view.View.VISIBLE else android.view.View.GONE; return }
         // Si algo falla con la animación, solo se muestra o esconde (nunca se cierra la pantalla)
         try { if (on) slideOpen(v) else slideClose(v) } catch (_: Exception) {
@@ -116,7 +116,7 @@ class StyleActivity : UiActivity() {
     /** Pone en el teclado de muestra lo que elegiste. */
     private fun applyPreview() {
         val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        var pal = Palette.forTheme(prefs.getString(Prefs.THEME, "auto"), systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
+        var pal = Palette.forTheme(Prefs.theme(prefs), systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
         pal = Palette.custom(pal, prefs)
         preview.palette = pal
         preview.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
@@ -130,6 +130,16 @@ class StyleActivity : UiActivity() {
     private fun buildOptions() {
         card(tr("Colores", "Colors"), Icons.THEME)
         themeGallery()
+        // ---- 🌗 Un tema de día y otro de noche (cambia solo según la hora)
+        switch(tr("🌗 Tema de día y de noche", "🌗 Day and night theme"), Prefs.THEME_TIMED, false,
+            tr("Si lo prendes, el teclado usa un tema de día y otro de noche, y cambia solo según la hora.",
+                "If on, the keyboard uses a day theme and a night theme, and switches by itself by the time."))
+        themeGallery(Prefs.THEME_DAY, tr("☀️ Tema de día", "☀️ Day theme"), "light")
+        segmented(tr("El día empieza a las", "Day starts at"), Prefs.DAY_FROM, "7",
+            listOf("6" to "6 AM", "7" to "7 AM", "8" to "8 AM", "9" to "9 AM"))
+        themeGallery(Prefs.THEME_NIGHT, tr("🌙 Tema de noche", "🌙 Night theme"), "dark")
+        segmented(tr("La noche empieza a las", "Night starts at"), Prefs.NIGHT_FROM, "19",
+            listOf("17" to "5 PM", "18" to "6 PM", "19" to "7 PM", "20" to "8 PM"))
         accentSwatches()
         colorSwatches(tr("Color de las teclas", "Key color"), Prefs.KEY_COLOR, Palette.KEY_COLORS,
             tr("El primero (multicolor) es el del tema. El último es arcoíris 🌈.", "The first (multicolor) is the theme's. The last one is rainbow 🌈."))

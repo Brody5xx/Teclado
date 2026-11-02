@@ -29,6 +29,8 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         fun onPasteImage(item: ClipItem)
         /** El lápiz: agregar algo nuevo al portapapeles ([item] = null) o editar uno. */
         fun onClipWrite(item: ClipItem?)
+        /** 🔍 Buscar en el portapapeles y los tickets. */
+        fun onClipFind() {}
     }
 
     var listener: PanelListener? = null
@@ -43,6 +45,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
     private val title = TextView(context)
     private val backBtn = IconView(context, Icons.BACK, 7.5f)
     private val addBtn = IconView(context, Icons.PENCIL, 7f)
+    private val findBtn = IconView(context, Icons.SEARCH, 7f)
     // Modo seleccionar (mantener presionado): varios a la vez, como Gboard
     private val selected = LinkedHashSet<Long>()
     private val selBar = LinearLayout(context)
@@ -142,6 +145,8 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         normalBar.addView(clearBtn, LinearLayout.LayoutParams(-2, -2))
         addBtn.setOnClickListener { listener?.onPanelFeedback(); actions?.onClipWrite(null) }
         normalBar.addView(addBtn, LinearLayout.LayoutParams(d(40f), d(36f)).apply { leftMargin = d(4f) })
+        findBtn.setOnClickListener { listener?.onPanelFeedback(); actions?.onClipFind() }
+        normalBar.addView(findBtn, LinearLayout.LayoutParams(d(40f), d(36f)).apply { leftMargin = d(2f) })
         header.addView(normalBar, LayoutParams(-1, -1))
         // Arriba (seleccionando): ✕ · "2 seleccionados" · ✏️ · 📌 · 🗑
         selBar.orientation = LinearLayout.HORIZONTAL
@@ -416,7 +421,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         title.setTextColor(p.text)
         selCount.setTextColor(p.text)
         empty.setTextColor(p.hint)
-        for (b in listOf(backBtn, addBtn, selClose, selEdit, selPin, selDel)) {
+        for (b in listOf(backBtn, addBtn, findBtn, selClose, selEdit, selPin, selDel)) {
             b.color = p.text
             b.bgColor = p.bg
             b.background = PanelUi.pressable(p.bg, p.keyPressed, d(18f).toFloat())

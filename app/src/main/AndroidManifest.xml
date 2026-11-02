@@ -140,6 +140,13 @@
         <activity
             android:name=".TicketPhotosActivity"
             android:exported="false" />
+        <activity
+            android:name=".MonthActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FindActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize|stateVisible" />
 
         <!-- Copia de seguridad automática cada semana -->
         <receiver

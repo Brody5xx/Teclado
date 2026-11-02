@@ -141,6 +141,27 @@ object Prefs {
 
     fun get(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences("ajustes", Context.MODE_PRIVATE)
+
+    // ---- 🌗 Tema de día y de noche
+    const val THEME_TIMED = "theme_timed"
+    const val THEME_DAY = "theme_day"
+    const val THEME_NIGHT = "theme_night"
+    const val DAY_FROM = "day_from"       // hora en que empieza el día ("7")
+    const val NIGHT_FROM = "night_from"   // hora en que empieza la noche ("19")
+
+    /** ¿Ahora es de día? (según las horas que elegiste) */
+    fun isDayNow(p: SharedPreferences): Boolean {
+        val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val d = (p.getString(DAY_FROM, "7") ?: "7").toIntOrNull() ?: 7
+        val n = (p.getString(NIGHT_FROM, "19") ?: "19").toIntOrNull() ?: 19
+        return h in d until n
+    }
+
+    /** El tema que toca ahora (el de siempre, o el de día / de noche). */
+    fun theme(p: SharedPreferences): String =
+        if (p.getBoolean(THEME_TIMED, false)) {
+            if (isDayNow(p)) p.getString(THEME_DAY, "light") ?: "light" else p.getString(THEME_NIGHT, "dark") ?: "dark"
+        } else p.getString(THEME, "auto") ?: "auto"
 }
 
 /** Colores del teclado. [bg2] = segundo color del fondo (degradado) en algunos temas. */
