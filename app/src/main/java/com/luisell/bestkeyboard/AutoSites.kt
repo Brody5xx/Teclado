@@ -145,7 +145,7 @@ object AutoSites {
             val isNew = id.startsWith(NEW_ID)
             val site = id.removePrefix(SITE_ID).removePrefix(NEW_ID)
             when (ev.geofenceTransition) {
-                Geofence.GEOFENCE_TRANSITION_ENTER -> saveEnter(p, site, at)
+                Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); falseExit(ctx, site, at) }
                 Geofence.GEOFENCE_TRANSITION_DWELL -> if (!isNew) arrived(ctx, site, takeEnter(p, site) ?: (at - DWELL_MS))
                 Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); left(ctx, site, at) }
             }
@@ -205,6 +205,22 @@ object AutoSites {
             L.t("Deshacer", "Undo") to undoIntent(ctx, t))
     }
 
+    /**
+     * Volviste a entrar al sitio poco después de una «salida» automática: el GPS brincó (pasa adentro de edificios).
+     * Se borra esa salida falsa, sin molestarte.
+     */
+    private fun falseExit(ctx: Context, site: String, at: Long) {
+        val p = Prefs.get(ctx)
+        val auto = p.getLong(Prefs.AUTO_LEAVE, 0L)
+        if (auto <= 0 || at - auto > 12 * 60_000L || at < auto) return
+        val ev = WorkDay.day(p).lastOrNull { it.time == auto && it.kind == WorkDay.LEAVE } ?: return
+        if (ev.site.isNotEmpty() && ev.site != site) return
+        WorkDay.remove(p, auto)
+        p.edit().remove(Prefs.AUTO_LEAVE).apply()
+        cancel(ctx)
+        WorkdayCenter.refresh(ctx)
+    }
+
     private fun left(ctx: Context, site: String, at: Long) {
         val p = Prefs.get(ctx)
         val day = WorkDay.day(p)
@@ -213,6 +229,7 @@ object AutoSites {
         if (last.site.isNotEmpty() && last.site != site) return
         if (at <= last.time) return
         val t = WorkDay.addAt(p, WorkDay.LEAVE, last.site.ifEmpty { site }, at)
+        p.edit().putLong(Prefs.AUTO_LEAVE, t).apply()
         WorkdayCenter.refresh(ctx)
         notify(ctx, L.t("🚪 Saliste de ${last.site.ifEmpty { site }}", "🚪 You left ${last.site.ifEmpty { site }}"),
             L.t("Lo anoté solo: saliste a las ${WorkStore.time(t)}.", "Logged automatically: you left at ${WorkStore.time(t)}."),

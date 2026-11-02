@@ -927,6 +927,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.4.1" to tr("•  Aviso de Mi jornada más claro: el reloj cuenta tus horas trabajadas (ya sin el almuerzo).\n•  Llegada y salida automáticas: si el GPS brinca y marca una «salida» falsa pero sigues en el sitio, se borra sola.",
+            "•  Clearer My workday notification: the clock counts your worked hours (lunch already taken out).\n•  Automatic arrival and departure: if GPS jumps and logs a false «departure» but you're still on site, it's removed by itself."),
         "12.4" to tr("•  🔊 Escuchar texto: selecciona una palabra o frase (o cópiala) y toca 🔊 en la barra de arriba; el teléfono la lee en inglés o en español, también más despacio.",
             "•  🔊 Listen to text: select a word or phrase (or copy it) and tap 🔊 on the top bar; the phone reads it in English or Spanish, slower too."),
         "12.3.2" to tr("•  Barra de arriba: cuando sale el nombre en la cápsula, toda la cápsula es de ese botón (ya no se toca el de al lado por accidente).",

@@ -247,14 +247,17 @@ object WorkdayCenter {
         @Suppress("DEPRECATION")
         val b = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(ctx, CHANNEL) else Notification.Builder(ctx)
         b.setSmallIcon(WorkDay.iconRes())
-            .setContentTitle(title)
+            // En curso: el reloj de arriba ya va contando; el título no se queda con una hora vieja
+            .setContentTitle(if (running) WorkDay.title() + L.t(" · trabajando", " · working") else title)
             .setContentText(text)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(PendingIntent.getActivity(ctx, 98, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-        if (running) b.setShowWhen(true).setWhen(ev.first().time).setUsesChronometer(true) else b.setShowWhen(false)
+        // El reloj de arriba cuenta tus horas TRABAJADAS (ya sin el almuerzo), igual que el total
+        if (running) b.setShowWhen(true).setWhen(System.currentTimeMillis() - WorkDay.summary(ev).total).setUsesChronometer(true)
+        else b.setShowWhen(false)
         // Sin empezar (o ya terminaste): solo el botón 🛻 Comencé, listo en la pantalla de bloqueo
         // Lo que sigue y, si es otro, el botón que cierra el día
         val next = if (!running) listOf(WorkDay.enabledKinds().first())
