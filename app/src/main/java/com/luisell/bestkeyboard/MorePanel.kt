@@ -68,6 +68,7 @@ object Tools {
         Info(KeyboardView.TOOL_CHECK, Icons.TOOLBOX, "Checklist antes de salir", "Pre-trip checklist", true),
         Info(KeyboardView.TOOL_GLOVES, Icons.GLOVE, "Modo guantes", "Glove mode", false),
         Info(KeyboardView.TOOL_CONVERT, Icons.RULER, "Convertidor", "Converter", true),
+        Info(KeyboardView.TOOL_BGSOUND, Icons.SPEAKER, "Sonido del video de fondo", "Background video sound", false),
     )
 
     /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */

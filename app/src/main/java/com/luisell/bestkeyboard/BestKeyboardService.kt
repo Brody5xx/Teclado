@@ -163,6 +163,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var workdayPanel: ListPanel? = null
     private var materialsPanel: ListPanel? = null
     private var todoPanel: ListPanel? = null
+    private var bgVideoView: BgVideoView? = null
+    private var bgLoaded = ""
     private var checkPanel: ListPanel? = null
     private var drivePanel: DrivePanel? = null
     /** "No mostrar el modo manejando" hasta el próximo evento de la jornada (tocaste ⌨️ Teclado). */
@@ -315,6 +317,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         kv = v
         // Las teclas mandan la altura; emojis y portapapeles usan la misma
         val box = PanelBox(this, v)
+        // 🖼️ El video de fondo va detrás de las teclas
+        val bgv = BgVideoView(this)
+        bgv.visibility = View.GONE
+        box.addView(bgv, 0, FrameLayout.LayoutParams(-1, -1))
+        bgVideoView = bgv
         val ep = EmojiPanel(this)
         ep.listener = panelListener
         ep.actions = object : EmojiPanel.Actions {
@@ -1493,6 +1500,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         applySettings()
+        if (BgMedia.kind(this) == "video") bgVideoView?.play()
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
         if (prefs.getBoolean(Prefs.FLOAT, false)) handler.post { applyFloat() }
         if (!isPassword) maybeShowWord()
@@ -1570,6 +1578,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        bgVideoView?.pause()
         learnTypedEmail()
         codeBar?.let { if (it.asking) it.hideAsk() }
         if (quick != null) clearQuick(false)
@@ -1608,6 +1617,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDestroy() {
+        bgVideoView?.release()
         prefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
         clipboard?.removePrimaryClipChangedListener(clipListener)
         try { contentResolver.unregisterContentObserver(mediaObserver) } catch (_: Exception) { }
@@ -1646,6 +1656,42 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // ---------------------------------------------------------------- Ajustes
 
+    /** 🖼️ Tu imagen o video de fondo (o ninguno). */
+    private fun applyBackground(v: KeyboardView) {
+        val kind = BgMedia.kind(this)
+        v.bgDim = BgMedia.dim(this)
+        val sound = prefs.getBoolean(Prefs.BG_SOUND, false)
+        v.bgSoundOn = kind == "video" && sound
+        val stamp = kind + ":" + prefs.getLong(Prefs.BG_STAMP, 0L)
+        val bgv = bgVideoView
+        when (kind) {
+            "image" -> {
+                if (bgLoaded != stamp || v.bgImage == null) {
+                    val side = maxOf(resources.displayMetrics.widthPixels, 720)
+                    v.bgImage = BgMedia.loadImage(this, side)
+                }
+                v.bgVideo = false
+                bgv?.release(); bgv?.visibility = View.GONE
+            }
+            "video" -> {
+                v.bgImage = null
+                v.bgVideo = true
+                bgv?.let {
+                    it.visibility = View.VISIBLE
+                    it.sound = sound
+                    if (bgLoaded != stamp) it.reload()
+                    if (isInputViewShown) it.play()
+                }
+            }
+            else -> {
+                v.bgImage = null
+                v.bgVideo = false
+                bgv?.release(); bgv?.visibility = View.GONE
+            }
+        }
+        bgLoaded = stamp
+    }
+
     private fun applySettings() {
         val v = kv ?: return
         val theme = Prefs.theme(prefs)
@@ -1656,6 +1702,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         pal = withCustomColors(pal)
         PanelUi.glowAccent = pal.accent
         v.palette = pal
+        applyBackground(v)
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
         v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f } *
             (if (prefs.getBoolean(Prefs.GLOVES, false)) 1.2f else 1f)
@@ -2374,6 +2421,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_TODO -> showMode(15)
             KeyboardView.TOOL_CHECK -> showMode(16)
             KeyboardView.TOOL_CONVERT -> startConvert()
+            KeyboardView.TOOL_BGSOUND -> {
+                if (BgMedia.kind(this) != "video") {
+                    Toast.makeText(this, L.t("Primero pon un video de fondo en Ajustes → Estilo.", "First set a background video in Settings → Style."), Toast.LENGTH_SHORT).show()
+                } else {
+                    val on = !prefs.getBoolean(Prefs.BG_SOUND, false)
+                    prefs.edit().putBoolean(Prefs.BG_SOUND, on).apply()
+                    applySettings()
+                    kv?.invalidate()
+                    Toast.makeText(this, if (on) L.t("🔊 Video con sonido", "🔊 Video sound on") else L.t("🔇 Video en silencio", "🔇 Video muted"), Toast.LENGTH_SHORT).show()
+                }
+            }
             KeyboardView.TOOL_GLOVES -> {
                 val on = !prefs.getBoolean(Prefs.GLOVES, false)
                 prefs.edit().putBoolean(Prefs.GLOVES, on).apply()

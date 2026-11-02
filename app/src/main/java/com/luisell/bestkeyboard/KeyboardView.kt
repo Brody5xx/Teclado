@@ -97,6 +97,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_CHECK = 58
         const val TOOL_GLOVES = 59
         const val TOOL_CONVERT = 60
+        const val TOOL_BGSOUND = 61
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -214,8 +215,19 @@ class KeyboardView(context: Context) : View(context) {
 
     /** Teclado de computadora: Ctrl/Alt/Shift/Fn encendidos (una vez) o fijos (dos toques). */
     var hackerOn = false
+    /** 🖼️ Fondo propio: imagen (se dibuja aquí) o video (va detrás, aquí solo se oscurece). */
+    var bgImage: android.graphics.Bitmap? = null
+        set(v) { field = v; invalidate() }
+    var bgVideo = false
+        set(v) { field = v; invalidate() }
+    /** Qué tanto se oscurece el fondo para que las letras se lean (0..1). */
+    var bgDim = 0.45f
+    private val bgMatrix = android.graphics.Matrix()
+    private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     /** 🧤 Modo guantes encendido (se pinta el botón). */
     var glovesOn = false
+    /** 🔊 El video de fondo suena (se pinta el botón). */
+    var bgSoundOn = false
         set(v) { if (field != v) { field = v; invalidate() } }
     private var modsOnce: Set<Int> = emptySet()
     private var modsLocked: Set<Int> = emptySet()
@@ -1507,7 +1519,18 @@ class KeyboardView(context: Context) : View(context) {
 
     override fun onDraw(c: Canvas) {
         val p = palette
-        if (p.bg2 != p.bg) {
+        val img = bgImage
+        if (img != null && !img.isRecycled) {
+            // Tu imagen, recortada para llenar el teclado, y una capa oscura encima
+            val s = maxOf(width.toFloat() / img.width, height.toFloat() / img.height)
+            bgMatrix.setScale(s, s)
+            bgMatrix.postTranslate((width - img.width * s) / 2f, (height - img.height * s) / 2f)
+            c.drawBitmap(img, bgMatrix, bgPaint)
+            c.drawColor(alphaOf(0xFF000000.toInt(), bgDim))
+        } else if (bgVideo) {
+            // El video va detrás: solo la capa oscura
+            c.drawColor(alphaOf(0xFF000000.toInt(), bgDim))
+        } else if (p.bg2 != p.bg) {
             // Fondo en degradado (temas Océano, Neón, Aurora…)
             fill.shader = android.graphics.LinearGradient(0f, 0f, 0f, height.toFloat(), p.bg, p.bg2, android.graphics.Shader.TileMode.CLAMP)
             c.drawRect(0f, 0f, width.toFloat(), height.toFloat(), fill)
@@ -1736,7 +1759,12 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     /** El fondo de la tecla según la forma elegida (normal, círculo, solo borde, transparente…). */
-    private fun drawKeyBg(c: Canvas, k: Key, bg: Int, pressed: Boolean, p: Palette) {
+    private fun drawKeyBg(c: Canvas, k: Key, bgIn: Int, pressed: Boolean, p: Palette) {
+        // Con tu imagen o video de fondo, las teclas son de vidrio (se ve el fondo a través)
+        val bg = if ((bgImage != null || bgVideo) && !pressed) {
+            val a = ((bgIn ushr 24) and 0xFF) / 255f
+            alphaOf(bgIn, minOf(a, 0.38f))
+        } else bgIn
         val r = k.rect
         if (keyShape == "circle" && (k.code == 0 || k.code == Codes.SHIFT || k.code == Codes.DELETE)) {
             // Teclas redondas (las anchas como espacio se quedan en píldora)
@@ -2371,6 +2399,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_CHECK -> Icons.TOOLBOX
         TOOL_GLOVES -> Icons.GLOVE
         TOOL_CONVERT -> Icons.RULER
+        TOOL_BGSOUND -> Icons.SPEAKER
         else -> -1
     }
 
@@ -2556,7 +2585,7 @@ class KeyboardView(context: Context) : View(context) {
             }
             val kind = toolIcon(i)
             if (kind < 0) continue
-            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn) || (i == TOOL_GLOVES && glovesOn)
+            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn) || (i == TOOL_GLOVES && glovesOn) || (i == TOOL_BGSOUND && bgSoundOn)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             // Modo acomodar: los demás tiemblan un poquito
             val ang = if (editing) (7.0 * kotlin.math.sin(now * 2 * Math.PI * 4.5 + i * 1.7)).toFloat() else 0f

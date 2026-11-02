@@ -129,9 +129,83 @@ class StyleActivity : UiActivity() {
         preview.setBarTools(Tools.load(this, prefs).first)
     }
 
+    private lateinit var bgStatus: android.widget.TextView
+
+    private fun paintBg() {
+        bgStatus.text = when (BgMedia.kind(this)) {
+            "image" -> tr("✓ Tienes una imagen de fondo.", "✓ You have a background image.")
+            "video" -> tr("✓ Tienes un video de fondo.", "✓ You have a background video.")
+            else -> tr("Sin fondo propio (se usa el del tema).", "No custom background (the theme's is used).")
+        }
+    }
+
+    private fun pickBg(type: String, req: Int) {
+        val i = android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT)
+            .addCategory(android.content.Intent.CATEGORY_OPENABLE).setType(type)
+        try { @Suppress("DEPRECATION") startActivityForResult(i, req) } catch (_: Exception) {
+            toast("No encontré la galería.", "Couldn't find the gallery.")
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        val uri = data?.data ?: return
+        if (resultCode != RESULT_OK) return
+        try { contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) { }
+        val stamp = { prefs.edit().putLong(Prefs.BG_STAMP, System.currentTimeMillis()).apply(); paintBg() }
+        when (requestCode) {
+            71 -> Thread {
+                val ok = BgMedia.saveImage(this, uri)
+                runOnUiThread {
+                    if (ok) { stamp(); toast("🖼️ Listo: tu imagen ya está de fondo.", "🖼️ Done: your image is now the background.") }
+                    else toast("No se pudo abrir la imagen.", "Couldn't open the image.")
+                }
+            }.start()
+            72 -> {
+                val msg = android.widget.TextView(this).apply {
+                    text = tr("Comprimiendo el video… 0%", "Compressing the video… 0%")
+                    textSize = 16f; setTextColor(TEXT); setPadding(dp(24), dp(20), dp(24), dp(8))
+                }
+                val dlg = android.app.AlertDialog.Builder(this)
+                    .setTitle(tr("🎬 Preparando tu video", "🎬 Preparing your video"))
+                    .setView(msg)
+                    .setCancelable(false)
+                    .show()
+                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                BgMedia.saveVideo(this, uri, { p -> msg.text = tr("Comprimiendo el video… $p%", "Compressing the video… $p%") }) { ok ->
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    try { dlg.dismiss() } catch (_: Exception) { }
+                    if (ok) { stamp(); toast("🎬 Listo: tu video ya está de fondo.", "🎬 Done: your video is now the background.") }
+                    else toast("No se pudo preparar el video.", "Couldn't prepare the video.")
+                }
+            }
+        }
+    }
+
     private fun buildOptions() {
         card(tr("Colores", "Colors"), Icons.THEME)
         themeGallery()
+        // ---- 🖼️ Fondo propio: tu imagen o tu video
+        card(tr("Fondo propio", "Your own background"), Icons.IMAGE)
+        text(tr("Pon una foto o un video de tu galería detrás de las teclas. El video se comprime para que vaya ligero, se ve completo y se repite sin fin.",
+            "Put a photo or video from your gallery behind the keys. The video is compressed to stay light, plays in full and loops forever."), 12f, faded = true)
+        bgStatus = text("", 13f)
+        button(tr("🖼️ Elegir imagen", "🖼️ Pick image"), primary = true) { pickBg("image/*", 71) }
+        button(tr("🎬 Elegir video", "🎬 Pick video")) { pickBg("video/*", 72) }
+        switch(tr("🔊 Sonido del video", "🔊 Video sound"), Prefs.BG_SOUND, false,
+            tr("Apagado = en silencio. También lo cambias rápido con el botón 🔊 del teclado.", "Off = muted. You can also switch it quickly with the 🔊 keyboard button."))
+        segmented(tr("Oscurecer el fondo (para leer bien las letras)", "Darken the background (to read the letters)"), Prefs.BG_DIM, "0.45",
+            listOf("0.25" to tr("Poco", "Little"), "0.45" to tr("Medio", "Medium"), "0.65" to tr("Mucho", "A lot")))
+        button(tr("✕ Quitar el fondo", "✕ Remove background")) {
+            BgMedia.clear(this)
+            prefs.edit().putLong(Prefs.BG_STAMP, System.currentTimeMillis()).apply()
+            paintBg()
+        }
+        text(tr("Si tu tema es animado (✨), sus animaciones salen encima de tu fondo.", "If your theme is animated (✨), its animations show on top of your background."), 12f, faded = true)
+        paintBg()
+
         // ---- 🌗 Un tema de día y otro de noche (cambia solo según la hora)
         switch(tr("🌗 Tema de día y de noche", "🌗 Day and night theme"), Prefs.THEME_TIMED, false,
             tr("Si lo prendes, el teclado usa un tema de día y otro de noche, y cambia solo según la hora.",

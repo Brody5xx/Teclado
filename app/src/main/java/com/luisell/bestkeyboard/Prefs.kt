@@ -119,6 +119,10 @@ object Prefs {
     const val CHECK_DONE = "check_done"        // lo que marcaste hoy
     const val CHECK_ON = "check_on"            // enseñar la checklist al tocar «Comencé»
     const val GLOVES = "gloves"                // 🧤 modo guantes (teclas grandes)
+    const val BG_KIND = "bg_kind"              // 🖼️ fondo propio: "" / "image" / "video"
+    const val BG_DIM = "bg_dim"                // qué tanto se oscurece ("0.25" / "0.45" / "0.65")
+    const val BG_SOUND = "bg_sound"            // 🔊 el video suena
+    const val BG_STAMP = "bg_stamp"            // cambia cada vez que eliges otro fondo (para recargarlo)
     const val SHORTCUTS = "shortcuts"          // ⚡ atajos de texto (/ok → frase)
     const val AUTO_SITES = "auto_sites"        // llegada y salida automáticas (geocercas)
     const val AUTO_ENTER = "auto_enter"        // a qué hora entraste a cada sitio (para la hora de llegada)

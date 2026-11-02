@@ -15,7 +15,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = buildNumber
-        versionName = "12.1 (build $buildNumber)"
+        versionName = "12.2 (build $buildNumber)"
         // Solo los procesadores de teléfonos reales: la app pesa menos
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
@@ -70,5 +70,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime:2.6.2")
     // Llegada y salida automáticas: geocercas de Google (gastan muy poca batería)
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    // 🎬 Video de fondo: comprimirlo para que vaya ligero en el teclado
+    implementation("androidx.media3:media3-transformer:1.4.1")
+    implementation("androidx.media3:media3-effect:1.4.1")
+    implementation("androidx.media3:media3-common:1.4.1")
     testImplementation("junit:junit:4.13.2")
 }
