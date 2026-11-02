@@ -111,7 +111,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
         preview.setPadding(d(14f), d(10f), d(14f), d(10f))
         preview.movementMethod = LinkMovementMethod.getInstance()
         preview.highlightColor = 0
-        previewScroll.isVerticalScrollBarEnabled = true
+        PanelUi.glowScrollbar(previewScroll)
         previewScroll.addView(preview, LayoutParams(-1, -2))
         addView(previewScroll, LayoutParams(-1, -2).apply { topMargin = d(6f) })
 

@@ -49,22 +49,21 @@ object PanelUi {
      * Barra de scroll fina y moderna: un destello de luz blanca que aparece al deslizar y se apaga sola.
      * No se puede agarrar (así no estorba al tocar los emojis de la orilla).
      */
+    /** El color de la luz de las barras de scroll (el acento del tema del teclado). */
+    var glowAccent: Int = 0xFF22D3EE.toInt()
+
     fun glowScrollbar(v: View) {
         v.isVerticalScrollBarEnabled = true
         v.isScrollbarFadingEnabled = true
         v.scrollBarFadeDuration = 400
         v.scrollBarDefaultDelayBeforeFade = 500
         v.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-        v.scrollBarSize = dp(v.context, 3f)
         if (android.os.Build.VERSION.SDK_INT >= 29) {
-            val glow = GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(0x00FFFFFF, 0xCCFFFFFF.toInt(), 0xFFFFFFFF.toInt(), 0xCCFFFFFF.toInt(), 0x00FFFFFF),
-            )
-            glow.cornerRadius = dp(v.context, 2f).toFloat()
-            v.verticalScrollbarThumbDrawable = glow
+            // Ancha para que quepa el brillo; la línea que se ve es fina y corta
+            v.scrollBarSize = dp(v.context, 14f)
+            v.verticalScrollbarThumbDrawable = GlowThumb(v.resources.displayMetrics.density)
             v.verticalScrollbarTrackDrawable = null
-        }
+        } else v.scrollBarSize = dp(v.context, 3f)
     }
 
     /** Tecla de borrar que repite mientras la mantienes presionada. */

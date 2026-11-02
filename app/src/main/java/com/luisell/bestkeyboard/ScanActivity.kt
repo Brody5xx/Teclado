@@ -99,6 +99,7 @@ class ScanActivity : Activity() {
 
     private fun buildUi(): View {
         val sv = ScrollView(this)
+        PanelUi.glowScrollbar(sv)
         val col = LinearLayout(this)
         col.orientation = LinearLayout.VERTICAL
         col.setPadding(dp(16), dp(12), dp(16), dp(32))

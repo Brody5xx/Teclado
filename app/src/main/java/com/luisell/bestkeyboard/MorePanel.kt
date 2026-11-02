@@ -263,7 +263,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
         val content = FrameLayout(context)
         grid.orientation = LinearLayout.VERTICAL
         grid.setPadding(0, 0, 0, d(6f))
-        scroll.isVerticalScrollBarEnabled = true
+        PanelUi.glowScrollbar(scroll)
         scroll.addView(grid, LayoutParams(-1, -2))
         content.addView(scroll, LayoutParams(-1, -1))
         arranger.onChanged = { b, m ->

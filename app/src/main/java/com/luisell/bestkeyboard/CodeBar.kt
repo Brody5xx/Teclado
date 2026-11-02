@@ -71,6 +71,7 @@ class CodeBar(context: Context) : LinearLayout(context) {
     private val chipsScroll = HorizontalScrollView(context)
 
     init {
+        PanelUi.glowScrollbar(resultScroll)
         orientation = VERTICAL
         setPadding(d(6f), d(6f), d(6f), d(4f))
 

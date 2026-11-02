@@ -49,6 +49,7 @@ class TicketPhotosActivity : UiActivity() {
         window.navigationBarColor = BG
         tickets = WorkStore.tickets(prefs)
         val sv = ScrollView(this)
+        PanelUi.glowScrollbar(sv)
         sv.setBackgroundColor(BG)
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

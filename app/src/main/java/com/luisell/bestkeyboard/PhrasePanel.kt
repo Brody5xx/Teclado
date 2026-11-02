@@ -60,6 +60,7 @@ class PhrasePanel(context: Context) : FrameLayout(context) {
 
         list.orientation = LinearLayout.VERTICAL
         val sv = ScrollView(context)
+        PanelUi.glowScrollbar(sv)
         sv.addView(list)
         body.addView(sv, LinearLayout.LayoutParams(-1, 0, 1f))
         addView(body, LayoutParams(-1, -1))

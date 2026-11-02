@@ -37,6 +37,8 @@ class WorkdayButtonsActivity : UiActivity() {
         }
 
         val sv = ScrollView(this)
+
+        PanelUi.glowScrollbar(sv)
         sv.setBackgroundColor(BG)
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

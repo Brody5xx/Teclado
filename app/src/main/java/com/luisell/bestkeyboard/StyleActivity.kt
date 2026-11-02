@@ -93,6 +93,8 @@ class StyleActivity : UiActivity() {
         screen.addView(preview, LinearLayout.LayoutParams(-1, -2))
 
         val sv = ScrollView(this)
+
+        PanelUi.glowScrollbar(sv)
         sv.isVerticalScrollBarEnabled = false
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

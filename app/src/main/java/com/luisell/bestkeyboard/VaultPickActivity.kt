@@ -84,6 +84,7 @@ class VaultPickActivity : Activity() {
                 super.onMeasure(w, MeasureSpec.makeMeasureSpec((resources.displayMetrics.heightPixels * 0.6f).toInt(), MeasureSpec.AT_MOST))
             }
         }
+        PanelUi.glowScrollbar(sv)
         sv.addView(col)
         root.addView(sv, LinearLayout.LayoutParams(-1, -2))
 

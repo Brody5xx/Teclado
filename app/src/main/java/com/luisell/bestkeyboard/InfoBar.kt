@@ -29,6 +29,7 @@ class InfoBar(context: Context) : LinearLayout(context) {
     private val chips = LinearLayout(context)
 
     init {
+        PanelUi.glowScrollbar(scroll)
         orientation = VERTICAL
         setPadding(d(6f), d(6f), d(6f), d(4f))
         val row = LinearLayout(context)

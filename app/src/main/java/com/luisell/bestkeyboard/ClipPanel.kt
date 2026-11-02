@@ -197,7 +197,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         empty.gravity = Gravity.CENTER
         empty.textSize = 15f
         empty.setPadding(d(24f), 0, d(24f), 0)
-        grid.isVerticalScrollBarEnabled = false
+        PanelUi.glowScrollbar(grid)
         grid.isFastScrollEnabled = false
         body.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
         body.addView(empty, LinearLayout.LayoutParams(-1, 0, 1f))

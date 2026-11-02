@@ -36,6 +36,7 @@ class MonthActivity : UiActivity() {
         window.statusBarColor = BG
         window.navigationBarColor = BG
         val sv = ScrollView(this)
+        PanelUi.glowScrollbar(sv)
         sv.setBackgroundColor(BG)
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

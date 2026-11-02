@@ -1650,6 +1650,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         var pal = Palette.forTheme(theme, systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
         // Color de acento elegido (si no, el del tema)
         pal = withCustomColors(pal)
+        PanelUi.glowAccent = pal.accent
         v.palette = pal
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
         v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f } *
