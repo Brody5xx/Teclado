@@ -120,7 +120,8 @@ object WorkdayCenter {
         val p = Prefs.get(ctx)
         if (!p.getBoolean(Prefs.NIGHT_REMIND, true) || !WorkDay.isRunning(WorkDay.day(p))) return
         val c = java.util.Calendar.getInstance()
-        c.set(java.util.Calendar.HOUR_OF_DAY, 21); c.set(java.util.Calendar.MINUTE, 0); c.set(java.util.Calendar.SECOND, 0)
+        val at = p.getInt(Prefs.NIGHT_TIME, 21 * 60)
+        c.set(java.util.Calendar.HOUR_OF_DAY, at / 60); c.set(java.util.Calendar.MINUTE, at % 60); c.set(java.util.Calendar.SECOND, 0)
         if (c.timeInMillis <= System.currentTimeMillis()) return
         try { am.setWindow(android.app.AlarmManager.RTC_WAKEUP, c.timeInMillis, 10 * 60_000L, pi) } catch (_: Exception) { }
     }

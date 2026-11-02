@@ -885,6 +885,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "11.8.1" to tr("•  🌙 Aviso de «¿Se te olvidó marcar Casa?»: ahora eliges la hora que quieras.",
+            "•  🌙 «Forgot to log Home?» reminder: now you pick the time you want."),
         "11.8" to tr("•  📅 Calendario del mes (Mi jornada): las horas de cada día con colores; toca un día para ver el detalle.\n•  🔍 Buscar en tus tickets, la libreta y el portapapeles (Mis tickets y la lupa del portapapeles).\n•  🌗 Tema de día y de noche (Estilo): elige uno para el día y otro para la noche, y cambia solo según la hora.",
             "•  📅 Month calendar (My workday): hours for each day in colors; tap a day to see the details.\n•  🔍 Search your tickets, notebook and clipboard (My tickets and the clipboard magnifier).\n•  🌗 Day and night theme (Style): pick one for day and one for night, and it switches by itself."),
         "11.7" to tr("•  💵 Tu pago: pago por hora manejando y en el sitio, sitios que pagan más, horas extra a tiempo y medio, y descuentos de taxes %, 401(k) % y seguro de vida. Mi jornada te dice cuánto llevas en la semana.\n•  🌙 A las 9 PM, si no marcaste «Casa», te llega un aviso para cerrar el día.",

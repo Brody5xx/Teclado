@@ -90,7 +90,20 @@ class WorkdayButtonsActivity : UiActivity() {
 
         // ---- 🌙 Cerrar el día
         card(tr("Cerrar el día", "Close the day"), Icons.CLOCK)
-        switch(tr("Avisarme a las 9 PM si no marqué «Casa»", "Remind me at 9 PM if I didn't log «Home»"), Prefs.NIGHT_REMIND, true)
+        switch(tr("Avisarme si no marqué «Casa»", "Remind me if I didn't log «Home»"), Prefs.NIGHT_REMIND, true)
+        val at = prefs.getInt(Prefs.NIGHT_TIME, 21 * 60)
+        lateinit var timeBtn: android.widget.TextView
+        fun timeLabel(m: Int) = tr("🕘 Hora del aviso: ", "🕘 Reminder time: ") +
+            java.text.SimpleDateFormat("h:mm a", java.util.Locale.US).format(java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, m / 60); set(java.util.Calendar.MINUTE, m % 60) }.time) + tr("  (toca para cambiar)", "  (tap to change)")
+        timeBtn = button(timeLabel(at)) {
+            val cur = prefs.getInt(Prefs.NIGHT_TIME, 21 * 60)
+            android.app.TimePickerDialog(this, { _, h, m ->
+                prefs.edit().putInt(Prefs.NIGHT_TIME, h * 60 + m).apply()
+                timeBtn.text = timeLabel(h * 60 + m)
+                WorkdayCenter.refresh(this)
+            }, cur / 60, cur % 60, false).show()
+        }
 
         // ---- Horas extra
         card(tr("Horas extra", "Overtime"), Icons.STOPWATCH)
