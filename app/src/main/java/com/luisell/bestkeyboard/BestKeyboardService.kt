@@ -2994,7 +2994,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             val clip = try { clipboard?.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim() } catch (_: Exception) { null }
             val before = try { ic?.getTextBeforeCursor(400, 0)?.toString()?.trim() } catch (_: Exception) { null }
             // Lo que acabas de escribir (la última frase) o, si no hay, lo que copiaste
-            val last = before?.split(Regex("(?<=[.!?\n])\s+"))?.lastOrNull { it.isNotBlank() }?.trim()
+            val last = before?.split(Regex("(?<=[.!?\\n])\\s+"))?.lastOrNull { it.isNotBlank() }?.trim()
             last?.takeIf { it.isNotEmpty() } ?: clip
         }?.take(1200)
         if (text.isNullOrEmpty()) {
