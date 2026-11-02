@@ -459,11 +459,20 @@ class MainActivity : UiActivity() {
                 cm.setPrimaryClip(android.content.ClipData.newPlainText("Error", err))
                 toast("Error copiado. Pégalo en el chat.", "Error copied. Paste it in the chat.")
             }
-            button(tr("Ya lo mandé, borrar", "Sent it, delete")) {
+            val closeCrash = {
                 CrashLog.clear(this)
                 val i = root.indexOfChild(crashBody)
                 if (i > 0) root.getChildAt(i - 1).visibility = View.GONE
                 crashBody.visibility = View.GONE
+            }
+            button(tr("Ya lo mandé, borrar", "Sent it, delete")) { closeCrash() }
+            // La ✕ de arriba también lo quita (antes era solo un dibujo)
+            val head = root.getChildAt(root.indexOfChild(crashBody) - 1) as? LinearLayout
+            head?.getChildAt(0)?.let { x ->
+                x.isClickable = true
+                x.setOnClickListener { closeCrash() }
+                x.layoutParams = (x.layoutParams as LinearLayout.LayoutParams).apply { width = dp(36); height = dp(36) }
+                x.background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(CARD) }
             }
         }
 
@@ -931,6 +940,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.4.5" to tr("•  La ✕ del aviso «Hubo un error» ahora sí lo quita.",
+            "•  The ✕ on the «There was an error» card now closes it."),
         "12.4.4" to tr("•  Arreglado: la app se cerraba al cambiar la hora con «🕐 Reloj». Ahora sale un reloj redondo moderno.\n•  El calendario (días, meses y resumen) sale completo en el idioma de la app.",
             "•  Fixed: the app closed when changing the time with «🕐 Clock». Now a modern round clock shows up.\n•  The calendar (days, months and summary) is fully in the app's language."),
         "12.4.3" to tr("•  Botón «🕐 Ver y cambiar mis horas» en la app (Mi jornada).\n•  Tocar el aviso de Mi jornada abre tus horas de hoy para cambiarlas.",
