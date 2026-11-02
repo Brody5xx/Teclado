@@ -128,7 +128,7 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
                 if (userScrolling) showGlow()
             }
             override fun onScroll(view: AbsListView?, first: Int, visible: Int, total: Int) {
-                if (!searching) highlight(tabFor(first))
+                if (!searching && jumpLock < 0) highlight(tabFor(first))
                 if (userScrolling) showGlow()
             }
         })
@@ -262,9 +262,17 @@ class EmojiPanel(context: Context) : FrameLayout(context) {
 
     private fun jumpTo(tab: Int) {
         overlay.hide()
-        grid.setSelection(sectionStart.getOrElse(tab) { 0 })
+        val pos = sectionStart.getOrElse(tab) { 0 }
+        // La sección empieza arriba del todo (antes quedaba al final de la sección y había que tocar la de al lado)
+        grid.setSelection(pos)
+        grid.post { grid.smoothScrollToPositionFromTop(pos, 0, 0) }
+        jumpLock = tab
+        grid.postDelayed({ jumpLock = -1 }, 350)
         highlight(tab)
     }
+
+    /** Mientras salta a una sección, no se cambia la pestaña marcada. */
+    private var jumpLock = -1
 
     private fun highlight(tab: Int) {
         if (tab == currentTab) return

@@ -886,6 +886,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.2.2" to tr("•  Emojis: al tocar una categoría de abajo (🕐 Recientes, 😀, 🐶…) ahora va justo al principio de esa categoría.",
+            "•  Emojis: tapping a category at the bottom (🕐 Recent, 😀, 🐶…) now goes right to the start of that category."),
         "12.2.1" to tr("•  Tu imagen o video de fondo ahora también se ve en emojis, GIFs, portapapeles y todos los paneles.\n•  Ventana nueva y moderna mientras se prepara el video, con barra de progreso y botón «Cancelar».",
             "•  Your background image or video now also shows in emojis, GIFs, clipboard and every panel.\n•  New modern window while the video is prepared, with a progress bar and a «Cancel» button."),
         "12.2" to tr("•  🖼️ Fondo propio (Estilo): pon una imagen o un video de tu galería detrás de las teclas. El video se comprime, se ve completo y se repite sin fin.\n•  🔊 Sonido del video: prendido o en silencio (en Estilo o con el botón 🔊 del teclado).\n•  Con fondo propio las teclas se vuelven de vidrio para que se vea tu fondo.",
