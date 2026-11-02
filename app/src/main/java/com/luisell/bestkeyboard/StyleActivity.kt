@@ -163,24 +163,81 @@ class StyleActivity : UiActivity() {
                     else toast("No se pudo abrir la imagen.", "Couldn't open the image.")
                 }
             }.start()
-            72 -> {
-                val msg = android.widget.TextView(this).apply {
-                    text = tr("Comprimiendo el video… 0%", "Compressing the video… 0%")
-                    textSize = 16f; setTextColor(TEXT); setPadding(dp(24), dp(20), dp(24), dp(8))
-                }
-                val dlg = android.app.AlertDialog.Builder(this)
-                    .setTitle(tr("🎬 Preparando tu video", "🎬 Preparing your video"))
-                    .setView(msg)
-                    .setCancelable(false)
-                    .show()
-                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                BgMedia.saveVideo(this, uri, { p -> msg.text = tr("Comprimiendo el video… $p%", "Compressing the video… $p%") }) { ok ->
-                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    try { dlg.dismiss() } catch (_: Exception) { }
-                    if (ok) { stamp(); toast("🎬 Listo: tu video ya está de fondo.", "🎬 Done: your video is now the background.") }
-                    else toast("No se pudo preparar el video.", "Couldn't prepare the video.")
-                }
-            }
+            72 -> showVideoProgress(uri, stamp)
+        }
+    }
+
+    /** Ventanita moderna mientras se comprime el video: barra de progreso con degradado y botón Cancelar. */
+    private fun showVideoProgress(uri: android.net.Uri, stamp: () -> Unit) {
+        val box = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(24), dp(22), dp(24), dp(18))
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(26f); setStroke(dp(1), LINE) }
+        }
+        val title = android.widget.TextView(this).apply {
+            text = tr("🎬 Preparando tu video", "🎬 Preparing your video")
+            textSize = 20f
+            setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD))
+            setTextColor(TEXT)
+        }
+        title.post {
+            title.paint.shader = android.graphics.LinearGradient(0f, 0f, title.width.toFloat(), 0f, CYAN, VIOLET, android.graphics.Shader.TileMode.CLAMP)
+            title.invalidate()
+        }
+        box.addView(title)
+        box.addView(android.widget.TextView(this).apply {
+            text = tr("Lo estoy achicando para que vaya ligero en el teclado. No cierres esta pantalla.",
+                "I'm making it smaller so it runs light on the keyboard. Don't close this screen.")
+            textSize = 13f; setTextColor(SUB); setPadding(0, dp(6), 0, dp(16))
+        })
+        val pct = android.widget.TextView(this).apply {
+            text = "0%"; textSize = 30f; setTextColor(TEXT)
+            setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD))
+        }
+        box.addView(pct)
+        val track = android.widget.FrameLayout(this).apply {
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(BG); cornerRadius = dpf(6f) }
+        }
+        val fill = android.view.View(this).apply {
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(6f) }
+        }
+        track.addView(fill, android.widget.FrameLayout.LayoutParams(0, -1))
+        box.addView(track, android.widget.LinearLayout.LayoutParams(-1, dp(10)).apply { topMargin = dp(8); bottomMargin = dp(20) })
+        val cancel = android.widget.TextView(this).apply {
+            text = tr("Cancelar", "Cancel")
+            textSize = 15f; gravity = android.view.Gravity.CENTER; setTextColor(TEXT)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = dpf(22f); setStroke(dp(1), LINE) }
+        }
+        box.addView(cancel, android.widget.LinearLayout.LayoutParams(-1, -2))
+        val wrap = android.widget.FrameLayout(this).apply { setPadding(dp(20), 0, dp(20), 0); addView(box) }
+        val dlg = android.app.Dialog(this)
+        dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        dlg.setContentView(wrap)
+        dlg.setCancelable(false)
+        dlg.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+        dlg.window?.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+        dlg.show()
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        var finished = false
+        val stop = BgMedia.saveVideo(this, uri, { p ->
+            pct.text = "$p%"
+            track.post { fill.layoutParams = (fill.layoutParams as android.widget.FrameLayout.LayoutParams).apply { width = track.width * p.coerceIn(0, 100) / 100 }; fill.requestLayout() }
+        }) { ok ->
+            if (finished) return@saveVideo
+            finished = true
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            try { dlg.dismiss() } catch (_: Exception) { }
+            if (ok) { stamp(); toast("🎬 Listo: tu video ya está de fondo.", "🎬 Done: your video is now the background.") }
+            else toast("No se pudo preparar el video.", "Couldn't prepare the video.")
+        }
+        cancel.setOnClickListener {
+            if (finished) return@setOnClickListener
+            finished = true
+            stop()
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            try { dlg.dismiss() } catch (_: Exception) { }
+            toast("Cancelado. Tu fondo no cambió.", "Cancelled. Your background didn't change.")
         }
     }
 

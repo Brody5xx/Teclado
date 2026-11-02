@@ -72,12 +72,15 @@ object BgMedia {
      * Comprime el video (más chico, hasta 640 px de alto) para que vaya ligero en el teclado.
      * [progress] recibe 0..100; [done] true si quedó listo. Si no se puede comprimir, se copia tal cual.
      */
-    fun saveVideo(ctx: Context, uri: Uri, progress: (Int) -> Unit, done: (Boolean) -> Unit) {
+    fun saveVideo(ctx: Context, uri: Uri, progress: (Int) -> Unit, done: (Boolean) -> Unit): () -> Unit {
+        var cancelled = false
+        var tr: androidx.media3.transformer.Transformer? = null
         val app = ctx.applicationContext
         val out = File(dir(app), "video_tmp.mp4")
         out.delete()
         val main = Handler(Looper.getMainLooper())
         fun finish(ok: Boolean) {
+            if (cancelled) { out.delete(); return }
             if (ok && out.exists() && out.length() > 0) {
                 videoFile(app).delete()
                 out.renameTo(videoFile(app))
@@ -87,6 +90,7 @@ object BgMedia {
             } else {
                 // Plan B: copiarlo sin comprimir
                 Thread {
+                    if (cancelled) return@Thread
                     val ok2 = try {
                         app.contentResolver.openInputStream(uri)?.use { i -> videoFile(app).outputStream().use { o -> i.copyTo(o) } }
                         imageFile(app).delete()
@@ -110,18 +114,25 @@ object BgMedia {
                 .setEffects(androidx.media3.transformer.Effects(emptyList(),
                     listOf<androidx.media3.common.Effect>(androidx.media3.effect.Presentation.createForHeight(640))))
                 .build()
+            tr = transformer
             transformer.start(item, out.path)
             val holder = androidx.media3.transformer.ProgressHolder()
             val poll = object : Runnable {
                 override fun run() {
                     val state = try { transformer.getProgress(holder) } catch (_: Throwable) { -1 }
                     if (state == androidx.media3.transformer.Transformer.PROGRESS_STATE_AVAILABLE) progress(holder.progress)
-                    if (state != androidx.media3.transformer.Transformer.PROGRESS_STATE_NOT_STARTED) main.postDelayed(this, 400)
+                    if (!cancelled && state != androidx.media3.transformer.Transformer.PROGRESS_STATE_NOT_STARTED) main.postDelayed(this, 400)
                 }
             }
             main.post(poll)
         } catch (_: Throwable) {
             finish(false)
+        }
+        // Cancelar: se detiene y no se cambia tu fondo
+        return {
+            cancelled = true
+            try { tr?.cancel() } catch (_: Throwable) { }
+            out.delete()
         }
     }
 }

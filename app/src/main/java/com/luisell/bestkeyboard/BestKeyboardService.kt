@@ -164,6 +164,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var materialsPanel: ListPanel? = null
     private var todoPanel: ListPanel? = null
     private var bgVideoView: BgVideoView? = null
+    private var bgImageView: android.widget.ImageView? = null
     private var bgLoaded = ""
     private var checkPanel: ListPanel? = null
     private var drivePanel: DrivePanel? = null
@@ -322,6 +323,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         bgv.visibility = View.GONE
         box.addView(bgv, 0, FrameLayout.LayoutParams(-1, -1))
         bgVideoView = bgv
+        // La imagen de fondo también va detrás (así se ve en emojis, portapapeles y todos los paneles)
+        val bgi = android.widget.ImageView(this)
+        bgi.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+        bgi.visibility = View.GONE
+        box.addView(bgi, 0, FrameLayout.LayoutParams(-1, -1))
+        bgImageView = bgi
         val ep = EmojiPanel(this)
         ep.listener = panelListener
         ep.actions = object : EmojiPanel.Actions {
@@ -1666,16 +1673,21 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val bgv = bgVideoView
         when (kind) {
             "image" -> {
-                if (bgLoaded != stamp || v.bgImage == null) {
-                    val side = maxOf(resources.displayMetrics.widthPixels, 720)
-                    v.bgImage = BgMedia.loadImage(this, side)
+                bgImageView?.let {
+                    if (bgLoaded != stamp || it.drawable == null) {
+                        val side = maxOf(resources.displayMetrics.widthPixels, 720)
+                        it.setImageBitmap(BgMedia.loadImage(this, side))
+                    }
+                    it.visibility = View.VISIBLE
                 }
-                v.bgVideo = false
+                v.bgImage = null
+                v.bgVideo = true
                 bgv?.release(); bgv?.visibility = View.GONE
             }
             "video" -> {
                 v.bgImage = null
                 v.bgVideo = true
+                bgImageView?.let { it.setImageDrawable(null); it.visibility = View.GONE }
                 bgv?.let {
                     it.visibility = View.VISIBLE
                     it.sound = sound
@@ -1687,6 +1699,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 v.bgImage = null
                 v.bgVideo = false
                 bgv?.release(); bgv?.visibility = View.GONE
+                bgImageView?.let { it.setImageDrawable(null); it.visibility = View.GONE }
             }
         }
         bgLoaded = stamp
@@ -1740,6 +1753,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         drivePanel?.applyPalette(pal)
         infoBar?.applyPalette(pal)
         searchBar?.applyPalette(pal)
+        // Con fondo propio, los paneles (emojis, portapapeles, GIFs…) dejan ver tu imagen o video
+        val custom = BgMedia.kind(this).isNotEmpty()
+        val panelBg = if (custom) (((BgMedia.dim(this) * 255).toInt().coerceIn(0, 255)) shl 24) else pal.bg
+        panelBox?.let { b ->
+            for (i in 0 until b.childCount) {
+                val c = b.getChildAt(i)
+                if (c === kv || c === bgVideoView || c === bgImageView || c === scanPanel) continue
+                c.setBackgroundColor(panelBg)
+            }
+        }
         if (floatFrame != null && prefs.getBoolean(Prefs.FLOAT, false) != floating) applyFloat()
         else if (floating) floatRoot?.background?.let { (it as? android.graphics.drawable.GradientDrawable)?.setColor(pal.bg) }
         WorkDay.config(prefs)

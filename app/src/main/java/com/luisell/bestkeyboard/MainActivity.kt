@@ -886,6 +886,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.2.1" to tr("•  Tu imagen o video de fondo ahora también se ve en emojis, GIFs, portapapeles y todos los paneles.\n•  Ventana nueva y moderna mientras se prepara el video, con barra de progreso y botón «Cancelar».",
+            "•  Your background image or video now also shows in emojis, GIFs, clipboard and every panel.\n•  New modern window while the video is prepared, with a progress bar and a «Cancel» button."),
         "12.2" to tr("•  🖼️ Fondo propio (Estilo): pon una imagen o un video de tu galería detrás de las teclas. El video se comprime, se ve completo y se repite sin fin.\n•  🔊 Sonido del video: prendido o en silencio (en Estilo o con el botón 🔊 del teclado).\n•  Con fondo propio las teclas se vuelven de vidrio para que se vea tu fondo.",
             "•  🖼️ Your own background (Style): put an image or video from your gallery behind the keys. The video is compressed, plays in full and loops forever.\n•  🔊 Video sound: on or muted (in Style or with the 🔊 keyboard button).\n•  With your own background the keys turn to glass so it shows through."),
         "12.1" to tr("•  ✨ 10 temas animados nuevos: Aura de poder, Aura azul, Fénix, Tormenta (con relámpagos), Fuegos artificiales, Galaxia espiral, Estanque, Panal sci-fi, Pulso neón y Ventisca.\n•  Los temas ahora están por categorías: Clásicos, Espacio, Naturaleza, Agua, Fuego y energía, Fiesta y amor, Tecnología y retro.\n•  Estilo más sencillo: los colores a tu gusto quedan escondidos en «🎨 Cambiar los colores del tema (opcional)», con un botón para volver a los del tema.",
