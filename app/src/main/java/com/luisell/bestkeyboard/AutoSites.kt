@@ -28,6 +28,7 @@ object AutoSites {
     const val ACTION_UNDO = "com.luisell.bestkeyboard.AUTO_UNDO"
     const val ACTION_MARK = "com.luisell.bestkeyboard.AUTO_MARK"
     const val ACTION_HOME_AT = "com.luisell.bestkeyboard.AUTO_HOME_AT"
+    const val ACTION_EXIT_CHECK = "com.luisell.bestkeyboard.AUTO_EXIT_CHECK"
     const val EXTRA_TIME = "time"
     const val EXTRA_SITE = "site"
     private const val NEW_ID = "new:"
@@ -111,6 +112,13 @@ object AutoSites {
                 cancel(ctx)
                 return
             }
+            ACTION_EXIT_CHECK -> {
+                // Pasaron los minutos de espera y no volviste a entrar: ahora sí se anota la salida
+                val o = try { JSONObject(p.getString(Prefs.AUTO_EXIT_PENDING, "") ?: "") } catch (_: Exception) { null } ?: return
+                p.edit().remove(Prefs.AUTO_EXIT_PENDING).apply()
+                left(ctx, o.optString("s"), o.optLong("t"))
+                return
+            }
             ACTION_HOME_AT -> {
                 val t = intent.getLongExtra(EXTRA_TIME, System.currentTimeMillis())
                 val k = intent.getStringExtra(WorkdayCenter.EXTRA_KIND) ?: WorkDay.HOME
@@ -145,9 +153,9 @@ object AutoSites {
             val isNew = id.startsWith(NEW_ID)
             val site = id.removePrefix(SITE_ID).removePrefix(NEW_ID)
             when (ev.geofenceTransition) {
-                Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); falseExit(ctx, site, at) }
+                Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site); falseExit(ctx, site, at) }
                 Geofence.GEOFENCE_TRANSITION_DWELL -> if (!isNew) arrived(ctx, site, takeEnter(p, site) ?: (at - DWELL_MS))
-                Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); left(ctx, site, at) }
+                Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); pendingExit(ctx, site, at) }
             }
         }
     }
@@ -179,7 +187,7 @@ object AutoSites {
             Todos.arrivedAt(ctx, site)
             notify(ctx, L.t("📍 Llegaste a $site", "📍 You arrived at $site"),
                 L.t("Lo anoté solo: llegaste a las ${WorkStore.time(t)}.", "Logged automatically: you arrived at ${WorkStore.time(t)}."),
-                L.t("Deshacer", "Undo") to undoIntent(ctx, t))
+                listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
         } else {
             // No has empezado tu jornada hoy: pregunta (puede que no estés trabajando)
             notify(ctx, L.t("📍 Estás en $site", "📍 You're at $site"),
@@ -209,6 +217,33 @@ object AutoSites {
      * Volviste a entrar al sitio poco después de una «salida» automática: el GPS brincó (pasa adentro de edificios).
      * Se borra esa salida falsa, sin molestarte.
      */
+    /** Saliste del sitio: no se anota todavía; se espera unos minutos por si el GPS brincó. */
+    private fun pendingExit(ctx: Context, site: String, at: Long) {
+        val p = Prefs.get(ctx)
+        p.edit().putString(Prefs.AUTO_EXIT_PENDING, JSONObject().put("s", site).put("t", at).toString()).apply()
+        val wait = ((p.getString(Prefs.AUTO_EXIT_WAIT, "10") ?: "10").toIntOrNull() ?: 10).coerceIn(1, 60)
+        val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+        try { am.setWindow(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + wait * 60_000L, 60_000L, exitCheckIntent(ctx)) } catch (_: Exception) { }
+    }
+
+    /** Volviste a entrar antes de que pasaran los minutos: no te saliste (era el GPS). */
+    private fun cancelPendingExit(ctx: Context, site: String) {
+        val p = Prefs.get(ctx)
+        val o = try { JSONObject(p.getString(Prefs.AUTO_EXIT_PENDING, "") ?: "") } catch (_: Exception) { null } ?: return
+        if (o.optString("s") != site) return
+        p.edit().remove(Prefs.AUTO_EXIT_PENDING).apply()
+        (ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager)?.cancel(exitCheckIntent(ctx))
+    }
+
+    private fun exitCheckIntent(ctx: Context): PendingIntent =
+        PendingIntent.getBroadcast(ctx, 5122, Intent(ctx, AutoSitesReceiver::class.java).setAction(ACTION_EXIT_CHECK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    /** Abre la ventanita para escribir la hora de un evento (desde el aviso). */
+    private fun fixIntent(ctx: Context, t: Long): PendingIntent =
+        PendingIntent.getActivity(ctx, (t / 1000 % 100000).toInt() + 7, Intent(ctx, TimeSetActivity::class.java)
+            .putExtra(TimeSetActivity.EXTRA_EVENT, t).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
     private fun falseExit(ctx: Context, site: String, at: Long) {
         val p = Prefs.get(ctx)
         val auto = p.getLong(Prefs.AUTO_LEAVE, 0L)
@@ -233,7 +268,7 @@ object AutoSites {
         WorkdayCenter.refresh(ctx)
         notify(ctx, L.t("🚪 Saliste de ${last.site.ifEmpty { site }}", "🚪 You left ${last.site.ifEmpty { site }}"),
             L.t("Lo anoté solo: saliste a las ${WorkStore.time(t)}.", "Logged automatically: you left at ${WorkStore.time(t)}."),
-            L.t("Deshacer", "Undo") to undoIntent(ctx, t))
+            listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
     }
 
     private fun undoIntent(ctx: Context, t: Long): PendingIntent =

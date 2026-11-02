@@ -64,6 +64,10 @@ class SitesActivity : UiActivity() {
         autoBtn = button("") { toggleAuto() }
         autoHelp = text("", 12f, faded = true)
         homeBtn = button("") { homeTap() }
+        segmented(tr("Esperar antes de anotar la salida", "Wait before logging the departure"), Prefs.AUTO_EXIT_WAIT, "10",
+            listOf("5" to "5 min", "10" to "10 min", "15" to "15 min", "20" to "20 min"))
+        text(tr("Adentro de edificios el GPS a veces brinca. Si vuelves a «entrar» antes de ese tiempo, no se anota ninguna salida.",
+            "Inside buildings GPS sometimes jumps. If you «come back in» before that time, no departure is logged."), 12f, faded = true)
         paintAuto()
         button(tr("📍 Guardar donde estoy ahora", "📍 Save where I am now"), primary = true) { saveHere() }
         button(tr("➕ Agregar por dirección", "➕ Add by address")) { addByAddress() }

@@ -81,6 +81,12 @@ class MonthActivity : UiActivity() {
         paint()
     }
 
+    // Al volver de cambiar una hora, se vuelve a pintar
+    override fun onResume() {
+        super.onResume()
+        if (::grid.isInitialized) paint()
+    }
+
     private fun paint() {
         title.text = SimpleDateFormat("MMMM yyyy", if (L.english) Locale.US else Locale("es")).format(month.time).replaceFirstChar { it.uppercase() }
         grid.removeAllViews()
@@ -153,6 +159,32 @@ class MonthActivity : UiActivity() {
             detail.addView(TextView(this).apply { text = tr("No trabajaste (o no lo marcaste).", "No work logged."); textSize = 13f; setTextColor(SUB) })
             return
         }
+        // Cada cosa del día: tócala para cambiar la hora, o ✕ para borrarla
+        for (e in ev) {
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+            row.setPadding(dp(12), dp(10), dp(4), dp(10))
+            row.background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(12f) }
+            val t = TextView(this).apply { text = WorkStore.time(e.time); textSize = 15f; setTextColor(CYAN); setTypeface(typeface, Typeface.BOLD) }
+            val n = TextView(this).apply { text = WorkDay.labelOf(e); textSize = 14f; setTextColor(TEXT); setPadding(dp(12), 0, 0, 0) }
+            row.addView(t, LinearLayout.LayoutParams(dp(78), -2))
+            row.addView(n, LinearLayout.LayoutParams(0, -2, 1f))
+            val del = TextView(this).apply { text = "✕"; textSize = 16f; setTextColor(SUB); gravity = Gravity.CENTER }
+            del.setOnClickListener {
+                android.app.AlertDialog.Builder(this)
+                    .setMessage(tr("¿Borrar «${WorkDay.labelOf(e)} · ${WorkStore.time(e.time)}»?", "Delete «${WorkDay.labelOf(e)} · ${WorkStore.time(e.time)}»?"))
+                    .setPositiveButton(tr("Borrar", "Delete")) { _, _ -> WorkDay.remove(prefs, e.time); WorkdayCenter.refresh(this); paint() }
+                    .setNegativeButton(tr("Cancelar", "Cancel"), null).show()
+            }
+            row.addView(del, LinearLayout.LayoutParams(dp(40), dp(36)))
+            row.setOnClickListener { TimeSetActivity.open(this, eventTime = e.time) }
+            detail.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+        }
+        detail.addView(TextView(this).apply {
+            text = tr("Toca una hora para cambiarla.", "Tap a time to change it.")
+            textSize = 12f; setTextColor(SUB); setPadding(0, dp(6), 0, 0)
+        })
         val now = System.currentTimeMillis()
         detail.addView(TextView(this).apply {
             text = WorkDay.text(ev, false).let { if (WorkStore.sameDay(chosen, now)) it else it }

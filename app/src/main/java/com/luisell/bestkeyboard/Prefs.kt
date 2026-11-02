@@ -125,6 +125,8 @@ object Prefs {
     const val BG_STAMP = "bg_stamp"            // cambia cada vez que eliges otro fondo (para recargarlo)
     const val SHORTCUTS = "shortcuts"          // ⚡ atajos de texto (/ok → frase)
     const val AUTO_SITES = "auto_sites"        // llegada y salida automáticas (geocercas)
+    const val AUTO_EXIT_PENDING = "auto_exit_pending"  // saliste del sitio: se espera unos minutos antes de anotarlo
+    const val AUTO_EXIT_WAIT = "auto_exit_wait"        // cuántos minutos se espera ("5" / "10" / "15")
     const val AUTO_LEAVE = "auto_leave"        // la última salida que se anotó sola (por si el GPS brincó)
     const val AUTO_ENTER = "auto_enter"        // a qué hora entraste a cada sitio (para la hora de llegada)
     const val OVERTIME_DAY = "overtime_day"    // horas normales por día ("0" = sin aviso)
