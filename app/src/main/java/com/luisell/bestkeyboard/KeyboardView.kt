@@ -267,6 +267,13 @@ class KeyboardView(context: Context) : View(context) {
     /** Mostrar el nombre del botón que pasa por la luz del medio. */
     var stripNames = true
     private var nameTool = -1
+    // Dónde quedó dibujado cada botón de la barra (para tocar justo lo que ves)
+    private val hitX = FloatArray(64)
+    private val hitTool = IntArray(64)
+    private var hitN = 0
+    private var capTool = -1
+    private var capL = 0f
+    private var capR = 0f
     private var labelTool = -1
     private var labelAnim = 0f
     private var wasSliding = false
@@ -1031,6 +1038,18 @@ class KeyboardView(context: Context) : View(context) {
         if (showingShot) {
             if (x < menuW) return TOOL_MENU
             return if (x >= shotRect.left && x <= shotRect.right) TOOL_SHOT else -1
+        }
+        // Se toca lo que se VE: la cápsula con el nombre entera es de su botón, y los vecinos donde están dibujados
+        if (!editing && hitN > 0) {
+            if (capTool >= 0 && x >= capL && x <= capR) return capTool
+            var best = -1
+            var bd = Float.MAX_VALUE
+            for (i in 0 until hitN) {
+                if (hitTool[i] == capTool) continue
+                val dd = kotlin.math.abs(x - hitX[i])
+                if (dd < bd) { bd = dd; best = hitTool[i] }
+            }
+            if (best >= 0 && bd <= toolStep() * 0.75f) return best
         }
         return toolHit(x)
     }
@@ -2550,6 +2569,9 @@ class KeyboardView(context: Context) : View(context) {
             stroke.strokeWidth = 1.3f * d
             c.drawRoundRect(capRect, h / 2f, h / 2f, stroke)
         }
+        hitN = 0
+        capTool = if (ext > 0f && selE >= 0) tools[(ents[selE] shr 32).toInt()] else -1
+        if (capTool >= 0) { capL = capRect.left; capR = capRect.right }
         for ((k, e) in ents.withIndex()) {
             val n = (e shr 32).toInt()
             val i = tools[n]
@@ -2562,6 +2584,7 @@ class KeyboardView(context: Context) : View(context) {
                 else -> rawX + Math.signum(rawX - mid) * ext * 2f * (abs(rawX - mid) / (step * 0.5f)).coerceIn(0f, 1f)
             }
             if (cx < -step || cx > width + step) continue
+            if (hitN < hitX.size) { hitX[hitN] = cx; hitTool[hitN] = i; hitN++ }
             if (loops && n == 0) {
                 // El final de la vuelta: una línea que brilla para saber que llegaste al principio
                 val lx = cx - step / 2f

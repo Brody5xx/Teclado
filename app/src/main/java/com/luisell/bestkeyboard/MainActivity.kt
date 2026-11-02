@@ -927,6 +927,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.3.2" to tr("•  Barra de arriba: cuando sale el nombre en la cápsula, toda la cápsula es de ese botón (ya no se toca el de al lado por accidente).",
+            "•  Top bar: when the name shows in the capsule, the whole capsule belongs to that button (no more tapping the neighbor by accident)."),
         "12.3.1" to tr("•  📖 Palabra de la semana: botones 🔊 para escuchar cómo se dice en inglés y en español (y el ejemplo).",
             "•  📖 Word of the week: 🔊 buttons to hear how it sounds in English and Spanish (and the example)."),
         "12.3" to tr("•  💾 La copia de seguridad ahora guarda TODO: también el portapapeles (textos e imágenes fijadas), tu imagen o video de fondo, los emojis recientes, Mi jornada, tu pago, pendientes y atajos.\n•  Al restaurar en un teléfono nuevo se vuelven a programar los avisos y la llegada/salida automática, y te dice qué permisos dar otra vez.\n•  Guardar y restaurar ya no congela la pantalla.",
