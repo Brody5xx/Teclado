@@ -141,6 +141,13 @@
             android:name=".TicketPhotosActivity"
             android:exported="false" />
         <activity
+            android:name=".TimeSetActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:windowSoftInputMode="stateAlwaysVisible"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity
             android:name=".MonthActivity"
             android:exported="false" />
         <activity

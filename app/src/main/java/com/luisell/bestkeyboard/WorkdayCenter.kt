@@ -135,11 +135,19 @@ object WorkdayCenter {
         val leave = ev.lastOrNull { it.kind == WorkDay.LEAVE }
         val text = (if (leave != null) L.t("Saliste de ${leave.site.ifEmpty { "tu sitio" }} a las ${WorkStore.time(leave.time)}. ",
             "You left ${leave.site.ifEmpty { "your site" }} at ${WorkStore.time(leave.time)}. ") else "") +
-            L.t("Si ya estás en casa, márcalo. Si llegaste antes, en Mi jornada toca la hora para cambiarla.",
-                "If you're home, log it. If you got home earlier, tap the time in My workday to change it.")
+            L.t("¿A qué hora llegaste a casa?", "What time did you get home?")
         val fin = WorkDay.finalKind()
-        AutoSites.notify(ctx, L.t("🌙 Tu jornada sigue abierta", "🌙 Your workday is still open"), text,
-            WorkDay.label(fin) to intentFor(ctx, fin, 210), 4722)
+        // Botones: la hora que calculo (salida + lo que tardas normalmente) o escribir la hora tú
+        val guess = leave?.let { it.time + WorkDay.typicalCommute(p) }?.takeIf { it < System.currentTimeMillis() }
+        val actions = ArrayList<Pair<String, PendingIntent>>()
+        if (guess != null) actions.add(L.t("🏠 A las ", "🏠 At ") + WorkStore.time(guess) to
+            PendingIntent.getBroadcast(ctx, 4716, Intent(ctx, AutoSitesReceiver::class.java).setAction(AutoSites.ACTION_HOME_AT)
+                .putExtra(AutoSites.EXTRA_TIME, guess).putExtra(EXTRA_KIND, fin), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        actions.add(L.t("🕐 Escribir la hora", "🕐 Type the time") to
+            PendingIntent.getActivity(ctx, 4717, Intent(ctx, TimeSetActivity::class.java).putExtra(TimeSetActivity.EXTRA_KIND, fin)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        actions.add(L.t("Ahora", "Now") to intentFor(ctx, fin, 210))
+        AutoSites.notify(ctx, L.t("🌙 Tu jornada sigue abierta", "🌙 Your workday is still open"), text, actions, 4722)
     }
 
     const val ACTION_OVERTIME = "com.luisell.bestkeyboard.WORKDAY_OVERTIME"

@@ -3267,6 +3267,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 showMode(0)
             })
         }
+        buttons.add(L.t("🕐 Anotar con otra hora", "🕐 Log with another time") to { askLogAt() })
         buttons.add(L.t("📄 Hoja de horas (PDF)", "📄 Timesheet (PDF)") to { askTimesheet() })
         buttons.add(L.t("📅 Calendario", "📅 Calendar") to {
             showMode(0)
@@ -3417,6 +3418,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val tickets = WorkStore.tickets(prefs).filter { it.time >= start }.map { it.num }.sorted()
         if (tickets.isNotEmpty()) sb.append("\n").append(if (english) "Tickets: " else "Tickets: ").append(tickets.joinToString(", "))
         return sb.toString()
+    }
+
+    /** 🕐 Anotar algo de hoy con la hora que tú escribas (ej. «Llegué a casa» a las 5:32pm). */
+    private fun askLogAt() {
+        showMode(0)
+        val bar = infoBar ?: return
+        val kinds = WorkDay.enabledKinds() + listOf(WorkDay.LUNCH, WorkDay.BACK)
+        bar.show(L.t("🕐 ¿Qué quieres anotar?", "🕐 What do you want to log?"),
+            L.t("Elige y luego escribe la hora en que pasó (ej. 5:32pm).", "Pick one and then type the time it happened (e.g. 5:32pm)."),
+            kinds.map { k -> WorkDay.label(k) to { closeInfo(); TimeSetActivity.open(this, kind = k) } } +
+                listOf(L.t("Cerrar", "Close") to { closeInfo() }))
     }
 
     /** 🔍 Buscar en tickets, libreta y portapapeles. */
@@ -3588,6 +3600,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         fun showBar() {
             val buttons = arrayListOf<Pair<String, () -> Unit>>(
                 L.t("Listo", "Done") to { closeInfo() },
+                L.t("🕐 Escribir la hora", "🕐 Type the time") to { closeInfo(); showMode(0); TimeSetActivity.open(this, eventTime = t) },
                 "−15 min" to { t = WorkDay.shift(prefs, t, -15); WorkdayCenter.refresh(this); refreshWorkday(); showBar() },
                 "−5 min" to { t = WorkDay.shift(prefs, t, -5); WorkdayCenter.refresh(this); refreshWorkday(); showBar() },
                 "+5 min" to { t = WorkDay.shift(prefs, t, 5); WorkdayCenter.refresh(this); refreshWorkday(); showBar() },

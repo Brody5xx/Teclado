@@ -35,6 +35,17 @@ object SiteStore {
 
     fun find(p: SharedPreferences, name: String): Site? = all(p).firstOrNull { it.name == name }
 
+    // ---- 🏠 Tu casa: solo las coordenadas, solo en tu teléfono (nunca sale en tickets ni en el PDF)
+    fun home(p: SharedPreferences): Pair<Double, Double>? = try {
+        val o = JSONObject(p.getString(Prefs.HOME_PLACE, "") ?: "")
+        o.getDouble("la") to o.getDouble("lo")
+    } catch (_: Exception) { null }
+
+    fun setHome(p: SharedPreferences, lat: Double?, lon: Double?) {
+        if (lat == null || lon == null) p.edit().remove(Prefs.HOME_PLACE).apply()
+        else p.edit().putString(Prefs.HOME_PLACE, JSONObject().put("la", lat).put("lo", lon).toString()).apply()
+    }
+
     // ---- Lugar nuevo: llegaste a un sitio que no tienes guardado (se pregunta si lo guardas)
     class NewPlace(val time: Long, val short: String, val full: String, val lat: Double, val lon: Double)
 

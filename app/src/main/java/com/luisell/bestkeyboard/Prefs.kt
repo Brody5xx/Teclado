@@ -112,6 +112,7 @@ object Prefs {
     const val SITES = "sites"
     const val PAY = "pay"                      // 💵 tarifas y descuentos (solo en el teléfono)
     const val NIGHT_REMIND = "night_remind"    // 🌙 aviso si la jornada sigue abierta
+    const val HOME_PLACE = "home_place"        // 🏠 dónde está tu casa (solo coordenadas, solo en el teléfono)
     const val NIGHT_TIME = "night_time"        // a qué hora (minutos desde las 0:00; 1260 = 9:00 PM)
     const val SHORTCUTS = "shortcuts"          // ⚡ atajos de texto (/ok → frase)
     const val AUTO_SITES = "auto_sites"        // llegada y salida automáticas (geocercas)

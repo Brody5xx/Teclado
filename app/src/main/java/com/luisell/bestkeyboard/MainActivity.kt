@@ -885,6 +885,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "11.9" to tr("•  🏠 Guarda tu casa en Mis sitios: al llegar se anota solo «Llegué a casa» con la hora real (solo en tu teléfono; en tickets y PDF solo dice «Casa»).\n•  🕐 Escribe la hora tú mismo (5:32pm, 532p o 17:32): en «Anotar con otra hora», al tocar una hora en Mi jornada y en el aviso de la noche.\n•  🌙 El aviso de la noche te sugiere la hora en que seguramente llegaste (tu salida + lo que tardas normalmente).",
+            "•  🏠 Save your home in My sites: when you get there, «Home» is logged with the real time (only on your phone; tickets and PDF just say «Home»).\n•  🕐 Type the time yourself (5:32pm, 532p or 17:32): in «Log with another time», when tapping a time in My workday and in the night reminder.\n•  🌙 The night reminder suggests the time you probably got home (your departure + your usual drive)."),
         "11.8.1" to tr("•  🌙 Aviso de «¿Se te olvidó marcar Casa?»: ahora eliges la hora que quieras.",
             "•  🌙 «Forgot to log Home?» reminder: now you pick the time you want."),
         "11.8" to tr("•  📅 Calendario del mes (Mi jornada): las horas de cada día con colores; toca un día para ver el detalle.\n•  🔍 Buscar en tus tickets, la libreta y el portapapeles (Mis tickets y la lupa del portapapeles).\n•  🌗 Tema de día y de noche (Estilo): elige uno para el día y otro para la noche, y cambia solo según la hora.",

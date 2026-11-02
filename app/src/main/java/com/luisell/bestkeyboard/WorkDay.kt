@@ -199,6 +199,24 @@ object WorkDay {
 
     fun remove(p: SharedPreferences, time: Long) = save(p, all(p).filter { it.time != time })
 
+    /** Le pone otra hora exacta a un evento. */
+    fun moveTo(p: SharedPreferences, time: Long, newTime: Long) =
+        save(p, all(p).map { if (it.time == time) Event(newTime, it.kind, it.site) else it })
+
+    /** Lo que tardas normalmente del último sitio a la casa (según tus últimos días; 45 min si no se sabe). */
+    fun typicalCommute(p: SharedPreferences): Long {
+        val list = ArrayList<Long>()
+        for ((_, ev) in byDay(p).takeLast(21)) {
+            val home = ev.lastOrNull { it.kind == HOME } ?: continue
+            val leave = ev.lastOrNull { it.kind == LEAVE && it.time < home.time } ?: continue
+            val d = home.time - leave.time
+            if (d in 5 * 60_000L..180 * 60_000L) list.add(d)
+        }
+        if (list.isEmpty()) return 45 * 60_000L
+        list.sort()
+        return list[list.size / 2]
+    }
+
     /** Mueve la hora de un evento [minutes] minutos (por si se te olvidó tocarlo a tiempo). */
     fun shift(p: SharedPreferences, time: Long, minutes: Int): Long {
         val nt = time + minutes * 60_000L

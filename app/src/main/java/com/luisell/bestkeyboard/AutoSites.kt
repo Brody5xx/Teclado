@@ -27,10 +27,12 @@ object AutoSites {
     private const val CHANNEL = "workday_auto"
     const val ACTION_UNDO = "com.luisell.bestkeyboard.AUTO_UNDO"
     const val ACTION_MARK = "com.luisell.bestkeyboard.AUTO_MARK"
+    const val ACTION_HOME_AT = "com.luisell.bestkeyboard.AUTO_HOME_AT"
     const val EXTRA_TIME = "time"
     const val EXTRA_SITE = "site"
     private const val NEW_ID = "new:"
     private const val SITE_ID = "site:"
+    private const val HOME_ID = "home"
     /** Cuánto tienes que quedarte para que cuente como "llegué" (para no marcar si solo pasas por ahí). */
     private const val DWELL_MS = 4 * 60 * 1000
     private const val RADIUS = 250f
@@ -69,6 +71,16 @@ object AutoSites {
                 .build())
             if (fences.size >= 90) break
         }
+        // 🏠 Tu casa: para anotar solo «Llegué a casa» con la hora real
+        SiteStore.home(p)?.let { (la, lo) ->
+            fences.add(Geofence.Builder()
+                .setRequestId(HOME_ID)
+                .setCircularRegion(la, lo, 150f)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL)
+                .setLoiteringDelay(2 * 60 * 1000)
+                .build())
+        }
         // El lugar nuevo de hoy (no guardado): solo para saber cuándo te vas
         SiteStore.getNew(p)?.let { n ->
             fences.add(Geofence.Builder()
@@ -99,6 +111,14 @@ object AutoSites {
                 cancel(ctx)
                 return
             }
+            ACTION_HOME_AT -> {
+                val t = intent.getLongExtra(EXTRA_TIME, System.currentTimeMillis())
+                val k = intent.getStringExtra(WorkdayCenter.EXTRA_KIND) ?: WorkDay.HOME
+                WorkDay.addAt(p, k, "", t)
+                WorkdayCenter.refresh(ctx)
+                (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(4722)
+                return
+            }
             ACTION_MARK -> {
                 val t = intent.getLongExtra(EXTRA_TIME, System.currentTimeMillis())
                 val site = intent.getStringExtra(EXTRA_SITE) ?: ""
@@ -115,6 +135,13 @@ object AutoSites {
         val at = ev.triggeringLocation?.time?.takeIf { it in (now - 30 * 60_000L)..now } ?: now
         for (g in ev.triggeringGeofences ?: emptyList()) {
             val id = g.requestId
+            if (id == HOME_ID) {
+                when (ev.geofenceTransition) {
+                    Geofence.GEOFENCE_TRANSITION_ENTER -> saveEnter(p, HOME_ID, at)
+                    Geofence.GEOFENCE_TRANSITION_DWELL -> cameHome(ctx, takeEnter(p, HOME_ID) ?: (at - 2 * 60_000L))
+                }
+                continue
+            }
             val isNew = id.startsWith(NEW_ID)
             val site = id.removePrefix(SITE_ID).removePrefix(NEW_ID)
             when (ev.geofenceTransition) {
@@ -160,6 +187,23 @@ object AutoSites {
         }
     }
 
+    /** Llegaste a casa: si la jornada sigue abierta, se cierra con la hora en que llegaste. */
+    private fun cameHome(ctx: Context, at: Long) {
+        val p = Prefs.get(ctx)
+        val day = WorkDay.day(p)
+        if (!WorkDay.isRunning(day) || !WorkDay.isOn(WorkDay.HOME)) return
+        val last = WorkDay.lastMain(day) ?: return
+        // Si todavía estás marcado en un sitio, primero se anota que saliste (a la hora de tu última salida conocida no se sabe: se deja)
+        if (at <= last.time) return
+        val t = WorkDay.addAt(p, WorkDay.HOME, "", at)
+        WorkdayCenter.refresh(ctx)
+        (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(4722)
+        notify(ctx, L.t("🏠 Llegaste a casa", "🏠 You got home"),
+            L.t("Lo anoté solo: llegaste a las ${WorkStore.time(t)}. Hoy: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}.",
+                "Logged automatically: you got home at ${WorkStore.time(t)}. Today: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}."),
+            L.t("Deshacer", "Undo") to undoIntent(ctx, t))
+    }
+
     private fun left(ctx: Context, site: String, at: Long) {
         val p = Prefs.get(ctx)
         val day = WorkDay.day(p)
@@ -188,7 +232,10 @@ object AutoSites {
         (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(NOTIF_ID)
     }
 
-    fun notify(ctx: Context, title: String, text: String, action: Pair<String, PendingIntent>?, id: Int = NOTIF_ID) {
+    fun notify(ctx: Context, title: String, text: String, action: Pair<String, PendingIntent>?, id: Int = NOTIF_ID) =
+        notify(ctx, title, text, if (action == null) emptyList() else listOf(action), id)
+
+    fun notify(ctx: Context, title: String, text: String, actions: List<Pair<String, PendingIntent>>, id: Int) {
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(NotificationChannel(CHANNEL, L.t("Mi jornada: avisos automáticos", "My workday: automatic alerts"),
@@ -204,9 +251,9 @@ object AutoSites {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(PendingIntent.getActivity(ctx, 97, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-        if (action != null) {
+        for (a in actions.take(3)) {
             @Suppress("DEPRECATION")
-            b.addAction(Notification.Action.Builder(null, action.first, action.second).build())
+            b.addAction(Notification.Action.Builder(null, a.first, a.second).build())
         }
         try { nm.notify(id, b.build()) } catch (_: SecurityException) { }
     }

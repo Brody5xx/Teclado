@@ -62,6 +62,7 @@ class SitesActivity : UiActivity() {
         // ---- Llegada y salida automáticas
         autoBtn = button("") { toggleAuto() }
         autoHelp = text("", 12f, faded = true)
+        homeBtn = button("") { homeTap() }
         paintAuto()
         button(tr("📍 Guardar donde estoy ahora", "📍 Save where I am now"), primary = true) { saveHere() }
         button(tr("➕ Agregar por dirección", "➕ Add by address")) { addByAddress() }
@@ -85,7 +86,46 @@ class SitesActivity : UiActivity() {
     private lateinit var autoBtn: TextView
     private lateinit var autoHelp: TextView
 
+    private lateinit var homeBtn: TextView
+
+    private fun homeTap() {
+        if (SiteStore.home(prefs) != null) {
+            AlertDialog.Builder(this)
+                .setTitle(tr("🏠 Tu casa", "🏠 Your home"))
+                .setMessage(tr("¿Quitar tu casa? Ya no se anotará solo «Llegué a casa».", "Remove your home? «Home» won't be logged automatically anymore."))
+                .setPositiveButton(tr("Quitar", "Remove")) { _, _ -> SiteStore.setHome(prefs, null, null); AutoSites.register(this); paintAuto() }
+                .setNegativeButton(tr("Cancelar", "Cancel"), null)
+                .show()
+            return
+        }
+        if (!WorkdayCenter.hasLocation(this)) {
+            requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 31)
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(tr("🏠 Guardar tu casa", "🏠 Save your home"))
+            .setMessage(tr("¿Estás en tu casa ahora? Se guarda solo el punto del GPS, solo en tu teléfono. En los tickets, el PDF y el resumen solo dirá «Casa».",
+                "Are you home right now? Only the GPS point is saved, only on your phone. Tickets, the PDF and the summary will only say «Home»."))
+            .setPositiveButton(tr("Sí, estoy en casa", "Yes, I'm home")) { _, _ ->
+                toast("Buscando dónde estás…", "Finding where you are…")
+                WorkdayCenter.locate(this) { loc ->
+                    runOnUiThread {
+                        if (loc == null) { toast("No pude saber dónde estás. Prende la ubicación.", "Couldn't get your location. Turn on location."); return@runOnUiThread }
+                        SiteStore.setHome(prefs, loc.latitude, loc.longitude)
+                        AutoSites.register(this)
+                        paintAuto()
+                        toast("🏠 Casa guardada.", "🏠 Home saved.")
+                        if (!AutoSites.ready(this)) toast("Prende «Llegada y salida automáticas» para que se anote solo.", "Turn on «Automatic arrival and departure» so it's logged by itself.")
+                    }
+                }
+            }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
+    }
+
     private fun paintAuto() {
+        if (::homeBtn.isInitialized) homeBtn.text = if (SiteStore.home(prefs) != null) tr("🏠 Casa guardada ✓ (toca para quitarla)", "🏠 Home saved ✓ (tap to remove)")
+            else tr("🏠 Guardar mi casa (para anotar solo «Llegué a casa»)", "🏠 Save my home (to log «Home» automatically)")
         val on = AutoSites.isOn(this)
         val ready = AutoSites.ready(this)
         autoBtn.text = when {
