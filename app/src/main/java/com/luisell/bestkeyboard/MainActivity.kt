@@ -742,6 +742,10 @@ class MainActivity : UiActivity() {
             startActivity(Intent(this, WorkdayButtonsActivity::class.java))
         }
         button(tr("📍 Mis sitios", "📍 My sites")) { startActivity(Intent(this, SitesActivity::class.java)) }
+        button(tr("🕐 Ver y cambiar mis horas (Calendario)", "🕐 See and change my hours (Calendar)"), primary = true) {
+            startActivity(Intent(this, MonthActivity::class.java))
+        }
+        text(tr("Toca un día y luego la hora que quieres cambiar (o ✕ para borrarla).", "Tap a day and then the time you want to change (or ✕ to delete it)."), 12f, faded = true)
         button(tr("📄 Exportar mis horas (Excel / Sheets)", "📄 Export my hours (Excel / Sheets)")) {
             try {
                 val name = "mis-horas-" + java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.US).format(java.util.Date()) + ".csv"
@@ -927,6 +931,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.4.3" to tr("•  Botón «🕐 Ver y cambiar mis horas» en la app (Mi jornada).\n•  Tocar el aviso de Mi jornada abre tus horas de hoy para cambiarlas.",
+            "•  «🕐 See and change my hours» button in the app (My workday).\n•  Tapping the My workday notification opens today's hours so you can change them."),
         "12.4.2" to tr("•  Salida automática más segura: espera unos minutos (5, 10, 15 o 20) antes de anotarla; si vuelves a entrar antes, no se anota.\n•  Los avisos de llegada y salida automáticas traen «🕐 Cambiar hora».\n•  En el Calendario, toca cualquier hora de un día para cambiarla, o ✕ para borrarla.",
             "•  Safer automatic departure: it waits a few minutes (5, 10, 15 or 20) before logging it; if you come back in, it isn't logged.\n•  Automatic arrival and departure alerts now have «🕐 Change time».\n•  In the Calendar, tap any time of a day to change it, or ✕ to delete it."),
         "12.4.1" to tr("•  Aviso de Mi jornada más claro: el reloj cuenta tus horas trabajadas (ya sin el almuerzo).\n•  Llegada y salida automáticas: si el GPS brinca y marca una «salida» falsa pero sigues en el sitio, se borra sola.",

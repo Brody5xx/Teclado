@@ -25,7 +25,10 @@ class MonthActivity : UiActivity() {
     private lateinit var totals: TextView
     private lateinit var grid: GridLayout
     private lateinit var detail: LinearLayout
-    private var chosen = -1L
+    /** El día que estás viendo (hoy, al abrir). */
+    private var chosen = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(android.R.style.Theme_Material_NoActionBar)

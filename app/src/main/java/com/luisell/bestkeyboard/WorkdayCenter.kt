@@ -253,7 +253,8 @@ object WorkdayCenter {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
-            .setContentIntent(PendingIntent.getActivity(ctx, 98, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            // Tocar el aviso abre tus horas de hoy, para verlas o cambiarlas
+            .setContentIntent(PendingIntent.getActivity(ctx, 98, Intent(ctx, MonthActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         // El reloj de arriba cuenta tus horas TRABAJADAS (ya sin el almuerzo), igual que el total
         if (running) b.setShowWhen(true).setWhen(System.currentTimeMillis() - WorkDay.summary(ev).total).setUsesChronometer(true)
