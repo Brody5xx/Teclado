@@ -249,11 +249,35 @@ class MainActivity : UiActivity() {
                             .setType("application/octet-stream").putExtra(Intent.EXTRA_TITLE, "best-keyboard-respaldo.bkb"), REQ_EXPORT)
                     } catch (_: Exception) { }
                 } else if (data != null) {
-                    val ok = try { Backup.import(this, data, pw) } catch (_: Exception) { false }
+                    toast("Restaurando…", "Restoring…")
+                    Thread {
+                    val ok = try { Backup.import(this, data, pw) } catch (_: Throwable) { false }
+                    runOnUiThread {
                     if (ok) {
-                        toast("¡Listo! Todo se restauró.", "Done! Everything was restored.")
-                        recreate()
+                        // Lo que Android no deja pasar de un teléfono a otro: hay que darlo otra vez
+                        android.app.AlertDialog.Builder(this)
+                            .setTitle(tr("✅ ¡Todo se restauró!", "✅ Everything was restored!"))
+                            .setMessage(tr(
+                                "Ajustes, estilo, palabras, Datos, frases, atajos, portapapeles, Mi jornada, tickets, sitios, pendientes, tu pago y tu fondo ya están aquí.\n\n" +
+                                    "En este teléfono solo falta darle otra vez los permisos (Android no los pasa):\n" +
+                                    "1. Activar y elegir Best Keyboard (arriba).\n" +
+                                    "2. Micrófono, fotos, notificaciones y SMS (botones de arriba).\n" +
+                                    "3. Ubicación «Permitir todo el tiempo» en Mis sitios, si usas llegada y salida automáticas.\n" +
+                                    "4. Volver a prender la copia automática (elegir la carpeta otra vez).\n" +
+                                    "5. Poner el widget de Mi jornada en tu pantalla, si lo usabas.",
+                                "Settings, style, words, Data, phrases, shortcuts, clipboard, My workday, tickets, sites, to-dos, your pay and your background are here.\n\n" +
+                                    "On this phone you only need to give the permissions again (Android doesn't transfer them):\n" +
+                                    "1. Enable and choose Best Keyboard (above).\n" +
+                                    "2. Microphone, photos, notifications and SMS (buttons above).\n" +
+                                    "3. Location «Allow all the time» in My sites, if you use automatic arrival and departure.\n" +
+                                    "4. Turn the automatic backup on again (pick the folder again).\n" +
+                                    "5. Add the My workday widget to your screen, if you used it."))
+                            .setPositiveButton(tr("Entendido", "Got it")) { _, _ -> recreate() }
+                            .setCancelable(false)
+                            .show()
                     } else toast("Contraseña incorrecta o archivo no válido.", "Wrong password or invalid file.")
+                    }
+                    }.start()
                 }
             }
             .setNegativeButton(tr("Cancelar", "Cancel"), null)
@@ -282,12 +306,25 @@ class MainActivity : UiActivity() {
                 contentResolver.openOutputStream(uri, "wt")?.use { it.write(WorkDay.csv(prefs).toByteArray(Charsets.UTF_8)) }
                 toast("Horas guardadas. Ábrelo con Excel o Google Sheets.", "Hours saved. Open it with Excel or Google Sheets.")
             } catch (_: Exception) { toast("No se pudo guardar el archivo.", "Couldn't save the file.") }
-            REQ_EXPORT -> try {
-                val bytes = Backup.export(this, backupPassword)
-                contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+            REQ_EXPORT -> {
+                val pw = backupPassword
                 backupPassword = ""
-                toast("Copia de seguridad guardada.", "Backup saved.")
-            } catch (_: Exception) { toast("No se pudo guardar el archivo.", "Couldn't save the file.") }
+                toast("Guardando la copia…", "Saving the backup…")
+                Thread {
+                    val ok = try {
+                        val bytes = Backup.export(this, pw)
+                        contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+                        true
+                    } catch (_: Throwable) { false }
+                    runOnUiThread {
+                        if (!ok) toast("No se pudo guardar el archivo.", "Couldn't save the file.")
+                        else if (BgMedia.kind(this) == "video" && !Backup.videoFits(this))
+                            toast("Copia guardada. Tu video de fondo es muy pesado para la copia: en el teléfono nuevo elígelo otra vez.",
+                                "Backup saved. Your background video is too big for the backup: pick it again on the new phone.")
+                        else toast("Copia de seguridad guardada.", "Backup saved.")
+                    }
+                }.start()
+            }
             REQ_IMPORT -> try {
                 val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return
                 askBackupPassword(false, bytes)
@@ -771,9 +808,11 @@ class MainActivity : UiActivity() {
         // ---- Copia de seguridad
         card(tr("Copia de seguridad", "Backup"), Icons.CLIP)
         text(tr(
-            "Guarda en un archivo tus ajustes, tu estilo, tus palabras aprendidas, tus Datos y tus frases, protegido con una contraseña. " +
+            "Guarda en un archivo TODO lo tuyo, protegido con una contraseña: ajustes, estilo, palabras aprendidas, Datos, frases, atajos, portapapeles, " +
+                "Mi jornada (horas, sitios, tu casa, tu pago), tickets, libreta, materiales, pendientes, checklist y tu fondo. " +
                 "Guárdalo en Google Drive o pásalo a tu teléfono nuevo y toca «Restaurar».",
-            "Save your settings, style, learned words, Data and phrases to one file, protected with a password. " +
+            "Save EVERYTHING of yours to one file, protected with a password: settings, style, learned words, Data, phrases, shortcuts, clipboard, " +
+                "My workday (hours, sites, your home, your pay), tickets, notebook, materials, to-dos, checklist and your background. " +
                 "Keep it in Google Drive or move it to your new phone and tap «Restore».",
         ), 13f, faded = true)
         button(tr("Guardar copia de seguridad", "Save backup"), primary = true) { askBackupPassword(true) }
@@ -886,6 +925,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.3" to tr("•  💾 La copia de seguridad ahora guarda TODO: también el portapapeles (textos e imágenes fijadas), tu imagen o video de fondo, los emojis recientes, Mi jornada, tu pago, pendientes y atajos.\n•  Al restaurar en un teléfono nuevo se vuelven a programar los avisos y la llegada/salida automática, y te dice qué permisos dar otra vez.\n•  Guardar y restaurar ya no congela la pantalla.",
+            "•  💾 The backup now saves EVERYTHING: also the clipboard (texts and pinned images), your background image or video, recent emojis, My workday, your pay, to-dos and shortcuts.\n•  When restoring on a new phone, reminders and automatic arrival/departure are scheduled again, and it tells you which permissions to give again.\n•  Saving and restoring no longer freezes the screen."),
         "12.2.3" to tr("•  🕐 Recientes es su propia página: solo salen los emojis que tú usaste, y el último que usaste va primero.",
             "•  🕐 Recent is its own page: only the emojis you used show up, and the last one you used goes first."),
         "12.2.2" to tr("•  Emojis: al tocar una categoría de abajo (🕐 Recientes, 😀, 🐶…) ahora va justo al principio de esa categoría.",

@@ -20,7 +20,17 @@ object Backup {
     private val MAGIC = "BKB1".toByteArray()
 
     /** Lo que nunca se copia (cosas del momento). */
-    private val SKIP = setOf(Prefs.LAST_FIELD, Prefs.CLIP_LAST_SIG, Prefs.QUICK_DONE, Prefs.SHOT_USED, Prefs.SHOT_ASKS)
+    private val SKIP = setOf(Prefs.LAST_FIELD, Prefs.CLIP_LAST_SIG, Prefs.QUICK_DONE, Prefs.SHOT_USED, Prefs.SHOT_ASKS,
+        // Cosas de ESTE teléfono que no sirven en otro (la carpeta y la contraseña del respaldo automático van
+        // cifradas con una llave que no sale del teléfono; se vuelven a poner en el nuevo)
+        Prefs.AUTO_BACKUP_DIR, Prefs.AUTO_BACKUP_PW, Prefs.AUTO_BACKUP_LAST,
+        Prefs.AUTO_ENTER, Prefs.OVERTIME_SENT, Prefs.SITE_NEW, Prefs.CHECK_DONE, Prefs.BG_KIND, Prefs.BG_STAMP)
+
+    /** El video de fondo va en la copia si pesa hasta esto (si pesa más, en el teléfono nuevo lo eliges otra vez). */
+    const val MAX_VIDEO = 15L * 1024 * 1024
+
+    /** ¿El video de fondo cabe en la copia? */
+    fun videoFits(ctx: Context): Boolean = BgMedia.videoFile(ctx).let { it.exists() && it.length() <= MAX_VIDEO }
 
     private fun key(password: String, salt: ByteArray): SecretKeySpec {
         val f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
@@ -51,7 +61,18 @@ object Backup {
         VaultStore.load(ctx)
         val vault = JSONArray()
         for (e in VaultStore.items) vault.put(JSONObject().put("k", e.kind).put("l", e.label).put("v", e.value).put("s", e.shortcut))
-        val all = JSONObject().put("v", 1).put("prefs", p).put("words", words).put("vault", vault)
+        val all = JSONObject().put("v", 2).put("prefs", p).put("words", words).put("vault", vault)
+        // Portapapeles (textos y las imágenes fijadas)
+        try { all.put("clips", ClipStore.exportForBackup(ctx)) } catch (_: Exception) { }
+        // Fondo propio: la imagen, o el video si no es muy pesado
+        try {
+            when (BgMedia.kind(ctx)) {
+                "image" -> all.put("bg", JSONObject().put("k", "image")
+                    .put("d", android.util.Base64.encodeToString(BgMedia.imageFile(ctx).readBytes(), android.util.Base64.NO_WRAP)))
+                "video" -> if (videoFits(ctx)) all.put("bg", JSONObject().put("k", "video")
+                    .put("d", android.util.Base64.encodeToString(BgMedia.videoFile(ctx).readBytes(), android.util.Base64.NO_WRAP)))
+            }
+        } catch (_: Throwable) { }
 
         val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
         val c = Cipher.getInstance("AES/GCM/NoPadding")
@@ -105,6 +126,28 @@ object Backup {
             }
             VaultStore.replaceAll(ctx, list)
         }
+        // Portapapeles
+        json.optJSONArray("clips")?.let { try { ClipStore.restoreFromBackup(ctx, it) } catch (_: Exception) { } }
+        // Fondo propio
+        json.optJSONObject("bg")?.let { bg ->
+            try {
+                val bytes = android.util.Base64.decode(bg.optString("d"), android.util.Base64.NO_WRAP)
+                val kind = bg.optString("k")
+                if (kind == "image") { BgMedia.imageFile(ctx).writeBytes(bytes); BgMedia.videoFile(ctx).delete() }
+                else if (kind == "video") { BgMedia.videoFile(ctx).writeBytes(bytes); BgMedia.imageFile(ctx).delete() }
+                Prefs.get(ctx).edit().putString(Prefs.BG_KIND, kind).putLong(Prefs.BG_STAMP, System.currentTimeMillis()).apply()
+            } catch (_: Throwable) { }
+        }
+        // Emojis recientes y avisos: se vuelven a cargar y programar en este teléfono
+        try {
+            EmojiData.recent.clear()
+            Prefs.get(ctx).getString("emoji_recent", null)?.split('\u0001')?.filter { it.isNotEmpty() }?.let { EmojiData.recent.addAll(it) }
+        } catch (_: Exception) { }
+        try { WorkDay.config(Prefs.get(ctx)) } catch (_: Exception) { }
+        try { WorkdayCenter.refresh(ctx) } catch (_: Exception) { }
+        try { TicketReminder.schedule(ctx) } catch (_: Exception) { }
+        try { Todos.schedule(ctx) } catch (_: Exception) { }
+        try { AutoSites.register(ctx) } catch (_: Exception) { }
         return true
     }
 }

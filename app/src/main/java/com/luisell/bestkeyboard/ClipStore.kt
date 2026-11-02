@@ -251,6 +251,66 @@ object ClipStore {
 
     private fun changed() { onChange?.invoke() }
 
+    // ---------------------------------------------------------------- Copia de seguridad
+
+    /** Lo del portapapeles para la copia: textos (todos) e imágenes fijadas 📌 (hasta [maxImageBytes] en total). */
+    fun exportForBackup(ctx: Context, maxImageBytes: Long = 6L * 1024 * 1024): JSONArray {
+        val d = clipsDir(ctx)
+        val arr = JSONArray()
+        var used = 0L
+        val src: List<ClipItem> = if (loaded) items.toList() else try {
+            val a = JSONArray(File(d, "historial.json").readText(Charsets.UTF_8))
+            (0 until a.length()).map { val o = a.getJSONObject(it)
+                ClipItem(o.getLong("id"), if (o.has("text")) o.getString("text") else null, if (o.has("file")) o.getString("file") else null,
+                    if (o.has("mime")) o.getString("mime") else null, o.getLong("time"), o.optBoolean("pinned", false), o.optString("hash", "")) }
+        } catch (_: Exception) { emptyList() }
+        for (it in src) {
+            val o = JSONObject().put("id", it.id).put("time", it.time).put("pinned", it.pinned).put("hash", it.hash)
+            if (it.text != null) o.put("text", it.text)
+            if (it.file != null) {
+                if (!it.pinned) continue
+                val f = File(d, it.file)
+                if (!f.exists() || used + f.length() > maxImageBytes) continue
+                used += f.length()
+                o.put("file", it.file).put("mime", it.mime ?: "image/png")
+                o.put("data", android.util.Base64.encodeToString(f.readBytes(), android.util.Base64.NO_WRAP))
+            }
+            arr.put(o)
+        }
+        return arr
+    }
+
+    /** Pone el portapapeles de la copia (reemplaza el actual). */
+    fun restoreFromBackup(ctx: Context, arr: JSONArray) {
+        val d = clipsDir(ctx)
+        dir = d
+        index = File(d, "historial.json")
+        val list = ArrayList<ClipItem>()
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            var file: String? = null
+            if (o.has("file") && o.has("data")) {
+                val name = o.getString("file")
+                if (name.matches(Regex("[A-Za-z0-9._-]+")) && !name.startsWith(".")) {
+                    try { File(d, name).writeBytes(android.util.Base64.decode(o.getString("data"), android.util.Base64.NO_WRAP)); file = name } catch (_: Exception) { }
+                }
+                if (file == null) continue
+            }
+            val text = if (o.has("text")) o.getString("text") else null
+            if (text == null && file == null) continue
+            list.add(ClipItem(o.optLong("id", System.currentTimeMillis() + i), text, file, if (o.has("mime")) o.getString("mime") else null,
+                o.optLong("time", System.currentTimeMillis()), o.optBoolean("pinned", false), o.optString("hash", "")))
+        }
+        main.post {
+            items.clear()
+            items.addAll(list)
+            loaded = true
+            loading = false
+            save()
+            changed()
+        }
+    }
+
     private fun save() {
         val idx = index ?: return
         if (!loaded) return
