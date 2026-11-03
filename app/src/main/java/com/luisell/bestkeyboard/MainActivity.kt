@@ -965,6 +965,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.9.0" to tr("•  🎨 Paneles y botones a tu gusto (Estilo → Paneles y botones): cambia el color del borde y la luz, de los botones y de los íconos, el grosor del borde y qué tan transparente es el vidrio. Se ve en vivo.",
+            "•  🎨 Panels and buttons your way (Style → Panels and buttons): change the border and light color, the buttons and the icons, the border thickness and how clear the glass is. Live preview."),
         "12.8.0" to tr("•  ✨ Todo lo gris ahora es bonito: tarjetas y botones (como «Traducir mensaje») tienen brillo, borde fino del color de tu tema y, con fondo propio, son de vidrio.\n" +
                 "•  🔢 Teclado IP / MAC: números grandes con punto, dos puntos y A–F para escribir 192.168.1.20 o 00:1A:2B:3C:4D:5E. «ABC» vuelve a las letras.\n" +
                 "•  🏷️ Etiquetas en serie: escribe «PP1-01 a PP1-24» o «CAM-1 x 12» y te escribe la lista completa.\n" +

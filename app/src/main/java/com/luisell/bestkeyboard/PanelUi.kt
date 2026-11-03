@@ -38,18 +38,20 @@ object PanelUi {
      * y, al tocarlo, se ilumina con el acento. Con fondo propio es de vidrio (se ve tu foto o video).
      */
     fun glassButton(ctx: Context, p: Palette, radiusPx: Float): StateListDrawable {
-        val a = if (glass) 0x66 else 0xFF
-        val top = withAlpha(lighter(p.key, if (p.isDark) 0.10f else 0.0f), a)
-        val bottom = withAlpha(p.key, if (glass) 0x4D else 0xFF)
-        val line = dp(ctx, 1f).coerceAtLeast(1)
+        val f = fill(p)
+        val b = border(p)
+        val a = if (glass) glassA else 0xFF
+        val top = withAlpha(lighter(f, if (p.isDark) 0.10f else 0.0f), a)
+        val bottom = withAlpha(f, if (glass) (glassA * 0.75f).toInt() else 0xFF)
+        val line = (density * lineMul).toInt()
         val normal = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, bottom)).apply {
             cornerRadius = radiusPx
-            setStroke(line, withAlpha(p.accent, if (glass) 0x88 else 0x55))
+            if (line > 0) setStroke(line, withAlpha(b, if (glass) 0x88 else 0x66))
         }
         val pressed = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(withAlpha(p.accent, 0x66), withAlpha(p.accent, 0x33))).apply {
+            intArrayOf(withAlpha(b, 0x66), withAlpha(b, 0x33))).apply {
             cornerRadius = radiusPx
-            setStroke(dp(ctx, 1.5f).coerceAtLeast(1), p.accent)
+            setStroke(maxOf(1, (density * 1.5f).toInt()), b)
         }
         return StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_pressed), pressed)
@@ -61,6 +63,35 @@ object PanelUi {
     @JvmStatic var pal: Palette? = null
     @JvmStatic var density = 2.75f
 
+    // ✨ Tu estilo de paneles y botones (Estilo → Paneles y botones). null = como el tema.
+    private var borderC: Int? = null
+    private var fillC: Int? = null
+    private var iconC: Int? = null
+    /** Qué tan sólidos son con tu fondo propio (0..255). */
+    private var glassA = 0x66
+    /** Grosor del borde (0 = sin borde). */
+    private var lineMul = 1f
+
+    /** Lee tus colores de paneles. Se llama cada vez que el teclado aplica el tema. */
+    fun loadStyle(prefs: android.content.SharedPreferences) {
+        fun c(k: String) = prefs.getString(k, "")?.takeIf { it.isNotEmpty() }?.toLongOrNull(16)?.toInt()
+        borderC = c(Prefs.PANEL_BORDER)
+        fillC = c(Prefs.PANEL_FILL)
+        iconC = c(Prefs.PANEL_ICON)
+        glassA = when (prefs.getString(Prefs.PANEL_GLASS, "normal")) { "clear" -> 0x30; "solid" -> 0xC8; else -> 0x66 }
+        lineMul = when (prefs.getString(Prefs.PANEL_LINE, "thin")) { "none" -> 0f; "thick" -> 2.2f; else -> 1f }
+    }
+
+    /** El color del borde y la luz. */
+    fun border(p: Palette) = borderC ?: p.accent
+    /** El color de los botones (en vez del gris de las teclas). */
+    fun fill(p: Palette) = fillC ?: p.key
+    /** El color de los íconos de los paneles. */
+    fun icon(p: Palette) = iconC ?: borderC ?: p.accent
+    /** Transparencia del vidrio (con fondo propio). */
+    fun glassAlpha() = glassA
+    fun lineWidth(base: Float) = base * lineMul
+
     /**
      * Todo lo que antes era gris liso (tarjetas y botones con el color de las teclas) ahora se ve
      * como las teclas: brillo suave arriba, borde fino del color del tema y, con fondo propio, de vidrio.
@@ -70,19 +101,22 @@ object PanelUi {
         val p = pal
         if (p != null && (color == p.key || color == p.special)) {
             val strong = color == p.special
-            val a = if (glass) (if (strong) 0x77 else 0x66) else 0xFF
-            val top = withAlpha(lighter(color, if (p.isDark) 0.09f else 0f), a)
-            val bottom = withAlpha(color, if (glass) 0x4D else 0xFF)
+            val base = fillC ?: color
+            val a = if (glass) (if (strong) minOf(255, glassA + 0x11) else glassA) else 0xFF
+            val top = withAlpha(lighter(base, if (p.isDark) 0.09f else 0f), a)
+            val bottom = withAlpha(base, if (glass) (glassA * 0.75f).toInt() else 0xFF)
+            val line = (density * lineMul).toInt()
             return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, bottom)).apply {
                 cornerRadius = radiusPx
-                setStroke(maxOf(1, density.toInt()), withAlpha(p.accent, if (glass) 0x88 else 0x4D))
+                if (line > 0) setStroke(line, withAlpha(border(p), if (glass) 0x88 else 0x55))
             }
         }
         if (p != null && color == p.keyPressed) {
+            val b = border(p)
             return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(withAlpha(p.accent, 0x66), withAlpha(p.accent, 0x33))).apply {
+                intArrayOf(withAlpha(b, 0x66), withAlpha(b, 0x33))).apply {
                 cornerRadius = radiusPx
-                setStroke(maxOf(1, (density * 1.5f).toInt()), p.accent)
+                setStroke(maxOf(1, (density * 1.5f).toInt()), b)
             }
         }
         if (p != null && color == p.accent) {
@@ -96,7 +130,8 @@ object PanelUi {
     /** Para tarjetas hechas a mano: les pone el borde fino del color del tema. */
     fun decorate(g: GradientDrawable) {
         val p = pal ?: return
-        g.setStroke(maxOf(1, density.toInt()), withAlpha(p.accent, if (glass) 0x88 else 0x4D))
+        val line = (density * lineMul).toInt()
+        if (line > 0) g.setStroke(line, withAlpha(border(p), if (glass) 0x88 else 0x55))
     }
 
     /** Fondo que cambia de color al tocar. */

@@ -449,7 +449,7 @@ class MorePanel(context: Context) : FrameLayout(context) {
         val p = palette
         for (btn in buttons) {
             btn.box.background = PanelUi.glassButton(context, p, d(29f).toFloat())
-            btn.icon.color = p.accent
+            btn.icon.color = PanelUi.icon(p)
             btn.icon.bgColor = p.key
             btn.text.setTextColor(p.text)
             btn.chevron?.color = p.text
@@ -599,14 +599,16 @@ class ToolArranger(context: Context) : View(context) {
 
         // La barra de arriba: como las teclas (vidrio con fondo propio), con borde fino del color del tema
         tmp.set(barArea.left + 2f * dd, barArea.top, barArea.right - 2f * dd, barArea.bottom)
-        fill.color = if (PanelUi.glass) (p.key and 0x00FFFFFF) or 0x59000000 else p.key
+        val pf = PanelUi.fill(p)
+        val pb = PanelUi.border(p)
+        fill.color = if (PanelUi.glass) (pf and 0x00FFFFFF) or (PanelUi.glassAlpha() shl 24) else pf
         c.drawRoundRect(tmp, 18f * dd, 18f * dd, fill)
-        stroke.color = (p.accent and 0x00FFFFFF) or (if (PanelUi.glass) 0x99000000.toInt() else 0x66000000)
-        stroke.strokeWidth = 1.2f * dd
-        c.drawRoundRect(tmp, 18f * dd, 18f * dd, stroke)
+        stroke.color = (pb and 0x00FFFFFF) or (if (PanelUi.glass) 0x99000000.toInt() else 0x66000000)
+        stroke.strokeWidth = PanelUi.lineWidth(1.2f * dd)
+        if (stroke.strokeWidth > 0f) c.drawRoundRect(tmp, 18f * dd, 18f * dd, stroke)
         // Línea de luz debajo, como en el teclado
         glowLine.shader = LinearGradient(tmp.left + tmp.width() * 0.15f, 0f, tmp.right - tmp.width() * 0.15f, 0f,
-            intArrayOf(p.accent and 0x00FFFFFF, p.accent, 0xFFFFFFFF.toInt(), p.accent, p.accent and 0x00FFFFFF), null, Shader.TileMode.CLAMP)
+            intArrayOf(pb and 0x00FFFFFF, pb, 0xFFFFFFFF.toInt(), pb, pb and 0x00FFFFFF), null, Shader.TileMode.CLAMP)
         c.drawRect(tmp.left + tmp.width() * 0.15f, tmp.bottom - 1.2f * dd, tmp.right - tmp.width() * 0.15f, tmp.bottom, glowLine)
         stroke.color = p.hint
         stroke.strokeWidth = 1.2f * dd
@@ -623,12 +625,12 @@ class ToolArranger(context: Context) : View(context) {
                 }
                 else -> {
                     if (t == pending && !dragging) {
-                        fill.color = (p.accent and 0x00FFFFFF) or 0x55000000
+                        fill.color = (PanelUi.border(p) and 0x00FFFFFF) or 0x55000000
                         c.drawCircle(cx, cy, 19f * dd, fill)
                     }
                     val a = wiggle(t, 7f)
                     if (a != 0f) { c.save(); c.rotate(a, cx, cy) }
-                    Tools.info(t)?.let { Icons.draw(c, it.icon, cx, cy, minOf(10f * dd, sw * 0.24f), if (t == Tools.FIXED) p.text else p.accent, p.key, dd) }
+                    Tools.info(t)?.let { Icons.draw(c, it.icon, cx, cy, minOf(10f * dd, sw * 0.24f), if (t == Tools.FIXED) p.text else PanelUi.icon(p), p.key, dd) }
                     if (a != 0f) c.restore()
                 }
             }
@@ -659,22 +661,22 @@ class ToolArranger(context: Context) : View(context) {
     private fun drawPill(c: Canvas, tool: Int, r: RectF, p: Palette, lifted: Boolean) {
         val info = Tools.info(tool) ?: return
         val fixed = tool == Tools.FIXED
-        val base = if (lifted || (tool == pending && !dragging)) p.keyPressed else p.key
-        // Como las teclas: de vidrio si tienes fondo propio, con un borde fino del color de acento
-        fill.color = if (PanelUi.glass && !lifted) (base and 0x00FFFFFF) or 0x59000000 else base
+        val base = if (lifted || (tool == pending && !dragging)) p.keyPressed else PanelUi.fill(p)
+        // Como las teclas: de vidrio si tienes fondo propio, con un borde fino de tu color
+        fill.color = if (PanelUi.glass && !lifted) (base and 0x00FFFFFF) or (PanelUi.glassAlpha() shl 24) else base
         c.drawRoundRect(r, r.height() / 2, r.height() / 2, fill)
-        if (!lifted) {
-            stroke.color = (p.accent and 0x00FFFFFF) or (if (PanelUi.glass) 0x88000000.toInt() else 0x55000000)
-            stroke.strokeWidth = 1f * dd
+        if (!lifted && PanelUi.lineWidth(1f) > 0f) {
+            stroke.color = (PanelUi.border(p) and 0x00FFFFFF) or (if (PanelUi.glass) 0x88000000.toInt() else 0x55000000)
+            stroke.strokeWidth = PanelUi.lineWidth(1f * dd)
             c.drawRoundRect(r, r.height() / 2, r.height() / 2, stroke)
         }
         if (lifted) {
-            stroke.color = p.accent
+            stroke.color = PanelUi.border(p)
             stroke.strokeWidth = 2f * dd
             c.drawRoundRect(r, r.height() / 2, r.height() / 2, stroke)
         }
         val ix = r.left + 30f * dd
-        Icons.draw(c, info.icon, ix, r.centerY(), 10f * dd, if (fixed) p.hint else p.accent, fill.color, dd)
+        Icons.draw(c, info.icon, ix, r.centerY(), 10f * dd, if (fixed) p.hint else PanelUi.icon(p), fill.color, dd)
         // Nombre: si no cabe, se va deslizando para leerlo completo
         text.color = p.text
         text.textAlign = Paint.Align.LEFT

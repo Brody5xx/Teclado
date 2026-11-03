@@ -172,6 +172,86 @@ class StyleActivity : UiActivity() {
 
     private fun setAppIcon(id: String) = AppIcon.set(this, id)
 
+    // ---------------------------------------------------------------- ✨ Paneles y botones a tu gusto
+
+    private var panelPreview: LinearLayout? = null
+
+    /** Los colores de «Más opciones», «Traducir mensaje», tarjetas y botones de los paneles. */
+    private fun panelStyleCard() {
+        card(tr("Paneles y botones", "Panels and buttons"), Icons.BRUSH)
+        text(tr("Elige el color de los botones y tarjetas de los paneles (Más opciones, Traducir mensaje, Mi jornada…). El primer círculo (de colores) deja el del tema.",
+            "Pick the color of the panel buttons and cards (More options, Translate message, My workday…). The first (multicolor) circle keeps the theme's."), 12f, faded = true)
+        // Así se ve (cambia en vivo)
+        val frame = android.widget.FrameLayout(this)
+        if (BgMedia.kind(this) == "image") {
+            val iv = android.widget.ImageView(this)
+            iv.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            Thread { val b = BgMedia.loadImage(this, 900); runOnUiThread { iv.setImageBitmap(b) } }.start()
+            frame.addView(iv, android.widget.FrameLayout.LayoutParams(-1, -1))
+        }
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), dp(10), dp(10), dp(10)) }
+        frame.addView(box, android.widget.FrameLayout.LayoutParams(-1, -2))
+        frame.clipToOutline = true
+        frame.background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = dpf(18f); setColor(0xFF000000.toInt()) }
+        col.addView(frame, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        panelPreview = box
+        paintPanelPreview()
+        val refresh = { paintPanelPreview() }
+        colorSwatches(tr("Color del borde y la luz", "Border and light color"), Prefs.PANEL_BORDER, Palette.TEXT_COLORS, "", refresh)
+        colorSwatches(tr("Color de los botones", "Button color"), Prefs.PANEL_FILL, Palette.KEY_COLORS.filter { it != "rainbow" }, "", refresh)
+        colorSwatches(tr("Color de los íconos", "Icon color"), Prefs.PANEL_ICON, Palette.TEXT_COLORS,
+            tr("Si no eliges, usan el color del borde.", "If you don't pick one, they use the border color."), refresh)
+        segmented(tr("Borde", "Border"), Prefs.PANEL_LINE, "thin",
+            listOf("none" to tr("Sin borde", "None"), "thin" to tr("Fino", "Thin"), "thick" to tr("Grueso", "Thick"))) { paintPanelPreview() }
+        segmented(tr("Vidrio (con tu foto o video de fondo)", "Glass (with your photo or video background)"), Prefs.PANEL_GLASS, "normal",
+            listOf("clear" to tr("Transparente", "Clear"), "normal" to "Normal", "solid" to tr("Sólido", "Solid"))) { paintPanelPreview() }
+        button(tr("↺ Volver a los colores del tema", "↺ Back to the theme colors")) {
+            prefs.edit().remove(Prefs.PANEL_BORDER).remove(Prefs.PANEL_FILL).remove(Prefs.PANEL_ICON)
+                .remove(Prefs.PANEL_LINE).remove(Prefs.PANEL_GLASS).apply()
+            recreate()
+        }
+    }
+
+    private fun paintPanelPreview() {
+        val box = panelPreview ?: return
+        box.removeAllViews()
+        val systemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val pal = Palette.custom(Palette.forTheme(Prefs.theme(prefs), systemDark, prefs.getString(Prefs.HACKER_COLOR, "")), prefs)
+        val custom = BgMedia.kind(this).isNotEmpty()
+        PanelUi.pal = pal
+        PanelUi.glass = custom
+        PanelUi.density = resources.displayMetrics.density
+        PanelUi.loadStyle(prefs)
+        (box.parent as? android.view.View)?.background = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = dpf(18f); setColor(if (custom) 0xFF1A1F2E.toInt() else pal.bg)
+        }
+        val head = android.widget.TextView(this).apply {
+            text = tr("Más opciones", "More options"); textSize = 16f; setTextColor(pal.text)
+            setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(dp(6), 0, 0, dp(6))
+        }
+        box.addView(head)
+        val items = listOf(Icons.MIC to tr("Micrófono", "Microphone"), Icons.RESIZE to tr("Tamaño", "Resize"),
+            Icons.GLOBE to tr("Idioma", "Language"), Icons.EMOJI to "Emojis")
+        var row: LinearLayout? = null
+        for ((i, it) in items.withIndex()) {
+            if (i % 2 == 0) { row = LinearLayout(this); box.addView(row, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(8) }) }
+            val b = LinearLayout(this).apply { gravity = android.view.Gravity.CENTER_VERTICAL; setPadding(dp(14), 0, dp(8), 0) }
+            b.background = PanelUi.glassButton(this, pal, dpf(25f))
+            b.isClickable = true
+            val ic = IconView(this, it.first, 9.5f).apply { color = PanelUi.icon(pal); bgColor = pal.key; isClickable = false }
+            b.addView(ic, LinearLayout.LayoutParams(dp(26), dp(26)))
+            b.addView(android.widget.TextView(this).apply { text = it.second; textSize = 14f; setTextColor(pal.text); setPadding(dp(10), 0, 0, 0) })
+            row?.addView(b, LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(dp(4), 0, dp(4), 0) })
+        }
+        val card = android.widget.TextView(this).apply {
+            text = tr("Tarjeta: así se ven los mensajes y avisos.", "Card: this is how messages and notices look.")
+            textSize = 13f; setTextColor(pal.text); setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = PanelUi.rounded(pal.key, dpf(14f))
+        }
+        box.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); setMargins(dp(4), dp(10), dp(4), 0) })
+    }
+
     private fun paintBg() {
         bgStatus.text = when (BgMedia.kind(this)) {
             "image" -> tr("✓ Tienes una imagen de fondo.", "✓ You have a background image.")
@@ -353,6 +433,8 @@ class StyleActivity : UiActivity() {
         col = mainCol
         hackerSection = hackerSwatches()
         showHackerColors(animate = false)
+
+        panelStyleCard()
 
         card(tr("Teclas", "Keys"), Icons.SHAPES)
         chips(tr("Forma", "Shape"), Prefs.KEY_SHAPE, "normal", listOf(

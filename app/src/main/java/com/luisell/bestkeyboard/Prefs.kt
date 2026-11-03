@@ -9,6 +9,12 @@ object Prefs {
     const val ACCENT = "accent_color"    // "" = el del tema, o un color como "FF4FD1FF"
     const val HACKER_COLOR = "hacker_color" // color del tema Hacker: "" (verde), un color, o "rainbow"
     const val KEY_COLOR = "key_color"    // color de las teclas en cualquier tema: "" (del tema), un color, o "rainbow"
+    // ✨ Paneles y botones bonitos: "" = como el tema
+    const val PANEL_BORDER = "panel_border"   // color del borde y la luz
+    const val PANEL_FILL = "panel_fill"       // color de los botones y tarjetas
+    const val PANEL_ICON = "panel_icon"       // color de los íconos
+    const val PANEL_GLASS = "panel_glass"     // con fondo propio: "clear", "normal", "solid"
+    const val PANEL_LINE = "panel_line"       // grosor del borde: "none", "thin", "thick"
     const val TEXT_COLOR = "text_color"  // color de las letras: "" (del tema) o un color
     const val KEY_SHAPE = "key_shape"    // square / normal / round / pill
     const val LABEL_SIZE = "label_size"  // small / normal / big

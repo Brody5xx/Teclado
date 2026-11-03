@@ -1721,6 +1721,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         PanelUi.glowAccent = pal.accent
         PanelUi.glass = BgMedia.kind(this).isNotEmpty()
         PanelUi.pal = pal
+        PanelUi.loadStyle(prefs)
         PanelUi.density = resources.displayMetrics.density
         v.palette = pal
         applyBackground(v)

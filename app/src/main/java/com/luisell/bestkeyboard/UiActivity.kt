@@ -152,7 +152,7 @@ abstract class UiActivity : Activity() {
     }
 
     /** Fila de colores para una opción ([key]); el primero (multicolor) = el del tema. */
-    protected fun colorSwatches(label: String, key: String, choices: List<String>, help: String) {
+    protected fun colorSwatches(label: String, key: String, choices: List<String>, help: String, onPick: (() -> Unit)? = null) {
         divider()
         val t = TextView(this)
         t.text = label
@@ -184,6 +184,7 @@ abstract class UiActivity : Activity() {
             dot.setOnClickListener {
                 prefs.edit().putString(key, v).apply()
                 paint(v)
+                onPick?.invoke()
             }
             dots.add(v to dot)
             row.addView(dot, LinearLayout.LayoutParams(dp(30), dp(30)).apply { rightMargin = dp(10) })
