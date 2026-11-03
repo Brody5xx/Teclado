@@ -940,6 +940,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.6.1" to tr("•  ✨ Ícono nuevo «Diamante de luz»: el diamante de cristal cruzado por la línea de luz. Es el de fábrica; en Estilo → Ícono de la app puedes elegir también Línea de luz o Diamante.",
+            "•  ✨ New «Light diamond» icon: the crystal diamond crossed by the light line. It's the default; in Style → App icon you can also pick Light line or Diamond."),
         "12.6" to tr("•  ✨ Ícono nuevo de la app: «Línea de luz». En Estilo → Ícono de la app también puedes elegir «Diamante».",
             "•  ✨ New app icon: «Light line». In Style → App icon you can also pick «Diamond»."),
         "12.5.2" to tr("•  🏠 Paradas en casa: al llegar a la casa con el día abierto se espera un rato (20 min) antes de cerrarlo. Si solo paraste y te vas antes, tu día sigue abierto.\n•  Si ese día recogiste la camioneta en el parqueo, en la casa solo te pregunta «¿Terminó tu día?».",

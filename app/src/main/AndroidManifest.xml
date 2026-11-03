@@ -42,8 +42,8 @@
     <application
         android:name=".BestApp"
         android:allowBackup="false"
-        android:icon="@mipmap/ic_light"
-        android:roundIcon="@mipmap/ic_light"
+        android:icon="@mipmap/ic_mix"
+        android:roundIcon="@mipmap/ic_mix"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
@@ -55,8 +55,20 @@
 
         <!-- Ícono de la app a elegir (Estilo): Línea de luz o Diamante -->
         <activity-alias
-            android:name=".IconLight"
+            android:name=".IconMix"
             android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_mix"
+            android:roundIcon="@mipmap/ic_mix"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconLight"
+            android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_light"
             android:roundIcon="@mipmap/ic_light"

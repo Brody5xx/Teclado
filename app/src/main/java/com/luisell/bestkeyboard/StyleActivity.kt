@@ -134,8 +134,9 @@ class StyleActivity : UiActivity() {
 
     private fun paintAppIcons() {
         iconRow.removeAllViews()
-        val cur = prefs.getString(Prefs.APP_ICON, "light") ?: "light"
+        val cur = prefs.getString(Prefs.APP_ICON, "mix") ?: "mix"
         for ((id, res, name) in listOf(
+            Triple("mix", R.mipmap.ic_mix, tr("Diamante de luz", "Light diamond")),
             Triple("light", R.mipmap.ic_light, tr("Línea de luz", "Light line")),
             Triple("diamond", R.mipmap.ic_diamond, tr("Diamante", "Diamond")),
         )) {
@@ -147,7 +148,7 @@ class StyleActivity : UiActivity() {
             }
             val iv = android.widget.ImageView(this)
             iv.setImageResource(res)
-            box.addView(iv, LinearLayout.LayoutParams(dp(76), dp(76)))
+            box.addView(iv, LinearLayout.LayoutParams(dp(68), dp(68)))
             box.addView(android.widget.TextView(this).apply {
                 text = (if (sel) "✓ " else "") + name; textSize = 13f; setTextColor(if (sel) TEXT else SUB)
                 gravity = android.view.Gravity.CENTER; setPadding(0, dp(6), 0, 0)
@@ -158,7 +159,7 @@ class StyleActivity : UiActivity() {
                 paintAppIcons()
                 toast("Listo. El ícono cambia en unos segundos.", "Done. The icon changes in a few seconds.")
             }
-            iconRow.addView(box, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(6), 0, dp(6), 0) })
+            iconRow.addView(box, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(4), 0, dp(4), 0) })
         }
     }
 
@@ -408,12 +409,13 @@ object AppIcon {
     fun set(ctx: android.content.Context, id: String) {
         Prefs.get(ctx).edit().putString(Prefs.APP_ICON, id).apply()
         val pm = ctx.packageManager
-        val on = if (id == "diamond") ".IconDiamond" else ".IconLight"
-        val off = if (id == "diamond") ".IconLight" else ".IconDiamond"
+        val all = mapOf("mix" to ".IconMix", "light" to ".IconLight", "diamond" to ".IconDiamond")
+        val want = all[id] ?: ".IconMix"
         try {
-            pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$on"),
+            // Primero se prende el nuevo (así la app nunca se queda sin ícono) y luego se apagan los otros
+            pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$want"),
                 android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED, android.content.pm.PackageManager.DONT_KILL_APP)
-            pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$off"),
+            for (a in all.values) if (a != want) pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$a"),
                 android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED, android.content.pm.PackageManager.DONT_KILL_APP)
         } catch (_: Exception) { }
     }

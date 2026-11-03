@@ -149,7 +149,7 @@ object Backup {
         try { TicketReminder.schedule(ctx) } catch (_: Exception) { }
         try { Todos.schedule(ctx) } catch (_: Exception) { }
         try { AutoSites.register(ctx) } catch (_: Exception) { }
-        try { if (Prefs.get(ctx).getString(Prefs.APP_ICON, "light") == "diamond") AppIcon.set(ctx, "diamond") } catch (_: Exception) { }
+        try { Prefs.get(ctx).getString(Prefs.APP_ICON, null)?.let { if (it != "mix") AppIcon.set(ctx, it) } } catch (_: Exception) { }
         return true
     }
 }
