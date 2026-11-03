@@ -60,7 +60,7 @@ object LightFx {
     }
 
     /** ✨ El destello de estrella (crece rápido y se apaga). [f] = 0..1 del destello. */
-    fun star(c: Canvas, x: Float, y: Float, size: Float, f: Float, fill: Paint, line: Paint, d: Float) {
+    fun star(c: Canvas, x: Float, y: Float, size: Float, f: Float, fill: Paint, line: Paint, d: Float, maxUp: Float = Float.MAX_VALUE) {
         val grow = if (f < 0.25f) f / 0.25f else 1f
         val fade = (if (f < 0.25f) 1f else 1f - (f - 0.25f) / 0.75f).coerceIn(0f, 1f)
         val big = maxOf(1f, size * grow)
@@ -73,8 +73,21 @@ object LightFx {
         line.alpha = (fade * 255).toInt().coerceIn(0, 255)
         line.strokeWidth = 1.1f * d
         val arm = big * 1.45f
-        c.drawLine(x - arm, y, x + arm, y, line)
-        c.drawLine(x, y - arm, x, y + arm, line)
+        val up = minOf(arm, maxUp)
+        // Rayos largos a los lados (como un destello de lente) y cortos arriba/abajo
+        line.strokeWidth = 1.6f * d
+        c.drawLine(x - arm * 1.5f, y, x + arm * 1.5f, y, line)
+        c.drawLine(x, y - up, x, y + up, line)
+        line.strokeWidth = 0.9f * d
+        line.alpha = (fade * 150).toInt().coerceIn(0, 255)
+        val dg = minOf(arm * 0.5f, maxUp)
+        c.drawLine(x - dg, y - dg, x + dg, y + dg, line)
+        c.drawLine(x - dg, y + dg, x + dg, y - dg, line)
+        // Centro blanco fuerte
+        fill.color = 0xFFFFFFFF.toInt()
+        fill.alpha = (fade * 255).toInt().coerceIn(0, 255)
+        c.drawCircle(x, y, maxOf(1f, big * 0.16f), fill)
+        fill.alpha = 255
     }
 
     /** ✅ Hace que la luz dé la vuelta al borde de [v] y destelle (para confirmar algo). */
@@ -154,7 +167,10 @@ class DiamondView(context: Context, private val loader: Boolean = false) : View(
     private var shader: Shader? = null
     private var tipX = 0f
     private var tipY = 0f
-    private val start = SystemClock.uptimeMillis() + (if (loader) 0L else 900L + (Math.random() * 1500).toLong())
+    private var start = SystemClock.uptimeMillis() + (if (loader) 0L else 900L + (Math.random() * 1500).toLong())
+
+    /** Que la luz empiece ya (para una celebración). */
+    fun restart(delay: Long = 150L) { start = SystemClock.uptimeMillis() + delay; invalidate() }
     private val TRACE = if (loader) 1000L else 1400L
     private val SHINE = if (loader) 450L else 900L
     private val CYCLE = if (loader) TRACE + SHINE else 8000L
@@ -213,4 +229,47 @@ class DiamondView(context: Context, private val loader: Boolean = false) : View(
             else -> postInvalidateDelayed(CYCLE - t)
         }
     }
+}
+
+/**
+ * ✨ El reflejo de vidrio de los botones grandes: una franja de luz blanca que los cruza en diagonal
+ * de vez en cuando (cada botón a su propio ritmo).
+ */
+class Shine(private val radius: Float) : Drawable(), Runnable {
+    private val p = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val clip = Path()
+    private val rr = RectF()
+    private val offset = (Math.random() * 4000).toLong()
+    private val CROSS = 1100L
+    private val CYCLE = 6500L
+
+    override fun draw(c: Canvas) {
+        try {
+            val b = bounds
+            if (b.width() <= 0) return
+            val now = SystemClock.uptimeMillis() + offset
+            val t = now % CYCLE
+            if (t < CROSS) {
+                val f = LightFx.ease(t / CROSS.toFloat())
+                val w = b.width().toFloat()
+                val band = b.height() * 1.6f
+                val x = b.left - band + (w + band * 2) * f
+                rr.set(b)
+                clip.reset(); clip.addRoundRect(rr, radius, radius, Path.Direction.CW)
+                c.save()
+                c.clipPath(clip)
+                p.shader = LinearGradient(x - band / 2, b.top.toFloat(), x + band / 2, b.bottom.toFloat(),
+                    intArrayOf(0x00FFFFFF, 0x66FFFFFF, 0x00FFFFFF), floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
+                c.drawRect(rr, p)
+                c.restore()
+                scheduleSelf(this, SystemClock.uptimeMillis() + 16)
+            } else scheduleSelf(this, SystemClock.uptimeMillis() + (CYCLE - t))
+        } catch (_: Throwable) { }
+    }
+
+    override fun run() { invalidateSelf() }
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = PixelFormat.TRANSLUCENT
 }

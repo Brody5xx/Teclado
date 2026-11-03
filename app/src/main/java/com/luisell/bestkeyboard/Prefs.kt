@@ -407,6 +407,8 @@ class Palette(
                 dark(0xFF040312, 0x55141032, 0xAA2A2264, 0x660C0A24, 0xFFB388FF, 0xFFD1C4E9, 0xFF14082A, 0xFFF3EEFF, 0xFFA49BC8, 0xFF0A0420, effect = "vortex")),
             Triple("pond", "✨ Estanque" to "✨ Pond",
                 dark(0xFF031414, 0x55082E2E, 0xAA14524E, 0x66062222, 0xFF64FFDA, 0xFFA7FFEB, 0xFF002A22, 0xFFE0FFF8, 0xFF86B2AA, 0xFF041E26, effect = "ripples")),
+            Triple("diamond", "✨ Diamante" to "✨ Diamond",
+                dark(0xFF06070F, 0x55141A34, 0xAA2E2F5E, 0x660C1026, 0xFFA78BFA, 0xFFC4B5FD, 0xFF140A2E, 0xFFF3F6FB, 0xFF9AA3C0, 0xFF0C0A22, effect = "diamond")),
             Triple("hexgrid", "✨ Panal sci-fi" to "✨ Sci-fi hive",
                 dark(0xFF02080C, 0x55082028, 0xAA144050, 0x66061820, 0xFF00E5FF, 0xFF84FFFF, 0xFF002A30, 0xFFE0FFFF, 0xFF7FAAB2, effect = "hexgrid", mono = true)),
             Triple("pulse", "✨ Pulso neón" to "✨ Neon pulse",
@@ -437,6 +439,7 @@ class Palette(
         /** Las categorías de la galería de temas: (nombre es, nombre en, efectos que entran). "" = sin animación. */
         val CATEGORIES: List<Triple<String, String, Set<String>>> = listOf(
             Triple("🎨 Clásicos (sin animación)", "🎨 Classic (no animation)", setOf("")),
+            Triple("💎 Best Keyboard", "💎 Best Keyboard", setOf("diamond")),
             Triple("🌌 Espacio", "🌌 Space", setOf("stars", "meteors", "vortex", "aurora")),
             Triple("🌿 Naturaleza", "🌿 Nature", setOf("snow", "rain", "leaves", "petals", "fireflies", "clouds", "storm")),
             Triple("🌊 Agua", "🌊 Water", setOf("bubbles", "waves", "ripples")),

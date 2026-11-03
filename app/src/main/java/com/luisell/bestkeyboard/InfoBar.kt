@@ -29,6 +29,8 @@ class InfoBar(context: Context) : LinearLayout(context) {
     private val chips = LinearLayout(context)
     /** 💎 El diamante con la luz dando vueltas mientras espera (traduciendo, la IA pensando…). */
     private val loader = DiamondView(context, loader = true)
+    /** 🏁 El diamante grande de las celebraciones (terminaste tu día, llegaste a 40 horas). */
+    private val party = DiamondView(context)
 
     init {
         PanelUi.glowScrollbar(scroll)
@@ -46,6 +48,8 @@ class InfoBar(context: Context) : LinearLayout(context) {
         loader.visibility = GONE
         row.addView(loader, LayoutParams(d(30f), d(30f)).apply { rightMargin = d(8f) })
         addView(row, LayoutParams(-1, -2))
+        party.visibility = GONE
+        addView(party, LayoutParams(d(84f), d(84f)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = d(4f) })
         body.textSize = 15f
         body.setLineSpacing(d(2f).toFloat(), 1f)
         body.setPadding(d(14f), d(10f), d(14f), d(10f))
@@ -62,7 +66,15 @@ class InfoBar(context: Context) : LinearLayout(context) {
     }
 
     /** Muestra [text] con su título y botones ([buttons] = nombre → acción; el primero se pinta azul). */
+    /** 🏁 Como [show], pero con el diamante grande y su luz (para celebrar algo). */
+    fun celebrate(heading: String, text: String, buttons: List<Pair<String, () -> Unit>>) {
+        show(heading, text, buttons)
+        party.visibility = VISIBLE
+        party.restart(250L)
+    }
+
     fun show(heading: String, text: String, buttons: List<Pair<String, () -> Unit>>) {
+        party.visibility = GONE
         title.text = heading
         body.text = text
         // Si está esperando (sin botones y el texto termina en «…»), sale el diamante con su luz

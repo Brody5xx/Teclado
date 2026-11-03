@@ -968,6 +968,22 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.13.0" to tr("•  ⭐ La estrella del final de la luz de arriba ahora es más grande y está centrada en la línea.\n" +
+                "•  ⇧ Mayúsculas fijas: la luz da vueltas en la tecla Shift mientras estén prendidas.\n" +
+                "•  📋 Al copiar algo, el botón del portapapeles destella.\n" +
+                "•  🌐 Al cambiar de idioma, la luz cruza la barra espaciadora.\n" +
+                "•  🏁 Al terminar tu día, una celebración con el diamante y tu resumen.\n" +
+                "•  ⏰ Al llegar a 40 horas en la semana, un destello especial.\n" +
+                "•  ✨ Tema nuevo «Diamante» (categoría 💎 Best Keyboard): chispas de luz que trazan teclas al azar.\n" +
+                "•  🔘 Los botones grandes de la app tienen un reflejo de luz que los cruza de vez en cuando.",
+            "•  ⭐ The star at the end of the top light is now bigger and centered on the line.\n" +
+                "•  ⇧ Caps lock: the light circles the Shift key while it's on.\n" +
+                "•  📋 When you copy something, the clipboard button sparkles.\n" +
+                "•  🌐 When you change language, the light crosses the space bar.\n" +
+                "•  🏁 When you finish your day, a celebration with the diamond and your summary.\n" +
+                "•  ⏰ When you reach 40 hours in the week, a special sparkle.\n" +
+                "•  ✨ New «Diamond» theme (💎 Best Keyboard category): sparks of light trace random keys.\n" +
+                "•  🔘 The big app buttons have a light reflection that crosses them now and then."),
         "12.12.0" to tr("•  ✨ La luz del logo en todas partes:\n" +
                 "   ⏎ Al tocar Enter, la luz le da la vuelta a la tecla y destella.\n" +
                 "   ⌨️ Al abrir el teclado, la luz cruza la parte de arriba.\n" +

@@ -104,6 +104,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var lastClipSig: String? = null
     private val clipListener = ClipboardManager.OnPrimaryClipChangedListener {
         captureClip()
+        kv?.flashTool(KeyboardView.TOOL_CLIP) // 📋 destella el portapapeles
         handler.removeCallbacks(quickCheck)
         handler.postDelayed(quickCheck, 150)
     }
@@ -2318,6 +2319,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 prefs.edit().putString(Prefs.LANG, lang).apply()
                 L.set(lang)
                 kv?.spaceLabel = if (lang == "es") "Español" else "English"
+                kv?.flashSpace() // 🌐 la luz cruza la barra espaciadora
                 scheduleUpdate()
             }
         }
@@ -3402,6 +3404,34 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // ---------------------------------------------------------------- Mi jornada
 
+    /** 🏁 Terminaste tu día: el diamante grande con su luz y tu resumen. */
+    private fun celebrateDay() {
+        val bar = infoBar ?: return
+        val sum = WorkDay.summary(WorkDay.day(prefs))
+        val ot = WorkDay.overtime(sum.total)
+        val wk = WorkDay.weekTotal(prefs)
+        infoRegen = null
+        bar.celebrate(L.t("🏁 ¡Terminaste tu día!", "🏁 Your day is done!"),
+            L.t("Trabajaste ${WorkDay.dur(sum.total)} hoy", "You worked ${WorkDay.dur(sum.total)} today") +
+                (if (ot > 0) L.t(" · ⏰ ${WorkDay.dur(ot)} de horas extra", " · ⏰ ${WorkDay.dur(ot)} overtime") else "") +
+                L.t("\nEsta semana llevas ${WorkDay.dur(wk)}. ¡Buen trabajo! 💪", "\nThis week you have ${WorkDay.dur(wk)}. Great job! 💪"),
+            listOf(L.t("Gracias", "Thanks") to { closeInfo() }))
+    }
+
+    /** ⏰ Llegaste a 40 horas esta semana (una sola vez por semana). */
+    private fun maybeCelebrate40() {
+        val wk = WorkDay.weekTotal(prefs)
+        if (wk < 40L * 3600_000L) return
+        val key = "ot40_" + WorkDay.weekStart()
+        if (prefs.getBoolean(key, false)) return
+        prefs.edit().putBoolean(key, true).apply()
+        val bar = infoBar ?: return
+        infoRegen = null
+        bar.celebrate(L.t("⏰ ¡Llegaste a 40 horas!", "⏰ You reached 40 hours!"),
+            L.t("Desde ahora, lo que trabajes esta semana cuenta como horas extra. ✨", "From now on, what you work this week counts as overtime. ✨"),
+            listOf(L.t("¡Genial!", "Awesome!") to { closeInfo() }))
+    }
+
     /** Cuántas cosas del día se veían la última vez (para iluminar la nueva). -1 = recién abierto. */
     private var wdShownCount = -1
 
@@ -3434,6 +3464,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (newest != null) panel.flashRow = rows.size + events.indexOf(newest)
         }
         wdShownCount = events.size
+        handler.post { maybeCelebrate40() }
         for (e in events) {
             rows.add(ListPanel.Row(WorkStore.time(e.time), WorkDay.labelOf(e),
                 onTap = { adjustEvent(e.time, e.kind) },
@@ -3451,6 +3482,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         for (k in order) buttons.add(WorkDay.label(k) to {
             WorkdayCenter.record(this, k) { refreshWorkday(); maybeAskSaveSite() }
             refreshWorkday()
+            if (k == WorkDay.HOME) celebrateDay()
             if (k == WorkDay.START || (k == WorkDay.enabledKinds().first() && k != WorkDay.ARRIVE)) {
                 askDriving()
                 // 🧰 ¿Llevas todo? (la checklist de antes de salir)

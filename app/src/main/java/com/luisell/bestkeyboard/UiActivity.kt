@@ -518,6 +518,7 @@ abstract class UiActivity : Activity() {
                 GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(26f) },
                 null,
             )
+            b.foreground = Shine(dpf(26f)) // ✨ un reflejo de luz que lo cruza de vez en cuando
         } else {
             b.setTextColor(CYAN)
             b.background = android.graphics.drawable.RippleDrawable(
