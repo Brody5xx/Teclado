@@ -78,7 +78,7 @@ object AutoSites {
                 .setRequestId(HOME_ID)
                 .setCircularRegion(la, lo, 150f)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
                 .setLoiteringDelay(2 * 60 * 1000)
                 .build())
         }
@@ -131,7 +131,8 @@ object AutoSites {
             ACTION_MARK -> {
                 val t = intent.getLongExtra(EXTRA_TIME, System.currentTimeMillis())
                 val site = intent.getStringExtra(EXTRA_SITE) ?: ""
-                WorkDay.addAt(p, WorkDay.ARRIVE, site, t)
+                val kind = intent.getStringExtra(WorkdayCenter.EXTRA_KIND) ?: WorkDay.ARRIVE
+                if (kind == WorkDay.ARRIVE || WorkDay.day(p).isEmpty()) WorkDay.addAt(p, kind, site, t)
                 WorkdayCenter.refresh(ctx)
                 cancel(ctx)
                 return
@@ -148,6 +149,7 @@ object AutoSites {
                 when (ev.geofenceTransition) {
                     Geofence.GEOFENCE_TRANSITION_ENTER -> saveEnter(p, HOME_ID, at)
                     Geofence.GEOFENCE_TRANSITION_DWELL -> cameHome(ctx, takeEnter(p, HOME_ID) ?: (at - 2 * 60_000L))
+                    Geofence.GEOFENCE_TRANSITION_EXIT -> leftHome(ctx, at)
                 }
                 continue
             }
@@ -217,6 +219,23 @@ object AutoSites {
             L.t("Saliste de $site a las ${WorkStore.time(t)}: anoté «${WorkDay.plainLabel(first)}».",
                 "You left $site at ${WorkStore.time(t)}: logged «${WorkDay.plainLabel(first)}»."),
             listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
+    }
+
+    /**
+     * 🏠 Saliste de tu casa sin haber empezado el día: te pregunta si te recogieron (puede ser que solo salgas a otra cosa).
+     * Si dices que sí, el día empieza a la hora en que saliste.
+     */
+    private fun leftHome(ctx: Context, at: Long) {
+        val p = Prefs.get(ctx)
+        if (WorkDay.day(p).isNotEmpty()) return
+        val first = WorkDay.enabledKinds().first()
+        val yes = PendingIntent.getBroadcast(ctx, 5123, Intent(ctx, AutoSitesReceiver::class.java).setAction(ACTION_MARK)
+            .putExtra(EXTRA_TIME, at).putExtra(EXTRA_SITE, "").putExtra(WorkdayCenter.EXTRA_KIND, first),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        notify(ctx, L.t("🛻 ¿Empezó tu día?", "🛻 Did your day start?"),
+            L.t("Saliste de tu casa a las ${WorkStore.time(at)}. Si ya vas en la camioneta, toca «Sí, empezó».",
+                "You left home at ${WorkStore.time(at)}. If you're already in the truck, tap «Yes, it started»."),
+            listOf(L.t("Sí, empezó a las ", "Yes, it started at ") + WorkStore.time(at) to yes), NOTIF_ID)
     }
 
     /** 🛻 Volviste al parqueo y dejaste la camioneta: termina tu día (a la hora en que llegaste). */
