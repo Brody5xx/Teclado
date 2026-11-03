@@ -965,6 +965,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.7.2" to tr("•  ✨ «Más opciones» más bonito: los botones ahora se ven como las teclas, con un brillo suave, borde fino del color de tu tema e íconos de color. Con tu foto o video de fondo son de vidrio y se ve el fondo a través. Al tocarlos se iluminan.",
+            "•  ✨ Nicer «More options»: the buttons now look like the keys, with a soft shine, a thin border in your theme color and colored icons. With your own photo or video background they're glass and you can see the background through them. They light up when tapped."),
         "12.7.1" to tr("•  💎 El ícono de la app ahora trae el nombre «Best Keyboard» debajo del diamante, con la línea de luz. Si prefieres el de antes, está en Estilo → Ícono de la app.",
             "•  💎 The app icon now shows the name «Best Keyboard» under the diamond, with the light line. If you prefer the old one, it's in Style → App icon."),
         "12.7.0" to tr("•  💎 La pantalla principal ahora tiene el logo nuevo: el diamante sobre el teclado, «Best Keyboard» con su degradado y la línea de luz debajo.",

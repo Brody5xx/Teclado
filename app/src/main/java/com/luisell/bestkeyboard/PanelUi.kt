@@ -24,6 +24,39 @@ interface PanelListener {
 object PanelUi {
     fun dp(ctx: Context, v: Float) = (v * ctx.resources.displayMetrics.density).toInt()
 
+    /** true cuando el teclado tiene tu foto o video de fondo (los botones se vuelven de vidrio). */
+    @JvmStatic var glass = false
+
+    private fun withAlpha(c: Int, a: Int) = (c and 0x00FFFFFF) or (a.coerceIn(0, 255) shl 24)
+    private fun lighter(c: Int, f: Float): Int {
+        val r = (c shr 16) and 0xFF; val g = (c shr 8) and 0xFF; val b = c and 0xFF
+        return (0xFF shl 24) or ((r + (255 - r) * f).toInt() shl 16) or ((g + (255 - g) * f).toInt() shl 8) or (b + (255 - b) * f).toInt()
+    }
+
+    /**
+     * Botón bonito como las teclas: un brillo suave arriba, borde fino del color de acento
+     * y, al tocarlo, se ilumina con el acento. Con fondo propio es de vidrio (se ve tu foto o video).
+     */
+    fun glassButton(ctx: Context, p: Palette, radiusPx: Float): StateListDrawable {
+        val a = if (glass) 0x66 else 0xFF
+        val top = withAlpha(lighter(p.key, if (p.isDark) 0.10f else 0.0f), a)
+        val bottom = withAlpha(p.key, if (glass) 0x4D else 0xFF)
+        val line = dp(ctx, 1f).coerceAtLeast(1)
+        val normal = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, bottom)).apply {
+            cornerRadius = radiusPx
+            setStroke(line, withAlpha(p.accent, if (glass) 0x88 else 0x55))
+        }
+        val pressed = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(withAlpha(p.accent, 0x66), withAlpha(p.accent, 0x33))).apply {
+            cornerRadius = radiusPx
+            setStroke(dp(ctx, 1.5f).coerceAtLeast(1), p.accent)
+        }
+        return StateListDrawable().apply {
+            addState(intArrayOf(android.R.attr.state_pressed), pressed)
+            addState(intArrayOf(), normal)
+        }
+    }
+
     fun rounded(color: Int, radiusPx: Float): GradientDrawable =
         GradientDrawable().apply { setColor(color); cornerRadius = radiusPx }
 

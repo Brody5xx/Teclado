@@ -1714,6 +1714,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         // Color de acento elegido (si no, el del tema)
         pal = withCustomColors(pal)
         PanelUi.glowAccent = pal.accent
+        PanelUi.glass = BgMedia.kind(this).isNotEmpty()
         v.palette = pal
         applyBackground(v)
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
