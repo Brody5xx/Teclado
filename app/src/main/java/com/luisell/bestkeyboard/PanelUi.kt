@@ -57,8 +57,47 @@ object PanelUi {
         }
     }
 
-    fun rounded(color: Int, radiusPx: Float): GradientDrawable =
-        GradientDrawable().apply { setColor(color); cornerRadius = radiusPx }
+    /** Los colores del tema que está usando el teclado (para que todo lo gris se vea bonito). */
+    @JvmStatic var pal: Palette? = null
+    @JvmStatic var density = 2.75f
+
+    /**
+     * Todo lo que antes era gris liso (tarjetas y botones con el color de las teclas) ahora se ve
+     * como las teclas: brillo suave arriba, borde fino del color del tema y, con fondo propio, de vidrio.
+     * Al tocar, se ilumina con el color del tema.
+     */
+    fun rounded(color: Int, radiusPx: Float): GradientDrawable {
+        val p = pal
+        if (p != null && (color == p.key || color == p.special)) {
+            val strong = color == p.special
+            val a = if (glass) (if (strong) 0x77 else 0x66) else 0xFF
+            val top = withAlpha(lighter(color, if (p.isDark) 0.09f else 0f), a)
+            val bottom = withAlpha(color, if (glass) 0x4D else 0xFF)
+            return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, bottom)).apply {
+                cornerRadius = radiusPx
+                setStroke(maxOf(1, density.toInt()), withAlpha(p.accent, if (glass) 0x88 else 0x4D))
+            }
+        }
+        if (p != null && color == p.keyPressed) {
+            return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(withAlpha(p.accent, 0x66), withAlpha(p.accent, 0x33))).apply {
+                cornerRadius = radiusPx
+                setStroke(maxOf(1, (density * 1.5f).toInt()), p.accent)
+            }
+        }
+        if (p != null && color == p.accent) {
+            // Botones principales: el color del tema con un brillo arriba
+            return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(lighter(p.accent, 0.22f), p.accent)).apply { cornerRadius = radiusPx }
+        }
+        return GradientDrawable().apply { setColor(color); cornerRadius = radiusPx }
+    }
+
+    /** Para tarjetas hechas a mano: les pone el borde fino del color del tema. */
+    fun decorate(g: GradientDrawable) {
+        val p = pal ?: return
+        g.setStroke(maxOf(1, density.toInt()), withAlpha(p.accent, if (glass) 0x88 else 0x4D))
+    }
 
     /** Fondo que cambia de color al tocar. */
     fun pressable(normal: Int, pressed: Int, radiusPx: Float): StateListDrawable =

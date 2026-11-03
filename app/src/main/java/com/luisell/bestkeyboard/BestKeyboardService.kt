@@ -38,7 +38,9 @@ import com.luisell.bestkeyboard.words.VoiceText
 /** El servicio del teclado: recibe las teclas y las escribe en la app que estés usando. */
 class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
-    private enum class Page { LETTERS, SYM, SYM2, NUM }
+    private enum class Page { LETTERS, SYM, SYM2, NUM, IP }
+    /** Teclado de números o el de IP/MAC (sin sugerencias ni teclado de PC). */
+    private val numLike get() = numLike || page == Page.IP
 
     private var kv: KeyboardView? = null
     private lateinit var prefs: SharedPreferences
@@ -139,7 +141,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var hCtrl = 0
     private var hAlt = 0
     private var hShift = 0
-    private val hackerActive get() = hacker && page != Page.NUM
+    private val hackerActive get() = hacker && !numLike
     private var selStart = 0
     private var selEnd = 0
 
@@ -617,6 +619,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         srch.actions = object : SearchBar.Actions {
             override fun onSearchText(text: String) {
                 if (srch.custom == "convert") srch.setInfo(convertResult(text))
+                else if (srch.custom == "labels") srch.setInfo(Labels.preview(text))
                 else if (srch.custom.isEmpty() && !srch.gifs && !srch.note && !srch.material && !srch.clip) srch.showResults(EmojiSearch.search(text))
                 updateAutoCaps()
                 scheduleUpdate()
@@ -629,7 +632,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 val custom = srch.custom
                 clipEditing = null
                 stopSearch()
-                showMode(when (custom) { "todo" -> 15; "check" -> 16; "convert" -> 0; else -> if (clip) 2 else if (mat) 13 else if (note) 10 else if (gif) 9 else 1 })
+                showMode(when (custom) { "todo" -> 15; "check" -> 16; "convert", "labels", "remind" -> 0; else -> if (clip) 2 else if (mat) 13 else if (note) 10 else if (gif) 9 else 1 })
             }
             override fun onSearchPick(emoji: String) {
                 currentInputConnection?.commitText(emoji, 1)
@@ -1424,6 +1427,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun commitPanelText(text: String) {
+        if (text.length > 12) snapUndo() // pegar algo del portapapeles se puede deshacer
         val ic = target() ?: return
         gestureWord = null
         phantomSpace = false
@@ -1506,6 +1510,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        if (!restarting) undoSnap = null
         applySettings()
         if (BgMedia.kind(this) == "video") bgVideoView?.play()
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
@@ -1715,6 +1720,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         pal = withCustomColors(pal)
         PanelUi.glowAccent = pal.accent
         PanelUi.glass = BgMedia.kind(this).isNotEmpty()
+        PanelUi.pal = pal
+        PanelUi.density = resources.displayMetrics.density
         v.palette = pal
         applyBackground(v)
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
@@ -1782,7 +1789,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         hacker = prefs.getBoolean(Prefs.HACKER, false)
         v.hackerOn = hacker
         // El teclado de computadora tiene 5 filas apretadas: teclas un poco más bajitas
-        val hk = if (hacker && page != Page.NUM) 0.86f else 1f
+        val hk = if (hacker && !numLike) 0.86f else 1f
         // 🧤 Modo guantes: teclas más altas y letras más grandes
         val gloves = prefs.getBoolean(Prefs.GLOVES, false)
         v.glovesOn = gloves
@@ -1852,6 +1859,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             Page.SYM -> Layouts.symbols()
             Page.SYM2 -> Layouts.symbols2()
             Page.NUM -> Layouts.numpad(phone)
+            Page.IP -> Layouts.ipPad()
         }
         v.setRows(rows)
         v.shift = if (page == Page.LETTERS) shift else 0
@@ -1911,7 +1919,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Sugiere tus correos y atajos guardados. Devuelve true si los mostró. */
     private fun vaultSuggest(): Boolean {
-        if (isPassword || hackerActive || translating || page == Page.NUM || !prefs.getBoolean(Prefs.VAULT_SUGGEST, true)) return false
+        if (isPassword || hackerActive || translating || numLike || !prefs.getBoolean(Prefs.VAULT_SUGGEST, true)) return false
         if (VaultStore.items.isEmpty() || codeOn) return false
         val token = vaultToken() ?: return false
         val m = VaultStore.match(token, commaMode == "@")
@@ -1962,7 +1970,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Si escribiste algo informal ("arreglé", "ya sirve"), sugiere la forma formal con ✨. */
     private fun addFormalSuggestion() {
         formalSlot = -1
-        if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || page == Page.NUM) return
+        if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || numLike) return
         if (!suggestOn || !fieldSuggest || !prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)) return
         val ic = target() ?: return
         val before = sugBefore ?: ic.getTextBeforeCursor(80, 0) ?: return
@@ -2000,7 +2008,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Pone en la barra un emoji que va con lo que escribes (casa → 🏠, jaja → 😂). */
     private fun addEmojiSuggestion() {
-        if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || page == Page.NUM) return
+        if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || numLike) return
         if (!suggestOn || !fieldSuggest || !prefs.getBoolean(Prefs.EMOJI_SUGGEST, true)) return
         val ic = target() ?: return
         val before = sugBefore ?: ic.getTextBeforeCursor(60, 0) ?: return
@@ -2048,7 +2056,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (vaultSuggest()) return
         val eng = WordStore.engine
         val ic = target()
-        if (!suggestOn || !fieldSuggest || eng == null || ic == null || page == Page.NUM || hackerActive) {
+        if (!suggestOn || !fieldSuggest || eng == null || ic == null || numLike || hackerActive) {
             clearSlots(); return
         }
         val before = ic.getTextBeforeCursor(48, 0) ?: ""
@@ -2147,7 +2155,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
      * y aprende lo que escribiste. Devuelve la corrección hecha (lo escrito, lo corregido) o null.
      */
     private fun finishWord(ic: InputConnection): Pair<String, String>? {
-        if (!fieldSuggest || page == Page.NUM) return null
+        if (!fieldSuggest || numLike) return null
         val before = ic.getTextBeforeCursor(48, 0) ?: return null
         val word = TextUtil.currentWord(before)
         if (word.isEmpty()) return null
@@ -2379,6 +2387,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onToolbar(action: Int) {
+        if (action != KeyboardView.TOOL_UNDO && action != KeyboardView.TOOL_HIDE && action != KeyboardView.TOOL_MORE) snapUndo()
         when (action) {
             KeyboardView.TOOL_SETTINGS -> {
                 val i = Intent(this, MainActivity::class.java)
@@ -2445,6 +2454,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_TODO -> showMode(15)
             KeyboardView.TOOL_CHECK -> showMode(16)
             KeyboardView.TOOL_CONVERT -> startConvert()
+            KeyboardView.TOOL_IPPAD -> {
+                // 🔢 Cambia al teclado de IP / MAC (y otra vez a las letras)
+                showMode(0)
+                page = if (page == Page.IP) Page.LETTERS else Page.IP
+                manualShift = false
+                rebuild()
+                updateAutoCaps()
+                if (page == Page.IP) Toast.makeText(this, L.t("Teclado IP / MAC · «ABC» vuelve a las letras", "IP / MAC keypad · «ABC» goes back to letters"), Toast.LENGTH_SHORT).show()
+            }
+            KeyboardView.TOOL_LABELS -> startSearch(gif = false, custom = "labels", customHint = "PP1-01 a PP1-24" to "PP1-01 to PP1-24",
+                info = Labels.preview(""))
+            KeyboardView.TOOL_UNDO -> doUndo()
+            KeyboardView.TOOL_REMIND -> startRemind()
             KeyboardView.TOOL_SPEAK -> startSpeak()
             KeyboardView.TOOL_BGSOUND -> {
                 if (BgMedia.kind(this) != "video") {
@@ -2607,7 +2629,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (translating) stopTranslate()
         if (spellOn) stopSpell(keepSelection = true)
         codeBar?.let { it.hideAsk(); it.hideResult() }
-        if (page != Page.NUM) page = Page.LETTERS
+        if (!numLike) page = Page.LETTERS
         manualShift = false
         setShift(0)
         applySettings()
@@ -2665,7 +2687,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Sugiere palabras del lenguaje (print(), for … in range():…) según lo que escribes. */
     private fun codeSuggest() {
         val ic = target()
-        if (ic == null || codeAsking || page == Page.NUM) { clearSlots(); return }
+        if (ic == null || codeAsking || numLike) { clearSlots(); return }
         val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
         val token = before.takeLastWhile { it.isLetterOrDigit() || it == '_' || it == '<' || it == '#' }
         val list = CodeWords.complete(codeLang, token)
@@ -2844,7 +2866,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (hacker && codeOn) prefs.edit().putBoolean(Prefs.CODE_MODE, false).apply()
         hCtrl = 0; hAlt = 0; hShift = 0; hFn = false
         if (mode != 0) showMode(0)
-        if (page != Page.NUM) page = Page.LETTERS
+        if (!numLike) page = Page.LETTERS
         applySettings()
         rebuild()
         if (hacker) {
@@ -3650,18 +3672,101 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private var convertUnit: Convert.Unit? = null
     private var convertCable = false
+    private var convertRun = false
+
+    // ---------------------------------------------------------------- 📍 Recordar al llegar
+
+    /** «Cuando llegue a este sitio, recuérdame…»: escribes qué y eliges el sitio. */
+    private fun startRemind() {
+        showMode(0)
+        if (SiteStore.all(prefs).none { !it.isStart }) {
+            val bar = infoBar ?: return
+            infoRegen = { startRemind() }
+            bar.show(L.t("📍 Recordar al llegar", "📍 Remind on arrival"),
+                L.t("Primero guarda tus sitios en «Mis sitios». Después escribes qué recordar y eliges el sitio: te aviso solo cuando llegues.",
+                    "First save your places in «My sites». Then type what to remember and pick the place: I'll remind you when you arrive."),
+                listOf(L.t("Abrir Mis sitios", "Open My sites") to { closeInfo(); try { startActivity(Intent(this, SitesActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) { } },
+                    L.t("Cerrar", "Close") to { closeInfo() }))
+            return
+        }
+        startSearch(gif = false, custom = "remind", customHint = "Ej. Llevar la escalera" to "E.g. Bring the ladder",
+            info = L.t("¿Qué quieres que te recuerde? Después eliges el sitio.", "What should I remind you? Then pick the place."))
+    }
+
+    private fun pickRemindSite(id: Long, text: String) {
+        val bar = infoBar ?: return
+        val sites = SiteStore.all(prefs).filter { !it.isStart }
+        infoRegen = { pickRemindSite(id, text) }
+        bar.show(L.t("📍 ¿Al llegar a dónde?", "📍 When I get where?"), "«$text»",
+            sites.take(10).map { s -> ("📍 " + s.name) to {
+                Todos.setDue(this, id, 0L, s.name); closeInfo()
+                Toast.makeText(this, L.t("Listo: te aviso al llegar a ${s.name}.", "Done: I'll remind you at ${s.name}."), Toast.LENGTH_SHORT).show()
+            } } + listOf(L.t("Cancelar", "Cancel") to { Todos.remove(this, id); closeInfo() }))
+    }
+
+    // ---------------------------------------------------------------- ↩️ Deshacer
+
+    private class UndoSnap(val text: String, val sel: Int, val at: Long)
+    private var undoSnap: UndoSnap? = null
+
+    /** Guarda cómo estaba el texto antes de algo grande (pegar, la IA, traducir, etiquetas…). */
+    private fun snapUndo() {
+        if (searching != 0 || translating || codeAsking) return
+        val ic = currentInputConnection ?: return
+        val et = try { ic.getExtractedText(ExtractedTextRequest().apply { hintMaxChars = 20000; hintMaxLines = 2000 }, 0) } catch (_: Exception) { null } ?: return
+        if (et.startOffset != 0 || et.partialStartOffset > 0) return
+        val t = et.text?.toString() ?: return
+        if (t.length >= 20000) return
+        undoSnap = UndoSnap(t, et.selectionEnd.coerceIn(0, t.length), System.currentTimeMillis())
+    }
+
+    /** ↩️ Deshacer: vuelve el texto a como estaba antes; si no hay nada guardado, le pide a la app que deshaga. */
+    private fun doUndo() {
+        showMode(0)
+        val ic = currentInputConnection ?: return
+        val snap = undoSnap
+        val et = try { ic.getExtractedText(ExtractedTextRequest().apply { hintMaxChars = 20000; hintMaxLines = 2000 }, 0) } catch (_: Exception) { null }
+        val cur = et?.text?.toString()
+        if (snap != null && cur != null && et.startOffset == 0 && cur != snap.text && System.currentTimeMillis() - snap.at < 10 * 60_000L) {
+            undoSnap = UndoSnap(cur, et.selectionEnd.coerceIn(0, cur.length), System.currentTimeMillis()) // otro toque lo rehace
+            ic.beginBatchEdit()
+            ic.setSelection(0, cur.length)
+            ic.commitText(snap.text, 1)
+            ic.setSelection(snap.sel, snap.sel)
+            ic.endBatchEdit()
+            Toast.makeText(this, L.t("↩️ Deshecho (toca otra vez para rehacer)", "↩️ Undone (tap again to redo)"), Toast.LENGTH_SHORT).show()
+        } else {
+            undoSnap = null
+            val ok = try { ic.performContextMenuAction(android.R.id.undo) } catch (_: Exception) { false }
+            if (!ok) {
+                val now = android.os.SystemClock.uptimeMillis()
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_Z, 0, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON))
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_Z, 0, KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON))
+            }
+        }
+        lastCorrection = null
+        autoSpace = false
+        lastWasSpace = false
+        scheduleUpdate()
+    }
 
     private fun startConvert() {
         showMode(0)
         val bar = infoBar ?: return
         val opts = ArrayList<Pair<String, () -> Unit>>()
+        opts.add(L.t("🧭 ¿Cuántos pies por línea?", "🧭 How many feet per line?") to {
+            closeInfo(); convertCable = false; convertRun = true; convertUnit = null
+            startSearch(gif = false, custom = "convert", customHint = "Ej. 80 pasos techo 10" to "E.g. 80 steps ceiling 10",
+                info = L.t("Di el camino del rack al equipo: en pies («120»), pasos («80 pasos»), placas del techo («40 placas») o metros. Pon el techo («techo 12») y cuántas líneas («x 6»).",
+                    "Give the path from the rack to the device: in feet («120»), steps («80 steps»), ceiling tiles («40 tiles») or meters. Add the ceiling («ceiling 12») and how many lines («x 6»)."))
+        })
         opts.add(L.t("🧵 Total de cable", "🧵 Cable total") to {
-            closeInfo(); convertCable = true; convertUnit = null
+            closeInfo(); convertCable = true; convertRun = false; convertUnit = null
             startSearch(gif = false, custom = "convert", customHint = "Ej. 120 x 6 + 10%" to "E.g. 120 x 6 + 10%",
                 info = L.t("Corridas en pies: «120 x 6» (6 de 120), «85, 90, 120» o con extra «+ 10%».", "Runs in feet: «120 x 6» (6 of 120), «85, 90, 120» or with extra «+ 10%»."))
         })
         for (u in Convert.UNITS) opts.add(L.t(u.es, u.en) to {
-            closeInfo(); convertCable = false; convertUnit = u
+            closeInfo(); convertCable = false; convertRun = false; convertUnit = u
             startSearch(gif = false, custom = "convert", customHint = L.t("Número en ", "Number in ") + Convert.from(u) to "Number in " + Convert.from(u),
                 info = L.t("Escribe el número. Enter lo escribe en tu texto.", "Type the number. Enter types it in your text."))
         })
@@ -3671,8 +3776,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** El resultado mientras escribes (o para escribirlo en tu texto). */
     private fun convertResult(text: String, forTyping: Boolean = false): String {
-        val q = text.trim().replace(",", if (convertCable) "," else ".")
+        val q = text.trim().replace(",", if (convertCable || convertRun) "," else ".")
         if (q.isEmpty()) return if (forTyping) "" else L.t("Escribe un número…", "Type a number…")
+        if (convertRun) return Convert.runText(q, forTyping) ?: if (forTyping) "" else L.t("Ejemplo: 80 pasos techo 10", "Example: 80 steps ceiling 10")
         if (convertCable) return Convert.cable(q) ?: if (forTyping) "" else L.t("No entendí. Ejemplo: 120 x 6 + 10%", "I didn't get it. Example: 120 x 6 + 10%")
         val u = convertUnit ?: return ""
         val v = q.toDoubleOrNull() ?: return if (forTyping) "" else L.t("Solo números (ej. 25.5)", "Numbers only (e.g. 25.5)")
@@ -4158,7 +4264,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         lastCorrection = null
         autoSpace = false
         lastWasSpace = false
-        page = if (custom == "convert" && !convertCable) Page.SYM else Page.LETTERS
+        page = if (custom == "convert" && !convertCable && !convertRun) Page.SYM else Page.LETTERS
         rebuild()
         updateAutoCaps()
         scheduleUpdate()
@@ -4189,6 +4295,23 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (q.isNotEmpty()) Todos.setCheckItems(prefs, Todos.checkItems(prefs) + q)
                 stopSearch()
                 showMode(16)
+                return
+            }
+            "labels" -> {
+                val list = Labels.make(q)
+                stopSearch()
+                showMode(0)
+                if (list != null) {
+                    val multi = ((currentInputEditorInfo?.inputType ?: 0) and android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0
+                    snapUndo()
+                    insertText(list.joinToString(if (multi) "\n" else ", "))
+                } else if (q.isNotEmpty()) Toast.makeText(this, L.t("No entendí. Ejemplo: PP1-01 a PP1-24", "I didn't get it. Example: PP1-01 to PP1-24"), Toast.LENGTH_SHORT).show()
+                return
+            }
+            "remind" -> {
+                stopSearch()
+                showMode(0)
+                if (q.isNotEmpty()) pickRemindSite(Todos.add(prefs, q), q)
                 return
             }
             "convert" -> {

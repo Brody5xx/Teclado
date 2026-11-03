@@ -965,6 +965,18 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.8.0" to tr("•  ✨ Todo lo gris ahora es bonito: tarjetas y botones (como «Traducir mensaje») tienen brillo, borde fino del color de tu tema y, con fondo propio, son de vidrio.\n" +
+                "•  🔢 Teclado IP / MAC: números grandes con punto, dos puntos y A–F para escribir 192.168.1.20 o 00:1A:2B:3C:4D:5E. «ABC» vuelve a las letras.\n" +
+                "•  🏷️ Etiquetas en serie: escribe «PP1-01 a PP1-24» o «CAM-1 x 12» y te escribe la lista completa.\n" +
+                "•  🧭 ¿Cuántos pies por línea? (en Convertidor): di el camino en pies, pasos o placas del techo, y la altura del techo; te dice los pies de cada línea, las cajas de 1000 y si pasa del límite de 328 pies.\n" +
+                "•  📍 Recordar al llegar: «cuando llegue a este sitio, recuérdame llevar la escalera».\n" +
+                "•  ↩️ Deshacer: si pegaste algo o la IA cambió tu texto, lo devuelve como estaba (otro toque lo rehace).",
+            "•  ✨ Everything grey is now pretty: cards and buttons (like «Translate message») have a shine, a thin border in your theme color and, with your own background, they're glass.\n" +
+                "•  🔢 IP / MAC keypad: big numbers with dot, colon and A–F to type 192.168.1.20 or 00:1A:2B:3C:4D:5E. «ABC» goes back to letters.\n" +
+                "•  🏷️ Serial labels: type «PP1-01 to PP1-24» or «CAM-1 x 12» and it types the whole list.\n" +
+                "•  🧭 How many feet per line? (in Converter): give the path in feet, steps or ceiling tiles, and the ceiling height; it tells you the feet per line, the 1000 ft boxes and if it's over the 328 ft limit.\n" +
+                "•  📍 Remind on arrival: «when I get to this site, remind me to bring the ladder».\n" +
+                "•  ↩️ Undo: if you pasted something or the AI changed your text, it puts it back (tap again to redo)."),
         "12.7.3" to tr("•  ✨ «Personalizar» (el lápiz ✎) más bonito: ya no tiene la franja oscura, la barra de arriba es de vidrio con borde y línea de luz, y los íconos son de color.",
             "•  ✨ Nicer «Customize» (the pencil ✎): no more dark strip, the top bar is glass with a border and light line, and the icons are colored."),
         "12.7.2" to tr("•  ✨ «Más opciones» más bonito: los botones ahora se ven como las teclas, con un brillo suave, borde fino del color de tu tema e íconos de color. Con tu foto o video de fondo son de vidrio y se ve el fondo a través. Al tocarlos se iluminan.",

@@ -125,6 +125,18 @@ object Layouts {
         bottomRow("ABC", Codes.MODE_LETTERS, ","),
     )
 
+    /**
+     * 🔢 Teclado para IP y MAC: números grandes, punto, dos puntos y las letras A–F
+     * (ej. 192.168.1.20 o 00:1A:2B:3C:4D:5E). «ABC» vuelve a las letras.
+     */
+    fun ipPad(): List<List<Key>> = listOf(
+        listOf(ch("1"), ch("2"), ch("3"), ch("A", "a"), ch("B", "b")),
+        listOf(ch("4"), ch("5"), ch("6"), ch("C", "c"), ch("D", "d")),
+        listOf(ch("7"), ch("8"), ch("9"), ch("E", "e"), ch("F", "f")),
+        listOf(ch(".", ","), ch("0"), ch(":"), ch("-", "_"), ch("/", "\\")),
+        listOf(sp("ABC", Codes.MODE_LETTERS, 1.3f), Key(" ", Codes.SPACE, null, 1.6f, emptyList()), del(1.1f), sp("↵", Codes.ENTER, 1.1f)),
+    )
+
     /** Teclado numérico grande para campos de números o teléfono. */
     fun numpad(phone: Boolean): List<List<Key>> = listOf(
         listOf(ch("1"), ch("2"), ch("3"), ch("-", "–")),

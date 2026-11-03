@@ -256,6 +256,7 @@ class SearchBar(context: Context) : LinearLayout(context) {
         box.setHintTextColor(p.hint)
         val bg = android.graphics.drawable.GradientDrawable()
         bg.setColor(p.key)
+        PanelUi.decorate(bg)
         bg.cornerRadius = d(21f).toFloat()
         bg.setStroke(d(1.5f), p.accent)
         field.background = bg

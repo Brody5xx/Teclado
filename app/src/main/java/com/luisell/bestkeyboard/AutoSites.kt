@@ -143,6 +143,7 @@ object AutoSites {
                 if (kind == WorkDay.ARRIVE || WorkDay.day(p).isEmpty()) WorkDay.addAt(p, kind, site, t)
                 WorkdayCenter.refresh(ctx)
                 cancel(ctx)
+                Todos.arrivedAt(ctx, site) // 📍 lo que pediste que te recordara al llegar aquí
                 return
             }
         }
@@ -210,6 +211,7 @@ object AutoSites {
                 listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
         } else {
             // No has empezado tu jornada hoy: pregunta (puede que no estés trabajando)
+            Todos.arrivedAt(ctx, site) // 📍 igual te recuerda lo de este sitio
             notify(ctx, L.t("📍 Estás en $site", "📍 You're at $site"),
                 L.t("Desde las ${WorkStore.time(enterAt)}. ¿Estás trabajando?", "Since ${WorkStore.time(enterAt)}. Are you working?"),
                 L.t("Marcar llegada", "Log arrival") to markIntent(ctx, enterAt, site))

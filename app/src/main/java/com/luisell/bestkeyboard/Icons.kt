@@ -97,6 +97,9 @@ object Icons {
     const val GLOVE = 79
     const val RULER = 80
     const val SOUNDWAVE = 81
+    const val NETWORK = 82
+    const val TAG = 83
+    const val UNDO = 84
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -518,6 +521,42 @@ object Icons {
                 path.lineTo(cx + s * 0.5f, cy - s * 0.35f)
                 c.drawPath(path, st)
                 st.color = color
+            }
+            NETWORK -> {
+                // Red: una cajita arriba conectada a tres de abajo (IP de cámaras y equipos)
+                r.set(cx - s * 0.35f, cy - s * 0.95f, cx + s * 0.35f, cy - s * 0.4f)
+                c.drawRoundRect(r, s * 0.1f, s * 0.1f, st)
+                c.drawLine(cx, cy - s * 0.4f, cx, cy, st)
+                c.drawLine(cx - s * 0.75f, cy, cx + s * 0.75f, cy, st)
+                for (k in -1..1) {
+                    val x = cx + k * s * 0.75f
+                    c.drawLine(x, cy, x, cy + s * 0.35f, st)
+                    c.drawCircle(x, cy + s * 0.62f, s * 0.24f, st)
+                }
+            }
+            TAG -> {
+                // Etiqueta con su agujerito
+                path.reset()
+                path.moveTo(cx - s * 0.95f, cy - s * 0.55f)
+                path.lineTo(cx + s * 0.35f, cy - s * 0.55f)
+                path.lineTo(cx + s * 0.95f, cy)
+                path.lineTo(cx + s * 0.35f, cy + s * 0.55f)
+                path.lineTo(cx - s * 0.95f, cy + s * 0.55f)
+                path.close()
+                c.drawPath(path, st)
+                c.drawCircle(cx + s * 0.3f, cy, s * 0.14f, fl)
+                c.drawLine(cx - s * 0.65f, cy - s * 0.12f, cx - s * 0.05f, cy - s * 0.12f, st)
+                c.drawLine(cx - s * 0.65f, cy + s * 0.22f, cx - s * 0.25f, cy + s * 0.22f, st)
+            }
+            UNDO -> {
+                // Flecha curva hacia atrás
+                r.set(cx - s * 0.75f, cy - s * 0.55f, cx + s * 0.85f, cy + s * 0.85f)
+                path.reset()
+                path.arcTo(r, 200f, 250f, true)
+                c.drawPath(path, st)
+                val ax = cx - s * 0.68f; val ay = cy - s * 0.2f
+                c.drawLine(ax, ay, ax - s * 0.1f, ay - s * 0.6f, st)
+                c.drawLine(ax, ay, ax + s * 0.52f, ay - s * 0.22f, st)
             }
             SOUNDWAVE -> {
                 // Ondas de sonido (escuchar un texto)
