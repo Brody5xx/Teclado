@@ -130,47 +130,6 @@ class StyleActivity : UiActivity() {
     }
 
     private lateinit var bgStatus: android.widget.TextView
-    private lateinit var iconRow: LinearLayout
-
-    private fun paintAppIcons() {
-        iconRow.removeAllViews()
-        val cur = prefs.getString(Prefs.APP_ICON, "name") ?: "name"
-        var line: LinearLayout? = null
-        for ((id, res, name) in listOf(
-            Triple("name", R.mipmap.ic_name, tr("Con el nombre", "With the name")),
-            Triple("mix", R.mipmap.ic_mix, tr("Diamante sobre el teclado", "Diamond on the keyboard")),
-            Triple("light", R.mipmap.ic_light, tr("Línea de luz", "Light line")),
-            Triple("diamond", R.mipmap.ic_diamond, tr("Diamante", "Diamond")),
-        )) {
-            val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = android.view.Gravity.CENTER_HORIZONTAL; setPadding(dp(10), dp(10), dp(10), dp(10)) }
-            val sel = id == cur
-            box.background = android.graphics.drawable.GradientDrawable().apply {
-                cornerRadius = dpf(22f)
-                if (sel) setStroke(dp(2), CYAN) else setStroke(dp(1), LINE)
-            }
-            val iv = android.widget.ImageView(this)
-            iv.setImageResource(res)
-            box.addView(iv, LinearLayout.LayoutParams(dp(68), dp(68)))
-            box.addView(android.widget.TextView(this).apply {
-                text = (if (sel) "✓ " else "") + name; textSize = 13f; setTextColor(if (sel) TEXT else SUB)
-                gravity = android.view.Gravity.CENTER; setPadding(0, dp(6), 0, 0)
-            })
-            box.setOnClickListener {
-                if (id == cur) return@setOnClickListener
-                setAppIcon(id)
-                paintAppIcons()
-                toast("Listo. El ícono cambia en unos segundos.", "Done. The icon changes in a few seconds.")
-            }
-            // De 2 en 2 para que quepan bien
-            if (line == null || line.childCount == 2) {
-                line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                iconRow.addView(line, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-            }
-            line.addView(box, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(4), 0, dp(4), 0) })
-        }
-    }
-
-    private fun setAppIcon(id: String) = AppIcon.set(this, id)
 
     // ---------------------------------------------------------------- ✨ Paneles y botones a tu gusto
 
@@ -365,14 +324,6 @@ class StyleActivity : UiActivity() {
     private fun buildOptions() {
         card(tr("Colores", "Colors"), Icons.THEME)
         themeGallery()
-        // ---- ✨ Ícono de la app
-        card(tr("Ícono de la app", "App icon"), Icons.SHAPES)
-        text(tr("Elige cómo se ve Best Keyboard en tu pantalla de inicio. Puede tardar unos segundos en cambiar.",
-            "Choose how Best Keyboard looks on your home screen. It may take a few seconds to change."), 12f, faded = true)
-        iconRow = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        col.addView(iconRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(6) })
-        paintAppIcons()
-
         // ---- 🖼️ Fondo propio: tu imagen o tu video
         card(tr("Fondo propio", "Your own background"), Icons.IMAGE)
         text(tr("Pon una foto o un video de tu galería detrás de las teclas. El video se comprime para que vaya ligero, se ve completo y se repite sin fin.",
@@ -493,19 +444,15 @@ class StyleActivity : UiActivity() {
     }
 }
 
-/** El ícono de la app en la pantalla de inicio: "light" (Línea de luz) o "diamond" (Diamante). */
+/** El ícono de la app: ahora es uno solo (el diamante sobre el teclado con el nombre). */
 object AppIcon {
-    fun set(ctx: android.content.Context, id: String) {
-        Prefs.get(ctx).edit().putString(Prefs.APP_ICON, id).apply()
-        val pm = ctx.packageManager
-        val all = mapOf("name" to ".IconName", "mix" to ".IconMix", "light" to ".IconLight", "diamond" to ".IconDiamond")
-        val want = all[id] ?: ".IconName"
+    /** Se asegura de que el ícono esté prendido (por si antes elegiste otro que ya no existe). */
+    fun ensure(ctx: android.content.Context) {
         try {
-            // Primero se prende el nuevo (así la app nunca se queda sin ícono) y luego se apagan los otros
-            pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$want"),
-                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED, android.content.pm.PackageManager.DONT_KILL_APP)
-            for (a in all.values) if (a != want) pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$a"),
-                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED, android.content.pm.PackageManager.DONT_KILL_APP)
+            val pm = ctx.packageManager
+            val cn = android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard.IconName")
+            if (pm.getComponentEnabledSetting(cn) == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED)
+                pm.setComponentEnabledSetting(cn, android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED, android.content.pm.PackageManager.DONT_KILL_APP)
         } catch (_: Exception) { }
     }
 }

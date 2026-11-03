@@ -77,12 +77,6 @@ class MainActivity : UiActivity() {
         super.onCreate(savedInstanceState)
         prefs = Prefs.get(this)
         loadLang()
-        // Una sola vez: pasar al ícono nuevo con el nombre (si tenías el de fábrica)
-        if (!prefs.getBoolean("icon_name_v1", false)) {
-            prefs.edit().putBoolean("icon_name_v1", true).apply()
-            val ic = prefs.getString(Prefs.APP_ICON, null)
-            if (ic == null || ic == "mix") AppIcon.set(this, "name")
-        }
         title = "Best Keyboard"
         window.statusBarColor = BG
         window.navigationBarColor = BG
@@ -428,7 +422,11 @@ class MainActivity : UiActivity() {
         val logo = android.widget.ImageView(this)
         logo.setImageResource(R.drawable.ic_fg_mix)
         logo.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-        root.addView(logo, LinearLayout.LayoutParams(dp(150), dp(150)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = -dp(22); bottomMargin = -dp(26) })
+        // ☄️ Encima del logo: el cometa de luz que recorre el borde del diamante
+        val logoBox = android.widget.FrameLayout(this)
+        logoBox.addView(logo, android.widget.FrameLayout.LayoutParams(-1, -1))
+        logoBox.addView(CometView(this), android.widget.FrameLayout.LayoutParams(-1, -1))
+        root.addView(logoBox, LinearLayout.LayoutParams(dp(150), dp(150)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = -dp(22); bottomMargin = -dp(26) })
         val name = LinearLayout(this)
         name.orientation = LinearLayout.HORIZONTAL
         name.gravity = Gravity.CENTER
@@ -965,6 +963,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.10.0" to tr("•  ☄️ El logo de arriba ahora tiene un cometa de luz que recorre el borde del diamante y termina con un destello en la punta.\n•  💎 Un solo ícono: el diamante sobre el teclado con el nombre (los otros se quitaron).",
+            "•  ☄️ The logo at the top now has a comet of light that runs along the diamond's edge and ends with a sparkle at the tip.\n•  💎 One icon only: the diamond over the keyboard with the name (the others were removed)."),
         "12.9.0" to tr("•  🎨 Paneles y botones a tu gusto (Estilo → Paneles y botones): cambia el color del borde y la luz, de los botones y de los íconos, el grosor del borde y qué tan transparente es el vidrio. Se ve en vivo.",
             "•  🎨 Panels and buttons your way (Style → Panels and buttons): change the border and light color, the buttons and the icons, the border thickness and how clear the glass is. Live preview."),
         "12.8.0" to tr("•  ✨ Todo lo gris ahora es bonito: tarjetas y botones (como «Traducir mensaje») tienen brillo, borde fino del color de tu tema y, con fondo propio, son de vidrio.\n" +

@@ -24,6 +24,7 @@ class BestApp : Application() {
                 p.edit().putBoolean(Prefs.TICKET_FORMAT, p.getBoolean(Prefs.TICKET_FORMAT_OLD, true)).remove(Prefs.TICKET_FORMAT_OLD).apply()
             }
         } catch (_: Exception) { }
+        AppIcon.ensure(this) // solo queda un ícono: que nunca te quedes sin él
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, e ->
             try { CrashLog.save(this, e) } catch (_: Throwable) { }

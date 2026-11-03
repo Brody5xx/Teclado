@@ -53,49 +53,13 @@
             android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Ícono de la app a elegir (Estilo): Línea de luz o Diamante -->
+        <!-- El ícono de la app (uno solo) -->
         <activity-alias
             android:name=".IconName"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_name"
             android:roundIcon="@mipmap/ic_name"
-            android:targetActivity=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <activity-alias
-            android:name=".IconMix"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_mix"
-            android:roundIcon="@mipmap/ic_mix"
-            android:targetActivity=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <activity-alias
-            android:name=".IconLight"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_light"
-            android:roundIcon="@mipmap/ic_light"
-            android:targetActivity=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <activity-alias
-            android:name=".IconDiamond"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_diamond"
-            android:roundIcon="@mipmap/ic_diamond"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
