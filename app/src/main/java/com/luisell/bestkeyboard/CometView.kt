@@ -2,40 +2,46 @@ package com.luisell.bestkeyboard
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PathMeasure
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import android.graphics.SweepGradient
 import android.os.SystemClock
 import android.view.View
 
 /**
- * ☄️ El destello del logo: un cometa de luz que recorre el borde del diamante
- * (como el arco de luz del castillo de Disney) y termina con un brillo en la punta de arriba.
- * Se dibuja encima del logo (mismo tamaño que la imagen, viewport de 108).
+ * ☄️ La luz del logo: una línea de luz que va trazando el borde del diamante
+ * (como el arco del castillo de Disney). Cuando termina la vuelta, todo el borde brilla,
+ * sale un destello en la punta de arriba y se apaga despacio. Luego descansa y se repite.
  */
 class CometView(context: Context) : View(context) {
 
     private val d = resources.displayMetrics.density
-    private val seg = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
+    private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
+    }
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
     private val path = Path()
+    private val part = Path()
     private var measure: PathMeasure? = null
     private var len = 0f
     private var scale = 1f
+    private var cx = 0f
+    private var cy = 0f
+    private var sweep: Shader? = null
+    private val pt = FloatArray(2)
+    private val top = FloatArray(2)
     private val start = SystemClock.uptimeMillis() + 700 // espera un poquito al abrir
 
-    // Tiempos de cada vuelta (ms)
-    private val RUN = 2600L   // el cometa da vuelta y media
-    private val BURST = 900L  // el destello en la punta
-    private val REST = 3200L  // descanso antes de repetir
-    private val CYCLE = RUN + BURST + REST
-
-    private val pt = FloatArray(2)
-    private val sp = Path()
-
-    init { setLayerType(LAYER_TYPE_HARDWARE, null) }
+    // Tiempos (ms)
+    private val TRACE = 2200L  // la línea dibuja la vuelta completa
+    private val SHINE = 500L   // todo el borde brilla + destello
+    private val FADE = 1100L   // se apaga despacio
+    private val REST = 3000L   // descanso
+    private val CYCLE = TRACE + SHINE + FADE + REST
 
     override fun onSizeChanged(w: Int, h: Int, ow: Int, oh: Int) {
         super.onSizeChanged(w, h, ow, oh)
@@ -44,94 +50,93 @@ class CometView(context: Context) : View(context) {
         val oy = (h - 108f * scale) / 2f
         fun x(v: Float) = ox + v * scale
         fun y(v: Float) = oy + v * scale
-        // Empieza abajo, sube por la izquierda, pasa la punta, baja por la derecha… y vuelve a la punta
+        // Empieza y termina en la punta de arriba, dando la vuelta por la derecha
         path.reset()
-        path.moveTo(x(54f), y(63.5f))
-        path.lineTo(x(38f), y(42f))
-        path.lineTo(x(54f), y(20f))
+        path.moveTo(x(54f), y(20f))
         path.lineTo(x(70f), y(42f))
         path.lineTo(x(54f), y(63.5f))
         path.lineTo(x(38f), y(42f))
-        path.lineTo(x(54f), y(20f))
-        measure = PathMeasure(path, false)
+        path.close()
+        measure = PathMeasure(path, true)
         len = measure!!.length
+        top[0] = x(54f); top[1] = y(20f)
+        cx = x(54f); cy = y(42f)
+        // Los colores del diamante alrededor: azul → violeta → rosa → azul
+        sweep = SweepGradient(cx, cy, intArrayOf(0xFF67E8F9.toInt(), 0xFFA78BFA.toInt(), 0xFFF0ABFC.toInt(), 0xFF67E8F9.toInt()), null).apply {
+            setLocalMatrix(Matrix().apply { setRotate(-90f, cx, cy) })
+        }
     }
 
     private fun ease(t: Float): Float = if (t < 0.5f) 4 * t * t * t else 1 - Math.pow((-2.0 * t + 2), 3.0).toFloat() / 2
 
-    /** Color del cometa según dónde va: azul → violeta → rosa (como el diamante). */
-    private fun hue(f: Float): Int {
-        val a = intArrayOf(0x67E8F9, 0xA78BFA, 0xF0ABFC, 0x67E8F9)
-        val p = (f.coerceIn(0f, 1f) * 3f)
-        val i = p.toInt().coerceAtMost(2)
-        val k = p - i
-        fun ch(c: Int, s: Int) = (c shr s) and 0xFF
-        val c1 = a[i]; val c2 = a[i + 1]
-        val r = (ch(c1, 16) + (ch(c2, 16) - ch(c1, 16)) * k).toInt()
-        val g = (ch(c1, 8) + (ch(c2, 8) - ch(c1, 8)) * k).toInt()
-        val b = (ch(c1, 0) + (ch(c2, 0) - ch(c1, 0)) * k).toInt()
-        return (r shl 16) or (g shl 8) or b
-    }
-
     override fun onDraw(c: Canvas) {
-        // Si algo falla al dibujar el destello, la app no se cierra: solo no se ve esa vez
-        try { drawComet(c) } catch (_: Throwable) { postInvalidateDelayed(1000) }
+        try { drawLight(c) } catch (_: Throwable) { postInvalidateDelayed(1000) }
     }
 
-    private fun drawComet(c: Canvas) {
+    /** Dibuja el borde iluminado hasta [upTo] con brillo [a] (0..1): un halo ancho suave y una línea fina brillante. */
+    private fun stroke(c: Canvas, m: PathMeasure, from: Float, upTo: Float, a: Float) {
+        if (upTo - from < 0.5f || a <= 0.01f) return
+        part.reset()
+        m.getSegment(from, upTo, part, true)
+        line.shader = sweep
+        // Halo (3 capas, de ancha y tenue a fina y fuerte)
+        val widths = floatArrayOf(7f, 4.2f, 2.4f)
+        val alphas = floatArrayOf(0.10f, 0.22f, 0.5f)
+        for (i in widths.indices) {
+            line.strokeWidth = widths[i] * d
+            line.alpha = (255 * alphas[i] * a).toInt().coerceIn(0, 255)
+            c.drawPath(part, line)
+        }
+        // Centro blanco
+        line.shader = null
+        line.color = 0xFFFFFFFF.toInt()
+        line.alpha = (255 * 0.85f * a).toInt().coerceIn(0, 255)
+        line.strokeWidth = 1.1f * d
+        c.drawPath(part, line)
+    }
+
+    private fun drawLight(c: Canvas) {
         val m = measure ?: return
         if (len <= 0f || scale <= 0f) return
         val now = SystemClock.uptimeMillis()
         if (now < start) { postInvalidateDelayed(start - now); return }
         val t = (now - start) % CYCLE
-        if (t < RUN) {
-            val f = ease(t / RUN.toFloat())
-            val head = f * len
-            // La cola: se alarga al principio y se recoge al final
-            val tailLen = len * 0.42f * minOf(1f, f * 4f) * minOf(1f, (1f - f) * 6f + 0.25f)
-            val n = 46
-            for (i in 0 until n) {
-                val a0 = head - tailLen * i / n
-                val a1 = head - tailLen * (i + 1) / n
-                if (a1 < 0f) break
-                val k = 1f - i / n.toFloat()
-                seg.strokeWidth = (0.6f + 2.8f * k * k) * scale * 0.55f + 0.4f * d
-                val col = hue(a0 / len)
-                seg.color = ((k * k * 235).toInt() shl 24) or (if (i < 3) 0xFFFFFF else col)
-                sp.reset()
-                m.getSegment(a1, a0, sp, true)
-                c.drawPath(sp, seg)
+        when {
+            t < TRACE -> {
+                // ✍️ La línea va trazando el borde; lo ya trazado se queda encendido (un poco más suave)
+                val head = ease(t / TRACE.toFloat()) * len
+                stroke(c, m, 0f, head, 0.55f)
+                // La punta de la línea, más brillante
+                stroke(c, m, maxOf(0f, head - len * 0.12f), head, 1f)
+                m.getPosTan(head, pt, null)
+                val r = maxOf(1f, 6f * d)
+                glow.shader = RadialGradient(pt[0], pt[1], r, intArrayOf(0xEEFFFFFF.toInt(), 0x5567E8F9, 0x00000000),
+                    floatArrayOf(0f, 0.4f, 1f), Shader.TileMode.CLAMP)
+                c.drawCircle(pt[0], pt[1], r, glow)
+                postInvalidateOnAnimation()
             }
-            // La cabeza: una bolita de luz blanca con brillo de color
-            m.getPosTan(head, pt, null)
-            val r = maxOf(1f, 7f * scale * 0.5f + 4f * d)
-            glow.shader = RadialGradient(pt[0], pt[1], r, intArrayOf(0xFFFFFFFF.toInt(), (0xAA shl 24) or hue(head / len), 0x00000000),
-                floatArrayOf(0f, 0.35f, 1f), Shader.TileMode.CLAMP)
-            c.drawCircle(pt[0], pt[1], r, glow)
-            postInvalidateOnAnimation()
-        } else if (t < RUN + BURST) {
-            // ✨ El destello en la punta de arriba (la estrellita de 4 puntas que crece y se apaga)
-            val f = (t - RUN) / BURST.toFloat()
-            m.getPosTan(len, pt, null)
-            val grow = if (f < 0.3f) f / 0.3f else 1f
-            val fade = if (f < 0.3f) 1f else 1f - (f - 0.3f) / 0.7f
-            val big = maxOf(1f, (14f * scale * 0.5f + 10f * d) * grow) // nunca 0 (Android no lo permite)
-            glow.shader = RadialGradient(pt[0], pt[1], big, intArrayOf(((fade * 255).toInt() shl 24) or 0xFFFFFF,
-                ((fade * 140).toInt() shl 24) or 0x67E8F9, 0x00000000), floatArrayOf(0f, 0.3f, 1f), Shader.TileMode.CLAMP)
-            c.drawCircle(pt[0], pt[1], big, glow)
-            seg.color = ((fade * 255).toInt() shl 24) or 0xFFFFFF
-            seg.strokeWidth = 1.4f * d
-            val arm = big * 1.6f
-            c.drawLine(pt[0] - arm, pt[1], pt[0] + arm, pt[1], seg)
-            c.drawLine(pt[0], pt[1] - arm, pt[0], pt[1] + arm, seg)
-            val arm2 = arm * 0.45f
-            c.save(); c.rotate(45f, pt[0], pt[1])
-            c.drawLine(pt[0] - arm2, pt[1], pt[0] + arm2, pt[1], seg)
-            c.drawLine(pt[0], pt[1] - arm2, pt[0], pt[1] + arm2, seg)
-            c.restore()
-            postInvalidateOnAnimation()
-        } else {
-            postInvalidateDelayed(CYCLE - t)
+            t < TRACE + SHINE + FADE -> {
+                // ✨ Todo el borde brilla, destello en la punta y luego se apaga
+                val k = t - TRACE
+                val a = if (k < SHINE) 0.55f + 0.45f * (k / SHINE.toFloat()) else 1f - (k - SHINE) / FADE.toFloat()
+                stroke(c, m, 0f, len, a)
+                val f = k / (SHINE + FADE).toFloat()
+                val grow = if (f < 0.25f) f / 0.25f else 1f
+                val fade = if (f < 0.25f) 1f else 1f - (f - 0.25f) / 0.75f
+                val big = maxOf(1f, (9f * d + 5f * scale) * grow)
+                glow.shader = RadialGradient(top[0], top[1], big, intArrayOf(((fade * 255).toInt() shl 24) or 0xFFFFFF,
+                    ((fade * 130).toInt() shl 24) or 0x67E8F9, 0x00000000), floatArrayOf(0f, 0.3f, 1f), Shader.TileMode.CLAMP)
+                c.drawCircle(top[0], top[1], big, glow)
+                line.shader = null
+                line.color = 0xFFFFFFFF.toInt()
+                line.alpha = (fade * 255).toInt().coerceIn(0, 255)
+                line.strokeWidth = 1.3f * d
+                val arm = big * 1.5f
+                c.drawLine(top[0] - arm, top[1], top[0] + arm, top[1], line)
+                c.drawLine(top[0], top[1] - arm, top[0], top[1] + arm, line)
+                postInvalidateOnAnimation()
+            }
+            else -> postInvalidateDelayed(CYCLE - t)
         }
     }
 }
