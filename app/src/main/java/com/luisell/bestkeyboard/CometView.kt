@@ -74,7 +74,13 @@ class CometView(context: Context) : View(context) {
     }
 
     override fun onDraw(c: Canvas) {
+        // Si algo falla al dibujar el destello, la app no se cierra: solo no se ve esa vez
+        try { drawComet(c) } catch (_: Throwable) { postInvalidateDelayed(1000) }
+    }
+
+    private fun drawComet(c: Canvas) {
         val m = measure ?: return
+        if (len <= 0f || scale <= 0f) return
         val now = SystemClock.uptimeMillis()
         if (now < start) { postInvalidateDelayed(start - now); return }
         val t = (now - start) % CYCLE
@@ -98,7 +104,7 @@ class CometView(context: Context) : View(context) {
             }
             // La cabeza: una bolita de luz blanca con brillo de color
             m.getPosTan(head, pt, null)
-            val r = 7f * scale * 0.5f + 4f * d
+            val r = maxOf(1f, 7f * scale * 0.5f + 4f * d)
             glow.shader = RadialGradient(pt[0], pt[1], r, intArrayOf(0xFFFFFFFF.toInt(), (0xAA shl 24) or hue(head / len), 0x00000000),
                 floatArrayOf(0f, 0.35f, 1f), Shader.TileMode.CLAMP)
             c.drawCircle(pt[0], pt[1], r, glow)
@@ -109,7 +115,7 @@ class CometView(context: Context) : View(context) {
             m.getPosTan(len, pt, null)
             val grow = if (f < 0.3f) f / 0.3f else 1f
             val fade = if (f < 0.3f) 1f else 1f - (f - 0.3f) / 0.7f
-            val big = (14f * scale * 0.5f + 10f * d) * grow
+            val big = maxOf(1f, (14f * scale * 0.5f + 10f * d) * grow) // nunca 0 (Android no lo permite)
             glow.shader = RadialGradient(pt[0], pt[1], big, intArrayOf(((fade * 255).toInt() shl 24) or 0xFFFFFF,
                 ((fade * 140).toInt() shl 24) or 0x67E8F9, 0x00000000), floatArrayOf(0f, 0.3f, 1f), Shader.TileMode.CLAMP)
             c.drawCircle(pt[0], pt[1], big, glow)

@@ -963,6 +963,7 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.10.1" to tr("•  🛠️ Arreglado: la app se cerraba al empezar el destello del logo.", "•  🛠️ Fixed: the app closed when the logo sparkle started."),
         "12.10.0" to tr("•  ☄️ El logo de arriba ahora tiene un cometa de luz que recorre el borde del diamante y termina con un destello en la punta.\n•  💎 Un solo ícono: el diamante sobre el teclado con el nombre (los otros se quitaron).",
             "•  ☄️ The logo at the top now has a comet of light that runs along the diamond's edge and ends with a sparkle at the tip.\n•  💎 One icon only: the diamond over the keyboard with the name (the others were removed)."),
         "12.9.0" to tr("•  🎨 Paneles y botones a tu gusto (Estilo → Paneles y botones): cambia el color del borde y la luz, de los botones y de los íconos, el grosor del borde y qué tan transparente es el vidrio. Se ve en vivo.",
