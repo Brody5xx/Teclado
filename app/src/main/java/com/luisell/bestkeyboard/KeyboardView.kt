@@ -1563,7 +1563,14 @@ class KeyboardView(context: Context) : View(context) {
         if (p.effect.startsWith("matrix")) drawMatrix(c)
         else if (p.effect.isNotEmpty()) drawAmbient(c, p)
         else { lastRain = 0L; lastAmb = 0L }
+        diamondLit = false
+        diamondSeen = false
         drawStrip(c, p)
+        // 💎 La luz del diamante de Ajustes: solo se redibuja mientras pasa la luz
+        if (diamondSeen) {
+            if (diamondLit) postInvalidateOnAnimation()
+            else { removeCallbacks(diaTick); postDelayed(diaTick, diamondWait().coerceAtLeast(16L)) }
+        }
         if (oneHand != 0) drawHandSide(c, p)
         val now = SystemClock.uptimeMillis()
         labelMul = labelScale
@@ -2373,8 +2380,123 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     /** El ícono de cada botón de la barra de arriba (-1 si no tiene). */
+    // ---------------------------------------------------------------- 💎 El diamante de Ajustes con su luz
+
+    private var diamondLit = false
+    private var diamondSeen = false
+    private val diaTick = Runnable { invalidate() }
+    private val diaStart = android.os.SystemClock.uptimeMillis() + 1200
+    private val DIA_TRACE = 1400L
+    private val DIA_SHINE = 350L
+    private val DIA_FADE = 700L
+    private val DIA_CYCLE = 7000L
+    private val diaPath = android.graphics.Path()
+    private val diaPart = android.graphics.Path()
+    private val diaMeasure = android.graphics.PathMeasure()
+    private val diaPt = FloatArray(2)
+    private val diaLine = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
+    private val diaFill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val diaColors = intArrayOf(0xFF67E8F9.toInt(), 0xFFA78BFA.toInt(), 0xFFF0ABFC.toInt())
+
+    /** Cuánto falta para que vuelva a pasar la luz. */
+    private fun diamondWait(): Long {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now < diaStart) return diaStart - now
+        val t = (now - diaStart) % DIA_CYCLE
+        return DIA_CYCLE - t
+    }
+
+    private fun diaEase(t: Float): Float = if (t < 0.5f) 4 * t * t * t else 1 - Math.pow((-2.0 * t + 2), 3.0).toFloat() / 2
+
+    /** Dibuja el diamante de colores y, de vez en cuando, la línea de luz que lo traza. Devuelve true si está animando. */
+    private fun drawDiamond(c: Canvas, cx: Float, cy: Float, s: Float): Boolean {
+        diamondSeen = true
+        try {
+            val grad = android.graphics.LinearGradient(cx - s, cy - s, cx + s, cy + s, diaColors, null, android.graphics.Shader.TileMode.CLAMP)
+            diaPath.reset()
+            diaPath.moveTo(cx, cy - s * 1.05f)
+            diaPath.lineTo(cx + s * 0.72f, cy - s * 0.05f)
+            diaPath.lineTo(cx, cy + s * 1.0f)
+            diaPath.lineTo(cx - s * 0.72f, cy - s * 0.05f)
+            diaPath.close()
+            diaLine.shader = grad
+            diaLine.alpha = 255
+            diaLine.strokeWidth = maxOf(1.6f * d, s * 0.17f)
+            c.drawPath(diaPath, diaLine)
+            // Las caras de adentro
+            diaPart.reset()
+            diaPart.moveTo(cx, cy - s * 1.05f)
+            diaPart.lineTo(cx + s * 0.27f, cy - s * 0.05f)
+            diaPart.lineTo(cx, cy + s * 1.0f)
+            diaPart.lineTo(cx - s * 0.27f, cy - s * 0.05f)
+            diaPart.close()
+            diaLine.strokeWidth = maxOf(1f * d, s * 0.09f)
+            diaLine.alpha = 190
+            c.drawPath(diaPart, diaLine)
+            diaLine.shader = null
+            diaFill.shader = null
+            diaFill.color = 0xFFFFFFFF.toInt()
+            c.drawCircle(cx, cy - s * 1.05f, maxOf(1f, s * 0.14f), diaFill)
+
+            val now = android.os.SystemClock.uptimeMillis()
+            if (now < diaStart) return false
+            val t = (now - diaStart) % DIA_CYCLE
+            if (t >= DIA_TRACE + DIA_SHINE + DIA_FADE) return false
+            diaMeasure.setPath(diaPath, true)
+            val len = diaMeasure.length
+            if (len <= 0f) return false
+            fun glowStroke(from: Float, to: Float, a: Float) {
+                if (to - from < 0.5f || a <= 0.01f) return
+                diaPart.reset()
+                diaMeasure.getSegment(from, to, diaPart, true)
+                diaLine.shader = grad
+                diaLine.strokeWidth = 4.5f * d; diaLine.alpha = (60 * a).toInt(); c.drawPath(diaPart, diaLine)
+                diaLine.strokeWidth = 2.6f * d; diaLine.alpha = (130 * a).toInt(); c.drawPath(diaPart, diaLine)
+                diaLine.shader = null
+                diaLine.color = 0xFFFFFFFF.toInt()
+                diaLine.strokeWidth = 1.1f * d; diaLine.alpha = (235 * a).toInt(); c.drawPath(diaPart, diaLine)
+            }
+            if (t < DIA_TRACE) {
+                // ✍️ La línea de luz va trazando el borde desde la punta de arriba
+                val head = diaEase(t / DIA_TRACE.toFloat()) * len
+                glowStroke(0f, head, 0.5f)
+                glowStroke(maxOf(0f, head - len * 0.15f), head, 1f)
+                diaMeasure.getPosTan(head, diaPt, null)
+                val r = maxOf(1f, 4f * d)
+                diaFill.shader = android.graphics.RadialGradient(diaPt[0], diaPt[1], r, intArrayOf(0xEEFFFFFF.toInt(), 0x5567E8F9, 0x00000000),
+                    floatArrayOf(0f, 0.4f, 1f), android.graphics.Shader.TileMode.CLAMP)
+                c.drawCircle(diaPt[0], diaPt[1], r, diaFill)
+                diaFill.shader = null
+            } else {
+                // ✨ Brilla todo el borde, destella la punta y se apaga
+                val k = t - DIA_TRACE
+                val a = if (k < DIA_SHINE) 0.5f + 0.5f * (k / DIA_SHINE.toFloat()) else 1f - (k - DIA_SHINE) / DIA_FADE.toFloat()
+                glowStroke(0f, len, a)
+                val f = k / (DIA_SHINE + DIA_FADE).toFloat()
+                val grow = if (f < 0.25f) f / 0.25f else 1f
+                val fade = if (f < 0.25f) 1f else 1f - (f - 0.25f) / 0.75f
+                val tx = cx; val ty = cy - s * 1.05f
+                val big = maxOf(1f, 6f * d * grow)
+                diaFill.shader = android.graphics.RadialGradient(tx, ty, big, intArrayOf(((fade * 255).toInt() shl 24) or 0xFFFFFF,
+                    ((fade * 130).toInt() shl 24) or 0x67E8F9, 0x00000000), floatArrayOf(0f, 0.3f, 1f), android.graphics.Shader.TileMode.CLAMP)
+                c.drawCircle(tx, ty, big, diaFill)
+                diaFill.shader = null
+                diaLine.color = 0xFFFFFFFF.toInt()
+                diaLine.alpha = (fade * 255).toInt().coerceIn(0, 255)
+                diaLine.strokeWidth = 1f * d
+                val arm = big * 1.4f
+                c.drawLine(tx - arm, ty, tx + arm, ty, diaLine)
+                c.drawLine(tx, ty - arm, tx, ty + arm, diaLine)
+            }
+            return true
+        } catch (_: Throwable) {
+            diaLine.shader = null; diaFill.shader = null
+            return false
+        }
+    }
+
     private fun toolIcon(i: Int): Int = when (i) {
-        TOOL_SETTINGS -> Icons.SETTINGS
+        TOOL_SETTINGS -> Icons.DIAMOND
         TOOL_THEME -> Icons.THEME
         TOOL_EMOJI -> Icons.EMOJI
         TOOL_CLIP -> Icons.CLIP
@@ -2640,7 +2762,8 @@ class KeyboardView(context: Context) : View(context) {
                 if (totalScale != 1f) c.scale(totalScale, totalScale, cx, cy)
             }
             val col = if (on) p.accent else if (lit > 0.05f) blendColor(p.hint, p.text, lit) else p.hint
-            Icons.draw(c, kind, cx, cy, s, col, bgc, d)
+            if (i == TOOL_SETTINGS) diamondLit = drawDiamond(c, cx, cy, s) or diamondLit
+            else Icons.draw(c, kind, cx, cy, s, col, bgc, d)
             if (moved) c.restore()
             if (k == selE && ext > 0f) {
                 // El nombre, al lado del ícono, dentro de la cápsula

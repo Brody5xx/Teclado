@@ -42,7 +42,7 @@ object Tools {
         Info(KeyboardView.TOOL_RESIZE, Icons.RESIZE, "Tamaño", "Resize", false),
         Info(KeyboardView.TOOL_LANG, Icons.GLOBE, "Idioma", "Language", false),
         Info(KeyboardView.TOOL_STYLE, Icons.BRUSH, "Estilo", "Style", true),
-        Info(KeyboardView.TOOL_SETTINGS, Icons.SETTINGS, "Ajustes", "Settings", true),
+        Info(KeyboardView.TOOL_SETTINGS, Icons.DIAMOND, "Ajustes", "Settings", true),
         Info(KeyboardView.TOOL_HACKER, Icons.HACKER, "Teclado PC", "PC keyboard", false),
         Info(KeyboardView.TOOL_VAULT, Icons.LOCK, "Datos", "Data", true),
         Info(KeyboardView.TOOL_CODE, Icons.CODE, "Modo código", "Code mode", false),

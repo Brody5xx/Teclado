@@ -100,6 +100,7 @@ object Icons {
     const val NETWORK = 82
     const val TAG = 83
     const val UNDO = 84
+    const val DIAMOND = 85
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -547,6 +548,27 @@ object Icons {
                 c.drawCircle(cx + s * 0.3f, cy, s * 0.14f, fl)
                 c.drawLine(cx - s * 0.65f, cy - s * 0.12f, cx - s * 0.05f, cy - s * 0.12f, st)
                 c.drawLine(cx - s * 0.65f, cy + s * 0.22f, cx - s * 0.25f, cy + s * 0.22f, st)
+            }
+            DIAMOND -> {
+                // 💎 El diamante del logo (Ajustes)
+                path.reset()
+                path.moveTo(cx, cy - s * 1.05f)
+                path.lineTo(cx + s * 0.72f, cy - s * 0.05f)
+                path.lineTo(cx, cy + s * 1.0f)
+                path.lineTo(cx - s * 0.72f, cy - s * 0.05f)
+                path.close()
+                c.drawPath(path, st)
+                val w = st.strokeWidth
+                st.strokeWidth = w * 0.55f
+                path.reset()
+                path.moveTo(cx, cy - s * 1.05f)
+                path.lineTo(cx + s * 0.27f, cy - s * 0.05f)
+                path.lineTo(cx, cy + s * 1.0f)
+                path.lineTo(cx - s * 0.27f, cy - s * 0.05f)
+                path.close()
+                c.drawPath(path, st)
+                st.strokeWidth = w
+                c.drawCircle(cx, cy - s * 1.05f, s * 0.14f, fl)
             }
             UNDO -> {
                 // Flecha curva hacia atrás

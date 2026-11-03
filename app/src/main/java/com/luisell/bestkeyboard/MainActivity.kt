@@ -963,6 +963,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.11.0" to tr("•  💎 El botón de Ajustes del teclado ahora es el diamante del logo, con sus colores y la misma línea de luz que lo traza y destella de vez en cuando.",
+            "•  💎 The keyboard's Settings button is now the logo diamond, with its colors and the same line of light that traces it and sparkles now and then."),
         "12.10.2" to tr("•  ☄️ La luz del logo ahora es una línea de luz que va trazando el borde del diamante; al terminar, todo el borde brilla, destella la punta y se apaga despacio.",
             "•  ☄️ The logo light is now a line of light that traces the diamond's edge; when it finishes, the whole edge glows, the tip sparkles and it fades out slowly."),
         "12.10.1" to tr("•  🛠️ Arreglado: la app se cerraba al empezar el destello del logo.", "•  🛠️ Fixed: the app closed when the logo sparkle started."),
