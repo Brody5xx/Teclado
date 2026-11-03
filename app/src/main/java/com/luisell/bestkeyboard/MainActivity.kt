@@ -418,17 +418,36 @@ class MainActivity : UiActivity() {
         sv.addView(root)
         col = root
 
-        // ---- Encabezado
-        val title = TextView(this)
-        title.text = "Best Keyboard"
-        title.textSize = 34f
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD))
-        title.setTextColor(TEXT)
-        title.post {
-            title.paint.shader = LinearGradient(0f, 0f, title.width.toFloat(), 0f, CYAN, VIOLET, Shader.TileMode.CLAMP)
-            title.invalidate()
+        // ---- Encabezado: el logo (diamante sobre el teclado) + «Best Keyboard» + la línea de luz
+        val logo = android.widget.ImageView(this)
+        logo.setImageResource(R.drawable.ic_fg_mix)
+        logo.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        root.addView(logo, LinearLayout.LayoutParams(dp(150), dp(150)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = -dp(22); bottomMargin = -dp(26) })
+        val name = LinearLayout(this)
+        name.orientation = LinearLayout.HORIZONTAL
+        name.gravity = Gravity.CENTER
+        val best = TextView(this)
+        best.text = "Best"
+        best.textSize = 34f
+        best.setTypeface(Typeface.create("sans-serif", Typeface.BOLD))
+        best.setTextColor(TEXT)
+        best.post {
+            best.paint.shader = LinearGradient(0f, 0f, best.width.toFloat(), 0f,
+                intArrayOf(0xFF67E8F9.toInt(), 0xFFA78BFA.toInt(), 0xFFF0ABFC.toInt()), null, Shader.TileMode.CLAMP)
+            best.invalidate()
         }
-        root.addView(title)
+        val kb = TextView(this)
+        kb.text = " Keyboard"
+        kb.textSize = 34f
+        kb.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL))
+        kb.setTextColor(0xFFF3F6FB.toInt())
+        name.addView(best)
+        name.addView(kb)
+        root.addView(name, LinearLayout.LayoutParams(-1, -2))
+        val glow = View(this)
+        glow.background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+            intArrayOf(0x0022D3EE, 0xFF22D3EE.toInt(), 0xFFFFFFFF.toInt(), 0xFF8B5CF6.toInt(), 0x008B5CF6))
+        root.addView(glow, LinearLayout.LayoutParams(dp(240), dp(2)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(8); bottomMargin = dp(14) })
         val version = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
         val meta = LinearLayout(this)
         meta.orientation = LinearLayout.HORIZONTAL
@@ -940,6 +959,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.7.0" to tr("•  💎 La pantalla principal ahora tiene el logo nuevo: el diamante sobre el teclado, «Best Keyboard» con su degradado y la línea de luz debajo.",
+            "•  💎 The main screen now shows the new logo: the diamond over the keyboard, «Best Keyboard» with its gradient and the light line below."),
         "12.6.2" to tr("•  ✨ Ícono nuevo de fábrica «Diamante sobre el teclado»: el diamante de cristal parado en la línea de luz azul, con un teclado de cristal en perspectiva y su reflejo.",
             "•  ✨ New default icon «Diamond on the keyboard»: the crystal diamond standing on the blue light line, with a glass keyboard in perspective and its reflection."),
         "12.6.1" to tr("•  ✨ Ícono nuevo «Diamante de luz»: el diamante de cristal cruzado por la línea de luz. Es el de fábrica; en Estilo → Ícono de la app puedes elegir también Línea de luz o Diamante.",
