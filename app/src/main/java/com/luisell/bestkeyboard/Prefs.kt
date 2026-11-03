@@ -123,6 +123,7 @@ object Prefs {
     const val BG_DIM = "bg_dim"                // qué tanto se oscurece ("0.25" / "0.45" / "0.65")
     const val BG_SOUND = "bg_sound"            // 🔊 el video suena
     const val BG_STAMP = "bg_stamp"            // cambia cada vez que eliges otro fondo (para recargarlo)
+    const val APP_ICON = "app_icon"            // ícono de la app: "light" (Línea de luz) o "diamond" (Diamante)
     const val SHORTCUTS = "shortcuts"          // ⚡ atajos de texto (/ok → frase)
     const val AUTO_SITES = "auto_sites"        // llegada y salida automáticas (geocercas)
     const val HOME_PENDING = "home_pending"            // llegaste a casa: se espera un rato antes de cerrar el día (por si solo paraste)

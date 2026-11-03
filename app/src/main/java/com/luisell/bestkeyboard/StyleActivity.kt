@@ -130,6 +130,39 @@ class StyleActivity : UiActivity() {
     }
 
     private lateinit var bgStatus: android.widget.TextView
+    private lateinit var iconRow: LinearLayout
+
+    private fun paintAppIcons() {
+        iconRow.removeAllViews()
+        val cur = prefs.getString(Prefs.APP_ICON, "light") ?: "light"
+        for ((id, res, name) in listOf(
+            Triple("light", R.mipmap.ic_light, tr("Línea de luz", "Light line")),
+            Triple("diamond", R.mipmap.ic_diamond, tr("Diamante", "Diamond")),
+        )) {
+            val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = android.view.Gravity.CENTER_HORIZONTAL; setPadding(dp(10), dp(10), dp(10), dp(10)) }
+            val sel = id == cur
+            box.background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dpf(22f)
+                if (sel) setStroke(dp(2), CYAN) else setStroke(dp(1), LINE)
+            }
+            val iv = android.widget.ImageView(this)
+            iv.setImageResource(res)
+            box.addView(iv, LinearLayout.LayoutParams(dp(76), dp(76)))
+            box.addView(android.widget.TextView(this).apply {
+                text = (if (sel) "✓ " else "") + name; textSize = 13f; setTextColor(if (sel) TEXT else SUB)
+                gravity = android.view.Gravity.CENTER; setPadding(0, dp(6), 0, 0)
+            })
+            box.setOnClickListener {
+                if (id == cur) return@setOnClickListener
+                setAppIcon(id)
+                paintAppIcons()
+                toast("Listo. El ícono cambia en unos segundos.", "Done. The icon changes in a few seconds.")
+            }
+            iconRow.addView(box, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(6), 0, dp(6), 0) })
+        }
+    }
+
+    private fun setAppIcon(id: String) = AppIcon.set(this, id)
 
     private fun paintBg() {
         bgStatus.text = when (BgMedia.kind(this)) {
@@ -244,6 +277,14 @@ class StyleActivity : UiActivity() {
     private fun buildOptions() {
         card(tr("Colores", "Colors"), Icons.THEME)
         themeGallery()
+        // ---- ✨ Ícono de la app
+        card(tr("Ícono de la app", "App icon"), Icons.SHAPES)
+        text(tr("Elige cómo se ve Best Keyboard en tu pantalla de inicio. Puede tardar unos segundos en cambiar.",
+            "Choose how Best Keyboard looks on your home screen. It may take a few seconds to change."), 12f, faded = true)
+        iconRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = android.view.Gravity.CENTER }
+        col.addView(iconRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(6) })
+        paintAppIcons()
+
         // ---- 🖼️ Fondo propio: tu imagen o tu video
         card(tr("Fondo propio", "Your own background"), Icons.IMAGE)
         text(tr("Pon una foto o un video de tu galería detrás de las teclas. El video se comprime para que vaya ligero, se ve completo y se repite sin fin.",
@@ -359,5 +400,21 @@ class StyleActivity : UiActivity() {
         segmented(tr("Volumen", "Volume"), Prefs.SOUND_VOL, "medium",
             listOf("low" to tr("Bajo", "Low"), "medium" to tr("Medio", "Medium"), "high" to tr("Alto", "High")))
         text(tr("No suena si el teléfono está en silencio o en vibración.", "It doesn't play when the phone is on silent or vibrate."), 12f, faded = true)
+    }
+}
+
+/** El ícono de la app en la pantalla de inicio: "light" (Línea de luz) o "diamond" (Diamante). */
+object AppIcon {
+    fun set(ctx: android.content.Context, id: String) {
+        Prefs.get(ctx).edit().putString(Prefs.APP_ICON, id).apply()
+        val pm = ctx.packageManager
+        val on = if (id == "diamond") ".IconDiamond" else ".IconLight"
+        val off = if (id == "diamond") ".IconLight" else ".IconDiamond"
+        try {
+            pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$on"),
+                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED, android.content.pm.PackageManager.DONT_KILL_APP)
+            pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$off"),
+                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED, android.content.pm.PackageManager.DONT_KILL_APP)
+        } catch (_: Exception) { }
     }
 }

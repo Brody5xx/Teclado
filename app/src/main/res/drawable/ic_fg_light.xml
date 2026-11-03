@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono "Línea de luz": teclado oscuro con la línea de luz de la barra de arriba -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#33FFFFFF"
+        android:pathData="M29,36h9v8h-9z M40,36h9v8h-9z M51,36h9v8h-9z M62,36h9v8h-9z M73,36h6v8h-6z M33,47h9v8h-9z M44,47h9v8h-9z M55,47h9v8h-9z M66,47h9v8h-9z M37,58h34v7h-34z" />
+    <!-- Brillo suave debajo de la línea -->
+    <path android:pathData="M24,72a30,8 0,1 0,60 0a30,8 0,1 0,-60 0z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="72" android:gradientRadius="30"
+                android:startColor="#6622D3EE" android:endColor="#0022D3EE" />
+        </aapt:attr>
+    </path>
+    <!-- La línea de luz -->
+    <path android:pathData="M22,71h64v2h-64z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="22" android:startY="72" android:endX="86" android:endY="72">
+                <item android:offset="0" android:color="#0022D3EE" />
+                <item android:offset="0.3" android:color="#FF22D3EE" />
+                <item android:offset="0.5" android:color="#FFFFFFFF" />
+                <item android:offset="0.7" android:color="#FF8B5CF6" />
+                <item android:offset="1" android:color="#008B5CF6" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>
