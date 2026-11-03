@@ -136,7 +136,7 @@ class StyleActivity : UiActivity() {
         iconRow.removeAllViews()
         val cur = prefs.getString(Prefs.APP_ICON, "mix") ?: "mix"
         for ((id, res, name) in listOf(
-            Triple("mix", R.mipmap.ic_mix, tr("Diamante de luz", "Light diamond")),
+            Triple("mix", R.mipmap.ic_mix, tr("Diamante sobre el teclado", "Diamond on the keyboard")),
             Triple("light", R.mipmap.ic_light, tr("Línea de luz", "Light line")),
             Triple("diamond", R.mipmap.ic_diamond, tr("Diamante", "Diamond")),
         )) {

@@ -940,6 +940,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.6.2" to tr("•  ✨ Ícono nuevo de fábrica «Diamante sobre el teclado»: el diamante de cristal parado en la línea de luz azul, con un teclado de cristal en perspectiva y su reflejo.",
+            "•  ✨ New default icon «Diamond on the keyboard»: the crystal diamond standing on the blue light line, with a glass keyboard in perspective and its reflection."),
         "12.6.1" to tr("•  ✨ Ícono nuevo «Diamante de luz»: el diamante de cristal cruzado por la línea de luz. Es el de fábrica; en Estilo → Ícono de la app puedes elegir también Línea de luz o Diamante.",
             "•  ✨ New «Light diamond» icon: the crystal diamond crossed by the light line. It's the default; in Style → App icon you can also pick Light line or Diamond."),
         "12.6" to tr("•  ✨ Ícono nuevo de la app: «Línea de luz». En Estilo → Ícono de la app también puedes elegir «Diamante».",
