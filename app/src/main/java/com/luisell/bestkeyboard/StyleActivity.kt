@@ -134,8 +134,10 @@ class StyleActivity : UiActivity() {
 
     private fun paintAppIcons() {
         iconRow.removeAllViews()
-        val cur = prefs.getString(Prefs.APP_ICON, "mix") ?: "mix"
+        val cur = prefs.getString(Prefs.APP_ICON, "name") ?: "name"
+        var line: LinearLayout? = null
         for ((id, res, name) in listOf(
+            Triple("name", R.mipmap.ic_name, tr("Con el nombre", "With the name")),
             Triple("mix", R.mipmap.ic_mix, tr("Diamante sobre el teclado", "Diamond on the keyboard")),
             Triple("light", R.mipmap.ic_light, tr("Línea de luz", "Light line")),
             Triple("diamond", R.mipmap.ic_diamond, tr("Diamante", "Diamond")),
@@ -159,7 +161,12 @@ class StyleActivity : UiActivity() {
                 paintAppIcons()
                 toast("Listo. El ícono cambia en unos segundos.", "Done. The icon changes in a few seconds.")
             }
-            iconRow.addView(box, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(4), 0, dp(4), 0) })
+            // De 2 en 2 para que quepan bien
+            if (line == null || line.childCount == 2) {
+                line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                iconRow.addView(line, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+            }
+            line.addView(box, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(4), 0, dp(4), 0) })
         }
     }
 
@@ -282,7 +289,7 @@ class StyleActivity : UiActivity() {
         card(tr("Ícono de la app", "App icon"), Icons.SHAPES)
         text(tr("Elige cómo se ve Best Keyboard en tu pantalla de inicio. Puede tardar unos segundos en cambiar.",
             "Choose how Best Keyboard looks on your home screen. It may take a few seconds to change."), 12f, faded = true)
-        iconRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = android.view.Gravity.CENTER }
+        iconRow = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         col.addView(iconRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(6) })
         paintAppIcons()
 
@@ -409,8 +416,8 @@ object AppIcon {
     fun set(ctx: android.content.Context, id: String) {
         Prefs.get(ctx).edit().putString(Prefs.APP_ICON, id).apply()
         val pm = ctx.packageManager
-        val all = mapOf("mix" to ".IconMix", "light" to ".IconLight", "diamond" to ".IconDiamond")
-        val want = all[id] ?: ".IconMix"
+        val all = mapOf("name" to ".IconName", "mix" to ".IconMix", "light" to ".IconLight", "diamond" to ".IconDiamond")
+        val want = all[id] ?: ".IconName"
         try {
             // Primero se prende el nuevo (así la app nunca se queda sin ícono) y luego se apagan los otros
             pm.setComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "com.luisell.bestkeyboard$want"),

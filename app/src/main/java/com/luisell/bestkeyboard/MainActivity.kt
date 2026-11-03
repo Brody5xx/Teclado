@@ -77,6 +77,12 @@ class MainActivity : UiActivity() {
         super.onCreate(savedInstanceState)
         prefs = Prefs.get(this)
         loadLang()
+        // Una sola vez: pasar al ícono nuevo con el nombre (si tenías el de fábrica)
+        if (!prefs.getBoolean("icon_name_v1", false)) {
+            prefs.edit().putBoolean("icon_name_v1", true).apply()
+            val ic = prefs.getString(Prefs.APP_ICON, null)
+            if (ic == null || ic == "mix") AppIcon.set(this, "name")
+        }
         title = "Best Keyboard"
         window.statusBarColor = BG
         window.navigationBarColor = BG
@@ -959,6 +965,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.7.1" to tr("•  💎 El ícono de la app ahora trae el nombre «Best Keyboard» debajo del diamante, con la línea de luz. Si prefieres el de antes, está en Estilo → Ícono de la app.",
+            "•  💎 The app icon now shows the name «Best Keyboard» under the diamond, with the light line. If you prefer the old one, it's in Style → App icon."),
         "12.7.0" to tr("•  💎 La pantalla principal ahora tiene el logo nuevo: el diamante sobre el teclado, «Best Keyboard» con su degradado y la línea de luz debajo.",
             "•  💎 The main screen now shows the new logo: the diamond over the keyboard, «Best Keyboard» with its gradient and the light line below."),
         "12.6.2" to tr("•  ✨ Ícono nuevo de fábrica «Diamante sobre el teclado»: el diamante de cristal parado en la línea de luz azul, con un teclado de cristal en perspectiva y su reflejo.",
