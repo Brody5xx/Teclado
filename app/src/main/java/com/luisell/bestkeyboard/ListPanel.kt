@@ -80,6 +80,9 @@ class ListPanel(context: Context) : FrameLayout(context) {
         applyPalette(palette)
     }
 
+    /** ✅ Esta fila (número) se ilumina con la luz del logo cuando se muestre (ej. lo que acabas de anotar). */
+    var flashRow = -1
+
     fun show(heading: String, items: List<Row>, emptyText: String, bottom: List<Pair<String, () -> Unit>>) {
         title.text = heading
         rows = items
@@ -101,7 +104,9 @@ class ListPanel(context: Context) : FrameLayout(context) {
             t.setPadding(d(20f), d(28f), d(20f), d(28f))
             list.addView(t, LinearLayout.LayoutParams(-1, -2))
         }
-        for (r in rows) {
+        val fr = flashRow
+        flashRow = -1
+        for ((ri, r) in rows.withIndex()) {
             val row = LinearLayout(context)
             row.orientation = LinearLayout.HORIZONTAL
             row.gravity = Gravity.CENTER_VERTICAL
@@ -141,6 +146,10 @@ class ListPanel(context: Context) : FrameLayout(context) {
             }
             r.onTap?.let { tap -> row.setOnClickListener { onFeedback?.invoke(); tap() } }
             list.addView(row, LinearLayout.LayoutParams(-1, -2).apply { setMargins(d(2f), d(3f), d(2f), d(3f)) })
+            if (ri == fr) row.post {
+                scroll.smoothScrollTo(0, maxOf(0, row.top - d(20f)))
+                LightFx.flash(row, d(16f).toFloat())
+            }
         }
         buttons.removeAllViews()
         for ((i, a) in actions.withIndex()) {

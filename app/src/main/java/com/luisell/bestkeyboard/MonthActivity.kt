@@ -64,6 +64,7 @@ class MonthActivity : UiActivity() {
         next.setOnClickListener { month.add(Calendar.MONTH, 1); chosen = -1; paint() }
         head.addView(prev, LinearLayout.LayoutParams(dp(44), dp(44)))
         head.addView(title, LinearLayout.LayoutParams(0, -2, 1f))
+        head.addView(DiamondView(this), LinearLayout.LayoutParams(dp(24), dp(24))) // 💎 con su luz
         head.addView(next, LinearLayout.LayoutParams(dp(44), dp(44)))
         root.addView(head)
         totals = text("", 13f, faded = true)

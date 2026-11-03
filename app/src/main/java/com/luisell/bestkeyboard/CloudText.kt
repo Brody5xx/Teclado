@@ -85,7 +85,7 @@ object CloudText {
                 }
                 sb.append(text, pos, text.length)
                 val r = Fixed(sb.toString(), changes, keep.size)
-                main.post { done(r, null) }
+                main.post { done(r, null); try { onSuccess?.invoke() } catch (_: Throwable) { } }
             } catch (e: HttpError) {
                 val msg = if (e.code == 429) L.t("Demasiadas revisiones seguidas. Espera un minuto.", "Too many checks in a row. Wait a minute.")
                 else L.t("El servicio de gramática no respondió. Inténtalo otra vez.", "The grammar service didn't respond. Try again.")
@@ -107,6 +107,9 @@ object CloudText {
     private fun googleMessage(body: String): String = try {
         JSONObject(body).optJSONObject("error")?.optString("message").orEmpty().take(140)
     } catch (_: Exception) { "" }
+
+    /** Se llama cuando la IA terminó bien (el teclado lo usa para el destello de luz). */
+    @JvmStatic var onSuccess: (() -> Unit)? = null
 
     /** Reescribe [text] formal y profesional con Google Gemini usando la clave gratis [key]. */
     fun formal(text: String, key: String, done: (List<String>?, String?) -> Unit) {
@@ -140,7 +143,7 @@ object CloudText {
                         }
                         val result = sb.toString().trim()
                         if (result.isNotEmpty()) {
-                            main.post { done(listOf(result), null) }
+                            main.post { done(listOf(result), null); try { onSuccess?.invoke() } catch (_: Throwable) { } }
                             return@execute
                         }
                         break // respuesta vacía: probar el siguiente modelo

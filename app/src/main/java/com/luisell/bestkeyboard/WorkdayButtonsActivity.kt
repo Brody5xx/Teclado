@@ -64,6 +64,7 @@ class WorkdayButtonsActivity : UiActivity() {
             title.invalidate()
         }
         head.addView(title)
+        head.addView(DiamondView(this), LinearLayout.LayoutParams(dp(26), dp(26)).apply { leftMargin = dp(10) }) // 💎 con su luz
         root.addView(head)
         text(tr("Prende solo los botones que usas y cámbiales el nombre como tú quieras (puedes poner un emoji al principio). " +
             "Se cambian en el teclado, el widget, la pantalla de bloqueo y los ajustes rápidos.",

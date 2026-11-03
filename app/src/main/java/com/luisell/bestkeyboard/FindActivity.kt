@@ -64,6 +64,7 @@ class FindActivity : UiActivity() {
             title.invalidate()
         }
         head.addView(title)
+        head.addView(DiamondView(this), LinearLayout.LayoutParams(dp(26), dp(26)).apply { leftMargin = dp(10) }) // 💎 con su luz
         root.addView(head)
 
         val box = EditText(this).apply {

@@ -56,6 +56,7 @@ class SitesActivity : UiActivity() {
             title.invalidate()
         }
         head.addView(title)
+        head.addView(DiamondView(this), LinearLayout.LayoutParams(dp(26), dp(26)).apply { leftMargin = dp(10) }) // 💎 con su luz
         root.addView(head)
 
         text(tr("Cuando tocas «📍 Llegué al sitio», el teclado usa el GPS para saber en cuál estás y lo pone en tu jornada y en el ticket (Location).",

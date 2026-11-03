@@ -249,10 +249,11 @@ class MainActivity : UiActivity() {
                             .setType("application/octet-stream").putExtra(Intent.EXTRA_TITLE, "best-keyboard-respaldo.bkb"), REQ_EXPORT)
                     } catch (_: Exception) { }
                 } else if (data != null) {
-                    toast("Restaurando…", "Restoring…")
+                    val busyDlg = busy("Restaurando tu copia…", "Restoring your backup…")
                     Thread {
                     val ok = try { Backup.import(this, data, pw) } catch (_: Throwable) { false }
                     runOnUiThread {
+                    busyDlg.close()
                     if (ok) {
                         // Lo que Android no deja pasar de un teléfono a otro: hay que darlo otra vez
                         android.app.AlertDialog.Builder(this)
@@ -294,9 +295,11 @@ class MainActivity : UiActivity() {
             REQ_AUTO -> {
                 val pw = backupPassword
                 backupPassword = ""
+                val busyDlg = busy("Guardando la primera copia…", "Saving the first backup…")
                 Thread {
                     AutoBackup.turnOn(this, uri, pw)
                     runOnUiThread {
+                        busyDlg.close()
                         toast("¡Listo! Se guarda una copia cada semana en esa carpeta.", "Done! A copy is saved every week in that folder.")
                         recreate()
                     }
@@ -309,7 +312,7 @@ class MainActivity : UiActivity() {
             REQ_EXPORT -> {
                 val pw = backupPassword
                 backupPassword = ""
-                toast("Guardando la copia…", "Saving the backup…")
+                val busyDlg = busy("Guardando la copia…", "Saving the backup…")
                 Thread {
                     val ok = try {
                         val bytes = Backup.export(this, pw)
@@ -317,6 +320,7 @@ class MainActivity : UiActivity() {
                         true
                     } catch (_: Throwable) { false }
                     runOnUiThread {
+                        busyDlg.close()
                         if (!ok) toast("No se pudo guardar el archivo.", "Couldn't save the file.")
                         else if (BgMedia.kind(this) == "video" && !Backup.videoFits(this))
                             toast("Copia guardada. Tu video de fondo es muy pesado para la copia: en el teléfono nuevo elígelo otra vez.",
@@ -867,9 +871,10 @@ class MainActivity : UiActivity() {
             text(tr("✅ Prendida. Última copia: ", "✅ On. Last copy: ") +
                 (if (last > 0) java.text.DateFormat.getDateTimeInstance().format(java.util.Date(last)) else tr("todavía no", "not yet")), 13f)
             button(tr("Hacer una copia ahora", "Make a copy now")) {
+                val busyDlg = busy("Haciendo la copia…", "Making the backup…")
                 Thread {
                     val ok = AutoBackup.runNow(this)
-                    runOnUiThread { toast(if (ok) "Copia guardada." else "No se pudo guardar. Vuelve a elegir la carpeta.",
+                    runOnUiThread { busyDlg.close(); toast(if (ok) "Copia guardada." else "No se pudo guardar. Vuelve a elegir la carpeta.",
                         if (ok) "Backup saved." else "Couldn't save. Pick the folder again.") }
                 }.start()
             }
@@ -963,6 +968,20 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.12.0" to tr("•  ✨ La luz del logo en todas partes:\n" +
+                "   ⏎ Al tocar Enter, la luz le da la vuelta a la tecla y destella.\n" +
+                "   ⌨️ Al abrir el teclado, la luz cruza la parte de arriba.\n" +
+                "   🤖 Cuando la IA o la traducción terminan, la luz sale del centro hacia los lados.\n" +
+                "   ⏳ Mientras esperas (traducir, IA, copia de seguridad, comprimir video) sale el diamante con la luz dando vueltas.\n" +
+                "   📍 En Mi jornada, lo que acabas de anotar se ilumina para que sepas que sí quedó.\n" +
+                "   💎 Cada pantalla de la app tiene el diamante al lado del título, con su luz.",
+            "•  ✨ The logo light everywhere:\n" +
+                "   ⏎ When you tap Enter, the light goes around the key and sparkles.\n" +
+                "   ⌨️ When the keyboard opens, the light crosses the top.\n" +
+                "   🤖 When the AI or a translation finishes, the light runs from the center to the sides.\n" +
+                "   ⏳ While you wait (translate, AI, backup, video compression) the diamond shows with its light spinning.\n" +
+                "   📍 In My workday, what you just logged lights up so you know it was saved.\n" +
+                "   💎 Every app screen has the diamond next to the title, with its light."),
         "12.11.0" to tr("•  💎 El botón de Ajustes del teclado ahora es el diamante del logo, con sus colores y la misma línea de luz que lo traza y destella de vez en cuando.",
             "•  💎 The keyboard's Settings button is now the logo diamond, with its colors and the same line of light that traces it and sparkles now and then."),
         "12.10.2" to tr("•  ☄️ La luz del logo ahora es una línea de luz que va trazando el borde del diamante; al terminar, todo el borde brilla, destella la punta y se apaga despacio.",

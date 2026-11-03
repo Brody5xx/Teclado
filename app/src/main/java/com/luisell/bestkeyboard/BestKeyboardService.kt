@@ -287,6 +287,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs.get(this)
+        CloudText.onSuccess = { kv?.flashAi() } // ✨ la IA terminó: destello de luz
         TicketReminder.schedule(this)
         @Suppress("DEPRECATION")
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
@@ -1510,7 +1511,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        if (!restarting) undoSnap = null
+        if (!restarting) { undoSnap = null; kv?.playIntro() } // ⌨️ la luz de bienvenida
         applySettings()
         if (BgMedia.kind(this) == "video") bgVideoView?.play()
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
@@ -3076,6 +3077,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             t.translate(text, { out ->
                 handler.post {
                     if (readTrans !== t) return@post
+                    kv?.flashAi() // ✨ ya está la traducción
                     val buttons = ArrayList<Pair<String, () -> Unit>>()
                     if (fromSel) buttons.add(L.t("Reemplazar", "Replace") to {
                         currentInputConnection?.commitText(out, 1)
@@ -3400,6 +3402,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // ---------------------------------------------------------------- Mi jornada
 
+    /** Cuántas cosas del día se veían la última vez (para iluminar la nueva). -1 = recién abierto. */
+    private var wdShownCount = -1
+
     private fun refreshWorkday() {
         val panel = workdayPanel ?: return
         val events = WorkDay.day(prefs)
@@ -3423,6 +3428,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     "Gross ${Pay.money(r.gross)} · take-home approx. ${Pay.money(r.net)}\nTap to see the breakdown"),
                 onTap = { showPay() }))
         }
+        // ✅ Lo que acabas de anotar se ilumina con la luz (así sabes que sí quedó)
+        if (events.size > wdShownCount && wdShownCount >= 0) {
+            val newest = events.maxByOrNull { it.time }
+            if (newest != null) panel.flashRow = rows.size + events.indexOf(newest)
+        }
+        wdShownCount = events.size
         for (e in events) {
             rows.add(ListPanel.Row(WorkStore.time(e.time), WorkDay.labelOf(e),
                 onTap = { adjustEvent(e.time, e.kind) },

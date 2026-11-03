@@ -39,6 +39,31 @@ abstract class UiActivity : Activity() {
     /** Idioma de la pantalla: el del teléfono, o el que elijas. */
     protected var en = false
     protected fun tr(es: String, en: String) = if (this.en) en else es
+    /** ⏳ Ventanita de «espera»: el diamante con la luz dando vueltas y un texto. Ciérrala con [android.app.Dialog.dismiss]. */
+    protected fun busy(es: String, en: String): android.app.Dialog {
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(28), dp(26), dp(28), dp(24))
+            background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(24f); setStroke(dp(1), LINE) }
+        }
+        box.addView(DiamondView(this, loader = true), LinearLayout.LayoutParams(dp(64), dp(64)))
+        box.addView(TextView(this).apply {
+            text = tr(es, en); textSize = 15f; setTextColor(TEXT); gravity = Gravity.CENTER; setPadding(0, dp(14), 0, 0)
+        })
+        val wrap = android.widget.FrameLayout(this).apply { setPadding(dp(40), 0, dp(40), 0); addView(box) }
+        val dlg = android.app.Dialog(this)
+        dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        dlg.setContentView(wrap)
+        dlg.setCancelable(false)
+        dlg.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+        dlg.window?.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+        try { dlg.show() } catch (_: Exception) { }
+        return dlg
+    }
+
+    protected fun android.app.Dialog.close() { try { if (isShowing) dismiss() } catch (_: Exception) { } }
+
     protected fun toast(es: String, en: String) = Toast.makeText(this, tr(es, en), Toast.LENGTH_LONG).show()
     protected fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     protected fun dpf(v: Float) = v * resources.displayMetrics.density

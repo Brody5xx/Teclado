@@ -1277,6 +1277,7 @@ class KeyboardView(context: Context) : View(context) {
         val key = findKey(x, y) ?: return
         activeKey = key
         if (forceTools) { forceTools = false; invalidate(0, 0, width, stripH.toInt() + 1) }
+        if (key.code == Codes.ENTER) { enterFlashKey = key; enterFlashAt = SystemClock.uptimeMillis() }
         lastPressKind = when (key.code) {
             Codes.DELETE -> Feedback.KIND_DELETE
             Codes.SPACE, Codes.ENTER -> Feedback.KIND_SPACE
@@ -1651,6 +1652,99 @@ class KeyboardView(context: Context) : View(context) {
         else if (ak != null && showPreview && ak.code == 0 && !longPressed) drawPreview(c, ak, p)
         if (spaceCursor) drawSlideHint(c)
         if (resizing) drawResize(c, p)
+        if (drawLightFx(c)) postInvalidateOnAnimation()
+    }
+
+    // ---------------------------------------------------------------- ✨ Las luces del logo en el teclado
+
+    private var enterFlashAt = 0L
+    private var enterFlashKey: Key? = null
+    private var introAt = 0L
+    private var aiFlashAt = 0L
+    private val fxLine = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val fxFill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val fxPath = android.graphics.Path()
+    private val fxMeasure = android.graphics.PathMeasure()
+    private val fxPt = FloatArray(2)
+    private val fxRect = RectF()
+
+    /** ⌨️ Al abrir el teclado: la luz cruza la parte de arriba y destella al final. */
+    fun playIntro() { introAt = SystemClock.uptimeMillis() + 120; postInvalidateOnAnimation() }
+
+    /** 🤖 La IA terminó: la luz sale del centro hacia los dos lados. */
+    fun flashAi() { aiFlashAt = SystemClock.uptimeMillis(); postInvalidateOnAnimation() }
+
+    /** Dibuja las luces que estén pasando. Devuelve true si hay que seguir animando. */
+    private fun drawLightFx(c: Canvas): Boolean {
+        var more = false
+        val now = SystemClock.uptimeMillis()
+        try {
+            // ⏎ Enter: la luz le da la vuelta a la tecla y destella
+            val ek = enterFlashKey
+            if (ek != null && now - enterFlashAt < 900L) {
+                val t = (now - enterFlashAt) / 900f
+                fxRect.set(ek.rect)
+                fxPath.reset()
+                fxPath.addRoundRect(fxRect, radius, radius, android.graphics.Path.Direction.CW)
+                fxMeasure.setPath(fxPath, true)
+                val len = fxMeasure.length
+                val sh = android.graphics.LinearGradient(fxRect.left, fxRect.top, fxRect.right, fxRect.bottom, LightFx.COLORS, null, android.graphics.Shader.TileMode.CLAMP)
+                if (t < 0.6f) {
+                    val head = LightFx.ease(t / 0.6f) * len
+                    LightFx.glow(c, fxMeasure, 0f, head, 0.5f, d, sh, fxLine, 0.8f)
+                    LightFx.glow(c, fxMeasure, maxOf(0f, head - len * 0.15f), head, 1f, d, sh, fxLine, 0.8f)
+                    fxMeasure.getPosTan(head, fxPt, null)
+                    LightFx.head(c, fxPt[0], fxPt[1], 4f * d, fxFill)
+                } else {
+                    val k = (t - 0.6f) / 0.4f
+                    LightFx.glow(c, fxMeasure, 0f, len, 1f - k, d, sh, fxLine, 0.8f)
+                    fxMeasure.getPosTan(0f, fxPt, null)
+                    LightFx.star(c, fxPt[0], fxPt[1], 7f * d, k, fxFill, fxLine, d)
+                }
+                more = true
+            } else enterFlashKey = null
+            // ⌨️ Al abrir: la luz cruza de izquierda a derecha por arriba
+            if (introAt > 0L && now >= introAt) {
+                val t = (now - introAt) / 1100f
+                if (t <= 1f) {
+                    val y = 1.2f * d
+                    fxPath.reset(); fxPath.moveTo(0f, y); fxPath.lineTo(width.toFloat(), y)
+                    fxMeasure.setPath(fxPath, false)
+                    val len = fxMeasure.length
+                    val sh = android.graphics.LinearGradient(0f, 0f, width.toFloat(), 0f, LightFx.COLORS, null, android.graphics.Shader.TileMode.CLAMP)
+                    if (t < 0.7f) {
+                        val head = LightFx.ease(t / 0.7f) * len
+                        LightFx.glow(c, fxMeasure, maxOf(0f, head - len * 0.35f), head, 1f, d, sh, fxLine, 0.7f)
+                        LightFx.head(c, head, y, 4.5f * d, fxFill)
+                    } else {
+                        val k = (t - 0.7f) / 0.3f
+                        LightFx.glow(c, fxMeasure, len * 0.65f, len, 1f - k, d, sh, fxLine, 0.7f)
+                        LightFx.star(c, width - 10f * d, y + 2f * d, 7f * d, k, fxFill, fxLine, d)
+                    }
+                    more = true
+                } else introAt = 0L
+            } else if (introAt > 0L) more = true
+            // 🤖 La IA terminó: del centro hacia los dos lados, por la línea de la barra de arriba
+            if (aiFlashAt > 0L) {
+                val t = (now - aiFlashAt) / 1000f
+                if (t <= 1f) {
+                    val y = stripH - 1f * d
+                    val mid = width / 2f
+                    val sh = android.graphics.LinearGradient(0f, 0f, width.toFloat(), 0f, LightFx.COLORS, null, android.graphics.Shader.TileMode.CLAMP)
+                    val reach = LightFx.ease((t / 0.7f).coerceAtMost(1f)) * mid
+                    val a = if (t < 0.7f) 1f else 1f - (t - 0.7f) / 0.3f
+                    for (dir in intArrayOf(-1, 1)) {
+                        fxPath.reset(); fxPath.moveTo(mid, y); fxPath.lineTo(mid + dir * mid, y)
+                        fxMeasure.setPath(fxPath, false)
+                        LightFx.glow(c, fxMeasure, maxOf(0f, reach - mid * 0.45f), reach, a, d, sh, fxLine, 0.7f)
+                        if (t < 0.7f) LightFx.head(c, mid + dir * reach, y, 4f * d, fxFill)
+                    }
+                    if (t < 0.45f) LightFx.star(c, mid, y, 8f * d, t / 0.45f, fxFill, fxLine, d)
+                    more = true
+                } else aiFlashAt = 0L
+            }
+        } catch (_: Throwable) { enterFlashKey = null; introAt = 0L; aiFlashAt = 0L; fxLine.shader = null; fxFill.shader = null }
+        return more
     }
 
     /** El costado vacío del modo una mano: flecha para cambiar de lado y botón para agrandar. */

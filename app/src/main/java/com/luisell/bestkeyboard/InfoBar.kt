@@ -27,6 +27,8 @@ class InfoBar(context: Context) : LinearLayout(context) {
         }
     }
     private val chips = LinearLayout(context)
+    /** 💎 El diamante con la luz dando vueltas mientras espera (traduciendo, la IA pensando…). */
+    private val loader = DiamondView(context, loader = true)
 
     init {
         PanelUi.glowScrollbar(scroll)
@@ -41,6 +43,8 @@ class InfoBar(context: Context) : LinearLayout(context) {
         title.setTypeface(title.typeface, Typeface.BOLD)
         title.setPadding(d(10f), 0, d(8f), 0)
         row.addView(title, LayoutParams(0, -2, 1f))
+        loader.visibility = GONE
+        row.addView(loader, LayoutParams(d(30f), d(30f)).apply { rightMargin = d(8f) })
         addView(row, LayoutParams(-1, -2))
         body.textSize = 15f
         body.setLineSpacing(d(2f).toFloat(), 1f)
@@ -61,6 +65,9 @@ class InfoBar(context: Context) : LinearLayout(context) {
     fun show(heading: String, text: String, buttons: List<Pair<String, () -> Unit>>) {
         title.text = heading
         body.text = text
+        // Si está esperando (sin botones y el texto termina en «…»), sale el diamante con su luz
+        loader.visibility = if (buttons.isEmpty() && text.trim().endsWith("…")) VISIBLE else GONE
+        if (loader.visibility == VISIBLE) loader.invalidate()
         scroll.visibility = if (text.isEmpty()) GONE else VISIBLE
         scroll.scrollTo(0, 0)
         chips.removeAllViews()

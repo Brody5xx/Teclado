@@ -52,6 +52,7 @@ class ShortcutsActivity : UiActivity() {
             title.invalidate()
         }
         head.addView(title)
+        head.addView(DiamondView(this), LinearLayout.LayoutParams(dp(26), dp(26)).apply { leftMargin = dp(10) }) // 💎 con su luz
         root.addView(head)
         text(tr("Escribe el atajo (por ejemplo /voy) y toca la barra espaciadora: se cambia solo por tu frase completa.",
             "Type the shortcut (for example /omw) and tap the space bar: it turns into your full phrase."), 13f, faded = true)

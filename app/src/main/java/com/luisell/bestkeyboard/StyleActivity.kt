@@ -68,6 +68,7 @@ class StyleActivity : UiActivity() {
             title.invalidate()
         }
         head.addView(title)
+        head.addView(DiamondView(this), LinearLayout.LayoutParams(dp(26), dp(26)).apply { leftMargin = dp(10) }) // 💎 con su luz
         screen.addView(head)
 
         // El teclado de muestra (se queda fijo arriba)
@@ -264,6 +265,7 @@ class StyleActivity : UiActivity() {
             title.paint.shader = android.graphics.LinearGradient(0f, 0f, title.width.toFloat(), 0f, CYAN, VIOLET, android.graphics.Shader.TileMode.CLAMP)
             title.invalidate()
         }
+        box.addView(DiamondView(this, loader = true), android.widget.LinearLayout.LayoutParams(dp(54), dp(54)).apply { bottomMargin = dp(8) })
         box.addView(title)
         box.addView(android.widget.TextView(this).apply {
             text = tr("Lo estoy achicando para que vaya ligero en el teclado. No cierres esta pantalla.",
