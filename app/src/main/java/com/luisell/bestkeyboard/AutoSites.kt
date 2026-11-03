@@ -29,6 +29,7 @@ object AutoSites {
     const val ACTION_MARK = "com.luisell.bestkeyboard.AUTO_MARK"
     const val ACTION_HOME_AT = "com.luisell.bestkeyboard.AUTO_HOME_AT"
     const val ACTION_EXIT_CHECK = "com.luisell.bestkeyboard.AUTO_EXIT_CHECK"
+    const val ACTION_HOME_CHECK = "com.luisell.bestkeyboard.AUTO_HOME_CHECK"
     const val EXTRA_TIME = "time"
     const val EXTRA_SITE = "site"
     private const val NEW_ID = "new:"
@@ -120,6 +121,13 @@ object AutoSites {
                 if (SiteStore.find(p, sn)?.isStart == true) startFromParking(ctx, sn, o.optLong("t")) else left(ctx, sn, o.optLong("t"))
                 return
             }
+            ACTION_HOME_CHECK -> {
+                // Pasó el rato en casa y no te fuiste: ahora sí se cierra el día (o se pregunta)
+                val t = p.getLong(Prefs.HOME_PENDING, 0L)
+                p.edit().remove(Prefs.HOME_PENDING).apply()
+                if (t > 0) closeAtHome(ctx, t)
+                return
+            }
             ACTION_HOME_AT -> {
                 val t = intent.getLongExtra(EXTRA_TIME, System.currentTimeMillis())
                 val k = intent.getStringExtra(WorkdayCenter.EXTRA_KIND) ?: WorkDay.HOME
@@ -149,7 +157,7 @@ object AutoSites {
                 when (ev.geofenceTransition) {
                     Geofence.GEOFENCE_TRANSITION_ENTER -> saveEnter(p, HOME_ID, at)
                     Geofence.GEOFENCE_TRANSITION_DWELL -> cameHome(ctx, takeEnter(p, HOME_ID) ?: (at - 2 * 60_000L))
-                    Geofence.GEOFENCE_TRANSITION_EXIT -> leftHome(ctx, at)
+                    Geofence.GEOFENCE_TRANSITION_EXIT -> { cancelHomePending(ctx); leftHome(ctx, at) }
                 }
                 continue
             }
@@ -214,6 +222,7 @@ object AutoSites {
         if (WorkDay.day(p).isNotEmpty()) return // ya empezaste hoy
         val first = WorkDay.enabledKinds().first()
         val t = WorkDay.addAt(p, first, "", at)
+        p.edit().putString(Prefs.PARKING_DAY, dayKey()).apply()
         WorkdayCenter.refresh(ctx)
         notify(ctx, L.t("🛻 Empezó tu día", "🛻 Your day started"),
             L.t("Saliste de $site a las ${WorkStore.time(t)}: anoté «${WorkDay.plainLabel(first)}».",
@@ -255,13 +264,52 @@ object AutoSites {
     }
 
     /** Llegaste a casa: si la jornada sigue abierta, se cierra con la hora en que llegaste. */
+    /**
+     * Llegaste a casa con el día abierto: todavía no se cierra. Se espera un rato (20 min) por si solo paraste
+     * a buscar o dejar algo. Si te vas antes, no pasa nada.
+     */
     private fun cameHome(ctx: Context, at: Long) {
         val p = Prefs.get(ctx)
         val day = WorkDay.day(p)
         if (!WorkDay.isRunning(day) || !WorkDay.isOn(WorkDay.HOME)) return
         val last = WorkDay.lastMain(day) ?: return
-        // Si todavía estás marcado en un sitio, primero se anota que saliste (a la hora de tu última salida conocida no se sabe: se deja)
         if (at <= last.time) return
+        p.edit().putLong(Prefs.HOME_PENDING, at).apply()
+        val wait = ((p.getString(Prefs.HOME_WAIT, "20") ?: "20").toIntOrNull() ?: 20).coerceIn(1, 120)
+        val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+        try { am.setWindow(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + wait * 60_000L, 60_000L, homeCheckIntent(ctx)) } catch (_: Exception) { }
+    }
+
+    private fun homeCheckIntent(ctx: Context): PendingIntent =
+        PendingIntent.getBroadcast(ctx, 5124, Intent(ctx, AutoSitesReceiver::class.java).setAction(ACTION_HOME_CHECK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    /** Te fuiste de la casa antes del rato de espera: era solo una parada. */
+    private fun cancelHomePending(ctx: Context) {
+        val p = Prefs.get(ctx)
+        if (p.getLong(Prefs.HOME_PENDING, 0L) <= 0L) return
+        p.edit().remove(Prefs.HOME_PENDING).apply()
+        (ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager)?.cancel(homeCheckIntent(ctx))
+    }
+
+    /** Te quedaste en casa: se cierra el día a la hora en que llegaste. Si empezaste en el parqueo, te pregunta. */
+    private fun closeAtHome(ctx: Context, at: Long) {
+        val p = Prefs.get(ctx)
+        val day = WorkDay.day(p)
+        if (!WorkDay.isRunning(day)) return
+        val last = WorkDay.lastMain(day) ?: return
+        if (at <= last.time) return
+        if (p.getString(Prefs.PARKING_DAY, "") == dayKey()) {
+            // Hoy recogiste la camioneta en el parqueo: normalmente terminas allá. Solo pregunta.
+            val fin = WorkDay.finalKind()
+            val yes = PendingIntent.getBroadcast(ctx, 5125, Intent(ctx, AutoSitesReceiver::class.java).setAction(ACTION_HOME_AT)
+                .putExtra(EXTRA_TIME, at).putExtra(WorkdayCenter.EXTRA_KIND, fin), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            notify(ctx, L.t("🏠 ¿Terminó tu día?", "🏠 Did your day end?"),
+                L.t("Estás en casa desde las ${WorkStore.time(at)}. Hoy recogiste la camioneta en el parqueo: si ya terminaste aquí, toca «Sí».",
+                    "You've been home since ${WorkStore.time(at)}. Today you picked up the truck at the parking lot: if you're done here, tap «Yes»."),
+                listOf(L.t("Sí, terminó a las ", "Yes, it ended at ") + WorkStore.time(at) to yes), 4722)
+            return
+        }
         val t = WorkDay.addAt(p, WorkDay.HOME, "", at)
         WorkdayCenter.refresh(ctx)
         (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(4722)
@@ -328,6 +376,8 @@ object AutoSites {
             L.t("Lo anoté solo: saliste a las ${WorkStore.time(t)}.", "Logged automatically: you left at ${WorkStore.time(t)}."),
             listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
     }
+
+    private fun dayKey() = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
 
     private fun undoIntent(ctx: Context, t: Long): PendingIntent =
         PendingIntent.getBroadcast(ctx, (t / 1000 % 100000).toInt(), Intent(ctx, AutoSitesReceiver::class.java).setAction(ACTION_UNDO).putExtra(EXTRA_TIME, t),

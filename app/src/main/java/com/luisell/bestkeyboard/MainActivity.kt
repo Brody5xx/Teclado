@@ -940,6 +940,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.5.2" to tr("•  🏠 Paradas en casa: al llegar a la casa con el día abierto se espera un rato (20 min) antes de cerrarlo. Si solo paraste y te vas antes, tu día sigue abierto.\n•  Si ese día recogiste la camioneta en el parqueo, en la casa solo te pregunta «¿Terminó tu día?».",
+            "•  🏠 Stops at home: when you get home with the day open, it waits a while (20 min) before closing it. If you just stopped and leave before, your day stays open.\n•  If you picked up the truck at the parking lot that day, at home it only asks «Did your day end?»."),
         "12.5.1" to tr("•  🏠 Si te recogen en tu casa: al salir de la casa sin haber empezado el día, te pregunta «¿Empezó tu día?» y, si dices que sí, empieza a la hora en que saliste.",
             "•  🏠 If you get picked up at home: when you leave home without having started the day, it asks «Did your day start?» and, if you say yes, it starts at the time you left."),
         "12.5" to tr("•  🛻 Parqueo de la camioneta (Mis sitios): guarda donde recoges y dejas la camioneta. Al salir de ahí empieza tu día solo, y al volver y quedarte, termina solo (con «Deshacer» y «Cambiar hora»).\n•  Toca un sitio guardado para cambiarle el pago o convertirlo en parqueo.",

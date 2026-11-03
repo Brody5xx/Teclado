@@ -64,6 +64,10 @@ class SitesActivity : UiActivity() {
         autoBtn = button("") { toggleAuto() }
         autoHelp = text("", 12f, faded = true)
         homeBtn = button("") { homeTap() }
+        segmented(tr("En casa, esperar antes de cerrar el día", "At home, wait before closing the day"), Prefs.HOME_WAIT, "20",
+            listOf("10" to "10 min", "20" to "20 min", "30" to "30 min", "45" to "45 min"))
+        text(tr("Así, si solo paras en tu casa a buscar o dejar algo y te vas antes, tu día sigue abierto.",
+            "That way, if you just stop at home to pick up or drop off something and leave before, your day stays open."), 12f, faded = true)
         segmented(tr("Esperar antes de anotar la salida", "Wait before logging the departure"), Prefs.AUTO_EXIT_WAIT, "10",
             listOf("5" to "5 min", "10" to "10 min", "15" to "15 min", "20" to "20 min"))
         text(tr("Adentro de edificios el GPS a veces brinca. Si vuelves a «entrar» antes de ese tiempo, no se anota ninguna salida.",
