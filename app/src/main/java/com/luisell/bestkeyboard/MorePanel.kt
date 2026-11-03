@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Shader
+import android.graphics.LinearGradient
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Handler
@@ -486,6 +488,7 @@ class ToolArranger(context: Context) : View(context) {
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val glowLine = Paint(Paint.ANTI_ALIAS_FLAG)
     private val tmp = RectF()
 
     // Zonas
@@ -581,19 +584,26 @@ class ToolArranger(context: Context) : View(context) {
         }
         c.restore()
 
-        // Títulos
-        fill.color = p.bg
-        c.drawRect(0f, 0f, width.toFloat(), gridTop - 4f * dd, fill)
-        text.color = p.hint
+        // Títulos (sin franja de color: se ve tu fondo; las de abajo no se suben porque están recortadas)
+        text.color = if (PanelUi.glass) p.text else p.hint
+        if (PanelUi.glass) text.setShadowLayer(4f * dd, 0f, 1f * dd, 0xCC000000.toInt())
         text.textAlign = Paint.Align.LEFT
         text.textSize = 12f * dd
         c.drawText(L.t("Barra de arriba — mantén presionado y arrastra", "Top bar — press, hold and drag"), 6f * dd, barArea.top - 7f * dd, text)
         c.drawText(L.t("Más opciones (un toque lo pasa a la barra)", "More options (tap to move to the bar)"), 6f * dd, gridTop - 10f * dd, text)
+        text.clearShadowLayer()
 
-        // La barra de arriba
-        fill.color = p.key
+        // La barra de arriba: como las teclas (vidrio con fondo propio), con borde fino del color del tema
         tmp.set(barArea.left + 2f * dd, barArea.top, barArea.right - 2f * dd, barArea.bottom)
-        c.drawRoundRect(tmp, 16f * dd, 16f * dd, fill)
+        fill.color = if (PanelUi.glass) (p.key and 0x00FFFFFF) or 0x59000000 else p.key
+        c.drawRoundRect(tmp, 18f * dd, 18f * dd, fill)
+        stroke.color = (p.accent and 0x00FFFFFF) or (if (PanelUi.glass) 0x99000000.toInt() else 0x66000000)
+        stroke.strokeWidth = 1.2f * dd
+        c.drawRoundRect(tmp, 18f * dd, 18f * dd, stroke)
+        // Línea de luz debajo, como en el teclado
+        glowLine.shader = LinearGradient(tmp.left + tmp.width() * 0.15f, 0f, tmp.right - tmp.width() * 0.15f, 0f,
+            intArrayOf(p.accent and 0x00FFFFFF, p.accent, 0xFFFFFFFF.toInt(), p.accent, p.accent and 0x00FFFFFF), null, Shader.TileMode.CLAMP)
+        c.drawRect(tmp.left + tmp.width() * 0.15f, tmp.bottom - 1.2f * dd, tmp.right - tmp.width() * 0.15f, tmp.bottom, glowLine)
         stroke.color = p.hint
         stroke.strokeWidth = 1.2f * dd
         val sw = slotW()
@@ -609,12 +619,12 @@ class ToolArranger(context: Context) : View(context) {
                 }
                 else -> {
                     if (t == pending && !dragging) {
-                        fill.color = p.keyPressed
+                        fill.color = (p.accent and 0x00FFFFFF) or 0x55000000
                         c.drawCircle(cx, cy, 19f * dd, fill)
                     }
                     val a = wiggle(t, 7f)
                     if (a != 0f) { c.save(); c.rotate(a, cx, cy) }
-                    Tools.info(t)?.let { Icons.draw(c, it.icon, cx, cy, minOf(10f * dd, sw * 0.24f), p.text, p.key, dd) }
+                    Tools.info(t)?.let { Icons.draw(c, it.icon, cx, cy, minOf(10f * dd, sw * 0.24f), if (t == Tools.FIXED) p.text else p.accent, p.key, dd) }
                     if (a != 0f) c.restore()
                 }
             }

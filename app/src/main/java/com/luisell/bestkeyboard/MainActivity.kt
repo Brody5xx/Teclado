@@ -965,6 +965,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.7.3" to tr("•  ✨ «Personalizar» (el lápiz ✎) más bonito: ya no tiene la franja oscura, la barra de arriba es de vidrio con borde y línea de luz, y los íconos son de color.",
+            "•  ✨ Nicer «Customize» (the pencil ✎): no more dark strip, the top bar is glass with a border and light line, and the icons are colored."),
         "12.7.2" to tr("•  ✨ «Más opciones» más bonito: los botones ahora se ven como las teclas, con un brillo suave, borde fino del color de tu tema e íconos de color. Con tu foto o video de fondo son de vidrio y se ve el fondo a través. Al tocarlos se iluminan.",
             "•  ✨ Nicer «More options»: the buttons now look like the keys, with a soft shine, a thin border in your theme color and colored icons. With your own photo or video background they're glass and you can see the background through them. They light up when tapped."),
         "12.7.1" to tr("•  💎 El ícono de la app ahora trae el nombre «Best Keyboard» debajo del diamante, con la línea de luz. Si prefieres el de antes, está en Estilo → Ícono de la app.",
