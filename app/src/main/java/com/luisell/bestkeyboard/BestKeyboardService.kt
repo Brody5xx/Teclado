@@ -40,7 +40,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private enum class Page { LETTERS, SYM, SYM2, NUM, IP }
     /** Teclado de números o el de IP/MAC (sin sugerencias ni teclado de PC). */
-    private val numLike get() = numLike || page == Page.IP
+    private val numLike: Boolean get() = page == Page.NUM || page == Page.IP
 
     private var kv: KeyboardView? = null
     private lateinit var prefs: SharedPreferences
