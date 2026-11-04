@@ -833,8 +833,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 // La hora puede venir en dos formatos: se acepta si es reciente en cualquiera
                 val age = minOf(kotlin.math.abs(System.currentTimeMillis() - ts), kotlin.math.abs(SystemClock.elapsedRealtime() - ts))
                 val sig = "clip:$ts:${text.hashCode()}"
-                if (age < QuickPaste.MAX_AGE_MS && sig != done) {
-                    val code = QuickPaste.asCode(text)
+                val code0 = QuickPaste.asCode(text)
+                // Lo copiado se queda hasta que lo pegues o toques ✕ (los códigos sí vencen a los 3 minutos)
+                if ((code0 == null || age < QuickPaste.MAX_AGE_MS) && sig != done) {
+                    val code = code0
                     if (code != null && codeOn) {
                         fromClip = QuickPaste.Item(code, L.t("Código: ", "Code: ") + code, true, sig, System.currentTimeMillis() - age)
                     } else if (copyOn && !isPassword) {
@@ -925,6 +927,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Tocaste "Captura de pantalla": se guarda en el portapapeles y se pega aquí. */
+    /** ✕ en la sugerencia: ya no se ofrece (lo copiado sigue en tu portapapeles 📋). */
+    private fun dismissChip() {
+        if (quick != null) {
+            val wasSave = quick?.save == true
+            clearQuick(forget = !wasSave)
+            checkScreenshot() // si había una captura esperando, ahora sale ella
+            return
+        }
+        val s = shot
+        if (s != null) prefs.edit().putLong(Prefs.SHOT_USED, s.id).apply()
+        else if (shotAsk) prefs.edit().putInt(Prefs.SHOT_ASKS, 3).putInt("shot_video_asks", 2).apply()
+        clearShot()
+    }
+
     private fun useScreenshot() {
         if (shotAsk) {
             clearShot()
@@ -2197,8 +2213,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (spellOn) stopSpell()
         if (hackerActive) { hackerText(text); return }
         if (codeOn && !codeAsking) { codeText(text); return }
-        if (quick != null) clearQuick(true)
-        if (shot != null || shotAsk) clearShot()
+        // Las sugerencias (pegar, capturas) se quedan hasta que las uses o toques su ✕
+        if (quick?.save == true) clearQuick(false)
         val ic = target() ?: return
         val phantom = phantomSpace
         phantomSpace = false
@@ -2412,6 +2428,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_VOICE -> showMode(3)
             KeyboardView.TOOL_EDIT -> showMode(5)
             KeyboardView.TOOL_SHOT -> if (quick != null) useQuick() else useScreenshot()
+            KeyboardView.TOOL_CHIP_X -> dismissChip()
             KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell(grammarNow = true) // ✅ directo a corregir gramática
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
             KeyboardView.TOOL_MORE -> showMode(6)

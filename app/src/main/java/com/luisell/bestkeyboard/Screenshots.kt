@@ -13,7 +13,7 @@ import android.util.Size
 /** Busca si tomaste una captura de pantalla hace poco (para sugerirla arriba del teclado). */
 object Screenshots {
     /** Cuánto tiempo se sugiere una captura después de tomarla. */
-    private const val MAX_AGE_SEC = 5 * 60L
+    private const val MAX_AGE_SEC = 24 * 3600L // se ofrece hasta que la uses o toques ✕
 
     class Shot(val id: Long, val uri: Uri, val mime: String, val added: Long = 0L) {
         /** Es una grabación de pantalla (video). */

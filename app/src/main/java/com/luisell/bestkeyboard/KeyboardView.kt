@@ -103,6 +103,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_LABELS = 64
         const val TOOL_UNDO = 65
         const val TOOL_REMIND = 66
+        const val TOOL_CHIP_X = 67
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -1023,6 +1024,7 @@ class KeyboardView(context: Context) : View(context) {
     private var chipLabel: String? = null
     private var chipIcon = Icons.IMAGE
     private val shotRect = RectF()
+    private val chipX = RectF()
     private val showingShot get() = chipLabel != null && !forceTools
 
     /** Botón grande en el centro de la barra (la captura de pantalla, o el aviso del permiso). */
@@ -1042,6 +1044,8 @@ class KeyboardView(context: Context) : View(context) {
         }
         if (showingShot) {
             if (x < menuW) return TOOL_MENU
+            // La ✕ chiquita a la derecha del botón quita la sugerencia
+            if (x >= chipX.left - 6f * d && x <= chipX.right + 10f * d) return TOOL_CHIP_X
             return if (x >= shotRect.left && x <= shotRect.right) TOOL_SHOT else -1
         }
         // Se toca lo que se VE: la cápsula con el nombre entera es de su botón, y los vecinos donde están dibujados
@@ -3011,7 +3015,8 @@ class KeyboardView(context: Context) : View(context) {
         text.textSize = stripH * 0.33f
         val tw = text.measureText(label)
         val h = stripH * 0.78f
-        val w = h + 10f * d + tw + 16f * d
+        val xr = h * 0.3f // la ✕
+        val w = h + 10f * d + tw + 12f * d + xr * 2 + 8f * d
         val left = (width - w) / 2f
         val top = (stripH - h) / 2f
         shotRect.set(left, top, left + w, top + h)
@@ -3053,6 +3058,12 @@ class KeyboardView(context: Context) : View(context) {
         text.textAlign = Paint.Align.LEFT
         drawLabel(c, label, cx + r + 10f * d, cy, stripH * 0.33f, p.text)
         text.textAlign = Paint.Align.CENTER
+        // ✕ chiquita para quitar la sugerencia
+        val xcx = shotRect.right - 8f * d - xr
+        chipX.set(xcx - xr, cy - xr, xcx + xr, cy + xr)
+        fill.color = if (stripPressed == TOOL_CHIP_X) alphaOf(PanelUi.border(p), 0.5f) else alphaOf(p.text, 0.14f)
+        c.drawCircle(xcx, cy, xr, fill)
+        Icons.draw(c, Icons.CLOSE, xcx, cy, xr * 0.5f, p.text, 0, d)
     }
 
     private fun drawSuggestions(c: Canvas, p: Palette) {
