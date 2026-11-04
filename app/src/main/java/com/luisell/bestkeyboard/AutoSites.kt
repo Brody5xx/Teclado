@@ -35,9 +35,13 @@ object AutoSites {
     private const val NEW_ID = "new:"
     private const val SITE_ID = "site:"
     private const val HOME_ID = "home"
-    /** Cuánto tienes que quedarte para que cuente como "llegué" (para no marcar si solo pasas por ahí). */
-    private const val DWELL_MS = 4 * 60 * 1000
-    private const val RADIUS = 250f
+    /**
+     * 🎯 Sensibilidad (como Samsung Rutinas): cuánto tienes que quedarte para que cuente como «llegué»
+     * y qué tan rápido avisa el teléfono. Alta = rápido; Baja = solo si de verdad te quedas.
+     */
+    private fun sens(ctx: Context) = Prefs.get(ctx).getString(Prefs.SITE_SENS, "normal") ?: "normal"
+    private fun dwellMs(ctx: Context): Int = when (sens(ctx)) { "high" -> 60_000; "low" -> 6 * 60_000; else -> 3 * 60_000 }
+    private fun responsiveMs(ctx: Context): Int = when (sens(ctx)) { "high" -> 0; "low" -> 3 * 60_000; else -> 60_000 }
 
     fun isOn(ctx: Context) = Prefs.get(ctx).getBoolean(Prefs.AUTO_SITES, false)
 
@@ -66,10 +70,11 @@ object AutoSites {
             if (s.lat == 0.0 && s.lon == 0.0) continue
             fences.add(Geofence.Builder()
                 .setRequestId(SITE_ID + s.name.take(80))
-                .setCircularRegion(s.lat, s.lon, RADIUS)
+                .setCircularRegion(s.lat, s.lon, SiteStore.radiusOf(p, s).toFloat())
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
-                .setLoiteringDelay(DWELL_MS)
+                .setLoiteringDelay(dwellMs(app))
+                .setNotificationResponsiveness(responsiveMs(app))
                 .build())
             if (fences.size >= 90) break
         }
@@ -81,13 +86,14 @@ object AutoSites {
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
                 .setLoiteringDelay(2 * 60 * 1000)
+                .setNotificationResponsiveness(responsiveMs(app))
                 .build())
         }
         // El lugar nuevo de hoy (no guardado): solo para saber cuándo te vas
         SiteStore.getNew(p)?.let { n ->
             fences.add(Geofence.Builder()
                 .setRequestId(NEW_ID + n.short.take(80))
-                .setCircularRegion(n.lat, n.lon, RADIUS)
+                .setCircularRegion(n.lat, n.lon, SiteStore.defaultRadius(p).toFloat())
                 .setExpirationDuration(18L * 3600 * 1000)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build())
@@ -168,14 +174,14 @@ object AutoSites {
             if (!isNew && SiteStore.find(p, site)?.isStart == true) {
                 when (ev.geofenceTransition) {
                     Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site) }
-                    Geofence.GEOFENCE_TRANSITION_DWELL -> endAtParking(ctx, site, takeEnter(p, site) ?: (at - DWELL_MS))
+                    Geofence.GEOFENCE_TRANSITION_DWELL -> endAtParking(ctx, site, takeEnter(p, site) ?: (at - dwellMs(ctx)))
                     Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); if (WorkDay.day(p).isEmpty()) pendingExit(ctx, site, at) }
                 }
                 continue
             }
             when (ev.geofenceTransition) {
                 Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site); falseExit(ctx, site, at) }
-                Geofence.GEOFENCE_TRANSITION_DWELL -> if (!isNew) arrived(ctx, site, takeEnter(p, site) ?: (at - DWELL_MS))
+                Geofence.GEOFENCE_TRANSITION_DWELL -> if (!isNew) arrived(ctx, site, takeEnter(p, site) ?: (at - dwellMs(ctx)))
                 Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); pendingExit(ctx, site, at) }
             }
         }

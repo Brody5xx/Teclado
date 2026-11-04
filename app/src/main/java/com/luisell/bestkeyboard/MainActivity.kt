@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.16.0" to tr("•  📏 Distancia de detección de los lugares (en Mis sitios): una para todos y, tocando un lugar, la suya propia viendo el círculo en un mapa (como Samsung Rutinas).\n•  🎯 Sensibilidad: Alta (1 minuto adentro y avisa al instante), Normal (3 minutos) o Baja (6 minutos, menos batería).",
+            "•  📏 Detection distance for places (in My sites): one for all and, by tapping a place, its own while seeing the circle on a map (like Samsung Routines).\n•  🎯 Sensitivity: High (1 minute inside and reacts right away), Normal (3 minutes) or Low (6 minutes, less battery)."),
         "12.15.1" to tr("•  ⏰ Arreglado: el aviso de las 8 horas en el sitio no llegaba (se confundía con el aviso viejo y se perdía al actualizar). Ahora también llega con el teléfono dormido.",
             "•  ⏰ Fixed: the 8-hours-on-site notice didn't arrive (it got mixed with the old notice and was lost when updating). It now also arrives with the phone asleep."),
         "12.15.0" to tr("•  ✕ Las sugerencias de arriba (pegar, capturas, grabaciones) tienen una ✕ chiquita. Ahora se quedan aunque sigas escribiendo, hasta que las pegues o toques la ✕ (lo copiado sigue en tu portapapeles).",

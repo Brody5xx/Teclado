@@ -11,9 +11,20 @@ object SiteStore {
      * [rate] = pago por hora especial en este sitio (0 = el normal).
      * [kind] = "site" (un trabajo) o "start" (🛻 donde recoges y dejas la camioneta: al salir empieza tu día, al volver termina).
      */
-    class Site(val name: String, val address: String, val lat: Double, val lon: Double, val rate: Double = 0.0, val kind: String = "site") {
+    class Site(val name: String, val address: String, val lat: Double, val lon: Double, val rate: Double = 0.0, val kind: String = "site",
+               /** 📏 Distancia de detección de este lugar en metros (0 = la de todos). */
+               val radius: Int = 0) {
         val isStart get() = kind == "start"
     }
+
+    /** 📏 La distancia que usan todos los lugares (si no le pusiste una propia). */
+    fun defaultRadius(p: SharedPreferences): Int = (p.getString(Prefs.SITE_RADIUS, "250") ?: "250").toIntOrNull()?.coerceIn(50, 2000) ?: 250
+
+    /** La distancia de detección de [s] en metros. */
+    fun radiusOf(p: SharedPreferences, s: Site): Int = if (s.radius > 0) s.radius else defaultRadius(p)
+
+    fun setRadius(p: SharedPreferences, name: String, r: Int) =
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, it.kind, r) else it })
 
     /** A cuántos metros cuenta como "estoy en ese sitio". */
     const val RADIUS_M = 400f
@@ -22,23 +33,23 @@ object SiteStore {
         val a = JSONArray(p.getString(Prefs.SITES, "[]"))
         (0 until a.length()).map {
             val o = a.getJSONObject(it)
-            Site(o.optString("n"), o.optString("a"), o.optDouble("la", 0.0), o.optDouble("lo", 0.0), o.optDouble("r", 0.0), o.optString("k", "site"))
+            Site(o.optString("n"), o.optString("a"), o.optDouble("la", 0.0), o.optDouble("lo", 0.0), o.optDouble("r", 0.0), o.optString("k", "site"), o.optInt("rd", 0))
         }
     } catch (_: Exception) { emptyList() }
 
     private fun save(p: SharedPreferences, list: List<Site>) {
         val a = JSONArray()
-        for (s in list) a.put(JSONObject().put("n", s.name).put("a", s.address).put("la", s.lat).put("lo", s.lon).put("r", s.rate).put("k", s.kind))
+        for (s in list) a.put(JSONObject().put("n", s.name).put("a", s.address).put("la", s.lat).put("lo", s.lon).put("r", s.rate).put("k", s.kind).put("rd", s.radius))
         p.edit().putString(Prefs.SITES, a.toString()).apply()
     }
 
     /** Pago por hora especial de un sitio (0 = el normal). */
     fun setRate(p: SharedPreferences, name: String, rate: Double) =
-        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, rate, it.kind) else it })
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, rate, it.kind, it.radius) else it })
 
     /** Cambia el tipo: sitio de trabajo, o 🛻 punto de comienzo y fin del día. */
     fun setKind(p: SharedPreferences, name: String, kind: String) =
-        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, kind) else it })
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, kind, it.radius) else it })
 
     fun add(p: SharedPreferences, site: Site) = save(p, all(p).filter { !it.name.equals(site.name, true) } + site)
     fun remove(p: SharedPreferences, name: String) = save(p, all(p).filter { it.name != name })
@@ -90,8 +101,10 @@ object SiteStore {
             if (s.lat == 0.0 && s.lon == 0.0) continue
             if (s.isStart) continue // el parqueo de la camioneta no es un sitio de trabajo
             android.location.Location.distanceBetween(lat, lon, s.lat, s.lon, out)
+            // Dentro de su área (más un margen, porque el GPS no es exacto)
+            if (out[0] > radiusOf(p, s) + 120f) continue
             if (out[0] < bestD) { bestD = out[0]; best = s }
         }
-        return if (bestD <= RADIUS_M) best else null
+        return best
     }
 }

@@ -137,6 +137,8 @@ object Prefs {
     const val HOME_WAIT = "home_wait"                  // cuántos minutos se espera en casa ("10" / "20" / "30")
     const val PARKING_DAY = "parking_day"              // el día que empezó en el parqueo de la camioneta (ese día termina allá)
     const val AUTO_EXIT_PENDING = "auto_exit_pending"  // saliste del sitio: se espera unos minutos antes de anotarlo
+    const val SITE_RADIUS = "site_radius"             // 📏 distancia de detección de los lugares, en metros
+    const val SITE_SENS = "site_sens"                 // 🎯 sensibilidad: "high", "normal" o "low"
     const val AUTO_EXIT_WAIT = "auto_exit_wait"        // cuántos minutos se espera ("5" / "10" / "15")
     const val AUTO_LEAVE = "auto_leave"        // la última salida que se anotó sola (por si el GPS brincó)
     const val AUTO_ENTER = "auto_enter"        // a qué hora entraste a cada sitio (para la hora de llegada)

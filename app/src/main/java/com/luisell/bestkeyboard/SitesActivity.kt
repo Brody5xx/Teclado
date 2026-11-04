@@ -73,6 +73,15 @@ class SitesActivity : UiActivity() {
             listOf("5" to "5 min", "10" to "10 min", "15" to "15 min", "20" to "20 min"))
         text(tr("Adentro de edificios el GPS a veces brinca. Si vuelves a «entrar» antes de ese tiempo, no se anota ninguna salida.",
             "Inside buildings GPS sometimes jumps. If you «come back in» before that time, no departure is logged."), 12f, faded = true)
+        // 📏🎯 Distancia y sensibilidad (como Samsung Rutinas)
+        segmented(tr("📏 Distancia de detección (todos los lugares)", "📏 Detection distance (all places)"), Prefs.SITE_RADIUS, "250",
+            listOf("100" to "100 m", "250" to "250 m", "400" to "400 m", "600" to "600 m", "1000" to "1 km")) { AutoSites.register(this); refresh() }
+        text(tr("Qué tan lejos del punto guardado cuenta como «estoy aquí». Toca un lugar abajo para ponerle su propia distancia en el mapa.",
+            "How far from the saved point counts as «I'm here». Tap a place below to give it its own distance on the map."), 12f, faded = true)
+        segmented(tr("🎯 Sensibilidad", "🎯 Sensitivity"), Prefs.SITE_SENS, "normal",
+            listOf("high" to tr("Alta", "High"), "normal" to "Normal", "low" to tr("Baja", "Low"))) { AutoSites.register(this); paintSens() }
+        sensHelp = text("", 12f, faded = true)
+        paintSens()
         paintAuto()
         button(tr("📍 Guardar donde estoy ahora", "📍 Save where I am now"), primary = true) { saveHere() }
         button(tr("🛻 Guardar el parqueo de la camioneta (estoy aquí)", "🛻 Save the truck parking lot (I'm here)")) { saveHere(start = true) }
@@ -93,6 +102,19 @@ class SitesActivity : UiActivity() {
         }
         if (!WorkdayCenter.hasLocation(this)) {
             requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 31)
+        }
+    }
+
+    private lateinit var sensHelp: TextView
+
+    private fun paintSens() {
+        if (!::sensHelp.isInitialized) return
+        sensHelp.text = when (prefs.getString(Prefs.SITE_SENS, "normal")) {
+            "high" -> tr("Alta: anota la llegada después de 1 minuto adentro y el teléfono avisa al instante. Gasta un poquito más de batería.",
+                "High: logs the arrival after 1 minute inside and the phone reacts right away. Uses a little more battery.")
+            "low" -> tr("Baja: solo si te quedas 6 minutos adentro (si solo pasas cerca, no cuenta). Gasta menos batería.",
+                "Low: only if you stay 6 minutes inside (just passing by doesn't count). Uses less battery.")
+            else -> tr("Normal: anota la llegada después de 3 minutos adentro.", "Normal: logs the arrival after 3 minutes inside.")
         }
     }
 
@@ -227,6 +249,7 @@ class SitesActivity : UiActivity() {
             c.addView(n)
             val a = TextView(this)
             a.text = (if (s.isStart) tr("Comienzo y fin del día · ", "Start and end of day · ") else "") + s.address.ifEmpty { tr("(sin dirección)", "(no address)") } +
+                "  ·  📏 " + SiteStore.radiusOf(prefs, s) + " m" + (if (s.radius > 0) "" else tr(" (la de todos)", " (default)")) +
                 if (s.lat == 0.0 && s.lon == 0.0) tr("  ·  ⚠️ sin GPS", "  ·  ⚠️ no GPS") else ""
             a.textSize = 12f
             a.setTextColor(SUB)
@@ -244,6 +267,7 @@ class SitesActivity : UiActivity() {
     /** Al tocar un sitio: su pago especial o cambiarlo a 🛻 parqueo (comienzo y fin del día). */
     private fun siteOptions(s: SiteStore.Site) {
         val opts = arrayOf(
+            tr("📏 Distancia de detección (en el mapa)", "📏 Detection distance (on the map)"),
             tr("💵 Pago por hora en este sitio", "💵 Hourly pay at this site"),
             if (s.isStart) tr("📍 Cambiar a sitio de trabajo normal", "📍 Change to a normal work site")
             else tr("🛻 Usarlo como parqueo de la camioneta (comienzo y fin del día)", "🛻 Use it as the truck parking (start and end of day)"),
@@ -251,9 +275,53 @@ class SitesActivity : UiActivity() {
         AlertDialog.Builder(this)
             .setTitle((if (s.isStart) "🛻 " else "📍 ") + s.name)
             .setItems(opts) { _, w ->
-                if (w == 0) askRate(s)
-                else { SiteStore.setKind(prefs, s.name, if (s.isStart) "site" else "start"); refresh() }
+                when (w) {
+                    0 -> askRadius(s)
+                    1 -> askRate(s)
+                    else -> { SiteStore.setKind(prefs, s.name, if (s.isStart) "site" else "start"); refresh() }
+                }
             }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
+    }
+
+    /** 📏 La distancia de un lugar, viendo el círculo en el mapa (como Samsung Rutinas). */
+    private fun askRadius(s: SiteStore.Site) {
+        if (s.lat == 0.0 && s.lon == 0.0) { toast("Este lugar no tiene GPS. Guárdalo estando ahí.", "This place has no GPS. Save it while you're there."); return }
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val map = MapPreview(this, s.lat, s.lon)
+        map.radius = SiteStore.radiusOf(prefs, s)
+        map.clipToOutline = true
+        map.background = GradientDrawable().apply { cornerRadius = dpf(18f); setColor(0xFF1B2230.toInt()) }
+        box.addView(map, LinearLayout.LayoutParams(-1, dp(240)))
+        val label = TextView(this).apply { textSize = 16f; setTextColor(TEXT); setPadding(0, dp(12), 0, dp(4)); gravity = Gravity.CENTER }
+        box.addView(label)
+        val steps = listOf(50, 75, 100, 125, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 1000, 1200, 1500, 2000)
+        fun show(r: Int) {
+            map.radius = r
+            label.text = "$r m  (" + Math.round(r * 3.281) + tr(" pies)", " ft)") +
+                if (r < 100) tr("\n⚠️ Muy chico: el GPS a veces no lo detecta.", "\n⚠️ Very small: GPS may miss it.") else ""
+        }
+        val bar = android.widget.SeekBar(this).apply {
+            max = steps.size - 1
+            progress = steps.indexOfFirst { it >= map.radius }.let { if (it < 0) steps.size - 1 else it }
+            setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(sb: android.widget.SeekBar?, v: Int, user: Boolean) { show(steps[v]) }
+                override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+                override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+            })
+        }
+        box.addView(bar, LinearLayout.LayoutParams(-1, -2))
+        show(map.radius)
+        AlertDialog.Builder(this)
+            .setTitle("📏 " + s.name)
+            .setMessage(tr("Mueve la barra: el círculo es el área donde cuenta que llegaste.", "Move the bar: the circle is the area where it counts as arrived."))
+            .setView(box)
+            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
+                SiteStore.setRadius(prefs, s.name, steps[bar.progress]); AutoSites.register(this); refresh()
+                toast("📏 Distancia guardada.", "📏 Distance saved.")
+            }
+            .setNeutralButton(tr("Usar la de todos", "Use default")) { _, _ -> SiteStore.setRadius(prefs, s.name, 0); AutoSites.register(this); refresh() }
             .setNegativeButton(tr("Cancelar", "Cancel"), null)
             .show()
     }
