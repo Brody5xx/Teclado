@@ -588,6 +588,9 @@ class MainActivity : UiActivity() {
 
         // ---- Barra espaciadora
         card(tr("Barra espaciadora", "Space bar"), Icons.GLOBE)
+        switch(tr("🌐 Cambiar el idioma solo", "🌐 Switch language automatically"), Prefs.AUTO_LANG, true,
+            tr("Si escribes 3 palabras seguidas en inglés, el teclado se pone en inglés solo (y al revés). Verás la luz en la barra espaciadora.",
+                "If you type 3 words in a row in Spanish, the keyboard switches by itself (and the other way). You'll see the light on the space bar."))
         switch(tr("Deslizar la barra cambia el idioma", "Swipe the space bar to change language"), Prefs.SPACE_LANG, false,
             tr("Se quita el botón 🌐. Desliza rápido para cambiar de idioma; mantén presionado y desliza para mover el cursor.",
                 "The 🌐 key goes away. Swipe fast to change language; press, hold and slide to move the cursor."))
@@ -968,6 +971,14 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.14.0" to tr("•  🎯 Sugerencias más precisas: ya casi no se mezcla el español con el inglés; el teclado recuerda en qué idioma usas cada palabra.\n" +
+                "•  🧠 Aprende más rápido: tus palabras nuevas se aprenden con escribirlas 2 veces, y lo que escribiste hace poco sale primero.\n" +
+                "•  🌐 Cambio de idioma solo: si escribes 3 palabras seguidas en el otro idioma, el teclado se cambia solo (con la luz en la barra espaciadora). Lo apagas en Ajustes.\n" +
+                "•  ✅ El botón de revisar ahora va directo a «Corregir gramática».",
+            "•  🎯 More accurate suggestions: Spanish and English barely mix now; the keyboard remembers which language you use each word in.\n" +
+                "•  🧠 Learns faster: your new words are learned after typing them twice, and what you typed recently comes first.\n" +
+                "•  🌐 Automatic language switch: if you type 3 words in a row in the other language, the keyboard switches by itself (with the light on the space bar). Turn it off in Settings.\n" +
+                "•  ✅ The check button now goes straight to «Fix grammar»."),
         "12.13.4" to tr("•  ⭐ La estrella de la luz de arriba es un poco más grande.", "•  ⭐ The star of the top light is a bit bigger."),
         "12.13.3" to tr("•  ⭐ La luz de arriba llega hasta el final de la derecha y ahí sale una estrella mediana.", "•  ⭐ The top light reaches the far right and a medium star appears there."),
         "12.13.2" to tr("•  ✨ Las sugerencias de arriba (pegar, capturas y grabaciones) son más bonitas: vidrio con brillo, borde de color y aro de colores en la miniatura, y todas tienen la luz dando vueltas.\n•  ⭐ La luz de arriba vuelve a ir hacia la derecha y termina en una estrellita completa, sin cortarse.",

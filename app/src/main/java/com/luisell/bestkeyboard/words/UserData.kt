@@ -12,13 +12,15 @@ class UserData {
      * [sure] = la confirmaste tú ("+ Mi palabra", tocarla entre comillas, deshacer una corrección).
      * [legacy] = guardada por una versión vieja (se respeta como antes).
      */
-    class Entry(var display: String, var count: Int, var sure: Boolean = false, var legacy: Boolean = false) {
+    class Entry(var display: String, var count: Int, var sure: Boolean = false, var legacy: Boolean = false, var en: Int = 0, var es: Int = 0) {
         val fold = TextUtil.fold(display)
         /** Cuenta como palabra tuya: confirmada, o escrita varias veces. */
         val known get() = sure || count >= (if (legacy) KNOWN else AUTO_KNOWN)
     }
 
     val words = HashMap<String, Entry>()
+    /** Cuándo la escribiste por última vez (solo mientras el teclado está abierto; para que lo reciente salga primero). */
+    val recent = HashMap<String, Long>()
     val bigrams = HashMap<String, HashMap<String, Int>>()
     @Volatile var dirty = false
 
@@ -32,16 +34,28 @@ class UserData {
 
     fun entry(lower: String): Entry? = words[lower]
 
-    fun add(display: String, amount: Int = 1) {
+    /** ¿Cuántas veces la escribiste en [lang]? ("es" o "en") */
+    fun countIn(lower: String, lang: String): Int {
+        val e = words[lower] ?: return 0
+        return if (lang == "en") e.en else e.es
+    }
+
+    fun add(display: String, amount: Int = 1, lang: String? = null) {
         val key = display.lowercase()
         val e = words[key]
+        val enAdd = if (lang == "en") amount else 0
+        val esAdd = if (lang == "es") amount else 0
         if (e == null) {
-            words[key] = Entry(display, amount)
+            words[key] = Entry(display, amount, en = enAdd, es = esAdd)
         } else {
             e.count = (e.count + amount).coerceAtMost(100000)
+            e.en = (e.en + enAdd).coerceAtMost(100000)
+            e.es = (e.es + esAdd).coerceAtMost(100000)
             // Si la escribes con una mayúscula especial (ej. "Luisell"), se recuerda así
-            if (display != key && e.display == key) words[key] = Entry(display, e.count, e.sure, e.legacy)
+            if (display != key && e.display == key) words[key] = Entry(display, e.count, e.sure, e.legacy, e.en, e.es)
         }
+        recent[key] = System.currentTimeMillis()
+        if (recent.size > 400) recent.entries.minByOrNull { it.value }?.let { recent.remove(it.key) }
         dirty = true
         if (words.size > MAX_WORDS) trimWords()
     }
@@ -98,7 +112,7 @@ class UserData {
         val sb = StringBuilder()
         for ((_, e) in words) {
             sb.append("w\t").append(e.display).append('\t').append(e.count).append('\t')
-                .append(if (e.sure) "1" else if (e.legacy) "L" else "0").append('\n')
+                .append(if (e.sure) "1" else if (e.legacy) "L" else "0").append('\t').append(e.en).append('\t').append(e.es).append('\n')
         }
         for ((p, m) in bigrams) for ((n, c) in m) {
             sb.append("b\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
@@ -111,10 +125,12 @@ class UserData {
         file.forEachLine(Charsets.UTF_8) { line ->
             val p = line.split('\t')
             when {
-                (p.size == 3 || p.size == 4) && p[0] == "w" -> {
+                (p.size in 3..6) && p[0] == "w" -> {
                     val c = p[2].toIntOrNull() ?: return@forEachLine
-                    val flag = if (p.size == 4) p[3] else "L" // versión vieja: se respeta como antes
-                    words[p[1].lowercase()] = Entry(p[1], c, sure = flag == "1", legacy = flag == "L")
+                    val flag = if (p.size >= 4) p[3] else "L" // versión vieja: se respeta como antes
+                    val en = if (p.size >= 5) (p[4].toIntOrNull() ?: 0) else 0
+                    val es = if (p.size >= 6) (p[5].toIntOrNull() ?: 0) else 0
+                    words[p[1].lowercase()] = Entry(p[1], c, sure = flag == "1", legacy = flag == "L", en = en, es = es)
                 }
                 p.size == 4 && p[0] == "b" -> {
                     val c = p[3].toIntOrNull() ?: return@forEachLine
@@ -126,8 +142,8 @@ class UserData {
 
     companion object {
         const val KNOWN = 2
-        /** Palabras que no están en el diccionario: hay que escribirlas 4 veces para aprenderlas solas. */
-        const val AUTO_KNOWN = 4
+        /** Palabras que no están en el diccionario: con escribirlas 2 veces ya las aprende sola. */
+        const val AUTO_KNOWN = 2
         const val MAX_WORDS = 20000
         const val MAX_BIGRAM_KEYS = 15000
     }

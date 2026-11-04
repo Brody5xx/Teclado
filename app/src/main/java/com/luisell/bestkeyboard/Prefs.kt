@@ -37,6 +37,7 @@ object Prefs {
     const val SUGGEST = "suggest"
     const val AUTOCORRECT = "autocorrect"
     const val LEARN = "learn"
+    const val AUTO_LANG = "auto_lang"   // 🌐 cambiar español/inglés solo, según lo que escribo
     const val CLIP_HISTORY = "clip_history"
     const val CLIP_LAST_SIG = "clip_last_sig"
     const val TR_SRC = "translate_from"

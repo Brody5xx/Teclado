@@ -11,7 +11,31 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
 
     class Result(val suggestions: List<String>, val correction: String?)
 
-    private fun langBonus(d: Dictionary, lang: String) = if (d.lang == lang) 0f else -2.0f
+    /** El otro idioma casi no aparece en las sugerencias (solo si no hay nada en el tuyo). */
+    private fun langBonus(d: Dictionary, lang: String) = if (d.lang == lang) 0f else -6.0f
+    /** Para corregir: el otro idioma cuenta menos, pero sí puede arreglar una palabra suya bien escrita. */
+    private fun fixBonus(d: Dictionary, lang: String) = if (d.lang == lang) 0f else -3.5f
+
+    /** ¿De qué idioma es esta palabra? "es", "en" o null si es de los dos (o de ninguno). */
+    fun langOf(lower: String): String? {
+        if (lower.any { it in "ñáéíóúü¿¡" }) return "es"
+        val es = dicts.firstOrNull { it.lang == "es" }?.indexOf(lower) ?: -1
+        val en = dicts.firstOrNull { it.lang == "en" }?.indexOf(lower) ?: -1
+        val ue = user.entry(lower)
+        if (es >= 0 && en < 0) return "es"
+        if (en >= 0 && es < 0) return "en"
+        if (es >= 0 && en >= 0) {
+            // En los dos: gana el que sea mucho más común
+            val de = dicts.first { it.lang == "es" }.logFreq[es]
+            val dn = dicts.first { it.lang == "en" }.logFreq[en]
+            return if (de > dn + 2.5f) "es" else if (dn > de + 2.5f) "en" else null
+        }
+        if (ue != null && ue.en + ue.es >= 3) {
+            if (ue.en >= ue.es * 3) return "en"
+            if (ue.es >= ue.en * 3) return "es"
+        }
+        return null
+    }
 
     /** ¿La palabra [cand] conserva los acentos y la ñ que escribiste? ("mañna" no debe volverse "manna") */
     private fun keepsMarks(typedLower: String, cand: String): Boolean {
@@ -20,15 +44,30 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return true
     }
 
-    private fun userBonus(lower: String): Float {
+    private fun userBonus(lower: String, lang: String? = null): Float {
         val c = user.count(lower)
-        return if (c > 0) 1.6f * ln(1f + c) else 0f
+        if (c <= 0) return 0f
+        var b = 2.2f * ln(1f + c)
+        if (lang != null) {
+            // Lo que escribes en este idioma pesa más; lo que solo usas en el otro, menos
+            val mine = user.countIn(lower, lang)
+            val other = user.countIn(lower, if (lang == "en") "es" else "en")
+            if (mine == 0 && other >= 2) b -= 2.5f      // solo la usas en el otro idioma
+            else b += 0.6f * ln(1f + mine)
+        }
+        // Lo que escribiste hace poco sale primero
+        val t = user.recent[lower]
+        if (t != null) {
+            val ago = System.currentTimeMillis() - t
+            b += if (ago < 20 * 60_000L) 1.4f else if (ago < 6 * 3600_000L) 0.6f else 0f
+        }
+        return b
     }
 
     private fun bigramBonus(prevLower: String?, lower: String): Float {
         if (prevLower == null) return 0f
         val c = user.bigramCount(prevLower, lower)
-        return if (c > 0) 2.5f * ln(1f + c) else 0f
+        return if (c > 0) 3.4f * ln(1f + c) else 0f
     }
 
     private fun inAnyDict(lower: String): Boolean = dicts.any { it.indexOf(lower) >= 0 }
@@ -61,7 +100,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             for (i in range) {
                 val w = d.words[i]
                 val key = if (w[0].isUpperCase()) w.lowercase() else w
-                var s = d.logFreq[i] + lb + userBonus(key) + bigramBonus(prevLower, key)
+                var s = d.logFreq[i] + lb + userBonus(key, lang) + bigramBonus(prevLower, key)
                 val extra = d.folds[i].length - tf.length
                 s += if (extra == 0) 0.6f else -0.08f * extra
                 if (key.startsWith(tl)) s += 0.4f
@@ -71,7 +110,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         }
         for ((key, e) in user.words) {
             if (!e.known || !e.fold.startsWith(tf) || inAnyDict(key)) continue
-            var s = 9f + userBonus(key) + bigramBonus(prevLower, key)
+            var s = 9f + userBonus(key, lang) + bigramBonus(prevLower, key)
             val extra = e.fold.length - tf.length
             s += if (extra == 0) 0.6f else -0.08f * extra
             top.offer(key, e.display, s)
@@ -82,7 +121,10 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     /** Palabras que sueles escribir después de [prev] (aprendido de ti). */
     fun predictions(prev: String, lang: String, max: Int = 3): List<String> {
         val m = user.bigrams[prev.lowercase()] ?: return emptyList()
-        return m.entries.sortedByDescending { it.value }.take(max).map { displayFor(it.key, lang) }
+        // Primero lo de tu idioma; lo del otro idioma solo si no hay más
+        return m.entries.sortedByDescending { it.value + (if (langOf(it.key).let { l -> l == null || l == lang }) 1000 else 0) }
+            .filter { langOf(it.key).let { l -> l == null || l == lang } || m.size <= max }
+            .take(max).map { displayFor(it.key, lang) }
     }
 
     fun suggest(typed: String, prev: String?, lang: String): Result {
@@ -138,7 +180,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         for (d in dicts) {
             val i = d.bestForFold(tf)
             if (i < 0 || d.logFreq[i] < MIN_ACCENT_LF || !keepsMarks(lower, d.words[i])) continue
-            val s = d.logFreq[i] + langBonus(d, lang)
+            val s = d.logFreq[i] + fixBonus(d, lang)
             if (s > bestScore) { bestScore = s; best = d.words[i] }
         }
         if (best != null) return best
@@ -153,12 +195,12 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
                 if (i < 0 || d.logFreq[i] < MIN_EDIT_LF) continue
                 val key = d.words[i].lowercase()
                 val marks = if (keepsMarks(lower, d.words[i])) 0f else -2.5f
-                val s = d.logFreq[i] + langBonus(d, lang) + penalty + marks + userBonus(key)
+                val s = d.logFreq[i] + fixBonus(d, lang) + penalty + marks + userBonus(key, lang)
                 if (s > bestScore) { bestScore = s; best = d.words[i] }
             }
             val e = mine[variant]
             if (e != null) {
-                val s = 10f + penalty + userBonus(e.display.lowercase())
+                val s = 10f + penalty + userBonus(e.display.lowercase(), lang)
                 if (s > bestScore) { bestScore = s; best = e.display }
             }
         }
@@ -166,7 +208,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         for (d in dicts) {
             val i = d.bestForSound(tf)
             if (i < 0 || d.folds[i] == tf || d.logFreq[i] < MIN_EDIT_LF) continue
-            val s = d.logFreq[i] + langBonus(d, lang) - 2.2f
+            val s = d.logFreq[i] + fixBonus(d, lang) - 2.2f
             if (s > bestScore) { bestScore = s; best = d.words[i] }
         }
         return best

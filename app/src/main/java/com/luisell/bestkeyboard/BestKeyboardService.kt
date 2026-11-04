@@ -1126,7 +1126,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // ---------------------------------------------------------------- Revisar ortografía
 
     /** Revisa todo el texto y empieza a mostrar los errores uno por uno. */
-    private fun startSpell() {
+    private fun startSpell(grammarNow: Boolean = false) {
         if (isPassword || !fieldSuggest) {
             Toast.makeText(this, L.t("Aquí no se puede revisar la ortografía.", "Spelling can't be checked here."), Toast.LENGTH_SHORT).show()
             return
@@ -1178,6 +1178,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         bar.resetButtons()
         bar.message(L.t("Revisando tu texto…", "Checking your text…"))
         kv?.spellOn = true
+        if (grammarNow) {
+            // ✅ El botón va directo a «Corregir gramática» (es lo más preciso)
+            if (text.isBlank()) { bar.message(L.t("Escribe algo primero.", "Type something first.")); handler.postDelayed({ if (spellOn) stopSpell() }, 1500); return }
+            ++spellToken
+            startGrammar()
+            return
+        }
         val lng = lang
         val token = ++spellToken
         // Se revisa en segundo plano para que el teclado no se trabe con textos largos
@@ -1252,7 +1259,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (rs >= 0 && re <= spellText.length) spellText = spellText.substring(0, rs) + word + spellText.substring(re)
         val delta = word.length - (e.end - e.start)
         for (x in spellErrors) if (x !== e && x.start >= e.end) { x.start += delta; x.end += delta }
-        WordStore.engine?.let { if (learnOn) { it.user.add(word); WordStore.scheduleSave() } }
+        WordStore.engine?.let { if (learnOn) { it.user.add(word, 1, lang); WordStore.scheduleSave() } }
     }
 
     /** Cambia la palabra elegida por la corrección y pasa a la siguiente. */
@@ -2141,7 +2148,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
         val eng = WordStore.engine
         if (eng != null && learnOn && fieldLearn) {
-            if (slot == slotTyped) eng.user.learn(w) else eng.user.add(w)
+            if (slot == slotTyped) eng.user.learn(w) else eng.user.add(w, 1, lang)
             if (prev != null) eng.user.addBigram(prev, w)
             WordStore.scheduleSave()
         }
@@ -2176,10 +2183,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
         }
         if (learnOn && fieldLearn) {
-            eng.user.add(final)
+            eng.user.add(final, 1, lang)
             if (prev != null) eng.user.addBigram(prev, final)
             WordStore.scheduleSave()
         }
+        autoLang(final)
         return fixed
     }
 
@@ -2314,14 +2322,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 rebuild()
                 updateAutoCaps()
             }
-            Codes.LANG -> {
-                lang = if (lang == "es") "en" else "es"
-                prefs.edit().putString(Prefs.LANG, lang).apply()
-                L.set(lang)
-                kv?.spaceLabel = if (lang == "es") "Español" else "English"
-                kv?.flashSpace() // 🌐 la luz cruza la barra espaciadora
-                scheduleUpdate()
-            }
+            Codes.LANG -> setLang(if (lang == "es") "en" else "es")
         }
     }
 
@@ -2411,7 +2412,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_VOICE -> showMode(3)
             KeyboardView.TOOL_EDIT -> showMode(5)
             KeyboardView.TOOL_SHOT -> if (quick != null) useQuick() else useScreenshot()
-            KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell()
+            KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell(grammarNow = true) // ✅ directo a corregir gramática
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
             KeyboardView.TOOL_MORE -> showMode(6)
             KeyboardView.TOOL_HACKER -> toggleHacker()
@@ -3432,6 +3433,40 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             listOf(L.t("¡Genial!", "Awesome!") to { closeInfo() }))
     }
 
+    // ---------------------------------------------------------------- 🌐 Idioma (y cambio solo)
+
+    /** Cambia el idioma del teclado (con la luz alrededor de la barra espaciadora). */
+    private fun setLang(l: String) {
+        if (l == lang) return
+        lang = l
+        prefs.edit().putString(Prefs.LANG, lang).apply()
+        L.set(lang)
+        kv?.spaceLabel = if (lang == "es") "Español" else "English"
+        kv?.flashSpace() // 🌐 la luz le da la vuelta a la barra espaciadora
+        langVotes.clear()
+        scheduleUpdate()
+    }
+
+    /** Lo que dicen las últimas palabras que escribiste: "es", "en" (las que son de los dos no cuentan). */
+    private val langVotes = ArrayDeque<String>()
+
+    /**
+     * 🤖 Cambio de idioma solo: si tus últimas palabras son claramente del otro idioma
+     * (3 seguidas, o 3 de las últimas 4), el teclado se cambia solo.
+     */
+    private fun autoLang(word: String) {
+        if (!prefs.getBoolean(Prefs.AUTO_LANG, true) || isPassword || codeOn || hackerActive) return
+        val w = word.lowercase().trim('\'', '’')
+        if (w.length < 2) return
+        val v = WordStore.engine?.langOf(w) ?: return
+        langVotes.addLast(v)
+        while (langVotes.size > 4) langVotes.removeFirst()
+        val other = if (lang == "es") "en" else "es"
+        val n = langVotes.count { it == other }
+        val last3 = langVotes.takeLast(3)
+        if ((last3.size == 3 && last3.all { it == other }) || n >= 3) setLang(other)
+    }
+
     /** Cuántas cosas del día se veían la última vez (para iluminar la nueva). -1 = recién abierto. */
     private var wdShownCount = -1
 
@@ -4431,7 +4466,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
         val eng = WordStore.engine
         if (eng != null && learnOn && fieldLearn) {
-            eng.user.add(word)
+            eng.user.add(word, 1, lang)
             if (prev != null) eng.user.addBigram(prev, word)
             WordStore.scheduleSave()
         }
