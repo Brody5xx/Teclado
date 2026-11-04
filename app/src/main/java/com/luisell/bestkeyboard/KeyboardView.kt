@@ -1703,24 +1703,24 @@ class KeyboardView(context: Context) : View(context) {
                 }
                 more = true
             } else enterFlashKey = null
-            // ⌨️ Al abrir: la luz cruza de derecha a izquierda por el borde de arriba y termina en una estrella grande a la izquierda
+            // ⌨️ Al abrir: la luz cruza de izquierda a derecha por arriba y termina en una estrellita completa, centrada en la línea
             if (introAt > 0L && now >= introAt) {
-                val t = (now - introAt) / 1400f
+                val t = (now - introAt) / 1300f
                 if (t <= 1f) {
                     val y = INTRO_Y * d
-                    val endX = 24f * d
-                    fxPath.reset(); fxPath.moveTo(width.toFloat(), y); fxPath.lineTo(endX, y)
+                    val endX = width - 22f * d
+                    fxPath.reset(); fxPath.moveTo(0f, y); fxPath.lineTo(endX, y)
                     fxMeasure.setPath(fxPath, false)
                     val len = fxMeasure.length
                     val sh = android.graphics.LinearGradient(0f, 0f, width.toFloat(), 0f, LightFx.COLORS, null, android.graphics.Shader.TileMode.CLAMP)
-                    if (t < 0.58f) {
-                        val head = LightFx.ease(t / 0.58f) * len
-                        LightFx.glow(c, fxMeasure, maxOf(0f, head - len * 0.35f), head, 1f, d, sh, fxLine, 0.8f)
-                        LightFx.head(c, width - head, y, 6f * d, fxFill)
+                    if (t < 0.6f) {
+                        val head = LightFx.ease(t / 0.6f) * len
+                        LightFx.glow(c, fxMeasure, maxOf(0f, head - len * 0.35f), head, 1f, d, sh, fxLine, 0.7f)
+                        LightFx.head(c, head, y, 4f * d, fxFill)
                     } else {
-                        val k = (t - 0.58f) / 0.42f
-                        LightFx.glow(c, fxMeasure, len * 0.6f, len, 1f - k, d, sh, fxLine, 0.8f)
-                        LightFx.star(c, endX, y, 20f * d, k, fxFill, fxLine, d, bold = true)
+                        val k = (t - 0.6f) / 0.4f
+                        LightFx.glow(c, fxMeasure, len * 0.6f, len, 1f - k, d, sh, fxLine, 0.7f)
+                        LightFx.star(c, endX, y, 4.5f * d, k, fxFill, fxLine, d, maxUp = y - 0.5f * d)
                     }
                     more = true
                 } else introAt = 0L
@@ -1755,8 +1755,8 @@ class KeyboardView(context: Context) : View(context) {
                 val sp = rows.asSequence().flatten().firstOrNull { it.code == Codes.SPACE }
                 if (t <= 1f && sp != null) { traceRound(c, RectF(sp.rect), radius, t); more = true } else spaceFlashAt = 0L
             }
-            // 📋 La sugerencia de pegar: la luz da vueltas sin parar mientras esté (como Shift fijo)
-            if (!showingSuggestions && showingShot && chipIcon == Icons.CLIP && shotRect.width() > 0f) {
+            // 📋🖼️🎬 Las sugerencias (pegar, capturas, grabaciones): la luz da vueltas sin parar mientras estén
+            if (!showingSuggestions && showingShot && shotRect.width() > 0f) {
                 traceLoop(c, shotRect, shotRect.height() / 2f, (now % 2400L) / 2400f)
                 more = true
             }
@@ -1785,7 +1785,7 @@ class KeyboardView(context: Context) : View(context) {
         return more
     }
 
-    private val INTRO_Y = 1.5f
+    private val INTRO_Y = 5f
     private var spaceFlashAt = 0L
     private var toolFlashAt = 0L
     private var toolFlashTool = -1
@@ -3014,8 +3014,18 @@ class KeyboardView(context: Context) : View(context) {
         val left = (width - w) / 2f
         val top = (stripH - h) / 2f
         shotRect.set(left, top, left + w, top + h)
-        fill.color = if (stripPressed == TOOL_SHOT) p.keyPressed else p.key
+        // ✨ Botón bonito: vidrio con brillo arriba, borde fino del color del tema (o el tuyo)
+        val pressedChip = stripPressed == TOOL_SHOT
+        val base = if (pressedChip) PanelUi.border(p) else PanelUi.fill(p)
+        val ga = if (bgImage != null || bgVideo) PanelUi.glassAlpha() else 0xFF
+        fill.shader = android.graphics.LinearGradient(0f, top, 0f, top + h,
+            alphaOf(blendColor(base, 0xFFFFFFFF.toInt(), 0.14f), (if (pressedChip) 0.55f else ga / 255f)),
+            alphaOf(base, (if (pressedChip) 0.35f else ga / 255f * 0.8f)), android.graphics.Shader.TileMode.CLAMP)
         c.drawRoundRect(shotRect, h / 2f, h / 2f, fill)
+        fill.shader = null
+        stroke.color = alphaOf(PanelUi.border(p), 0.55f)
+        stroke.strokeWidth = PanelUi.lineWidth(1.2f * d)
+        if (stroke.strokeWidth > 0f) c.drawRoundRect(shotRect, h / 2f, h / 2f, stroke)
         // Miniatura en círculo
         val r = h / 2f - 3f * d
         val cx = left + 3f * d + r
@@ -3029,8 +3039,15 @@ class KeyboardView(context: Context) : View(context) {
             tmp.set(cx - b.width * sc / 2, cy - b.height * sc / 2, cx + b.width * sc / 2, cy + b.height * sc / 2)
             c.drawBitmap(b, null, tmp, null)
             c.restore()
+            // Aro de colores alrededor de la miniatura
+            stroke.shader = android.graphics.SweepGradient(cx, cy, intArrayOf(LightFx.COLORS[0], LightFx.COLORS[1], LightFx.COLORS[2], LightFx.COLORS[0]), null)
+            stroke.strokeWidth = 1.6f * d
+            c.drawCircle(cx, cy, r, stroke)
+            stroke.shader = null
         } else {
-            Icons.draw(c, chipIcon, cx, cy, r * 0.6f, p.text, p.key, d)
+            fill.color = alphaOf(PanelUi.border(p), 0.18f)
+            c.drawCircle(cx, cy, r, fill)
+            Icons.draw(c, chipIcon, cx, cy, r * 0.6f, PanelUi.icon(p), p.key, d)
         }
         text.textAlign = Paint.Align.LEFT
         drawLabel(c, label, cx + r + 10f * d, cy, stripH * 0.33f, p.text)
