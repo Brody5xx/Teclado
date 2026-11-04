@@ -1541,6 +1541,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         if (!restarting) { undoSnap = null; kv?.playIntro() } // ⌨️ la luz de bienvenida
+        if (driveSticky() && !isPassword && mode != 14) handler.post { if (driveSticky()) showMode(14) } // 🛻 sigue en modo manejando
         applySettings()
         if (BgMedia.kind(this) == "video") bgVideoView?.play()
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
@@ -3684,8 +3685,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         msgs.add(tx("Voy de regreso a casa.", "I'm heading home."))
         val buttons = ArrayList<Pair<String, () -> Unit>>()
         buttons.add((if (en) "🇪🇸 Español" else "🇺🇸 English") to { startStatus(!en) })
-        for (m in msgs.distinct()) buttons.add(m to { insertText(m); closeInfo() })
-        buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+        // 🛻 Al mandar (o cerrar) el mensaje de estado, si ibas en modo manejando, sigues en él
+        for (m in msgs.distinct()) buttons.add(m to { insertText(m); closeInfo(); if (driveSticky()) showMode(14) })
+        buttons.add(L.t("Cerrar", "Close") to { closeInfo(); if (driveSticky()) showMode(14) })
         infoRegen = { startStatus(english) }
         bar.show(L.t("📲 Mensaje de estado", "📲 Status message"), "", buttons)
     }

@@ -971,6 +971,7 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.16.3" to tr("•  🛻 Al mandar un mensaje de estado, el modo manejando se queda.", "•  🛻 Sending a status message keeps driving mode on."),
         "12.16.2" to tr("•  🛻 El modo manejando ya no se quita solo: después de dictar, marcar tu jornada o cerrar el teclado, vuelve al modo manejando. Se quita solo con «⌨️ Teclado», la flecha ← o tocando su botón otra vez.",
             "•  🛻 Driving mode no longer turns off by itself: after dictating, logging your workday or closing the keyboard, it comes back to driving mode. It only turns off with «⌨️ Keyboard», the ← arrow or tapping its button again."),
         "12.16.1" to tr("•  🌐 El idioma se cambia solo con 2 palabras seguidas (antes 3).\n•  🇺🇸 En inglés el teclado es de inglés de verdad: sin la ñ en su fila (la sacas manteniendo la n).",
