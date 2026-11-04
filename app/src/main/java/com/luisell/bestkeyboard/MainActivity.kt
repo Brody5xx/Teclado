@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.16.2" to tr("•  🛻 El modo manejando ya no se quita solo: después de dictar, marcar tu jornada o cerrar el teclado, vuelve al modo manejando. Se quita solo con «⌨️ Teclado», la flecha ← o tocando su botón otra vez.",
+            "•  🛻 Driving mode no longer turns off by itself: after dictating, logging your workday or closing the keyboard, it comes back to driving mode. It only turns off with «⌨️ Keyboard», the ← arrow or tapping its button again."),
         "12.16.1" to tr("•  🌐 El idioma se cambia solo con 2 palabras seguidas (antes 3).\n•  🇺🇸 En inglés el teclado es de inglés de verdad: sin la ñ en su fila (la sacas manteniendo la n).",
             "•  🌐 The language now switches after 2 words in a row (was 3).\n•  🇺🇸 In English the keyboard is truly English: no ñ in its row (hold n to get it)."),
         "12.16.0" to tr("•  📏 Distancia de detección de los lugares (en Mis sitios): una para todos y, tocando un lugar, la suya propia viendo el círculo en un mapa (como Samsung Rutinas).\n•  🎯 Sensibilidad: Alta (1 minuto adentro y avisa al instante), Normal (3 minutos) o Baja (6 minutos, menos batería).",

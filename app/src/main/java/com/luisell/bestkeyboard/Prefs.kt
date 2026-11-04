@@ -161,6 +161,7 @@ object Prefs {
     const val LUNCH_RULE = "lunch_rule"        // "always" = siempre descuenta el tiempo fijo; "real" = lo que marques
     const val LUNCH_AUTO = "lunch_auto"        // "0" / "30" / "45" / "60": si no lo marcas, cuenta este tiempo
     /** Si hoy vas manejando: "yyyy-MM-dd:yes" o ":no" (se pregunta una vez al día). */
+    const val DRIVE_STICKY = "drive_sticky"    // 🛻 día en que el modo manejando quedó fijo
     const val DRIVING_DAY = "driving_day"
     /** Respaldo automático: carpeta elegida, contraseña (cifrada) y la última vez. */
     const val AUTO_BACKUP_DIR = "auto_backup_dir"

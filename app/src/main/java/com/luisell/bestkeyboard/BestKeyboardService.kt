@@ -557,10 +557,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
             override fun onDriveKeyboard() {
                 driveSkipEvent = WorkDay.day(prefs).lastOrNull()?.time ?: -1L
+                setDriveSticky(false)
                 showMode(0)
             }
             override fun onDriveNotDriving() {
                 setDriving(false)
+                setDriveSticky(false)
                 showMode(0)
             }
             override fun onDriveFeedback() = onKeyFeedback()
@@ -682,7 +684,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Cambia entre teclas, emojis y portapapeles (los paneles usan la misma altura del teclado). */
-    private fun showMode(m: Int) {
+    private fun showMode(want: Int) {
+        // 🛻 Modo manejando fijo: se queda hasta que toques «⌨️ Teclado», la flecha ← o su botón otra vez
+        val m = if (want == 0 && !isPassword && driveSticky()) 14 else want
+        if (m == 14) setDriveSticky(true)
         mode = m
         val v = kv ?: return
         if (m != 0) { v.reset(); clearSlots() }
@@ -2472,7 +2477,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_REPLY -> startReplies()
             KeyboardView.TOOL_STATUS -> startStatus()
             KeyboardView.TOOL_WEEK -> startWeek(ticketLang())
-            KeyboardView.TOOL_DRIVE -> showMode(14)
+            KeyboardView.TOOL_DRIVE -> if (mode == 14) { setDriveSticky(false); showMode(0) } else showMode(14)
             KeyboardView.TOOL_TODO -> showMode(15)
             KeyboardView.TOOL_CHECK -> showMode(16)
             KeyboardView.TOOL_CONVERT -> startConvert()
@@ -3624,7 +3629,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             ))
     }
 
+    /** ¿El modo manejando está fijo hoy? (se apaga solo al día siguiente) */
+    private fun driveSticky(): Boolean = prefs.getString(Prefs.DRIVE_STICKY, "") == today()
+
+    private fun setDriveSticky(on: Boolean) {
+        if (on == driveSticky()) return
+        prefs.edit().putString(Prefs.DRIVE_STICKY, if (on) today() else "").apply()
+    }
+
     private fun maybeDriving() {
+        if (driveSticky()) { if (mode != 14) showMode(14); return }
         if (!traveling()) return
         val last = WorkDay.day(prefs).lastOrNull()?.time ?: return
         if (last == driveSkipEvent) return
