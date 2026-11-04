@@ -141,6 +141,7 @@ object Prefs {
     const val AUTO_LEAVE = "auto_leave"        // la última salida que se anotó sola (por si el GPS brincó)
     const val AUTO_ENTER = "auto_enter"        // a qué hora entraste a cada sitio (para la hora de llegada)
     const val OVERTIME_DAY = "overtime_day"    // horas normales por día ("0" = sin aviso)
+    const val OVERTIME_SITE_SENT = "overtime_site_sent"  // día en que ya se avisó de las 8 horas EN EL SITIO
     const val OVERTIME_SENT = "overtime_sent"  // día en que ya se avisó de horas extra
     const val SITE_NEW = "site_new"            // lugar nuevo (no guardado) donde tocaste «Llegué»: para preguntar si lo guardas
     /** Lista de materiales (los tuyos) y lo que usaste hoy. */

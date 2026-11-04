@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.15.1" to tr("•  ⏰ Arreglado: el aviso de las 8 horas en el sitio no llegaba (se confundía con el aviso viejo y se perdía al actualizar). Ahora también llega con el teléfono dormido.",
+            "•  ⏰ Fixed: the 8-hours-on-site notice didn't arrive (it got mixed with the old notice and was lost when updating). It now also arrives with the phone asleep."),
         "12.15.0" to tr("•  ✕ Las sugerencias de arriba (pegar, capturas, grabaciones) tienen una ✕ chiquita. Ahora se quedan aunque sigas escribiendo, hasta que las pegues o toques la ✕ (lo copiado sigue en tu portapapeles).",
             "•  ✕ The top suggestions (paste, screenshots, recordings) have a small ✕. They now stay even while you type, until you paste them or tap the ✕ (what you copied stays in your clipboard)."),
         "12.14.1" to tr("•  ⏰ El aviso de «ya llevas 8 horas» ahora cuenta solo el tiempo en el sitio de trabajo (lo manejando no cuenta).",

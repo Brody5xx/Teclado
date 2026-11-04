@@ -24,7 +24,7 @@ object Backup {
         // Cosas de ESTE teléfono que no sirven en otro (la carpeta y la contraseña del respaldo automático van
         // cifradas con una llave que no sale del teléfono; se vuelven a poner en el nuevo)
         Prefs.AUTO_BACKUP_DIR, Prefs.AUTO_BACKUP_PW, Prefs.AUTO_BACKUP_LAST,
-        Prefs.AUTO_ENTER, Prefs.OVERTIME_SENT, Prefs.SITE_NEW, Prefs.CHECK_DONE, Prefs.BG_KIND, Prefs.BG_STAMP,
+        Prefs.AUTO_ENTER, Prefs.OVERTIME_SENT, Prefs.OVERTIME_SITE_SENT, Prefs.SITE_NEW, Prefs.CHECK_DONE, Prefs.BG_KIND, Prefs.BG_STAMP,
         Prefs.HOME_PENDING, Prefs.PARKING_DAY, Prefs.AUTO_EXIT_PENDING, Prefs.AUTO_LEAVE)
 
     /** El video de fondo va en la copia si pesa hasta esto (si pesa más, en el teléfono nuevo lo eliges otra vez). */
