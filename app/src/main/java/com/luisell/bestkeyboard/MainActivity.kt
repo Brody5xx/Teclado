@@ -968,6 +968,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.13.1" to tr("•  📋 La sugerencia de pegar tiene la luz dando vueltas (como Shift fijo).\n•  🌐 Al cambiar de idioma, la luz le da la vuelta a la barra espaciadora y destella (como Enter).\n•  ⭐ La luz de arriba ahora va por el borde, de derecha a izquierda, y termina en una estrella gorda y grande a la izquierda.",
+            "•  📋 The paste suggestion has the light circling it (like caps lock).\n•  🌐 When you change language, the light goes around the space bar and sparkles (like Enter).\n•  ⭐ The top light now runs along the edge, right to left, and ends in a big, bold star on the left."),
         "12.13.0" to tr("•  ⭐ La estrella del final de la luz de arriba ahora es más grande y está centrada en la línea.\n" +
                 "•  ⇧ Mayúsculas fijas: la luz da vueltas en la tecla Shift mientras estén prendidas.\n" +
                 "•  📋 Al copiar algo, el botón del portapapeles destella.\n" +

@@ -1703,24 +1703,24 @@ class KeyboardView(context: Context) : View(context) {
                 }
                 more = true
             } else enterFlashKey = null
-            // ⌨️ Al abrir: la luz cruza de izquierda a derecha por arriba y termina en una estrella grande, centrada en la línea
+            // ⌨️ Al abrir: la luz cruza de derecha a izquierda por el borde de arriba y termina en una estrella grande a la izquierda
             if (introAt > 0L && now >= introAt) {
-                val t = (now - introAt) / 1300f
+                val t = (now - introAt) / 1400f
                 if (t <= 1f) {
                     val y = INTRO_Y * d
-                    val endX = width - 22f * d
-                    fxPath.reset(); fxPath.moveTo(0f, y); fxPath.lineTo(endX, y)
+                    val endX = 24f * d
+                    fxPath.reset(); fxPath.moveTo(width.toFloat(), y); fxPath.lineTo(endX, y)
                     fxMeasure.setPath(fxPath, false)
                     val len = fxMeasure.length
                     val sh = android.graphics.LinearGradient(0f, 0f, width.toFloat(), 0f, LightFx.COLORS, null, android.graphics.Shader.TileMode.CLAMP)
-                    if (t < 0.6f) {
-                        val head = LightFx.ease(t / 0.6f) * len
-                        LightFx.glow(c, fxMeasure, maxOf(0f, head - len * 0.35f), head, 1f, d, sh, fxLine, 0.7f)
-                        LightFx.head(c, head, y, 5f * d, fxFill)
+                    if (t < 0.58f) {
+                        val head = LightFx.ease(t / 0.58f) * len
+                        LightFx.glow(c, fxMeasure, maxOf(0f, head - len * 0.35f), head, 1f, d, sh, fxLine, 0.8f)
+                        LightFx.head(c, width - head, y, 6f * d, fxFill)
                     } else {
-                        val k = (t - 0.6f) / 0.4f
-                        LightFx.glow(c, fxMeasure, len * 0.6f, len, 1f - k, d, sh, fxLine, 0.7f)
-                        LightFx.star(c, endX, y, 13f * d, k, fxFill, fxLine, d, maxUp = y - 0.5f * d)
+                        val k = (t - 0.58f) / 0.42f
+                        LightFx.glow(c, fxMeasure, len * 0.6f, len, 1f - k, d, sh, fxLine, 0.8f)
+                        LightFx.star(c, endX, y, 20f * d, k, fxFill, fxLine, d, bold = true)
                     }
                     more = true
                 } else introAt = 0L
@@ -1749,28 +1749,16 @@ class KeyboardView(context: Context) : View(context) {
                 val sk = rows.asSequence().flatten().firstOrNull { it.code == Codes.SHIFT }
                 if (sk != null) { traceKey(c, sk.rect, ((now % 2400L) / 2400f), loop = true); more = true }
             }
-            // 🌐 Cambiaste de idioma: la luz cruza la barra espaciadora
+            // 🌐 Cambiaste de idioma: la luz le da la vuelta a la barra espaciadora y destella (como Enter)
             if (spaceFlashAt > 0L) {
-                val t = (now - spaceFlashAt) / 900f
+                val t = (now - spaceFlashAt) / 1000f
                 val sp = rows.asSequence().flatten().firstOrNull { it.code == Codes.SPACE }
-                if (t <= 1f && sp != null) {
-                    val r = sp.rect
-                    val y = r.bottom - 4f * d
-                    fxPath.reset(); fxPath.moveTo(r.left + radius, y); fxPath.lineTo(r.right - radius, y)
-                    fxMeasure.setPath(fxPath, false)
-                    val len = fxMeasure.length
-                    val sh = android.graphics.LinearGradient(r.left, 0f, r.right, 0f, LightFx.COLORS, null, android.graphics.Shader.TileMode.CLAMP)
-                    if (t < 0.65f) {
-                        val head = LightFx.ease(t / 0.65f) * len
-                        LightFx.glow(c, fxMeasure, maxOf(0f, head - len * 0.45f), head, 1f, d, sh, fxLine, 0.6f)
-                        LightFx.head(c, r.left + radius + head, y, 4f * d, fxFill)
-                    } else {
-                        val k = (t - 0.65f) / 0.35f
-                        LightFx.glow(c, fxMeasure, len * 0.55f, len, 1f - k, d, sh, fxLine, 0.6f)
-                        LightFx.star(c, r.right - radius, y, 8f * d, k, fxFill, fxLine, d)
-                    }
-                    more = true
-                } else spaceFlashAt = 0L
+                if (t <= 1f && sp != null) { traceRound(c, RectF(sp.rect), radius, t); more = true } else spaceFlashAt = 0L
+            }
+            // 📋 La sugerencia de pegar: la luz da vueltas sin parar mientras esté (como Shift fijo)
+            if (!showingSuggestions && showingShot && chipIcon == Icons.CLIP && shotRect.width() > 0f) {
+                traceLoop(c, shotRect, shotRect.height() / 2f, (now % 2400L) / 2400f)
+                more = true
             }
             // 📋 Un botón de la barra (ej. el portapapeles al copiar): la luz le da la vuelta
             if (toolFlashAt > 0L) {
@@ -1797,7 +1785,7 @@ class KeyboardView(context: Context) : View(context) {
         return more
     }
 
-    private val INTRO_Y = 8f
+    private val INTRO_Y = 1.5f
     private var spaceFlashAt = 0L
     private var toolFlashAt = 0L
     private var toolFlashTool = -1
@@ -1837,8 +1825,13 @@ class KeyboardView(context: Context) : View(context) {
     /** La luz recorre el borde de una tecla: [loop] = vueltas suaves sin fin (Shift fijo), si no, una vuelta con destello. */
     private fun traceKey(c: Canvas, rect: RectF, t: Float, loop: Boolean) {
         if (!loop) { traceRound(c, rect, radius, t.coerceIn(0f, 1f)); return }
+        traceLoop(c, rect, radius, t)
+    }
+
+    /** Vueltas suaves sin fin alrededor de un rectángulo redondeado (Shift fijo, sugerencia de pegar). */
+    private fun traceLoop(c: Canvas, rect: RectF, rad: Float, t: Float) {
         fxPath.reset()
-        fxPath.addRoundRect(rect, radius, radius, android.graphics.Path.Direction.CW)
+        fxPath.addRoundRect(rect, rad, rad, android.graphics.Path.Direction.CW)
         fxMeasure.setPath(fxPath, true)
         val len = fxMeasure.length
         if (len <= 0f) return

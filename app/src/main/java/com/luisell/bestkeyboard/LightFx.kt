@@ -60,7 +60,7 @@ object LightFx {
     }
 
     /** ✨ El destello de estrella (crece rápido y se apaga). [f] = 0..1 del destello. */
-    fun star(c: Canvas, x: Float, y: Float, size: Float, f: Float, fill: Paint, line: Paint, d: Float, maxUp: Float = Float.MAX_VALUE) {
+    fun star(c: Canvas, x: Float, y: Float, size: Float, f: Float, fill: Paint, line: Paint, d: Float, maxUp: Float = Float.MAX_VALUE, bold: Boolean = false) {
         val grow = if (f < 0.25f) f / 0.25f else 1f
         val fade = (if (f < 0.25f) 1f else 1f - (f - 0.25f) / 0.75f).coerceIn(0f, 1f)
         val big = maxOf(1f, size * grow)
@@ -75,10 +75,27 @@ object LightFx {
         val arm = big * 1.45f
         val up = minOf(arm, maxUp)
         // Rayos largos a los lados (como un destello de lente) y cortos arriba/abajo
-        line.strokeWidth = 1.6f * d
-        c.drawLine(x - arm * 1.5f, y, x + arm * 1.5f, y, line)
-        c.drawLine(x, y - up, x, y + up, line)
-        line.strokeWidth = 0.9f * d
+        if (bold) {
+            // ⭐ Estrella gorda: cuatro puntas rellenas (como un diamante de luz) con halo de color
+            val sp = Path()
+            val wx = arm * 1.6f; val wy = arm * 1.25f; val th = big * 0.22f
+            sp.moveTo(x, y - wy); sp.quadTo(x + th * 0.35f, y - th * 0.35f, x + wx, y)
+            sp.quadTo(x + th * 0.35f, y + th * 0.35f, x, y + wy)
+            sp.quadTo(x - th * 0.35f, y + th * 0.35f, x - wx, y)
+            sp.quadTo(x - th * 0.35f, y - th * 0.35f, x, y - wy); sp.close()
+            fill.shader = RadialGradient(x, y, maxOf(1f, wx), intArrayOf(((fade * 255).toInt() shl 24) or 0xFFFFFF,
+                ((fade * 230).toInt() shl 24) or 0xE0F7FF, ((fade * 120).toInt() shl 24) or 0xA78BFA), floatArrayOf(0f, 0.35f, 1f), Shader.TileMode.CLAMP)
+            c.drawPath(sp, fill)
+            fill.shader = null
+            line.strokeWidth = 2.4f * d
+            line.alpha = (fade * 200).toInt().coerceIn(0, 255)
+            c.drawLine(x - wx * 1.35f, y, x + wx * 1.35f, y, line)
+        } else {
+            line.strokeWidth = 1.6f * d
+            c.drawLine(x - arm * 1.5f, y, x + arm * 1.5f, y, line)
+            c.drawLine(x, y - up, x, y + up, line)
+        }
+        line.strokeWidth = if (bold) 1.6f * d else 0.9f * d
         line.alpha = (fade * 150).toInt().coerceIn(0, 255)
         val dg = minOf(arm * 0.5f, maxUp)
         c.drawLine(x - dg, y - dg, x + dg, y + dg, line)
@@ -86,7 +103,7 @@ object LightFx {
         // Centro blanco fuerte
         fill.color = 0xFFFFFFFF.toInt()
         fill.alpha = (fade * 255).toInt().coerceIn(0, 255)
-        c.drawCircle(x, y, maxOf(1f, big * 0.16f), fill)
+        c.drawCircle(x, y, maxOf(1f, big * (if (bold) 0.26f else 0.16f)), fill)
         fill.alpha = 255
     }
 
