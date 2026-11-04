@@ -968,6 +968,7 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.13.3" to tr("•  ⭐ La luz de arriba llega hasta el final de la derecha y ahí sale una estrella mediana.", "•  ⭐ The top light reaches the far right and a medium star appears there."),
         "12.13.2" to tr("•  ✨ Las sugerencias de arriba (pegar, capturas y grabaciones) son más bonitas: vidrio con brillo, borde de color y aro de colores en la miniatura, y todas tienen la luz dando vueltas.\n•  ⭐ La luz de arriba vuelve a ir hacia la derecha y termina en una estrellita completa, sin cortarse.",
             "•  ✨ The top suggestions (paste, screenshots and recordings) look nicer: glass with shine, colored border and a colored ring on the thumbnail, and all have the light circling them.\n•  ⭐ The top light goes right again and ends in a small, complete star."),
         "12.13.1" to tr("•  📋 La sugerencia de pegar tiene la luz dando vueltas (como Shift fijo).\n•  🌐 Al cambiar de idioma, la luz le da la vuelta a la barra espaciadora y destella (como Enter).\n•  ⭐ La luz de arriba ahora va por el borde, de derecha a izquierda, y termina en una estrella gorda y grande a la izquierda.",

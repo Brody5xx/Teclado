@@ -1708,7 +1708,7 @@ class KeyboardView(context: Context) : View(context) {
                 val t = (now - introAt) / 1300f
                 if (t <= 1f) {
                     val y = INTRO_Y * d
-                    val endX = width - 22f * d
+                    val endX = width - 9f * d // hasta el final de la derecha
                     fxPath.reset(); fxPath.moveTo(0f, y); fxPath.lineTo(endX, y)
                     fxMeasure.setPath(fxPath, false)
                     val len = fxMeasure.length
@@ -1720,7 +1720,8 @@ class KeyboardView(context: Context) : View(context) {
                     } else {
                         val k = (t - 0.6f) / 0.4f
                         LightFx.glow(c, fxMeasure, len * 0.6f, len, 1f - k, d, sh, fxLine, 0.7f)
-                        LightFx.star(c, endX, y, 4.5f * d, k, fxFill, fxLine, d, maxUp = y - 0.5f * d)
+                        // ⭐ Estrella mediana, sale justo donde termina la línea
+                        LightFx.star(c, endX, y, 7.5f * d, k, fxFill, fxLine, d, maxUp = y - 0.5f * d)
                     }
                     more = true
                 } else introAt = 0L
@@ -1785,7 +1786,7 @@ class KeyboardView(context: Context) : View(context) {
         return more
     }
 
-    private val INTRO_Y = 5f
+    private val INTRO_Y = 6.5f
     private var spaceFlashAt = 0L
     private var toolFlashAt = 0L
     private var toolFlashTool = -1
