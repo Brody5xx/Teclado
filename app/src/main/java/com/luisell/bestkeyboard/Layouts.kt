@@ -39,6 +39,9 @@ class Key(
     val repeatable: Boolean = false,
     /** Símbolo pequeño arriba a la derecha (lo que sale con Shift). */
     val topHint: String? = null,
+    /** Espacio vacío a la izquierda/derecha (en «anchos de tecla»): la tecla se ve normal pero se puede tocar en ese hueco. */
+    val padL: Float = 0f,
+    val padR: Float = 0f,
 ) {
     val cell = RectF()
     val rect = RectF()
@@ -92,7 +95,8 @@ object Layouts {
         )
     }
 
-    fun letters(withNumberRow: Boolean, comma: String): List<List<Key>> {
+    /** [english] = teclado en inglés: sin la ñ en su fila (sale manteniendo la n), como un teclado de EE. UU. */
+    fun letters(withNumberRow: Boolean, comma: String, english: Boolean = false): List<List<Key>> {
         val rows = mutableListOf<List<Key>>()
         if (withNumberRow) rows += numberRow()
         val digits = "1234567890"
@@ -101,7 +105,18 @@ object Layouts {
             val extra = if (withNumberRow) "" else digits[i].toString()
             ch(c.toString(), extra + (ALTS[c] ?: ""))
         }
-        rows += "asdfghjklñ".map { ch(it.toString(), ALTS[it] ?: "") }
+        if (english) {
+            // 9 teclas centradas: la «a» y la «l» se pueden tocar también en el hueco de su lado
+            val mid = "asdfghjkl"
+            rows += mid.mapIndexed { i, c ->
+                val alts = split(ALTS[c] ?: "")
+                when (i) {
+                    0 -> Key(c.toString(), 0, c.toString(), 1.5f, alts, padL = 0.5f)
+                    mid.lastIndex -> Key(c.toString(), 0, c.toString(), 1.5f, alts, padR = 0.5f)
+                    else -> Key(c.toString(), 0, c.toString(), 1f, alts)
+                }
+            }
+        } else rows += "asdfghjklñ".map { ch(it.toString(), ALTS[it] ?: "") }
         rows += listOf(sp("⇧", Codes.SHIFT, 1.5f)) +
             "zxcvbnm".map { ch(it.toString(), ALTS[it] ?: "") } +
             del()

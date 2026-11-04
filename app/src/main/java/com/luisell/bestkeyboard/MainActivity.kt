@@ -589,8 +589,8 @@ class MainActivity : UiActivity() {
         // ---- Barra espaciadora
         card(tr("Barra espaciadora", "Space bar"), Icons.GLOBE)
         switch(tr("🌐 Cambiar el idioma solo", "🌐 Switch language automatically"), Prefs.AUTO_LANG, true,
-            tr("Si escribes 3 palabras seguidas en inglés, el teclado se pone en inglés solo (y al revés). Verás la luz en la barra espaciadora.",
-                "If you type 3 words in a row in Spanish, the keyboard switches by itself (and the other way). You'll see the light on the space bar."))
+            tr("Si escribes 2 palabras seguidas en inglés, el teclado se pone en inglés solo (y al revés). Verás la luz en la barra espaciadora.",
+                "If you type 2 words in a row in Spanish, the keyboard switches by itself (and the other way). You'll see the light on the space bar."))
         switch(tr("Deslizar la barra cambia el idioma", "Swipe the space bar to change language"), Prefs.SPACE_LANG, false,
             tr("Se quita el botón 🌐. Desliza rápido para cambiar de idioma; mantén presionado y desliza para mover el cursor.",
                 "The 🌐 key goes away. Swipe fast to change language; press, hold and slide to move the cursor."))
@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.16.1" to tr("•  🌐 El idioma se cambia solo con 2 palabras seguidas (antes 3).\n•  🇺🇸 En inglés el teclado es de inglés de verdad: sin la ñ en su fila (la sacas manteniendo la n).",
+            "•  🌐 The language now switches after 2 words in a row (was 3).\n•  🇺🇸 In English the keyboard is truly English: no ñ in its row (hold n to get it)."),
         "12.16.0" to tr("•  📏 Distancia de detección de los lugares (en Mis sitios): una para todos y, tocando un lugar, la suya propia viendo el círculo en un mapa (como Samsung Rutinas).\n•  🎯 Sensibilidad: Alta (1 minuto adentro y avisa al instante), Normal (3 minutos) o Baja (6 minutos, menos batería).",
             "•  📏 Detection distance for places (in My sites): one for all and, by tapping a place, its own while seeing the circle on a map (like Samsung Routines).\n•  🎯 Sensitivity: High (1 minute inside and reacts right away), Normal (3 minutes) or Low (6 minutes, less battery)."),
         "12.15.1" to tr("•  ⏰ Arreglado: el aviso de las 8 horas en el sitio no llegaba (se confundía con el aviso viejo y se perdía al actualizar). Ahora también llega con el teléfono dormido.",

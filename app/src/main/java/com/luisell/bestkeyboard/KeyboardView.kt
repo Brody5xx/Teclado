@@ -990,8 +990,9 @@ class KeyboardView(context: Context) : View(context) {
                 val kw = w * k.weight / total
                 val right = if (i == row.lastIndex) x0 + w else x + kw
                 k.cell.set(x, y, right, y + kh)
-                val l = x + gapX / 2 + (if (i == 0) gapX / 2 else 0f)
-                val r = right - gapX / 2 - (if (i == row.lastIndex) gapX / 2 else 0f)
+                val unit = kw / k.weight
+                val l = x + gapX / 2 + (if (i == 0) gapX / 2 else 0f) + k.padL * unit
+                val r = right - gapX / 2 - (if (i == row.lastIndex) gapX / 2 else 0f) - k.padR * unit
                 k.rect.set(l, y + gapY / 2, r, y + kh - gapY / 2)
                 x += kw
             }

@@ -1881,7 +1881,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val rows = when (page) {
-            Page.LETTERS -> Layouts.letters(numberRow, commaMode)
+            Page.LETTERS -> Layouts.letters(numberRow, commaMode, english = lang == "en")
             Page.SYM -> Layouts.symbols()
             Page.SYM2 -> Layouts.symbols2()
             Page.NUM -> Layouts.numpad(phone)
@@ -3461,6 +3461,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         kv?.spaceLabel = if (lang == "es") "Español" else "English"
         kv?.flashSpace() // 🌐 la luz le da la vuelta a la barra espaciadora
         langVotes.clear()
+        rebuild() // en inglés el teclado cambia de verdad: sin la ñ (sale manteniendo la n)
         scheduleUpdate()
     }
 
@@ -3469,7 +3470,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /**
      * 🤖 Cambio de idioma solo: si tus últimas palabras son claramente del otro idioma
-     * (3 seguidas, o 3 de las últimas 4), el teclado se cambia solo.
+     * (2 seguidas), el teclado se cambia solo.
      */
     private fun autoLang(word: String) {
         if (!prefs.getBoolean(Prefs.AUTO_LANG, true) || isPassword || codeOn || hackerActive) return
@@ -3479,9 +3480,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         langVotes.addLast(v)
         while (langVotes.size > 4) langVotes.removeFirst()
         val other = if (lang == "es") "en" else "es"
-        val n = langVotes.count { it == other }
-        val last3 = langVotes.takeLast(3)
-        if ((last3.size == 3 && last3.all { it == other }) || n >= 3) setLang(other)
+        val last2 = langVotes.takeLast(2)
+        if (last2.size == 2 && last2.all { it == other }) setLang(other)
     }
 
     /** Cuántas cosas del día se veían la última vez (para iluminar la nueva). -1 = recién abierto. */
