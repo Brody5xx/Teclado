@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.14.1" to tr("•  ⏰ El aviso de «ya llevas 8 horas» ahora cuenta solo el tiempo en el sitio de trabajo (lo manejando no cuenta).",
+            "•  ⏰ The «you've worked 8 hours» notice now counts only time on the job site (driving doesn't count)."),
         "12.14.0" to tr("•  🎯 Sugerencias más precisas: ya casi no se mezcla el español con el inglés; el teclado recuerda en qué idioma usas cada palabra.\n" +
                 "•  🧠 Aprende más rápido: tus palabras nuevas se aprenden con escribirlas 2 veces, y lo que escribiste hace poco sale primero.\n" +
                 "•  🌐 Cambio de idioma solo: si escribes 3 palabras seguidas en el otro idioma, el teclado se cambia solo (con la luz en la barra espaciadora). Lo apagas en Ajustes.\n" +

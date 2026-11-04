@@ -167,7 +167,8 @@ object WorkdayCenter {
         val ev = WorkDay.day(p)
         if (WorkDay.dayHours <= 0 || !WorkDay.isRunning(ev)) return
         if (p.getString(Prefs.OVERTIME_SENT, "") == todayKey()) return
-        val left = WorkDay.dayHours * 3600_000L - WorkDay.summary(ev).total
+        // ⏰ Solo cuenta el tiempo EN EL SITIO (lo manejando no cuenta para este aviso)
+        val left = WorkDay.dayHours * 3600_000L - WorkDay.summary(ev).site
         if (left <= 0) { overtimeAlert(ctx); return }
         try { am.setWindow(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + left, 2 * 60_000L, pi) } catch (_: Exception) { }
     }
@@ -180,9 +181,9 @@ object WorkdayCenter {
         L.set(p.getString(Prefs.LANG, "es") ?: "es")
         val ev = WorkDay.day(p)
         if (WorkDay.dayHours <= 0 || !WorkDay.isRunning(ev) || p.getString(Prefs.OVERTIME_SENT, "") == todayKey()) return
-        if (WorkDay.summary(ev).total < WorkDay.dayHours * 3600_000L - 60_000L) { scheduleOvertime(ctx); return }
+        if (WorkDay.summary(ev).site < WorkDay.dayHours * 3600_000L - 60_000L) { scheduleOvertime(ctx); return }
         p.edit().putString(Prefs.OVERTIME_SENT, todayKey()).apply()
-        AutoSites.notify(ctx, L.t("⏰ Ya llevas ${WorkDay.dayHours} horas", "⏰ You've worked ${WorkDay.dayHours} hours"),
+        AutoSites.notify(ctx, L.t("⏰ Ya llevas ${WorkDay.dayHours} horas en el sitio", "⏰ You've worked ${WorkDay.dayHours} hours on site"),
             L.t("Desde ahora es tiempo extra. Semana: ${WorkDay.dur(WorkDay.weekTotal(p))}.", "From now on it's overtime. Week: ${WorkDay.dur(WorkDay.weekTotal(p))}."),
             null, 4721)
     }
