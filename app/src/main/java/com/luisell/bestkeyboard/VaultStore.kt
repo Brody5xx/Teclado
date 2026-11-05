@@ -87,6 +87,10 @@ object VaultStore {
      */
     fun migrate(ctx: Context) {
         load(ctx)
+        // Quita los textos repetidos que ya son el usuario de una cuenta (ej. «Brody5xx» de GIPHY)
+        val accs = items.filter { it.kind == ACCOUNT }.map { Account.from(it.value) }
+        val dup = items.filter { e -> e.kind == TEXT && accs.any { a -> a.user.isNotBlank() && a.user == e.value && a.name.equals(e.label, true) } }
+        if (dup.isNotEmpty()) save(ctx, items.filter { it !in dup })
         if (items.any { it.kind == ACCOUNT } || items.none { it.kind == PASSWORD }) return
         val groups = LinkedHashMap<String, MutableList<Entry>>()
         for (e in items) {
@@ -105,7 +109,7 @@ object VaultStore {
             val email = list.firstOrNull { it.kind == EMAIL }?.value ?: ""
             val pass = list.firstOrNull { it.kind == PASSWORD }?.value ?: ""
             val userE = items.firstOrNull { it.kind == TEXT && it.label.trim().lowercase() == key }
-            if (userE != null) used += userE.id
+            if (userE != null) items.filter { it.kind == TEXT && it.label.trim().lowercase() == key && it.value == userE.value }.forEach { used += it.id }
             list.forEach { used += it.id }
             newItems += Entry(System.currentTimeMillis() + n++, ACCOUNT, name, Account(name, userE?.value ?: "", email, pass).toJson(), "")
         }
