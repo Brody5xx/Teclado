@@ -972,6 +972,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.20.1" to tr("•  «Respuestas con IA» ya no se queda pensando: cuenta los segundos y, si a los 25 segundos no contestó, te dice qué revisar.",
+            "•  «AI replies» no longer stays thinking: it counts the seconds and, if it hasn't answered after 25 seconds, tells you what to check."),
         "12.20.0" to tr("•  ↩️ Deshacer ahora es una tecla del teclado (al lado del punto) y se quitó de la barra de arriba. Cuando borras algo, la tecla se ilumina con la luz para recordarte que puedes recuperarlo.",
             "•  ↩️ Undo is now a key on the keyboard (next to the period) and was removed from the top bar. When you delete something, the key lights up to remind you that you can get it back."),
         "12.19.2" to tr("•  Arreglado: «Respuestas con IA» (y lo demás con IA) se quedaba pensando. Ahora la IA contesta en segundos (sin «pensar» largo), usa primero el modelo que ya te funcionó, no se queda en fila detrás de otra pregunta y, si se tarda más de 45 segundos, te avisa en vez de quedarse pensando.",

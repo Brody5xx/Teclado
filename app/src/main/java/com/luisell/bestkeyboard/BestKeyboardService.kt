@@ -4146,6 +4146,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val key = aiKey(title) ?: return
         val my = ++aiSeq
         bar.show(title, L.t("Pensando respuestas…", "Thinking of replies…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+        // Cuenta los segundos, para que veas que sigue trabajando
+        val startT = SystemClock.uptimeMillis()
+        var waiting = true
+        val tick = object : Runnable {
+            override fun run() {
+                if (!waiting || my != aiSeq || infoBar?.visibility != View.VISIBLE) return
+                val sec = (SystemClock.uptimeMillis() - startT) / 1000
+                bar.show(title, L.t("Pensando respuestas ($sec s)…", "Thinking of replies ($sec s)…"),
+                    listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+                handler.postDelayed(this, 1000)
+            }
+        }
+        handler.postDelayed(tick, 1000)
         val prompt = "Someone sent this message to a low-voltage field technician (he works with coworkers and supervisors):\n\"\"\"\n" + msg +
             "\n\"\"\"\nWrite 3 possible replies he could send, as himself, first person:\n" +
             "1) SHORT: very short and friendly, same language as the message.\n" +
@@ -4154,6 +4167,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             "Do not invent facts; if something is unknown, keep it general. No markdown.\n" +
             "Answer exactly in this format:\nSHORT: ...\nFORMAL: ...\nOTHER: ..."
         CloudText.ask(prompt, key) { list, err ->
+            waiting = false
             if (my != aiSeq) return@ask
             val raw = list?.firstOrNull()?.replace("**", "")?.trim()
             if (raw.isNullOrEmpty()) {

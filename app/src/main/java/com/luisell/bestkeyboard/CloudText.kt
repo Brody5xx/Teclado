@@ -26,8 +26,8 @@ object CloudText {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.requestMethod = "POST"
-            c.connectTimeout = 12000
-            c.readTimeout = 20000
+            c.connectTimeout = 8000
+            c.readTimeout = 15000
             c.doOutput = true
             c.setRequestProperty("Content-Type", contentType)
             for ((k, v) in headers) c.setRequestProperty(k, v)
@@ -125,7 +125,14 @@ object CloudText {
     /** El último modelo que funcionó: se prueba primero (así responde más rápido). */
     @Volatile private var goodModel: String? = null
 
-    fun ask(prompt: String, key: String, done: (List<String>?, String?) -> Unit) {
+    fun ask(prompt: String, key: String, doneIn: (List<String>?, String?) -> Unit) {
+        // ⏱️ Pase lo que pase, a los 25 segundos se contesta algo (así nunca se queda «pensando»)
+        val finished = java.util.concurrent.atomic.AtomicBoolean(false)
+        val done: (List<String>?, String?) -> Unit = { l, e -> if (finished.compareAndSet(false, true)) doneIn(l, e) }
+        main.postDelayed({
+            done(null, L.t("La IA no contestó a tiempo. Revisa que tengas internet (si usas VPN o DNS privado, pruébalo apagado) e inténtalo otra vez.",
+                "The AI didn't answer in time. Check your internet (if you use a VPN or private DNS, try with it off) and try again."))
+        }, 25_000L)
         io.execute {
             fun req(thinkOff: Boolean): String {
                 val gen = JSONObject().put("temperature", 0.4)
@@ -138,10 +145,10 @@ object CloudText {
             var lastError: HttpError? = null
             var network = false
             var timedOut = false
-            val deadline = System.currentTimeMillis() + 45_000L // nunca más de 45 segundos en total
+            val deadline = System.currentTimeMillis() + 22_000L
             val order = (listOfNotNull(goodModel) + MODELS).distinct()
             for (model in order) {
-                if (System.currentTimeMillis() > deadline) { timedOut = true; break }
+                if (finished.get() || System.currentTimeMillis() > deadline) { timedOut = true; break }
                 var thinkOff = true
                 // Dos intentos por modelo si Google dice que está ocupado (503)
                 var attempt = 0
@@ -160,7 +167,7 @@ object CloudText {
                         val result = sb.toString().trim()
                         if (result.isNotEmpty()) {
                             goodModel = model
-                            main.post { done(listOf(result), null); try { onSuccess?.invoke() } catch (_: Throwable) { } }
+                            main.post { val first = !finished.get(); done(listOf(result), null); if (first) try { onSuccess?.invoke() } catch (_: Throwable) { } }
                             return@execute
                         }
                         break // respuesta vacía: probar el siguiente modelo
