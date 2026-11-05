@@ -102,10 +102,14 @@ fun Emo.center(tv: TextView, top: Boolean) {
         if (top) {
             val dr = ds[1]
             val ih = dr?.bounds?.height() ?: 0
+            t2.includeFontPadding = false
+            val fm = t2.paint.fontMetricsInt
             val lines = maxOf(1, t2.lineCount)
-            val th = t2.lineHeight * lines
+            val th = (fm.descent - fm.ascent) * lines
             val content = ih + (if (dr != null) t2.compoundDrawablePadding else 0) + th
-            val pad = maxOf(0, (h - content) / 2)
+            // Un poquito más arriba del centro exacto: así el texto no toca el borde de abajo
+            val lift = (6 * t2.resources.displayMetrics.density).toInt()
+            val pad = maxOf(0, (h - content) / 2 - lift)
             if (t2.paddingTop != pad) t2.post { t2.setPadding(t2.paddingLeft, pad, t2.paddingRight, 0); t2.gravity = android.view.Gravity.CENTER_HORIZONTAL or android.view.Gravity.TOP }
         } else {
             val dr = ds[0]

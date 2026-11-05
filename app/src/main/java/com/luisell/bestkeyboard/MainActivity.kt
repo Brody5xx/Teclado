@@ -971,6 +971,7 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.18.2" to tr("•  Modo manejando: el texto de los botones grandes sube un poco (ya no toca el borde de abajo).", "•  Driving mode: the big buttons' text moves up a bit (no longer touches the bottom edge)."),
         "12.18.1" to tr("•  Modo manejando: los íconos de los botones grandes quedan centrados con su texto; el del título va pegado al título, y los de Borrar letra y Borrar todo son más grandes y van junto a su texto.",
             "•  Driving mode: the big buttons' icons are centered with their text; the title icon sits next to the title, and Delete letter / Delete all icons are bigger and next to their text."),
         "12.18.0" to tr("•  Sin emojis en el teclado: los paneles, botones, avisos y barras de arriba ahora usan íconos pequeños como los de la barra de arriba (el emoji de la coma se queda). Íconos nuevos: teclado, casa, dinero, aviso y destello.",
