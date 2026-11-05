@@ -972,6 +972,7 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.22.4" to tr("•  Se quitó «Dictar reporte» de la barra de arriba: ya está dentro del micrófono.", "•  «Dictate report» was removed from the top bar: it's already inside the microphone."),
         "12.22.3" to tr("•  🔐 Datos en el teclado pide tu huella cada vez que tocas el candado; adentro, tus correos, usuarios y contraseñas se escriben sin pedirla otra vez.",
             "•  🔐 Data on the keyboard asks for your fingerprint every time you tap the lock; inside, your emails, usernames and passwords are typed without asking again."),
         "12.22.2" to tr("•  🔐 Datos en el teclado pide tu huella apenas lo abres; después entras libre a tus cuentas y datos.",
