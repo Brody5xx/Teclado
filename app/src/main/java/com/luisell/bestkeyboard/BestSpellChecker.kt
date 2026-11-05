@@ -24,11 +24,12 @@ class BestSpellChecker : SpellCheckerService() {
 
         override fun onCreate() {}
 
+        /** El idioma en que está tu teclado ahora (no el del teléfono): así en inglés revisa y corrige en inglés. */
         private fun lang(): String {
+            val k = Prefs.get(this@BestSpellChecker).getString(Prefs.LANG, "") ?: ""
+            if (k == "es" || k == "en") return k
             val l = locale ?: ""
-            if (l.startsWith("es")) return "es"
-            if (l.startsWith("en")) return "en"
-            return Prefs.get(this@BestSpellChecker).getString(Prefs.LANG, "es") ?: "es"
+            return if (l.startsWith("en")) "en" else "es"
         }
 
         override fun onGetSuggestions(textInfo: TextInfo?, suggestionsLimit: Int): SuggestionsInfo {
@@ -42,7 +43,12 @@ class BestSpellChecker : SpellCheckerService() {
                 return SuggestionsInfo(SuggestionsInfo.RESULT_ATTR_IN_THE_DICTIONARY, arrayOf())
             }
             return try {
-                val r = eng.spellCheck(word, lang(), suggestionsLimit.coerceIn(1, 6))
+                val lg = lang()
+                // «today's», «John's»: si la palabra sin el 's está bien, está bien
+                val base = word.replace('’', '\'')
+                if (lg == "en" && base.length > 3 && base.endsWith("'s", true) && !eng.spellCheck(base.dropLast(2), lg, 1).misspelled)
+                    return SuggestionsInfo(SuggestionsInfo.RESULT_ATTR_IN_THE_DICTIONARY, arrayOf())
+                val r = eng.spellCheck(word, lg, suggestionsLimit.coerceIn(1, 6))
                 if (!r.misspelled) {
                     SuggestionsInfo(SuggestionsInfo.RESULT_ATTR_IN_THE_DICTIONARY, arrayOf())
                 } else {

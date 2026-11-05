@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.16.4" to tr("•  💬 Mientras escribes una palabra salen sus sugerencias aunque haya «Pegar» o «Captura» (esas vuelven al terminar la palabra).\n•  🔴 Las palabras subrayadas en rojo se revisan en el idioma del teclado (en inglés ya no te da palabras en español).\n•  🔧 Toca en medio de una palabra mal escrita: sus correcciones salen bonitas arriba del teclado; toca una y se cambia la palabra entera.",
+            "•  💬 While you type a word its suggestions show even if «Paste» or «Screenshot» is there (those come back when the word is done).\n•  🔴 Red-underlined words are checked in the keyboard's language (in English it no longer gives Spanish words).\n•  🔧 Tap inside a misspelled word: its corrections show nicely above the keyboard; tap one and the whole word changes."),
         "12.16.3" to tr("•  🛻 Al mandar un mensaje de estado, el modo manejando se queda.", "•  🛻 Sending a status message keeps driving mode on."),
         "12.16.2" to tr("•  🛻 El modo manejando ya no se quita solo: después de dictar, marcar tu jornada o cerrar el teclado, vuelve al modo manejando. Se quita solo con «⌨️ Teclado», la flecha ← o tocando su botón otra vez.",
             "•  🛻 Driving mode no longer turns off by itself: after dictating, logging your workday or closing the keyboard, it comes back to driving mode. It only turns off with «⌨️ Keyboard», the ← arrow or tapping its button again."),

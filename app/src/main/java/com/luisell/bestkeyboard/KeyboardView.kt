@@ -1018,7 +1018,10 @@ class KeyboardView(context: Context) : View(context) {
     /** Botón de herramientas de la esquina: muestra las herramientas aunque haya sugerencias (como Gboard). */
     private var forceTools = false
     private val menuW get() = 48f * d
-    private val showingSuggestions get() = hasSuggestions && !forceTools && chipLabel == null
+    /** Estás escribiendo una palabra: las sugerencias de palabras ganan sobre «Pegar» o «Captura». */
+    var typingWord = false
+        set(v) { if (field != v) { field = v; invalidate(0, 0, width, stripH.toInt() + 1) } }
+    private val showingSuggestions get() = hasSuggestions && !forceTools && (chipLabel == null || typingWord)
 
     // Sugerencia de captura de pantalla (botón con la miniatura)
     private var shotThumb: android.graphics.Bitmap? = null
@@ -1026,7 +1029,7 @@ class KeyboardView(context: Context) : View(context) {
     private var chipIcon = Icons.IMAGE
     private val shotRect = RectF()
     private val chipX = RectF()
-    private val showingShot get() = chipLabel != null && !forceTools
+    private val showingShot get() = chipLabel != null && !forceTools && !(typingWord && hasSuggestions)
 
     /** Botón grande en el centro de la barra (la captura de pantalla, o el aviso del permiso). */
     fun setChip(thumb: android.graphics.Bitmap?, label: String?, icon: Int = Icons.IMAGE) {

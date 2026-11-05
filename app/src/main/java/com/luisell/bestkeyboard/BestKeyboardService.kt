@@ -1932,6 +1932,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun clearSlots() {
+        fixSpan = null
         vaultActive = false
         codeActive = false
         slotWords.fill(null)
@@ -1969,6 +1970,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         vaultActive = true
         return true
     }
+
+    /** Si estás corrigiendo una palabra tocada en medio: (letras antes del cursor, letras después). */
+    private var fixSpan: Pair<Int, Int>? = null
 
     private fun showSlots(left: String?, center: String?, right: String?, bold: Boolean, typedLeft: Boolean) {
         emojiSlot = -1
@@ -2092,10 +2096,25 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             clearSlots(); return
         }
         val before = ic.getTextBeforeCursor(48, 0) ?: ""
-        val after = ic.getTextAfterCursor(1, 0) ?: ""
-        if (after.isNotEmpty() && TextUtil.isWordChar(after[0])) { clearSlots(); return }
+        val after = ic.getTextAfterCursor(24, 0) ?: ""
+        fixSpan = null
+        if (after.isNotEmpty() && TextUtil.isWordChar(after[0])) {
+            // 🔧 Tocaste en medio de una palabra mal escrita: sus correcciones salen aquí arriba (en tu idioma)
+            val head = TextUtil.currentWord(before)
+            val tail = after.takeWhile { TextUtil.isWordChar(it) }.toString()
+            val whole = head + tail
+            kv?.typingWord = true
+            val sp = if (whole.length >= 2) try { eng.spellCheck(whole, lang, 3) } catch (_: Exception) { null } else null
+            if (sp != null && sp.misspelled && sp.suggestions.isNotEmpty()) {
+                val sg = sp.suggestions.map { TextUtil.matchCase(it, whole) }
+                showSlots(sg.getOrNull(1), sg.getOrNull(0), sg.getOrNull(2), bold = true, typedLeft = false)
+                fixSpan = head.length to tail.length
+            } else clearSlots()
+            return
+        }
 
         val word = TextUtil.currentWord(before)
+        kv?.typingWord = word.isNotEmpty()
         // Recién deslizaste: la barra muestra las otras palabras posibles
         val gw = gestureWord
         if (gw != null) {
@@ -2161,6 +2180,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         gestureWord = null
         phantomSpace = false
         val ic = target() ?: return
+        fixSpan?.let { (b, a) ->
+            // Cambia la palabra entera (la parte de antes y la de después del cursor)
+            fixSpan = null
+            ic.beginBatchEdit()
+            ic.deleteSurroundingText(b, a)
+            ic.commitText(w, 1)
+            ic.endBatchEdit()
+            clearSlots()
+            lastCorrection = null
+            return
+        }
         val before = ic.getTextBeforeCursor(48, 0) ?: ""
         val cur = TextUtil.currentWord(before)
         val prev = TextUtil.previousWord(before, cur.length)
