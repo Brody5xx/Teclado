@@ -4106,7 +4106,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
      * Si «Mantener el teclado abierto» está prendido, cuando la app intenta bajar el teclado
      * (por ejemplo al tocar un mensaje para seleccionarlo) no se baja: solo con el botón Bajar o la flecha atrás.
      */
-    override fun onCreateInputMethodInterface(): android.view.inputmethod.InputMethod = KeepOpenImpl()
+    override fun onCreateInputMethodInterface(): AbstractInputMethodImpl = KeepOpenImpl()
 
     inner class KeepOpenImpl : InputMethodImpl() {
         override fun hideSoftInput(flags: Int, resultReceiver: android.os.ResultReceiver?) {
