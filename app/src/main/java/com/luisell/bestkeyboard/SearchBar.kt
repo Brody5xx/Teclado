@@ -246,12 +246,8 @@ class SearchBar(context: Context) : LinearLayout(context) {
 
     fun applyPalette(p: Palette) {
         palette = p
-        // ✨ Fondo suave en degradado con la línea de luz abajo
-        background = android.graphics.drawable.LayerDrawable(arrayOf(
-            android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(p.bg, p.bg2)),
-            android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(0x0022D3EE, LightFx.COLORS[0], 0xFFFFFFFF.toInt(), LightFx.COLORS[1], 0x00A78BFA)),
-        )).apply { setLayerInset(1, d(30f), 0, d(30f), 0); setLayerGravity(1, Gravity.BOTTOM); setLayerHeight(1, maxOf(1, d(1.2f))) }
+        // ✨ Fondo en degradado con el color de tu tema (ya no gris) y la línea de luz abajo
+        background = PanelUi.barBackground(context, p)
         back.color = p.text
         back.background = PanelUi.glassButton(context, p, d(20f).toFloat())
         glass.color = PanelUi.icon(p)

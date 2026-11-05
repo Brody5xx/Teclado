@@ -134,7 +134,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
 
     fun applyPalette(p: Palette) {
         palette = p
-        setBackgroundColor(p.bg)
+        background = PanelUi.barBackground(context, p) // 🎨 ya no gris
         val r = d(18f).toFloat()
         close.color = p.text
         close.background = PanelUi.pressable(p.special, p.keyPressed, r)

@@ -67,6 +67,7 @@ object PanelUi {
     private var borderC: Int? = null
     private var fillC: Int? = null
     private var iconC: Int? = null
+    private var barC: Int? = null
     /** Qué tan sólidos son con tu fondo propio (0..255). */
     private var glassA = 0x66
     /** Grosor del borde (0 = sin borde). */
@@ -78,6 +79,7 @@ object PanelUi {
         borderC = c(Prefs.PANEL_BORDER)
         fillC = c(Prefs.PANEL_FILL)
         iconC = c(Prefs.PANEL_ICON)
+        barC = c(Prefs.PANEL_BAR)
         glassA = when (prefs.getString(Prefs.PANEL_GLASS, "normal")) { "clear" -> 0x30; "solid" -> 0xC8; else -> 0x66 }
         lineMul = when (prefs.getString(Prefs.PANEL_LINE, "thin")) { "none" -> 0f; "thick" -> 2.2f; else -> 1f }
     }
@@ -125,6 +127,39 @@ object PanelUi {
                 intArrayOf(lighter(p.accent, 0.22f), p.accent)).apply { cornerRadius = radiusPx }
         }
         return GradientDrawable().apply { setColor(color); cornerRadius = radiusPx }
+    }
+
+    private fun mixC(a: Int, b: Int, f: Float): Int {
+        fun ch(x: Int, sh: Int) = (x shr sh) and 0xFF
+        fun m(sh: Int) = (ch(a, sh) + (ch(b, sh) - ch(a, sh)) * f).toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (m(16) shl 16) or (m(8) shl 8) or m(0)
+    }
+
+    /**
+     * 🎨 El fondo de las barras de arriba del teclado (búsqueda, traducir, revisar…):
+     * en vez de gris, un degradado con el color de tu tema (o el que elegiste en Paneles y botones),
+     * con la línea de luz abajo.
+     */
+    fun barBackground(ctx: Context, p: Palette, lightLine: Boolean = true): android.graphics.drawable.Drawable {
+        val base = barC
+        val top: Int; val bottom: Int
+        if (base != null) {
+            top = mixC(base, 0xFFFFFFFF.toInt(), if (p.isDark) 0.06f else 0.2f)
+            bottom = mixC(base, 0xFF000000.toInt(), 0.35f)
+        } else {
+            top = mixC(p.bg or 0xFF000000.toInt(), border(p), if (p.isDark) 0.16f else 0.10f)
+            bottom = mixC(p.bg2 or 0xFF000000.toInt(), border(p), if (p.isDark) 0.05f else 0.04f)
+        }
+        val grad = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, bottom))
+        if (!lightLine) return grad
+        val glowLine = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+            intArrayOf(withAlpha(LightFx.COLORS[0], 0), LightFx.COLORS[0], 0xFFFFFFFF.toInt(), LightFx.COLORS[1], withAlpha(LightFx.COLORS[1], 0)))
+        return android.graphics.drawable.LayerDrawable(arrayOf(grad, glowLine)).apply {
+            val side = dp(ctx, 30f)
+            setLayerInset(1, side, 0, side, 0)
+            setLayerGravity(1, Gravity.BOTTOM)
+            setLayerHeight(1, maxOf(1, (density * 1.2f).toInt()))
+        }
     }
 
     /** 🌈 Fondo con borde de colores (azul → violeta → rosa) y relleno de vidrio: para la barra de búsqueda. */

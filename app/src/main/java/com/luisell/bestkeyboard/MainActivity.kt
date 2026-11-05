@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.17.2" to tr("•  🎨 Las barras de arriba (búsqueda, traducir, revisar, código) ya no son grises: tienen un degradado con el color de tu tema y la línea de luz. Puedes elegir su color en Estilo → Paneles y botones.",
+            "•  🎨 The top bars (search, translate, check, code) are no longer grey: they have a gradient with your theme color and the light line. Pick their color in Style → Panels and buttons."),
         "12.17.1" to tr("•  ✨ La barra de búsqueda (Google, emojis, GIFs, convertidor…) es más bonita: borde de colores, luz que le da vueltas, fondo en degradado y línea de luz.",
             "•  ✨ The search bar (Google, emojis, GIFs, converter…) looks nicer: colored border, a light circling it, gradient background and light line."),
         "12.17.0" to tr("•  🔎 Buscar en Google (en ⋯ Más opciones): escribe en la barra y Enter abre Google con tu búsqueda. Si seleccionaste texto, lo busca de una vez.",

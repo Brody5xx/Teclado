@@ -159,6 +159,8 @@ class StyleActivity : UiActivity() {
         val refresh = { paintPanelPreview() }
         colorSwatches(tr("Color del borde y la luz", "Border and light color"), Prefs.PANEL_BORDER, Palette.TEXT_COLORS, "", refresh)
         colorSwatches(tr("Color de los botones", "Button color"), Prefs.PANEL_FILL, Palette.KEY_COLORS.filter { it != "rainbow" }, "", refresh)
+        colorSwatches(tr("Fondo de las barras de arriba (búsqueda, traducir…)", "Top bars background (search, translate…)"), Prefs.PANEL_BAR,
+            Palette.KEY_COLORS.filter { it != "rainbow" }, tr("El de colores usa un degradado con el color de tu tema.", "The multicolor one uses a gradient with your theme color."), refresh)
         colorSwatches(tr("Color de los íconos", "Icon color"), Prefs.PANEL_ICON, Palette.TEXT_COLORS,
             tr("Si no eliges, usan el color del borde.", "If you don't pick one, they use the border color."), refresh)
         segmented(tr("Borde", "Border"), Prefs.PANEL_LINE, "thin",
@@ -166,7 +168,7 @@ class StyleActivity : UiActivity() {
         segmented(tr("Vidrio (con tu foto o video de fondo)", "Glass (with your photo or video background)"), Prefs.PANEL_GLASS, "normal",
             listOf("clear" to tr("Transparente", "Clear"), "normal" to "Normal", "solid" to tr("Sólido", "Solid"))) { paintPanelPreview() }
         button(tr("↺ Volver a los colores del tema", "↺ Back to the theme colors")) {
-            prefs.edit().remove(Prefs.PANEL_BORDER).remove(Prefs.PANEL_FILL).remove(Prefs.PANEL_ICON)
+            prefs.edit().remove(Prefs.PANEL_BORDER).remove(Prefs.PANEL_FILL).remove(Prefs.PANEL_ICON).remove(Prefs.PANEL_BAR)
                 .remove(Prefs.PANEL_LINE).remove(Prefs.PANEL_GLASS).apply()
             recreate()
         }

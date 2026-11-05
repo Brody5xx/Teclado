@@ -13,6 +13,7 @@ object Prefs {
     const val PANEL_BORDER = "panel_border"   // color del borde y la luz
     const val PANEL_FILL = "panel_fill"       // color de los botones y tarjetas
     const val PANEL_ICON = "panel_icon"       // color de los íconos
+    const val PANEL_BAR = "panel_bar"         // color del fondo de las barras de arriba (búsqueda, traducir…)
     const val PANEL_GLASS = "panel_glass"     // con fondo propio: "clear", "normal", "solid"
     const val PANEL_LINE = "panel_line"       // grosor del borde: "none", "thin", "thick"
     const val TEXT_COLOR = "text_color"  // color de las letras: "" (del tema) o un color

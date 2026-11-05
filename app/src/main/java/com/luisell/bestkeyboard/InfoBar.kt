@@ -105,7 +105,7 @@ class InfoBar(context: Context) : LinearLayout(context) {
 
     fun applyPalette(p: Palette) {
         palette = p
-        setBackgroundColor(p.bg)
+        background = PanelUi.barBackground(context, p) // 🎨 ya no gris
         title.setTextColor(p.text)
         close.color = p.text
         close.background = PanelUi.pressable(p.special, p.keyPressed, d(17f).toFloat())

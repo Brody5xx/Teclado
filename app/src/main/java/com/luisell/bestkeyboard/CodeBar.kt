@@ -246,7 +246,7 @@ class CodeBar(context: Context) : LinearLayout(context) {
 
     fun applyPalette(p: Palette) {
         palette = p
-        setBackgroundColor(p.bg)
+        background = PanelUi.barBackground(context, p) // 🎨 ya no gris
         icon.color = p.accent
         icon.bgColor = p.bg
         title.setTextColor(p.text)

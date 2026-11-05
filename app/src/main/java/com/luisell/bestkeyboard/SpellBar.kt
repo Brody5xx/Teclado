@@ -249,7 +249,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
 
     fun applyPalette(p: Palette) {
         palette = p
-        setBackgroundColor(p.bg)
+        background = PanelUi.barBackground(context, p) // 🎨 ya no gris
         title.setTextColor(p.text)
         val r = d(17f).toFloat()
         close.color = p.text
