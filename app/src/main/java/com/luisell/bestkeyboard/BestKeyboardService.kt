@@ -636,7 +636,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 val custom = srch.custom
                 clipEditing = null
                 stopSearch()
-                showMode(when (custom) { "todo" -> 15; "check" -> 16; "convert", "labels", "remind" -> 0; else -> if (clip) 2 else if (mat) 13 else if (note) 10 else if (gif) 9 else 1 })
+                showMode(when (custom) { "todo" -> 15; "check" -> 16; "convert", "labels", "remind", "google" -> 0; else -> if (clip) 2 else if (mat) 13 else if (note) 10 else if (gif) 9 else 1 })
             }
             override fun onSearchPick(emoji: String) {
                 currentInputConnection?.commitText(emoji, 1)
@@ -2535,6 +2535,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_LABELS -> startSearch(gif = false, custom = "labels", customHint = "PP1-01 a PP1-24" to "PP1-01 to PP1-24",
                 info = Labels.preview(""))
             KeyboardView.TOOL_UNDO -> doUndo()
+            KeyboardView.TOOL_GOOGLE -> startGoogle()
             KeyboardView.TOOL_REMIND -> startRemind()
             KeyboardView.TOOL_SPEAK -> startSpeak()
             KeyboardView.TOOL_BGSOUND -> {
@@ -3827,6 +3828,25 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var convertCable = false
     private var convertRun = false
 
+    // ---------------------------------------------------------------- 🔎 Buscar en Google
+
+    /** Abre la barra para escribir lo que quieres buscar. Si seleccionaste texto, lo busca de una vez. */
+    private fun startGoogle() {
+        val sel = try { currentInputConnection?.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null }
+        if (!sel.isNullOrEmpty() && sel.length <= 300) { googleSearch(sel); return }
+        startSearch(gif = false, custom = "google", customHint = "Buscar en Google…" to "Search Google…",
+            info = L.t("Escribe y toca Enter: se abre Google con tu búsqueda.", "Type and tap Enter: Google opens with your search."))
+    }
+
+    private fun googleSearch(q: String) {
+        val url = "https://www.google.com/search?q=" + java.net.URLEncoder.encode(q, "UTF-8")
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: Exception) {
+            Toast.makeText(this, L.t("No encontré un navegador.", "No browser found."), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // ---------------------------------------------------------------- 📍 Recordar al llegar
 
     /** «Cuando llegue a este sitio, recuérdame…»: escribes qué y eliges el sitio. */
@@ -4459,6 +4479,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     snapUndo()
                     insertText(list.joinToString(if (multi) "\n" else ", "))
                 } else if (q.isNotEmpty()) Toast.makeText(this, L.t("No entendí. Ejemplo: PP1-01 a PP1-24", "I didn't get it. Example: PP1-01 to PP1-24"), Toast.LENGTH_SHORT).show()
+                return
+            }
+            "google" -> {
+                stopSearch()
+                showMode(0)
+                if (q.isNotEmpty()) googleSearch(q)
                 return
             }
             "remind" -> {

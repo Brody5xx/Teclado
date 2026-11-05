@@ -71,6 +71,7 @@ object Tools {
         Info(KeyboardView.TOOL_GLOVES, Icons.GLOVE, "Modo guantes", "Glove mode", false),
         Info(KeyboardView.TOOL_CONVERT, Icons.RULER, "Convertidor", "Converter", true),
         Info(KeyboardView.TOOL_SPEAK, Icons.SOUNDWAVE, "Escuchar texto", "Listen to text", true),
+        Info(KeyboardView.TOOL_GOOGLE, Icons.SEARCH, "Buscar en Google", "Search Google", true),
         Info(KeyboardView.TOOL_UNDO, Icons.UNDO, "Deshacer", "Undo", false),
         Info(KeyboardView.TOOL_IPPAD, Icons.NETWORK, "Teclado IP / MAC", "IP / MAC keypad", false),
         Info(KeyboardView.TOOL_LABELS, Icons.TAG, "Etiquetas en serie", "Serial labels", true),

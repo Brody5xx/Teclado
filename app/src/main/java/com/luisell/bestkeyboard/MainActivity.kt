@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.17.0" to tr("•  🔎 Buscar en Google (en ⋯ Más opciones): escribe en la barra y Enter abre Google con tu búsqueda. Si seleccionaste texto, lo busca de una vez.",
+            "•  🔎 Search Google (in ⋯ More options): type in the bar and Enter opens Google with your search. If you selected text, it searches it right away."),
         "12.16.5" to tr("•  🇺🇸 En inglés, al escribir «ill», «id», «well», «its»… te sugiere primero «I'll», «I'd», «we'll», «it's»… (son palabras reales, por eso no salen en rojo).",
             "•  🇺🇸 In English, typing «ill», «id», «well», «its»… first suggests «I'll», «I'd», «we'll», «it's»… (they're real words, so they're not underlined)."),
         "12.16.4" to tr("•  💬 Mientras escribes una palabra salen sus sugerencias aunque haya «Pegar» o «Captura» (esas vuelven al terminar la palabra).\n•  🔴 Las palabras subrayadas en rojo se revisan en el idioma del teclado (en inglés ya no te da palabras en español).\n•  🔧 Toca en medio de una palabra mal escrita: sus correcciones salen bonitas arriba del teclado; toca una y se cambia la palabra entera.",
