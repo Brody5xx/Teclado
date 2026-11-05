@@ -4102,31 +4102,6 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Bajar el teclado porque tú lo pediste. */
     private fun hideByUser() { userHide = true; requestHideSelf(0) }
 
-    /**
-     * Si «Mantener el teclado abierto» está prendido, cuando la app intenta bajar el teclado
-     * (por ejemplo al tocar un mensaje para seleccionarlo) no se baja: solo con el botón Bajar o la flecha atrás.
-     */
-    override fun onCreateInputMethodInterface(): AbstractInputMethodImpl = KeepOpenImpl()
-
-    inner class KeepOpenImpl : InputMethodImpl() {
-        override fun hideSoftInput(flags: Int, resultReceiver: android.os.ResultReceiver?) {
-            val keep = prefs.getBoolean(Prefs.KEEP_OPEN, true) && !userHide && isInputViewShown &&
-                (getSystemService(POWER_SERVICE) as? android.os.PowerManager)?.isInteractive != false
-            userHide = false
-            if (keep) {
-                // Espera un momentito: si cambiaste de app o se cerró el cuadro de texto, sí se baja
-                handler.postDelayed({
-                    if (!inputActive || !isInputViewShown) reallyHide(flags, resultReceiver)
-                    else try { resultReceiver?.send(android.view.inputmethod.InputMethodManager.RESULT_UNCHANGED_SHOWN, null) } catch (_: Exception) { }
-                }, 220)
-                return
-            }
-            super.hideSoftInput(flags, resultReceiver)
-        }
-
-        fun reallyHide(flags: Int, rr: android.os.ResultReceiver?) = super.hideSoftInput(flags, rr)
-    }
-
     /** ¿Hay un cuadro de texto conectado al teclado ahora mismo? */
     private var inputActive = false
 
@@ -4138,17 +4113,6 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onFinishInput() {
         super.onFinishInput()
         inputActive = false
-    }
-
-    // La flecha atrás del teléfono (o la de abajo) sí baja el teclado
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown) userHide = true
-        return super.onKeyDown(keyCode, event)
-    }
-
-    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown) userHide = true
-        return super.onKeyUp(keyCode, event)
     }
 
     // ---------------------------------------------------------------- Respuestas rápidas
