@@ -1770,6 +1770,12 @@ class KeyboardView(context: Context) : View(context) {
                 traceLoop(c, shotRect, shotRect.height() / 2f, (now % 2400L) / 2400f)
                 more = true
             }
+            // ↩️ Borraste algo: la luz le da la vuelta a la tecla de Deshacer
+            if (undoFlashAt > 0L) {
+                val t = (now - undoFlashAt) / 1000f
+                val uk = rows.asSequence().flatten().firstOrNull { it.code == Codes.UNDO }
+                if (t <= 1f && uk != null) { traceRound(c, RectF(uk.rect), radius, t); more = true } else undoFlashAt = 0L
+            }
             // 📋 Un botón de la barra (ej. el portapapeles al copiar): la luz le da la vuelta
             if (toolFlashAt > 0L) {
                 val t = (now - toolFlashAt) / 900f
@@ -1803,6 +1809,16 @@ class KeyboardView(context: Context) : View(context) {
     private var toolFlashY = -1f
     private var lastSpark = 0L
     private val sparks = ArrayList<Pair<Key, Long>>()
+
+    private var undoFlashAt = 0L
+
+    /** ↩️ Borraste algo: la tecla de Deshacer se ilumina (la luz le da la vuelta). */
+    fun flashUndo() {
+        val now = SystemClock.uptimeMillis()
+        // Si ya está dando la vuelta, se deja terminar (así borrar seguido no la reinicia a cada rato)
+        if (now - undoFlashAt > 900L) undoFlashAt = now
+        postInvalidateOnAnimation()
+    }
 
     /** 🌐 Cambiaste de idioma. */
     fun flashSpace() { spaceFlashAt = SystemClock.uptimeMillis(); postInvalidateOnAnimation() }
@@ -2476,6 +2492,7 @@ class KeyboardView(context: Context) : View(context) {
             Codes.DELETE -> drawDelete(c, cx, cy, minOf(s, k.rect.width() * 0.22f), fg)
             Codes.HSHIFT -> drawShift(c, cx, cy, minOf(s, k.rect.width() * 0.25f), fg)
             Codes.ENTER -> drawEnter(c, cx, cy, s, fg)
+            Codes.UNDO -> Icons.draw(c, Icons.UNDO, cx, cy, minOf(s, k.rect.width() * 0.24f) * 0.85f, fg, 0, d)
             Codes.LANG -> drawGlobe(c, cx, cy, s, fg)
             else -> drawFit(c, k.label, cx, cy, if (Codes.isHKey(k.code) && k.label.length == 1) keyH * 0.36f else keyH * 0.29f, fg, k.rect.width())
         }

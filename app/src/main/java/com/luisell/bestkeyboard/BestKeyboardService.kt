@@ -577,6 +577,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 ic.finishComposingText()
                 ic.deleteSurroundingText(b, a)
                 ic.endBatchEdit()
+                kv?.flashUndo()
                 lastCorrection = null
             }
             override fun onDriveUndo() = doUndo()
@@ -2270,7 +2271,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // ---------------------------------------------------------------- Teclas
 
+    private var lastDeleteAt = 0L
+
     override fun onKeyText(text: String) {
+        lastDeleteAt = 0L
         if (spellOn) stopSpell()
         if (hackerActive) { hackerText(text); return }
         if (codeOn && !codeAsking) { codeText(text); return }
@@ -2391,6 +2395,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 setShift(next)
                 scheduleUpdate()
             }
+            Codes.UNDO -> doUndo()
             Codes.MODE_SYM -> { page = Page.SYM; rebuild() }
             Codes.MODE_SYM2 -> { page = Page.SYM2; rebuild() }
             Codes.MODE_LETTERS -> {
@@ -2417,6 +2422,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onDeletePress() {
         if (spellOn) stopSpell()
+        // ↩️ Al empezar a borrar se guarda cómo estaba (Deshacer lo recupera) y la tecla se ilumina
+        val nowDel = SystemClock.uptimeMillis()
+        if (nowDel - lastDeleteAt > 1500L) snapUndo()
+        lastDeleteAt = nowDel
+        kv?.flashUndo()
         if (hackerActive) { sendKey(KeyEvent.KEYCODE_DEL, hMeta()); hConsume(); return }
         if (codeOn && !codeAsking && codeDeleteIndent()) return
         val ic = target() ?: return

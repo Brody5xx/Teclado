@@ -11,6 +11,8 @@ object Codes {
     const val DELETE = -5
     const val LANG = -6
     const val MODE_SYM2 = -7
+    /** ↩️ Deshacer (tecla al lado del punto). */
+    const val UNDO = -8
     const val SPACE = 32
 
     // Teclado de computadora ("hacker")
@@ -89,8 +91,9 @@ object Layouts {
             sp(modeLabel, modeCode, 1.5f),
             commaKey,
             if (showGlobe) sp("🌐", Codes.LANG, 1f) else null,
-            Key(" ", Codes.SPACE, null, if (showGlobe) 4f else 5f, emptyList()),
+            Key(" ", Codes.SPACE, null, if (showGlobe) 3f else 4f, emptyList()),
             ch(".", ",?¿!¡'\"-:;@/…"),
+            sp("↶", Codes.UNDO, 1f), // ↩️ Deshacer
             sp("↵", Codes.ENTER, 1.5f),
         )
     }
