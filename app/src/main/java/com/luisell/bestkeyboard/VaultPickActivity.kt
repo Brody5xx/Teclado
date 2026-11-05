@@ -45,9 +45,9 @@ class VaultPickActivity : Activity() {
         try { VaultStore.migrate(this) } catch (_: Exception) { }
         all = intent.getBooleanExtra(EXTRA_ALL, false)
         // 🔐 La huella va primero, apenas abres Datos; después entras libre a tus cuentas
-        if (System.currentTimeMillis() < DataActivity.unlockedUntil) { showAccounts(); return }
+        // Cada vez que tocas el candado se pide (sin «recordar» el minuto). Adentro, los datos ya no la piden.
         setContentView(View(this))
-        authenticate(onOk = { DataActivity.unlockedUntil = System.currentTimeMillis() + 60_000L; showAccounts() }, onFail = { finish() })
+        authenticate(onOk = { showAccounts() }, onFail = { finish() })
     }
 
     private fun frame(titleText: String, subText: String, onBack: (() -> Unit)?): Pair<LinearLayout, LinearLayout> {
