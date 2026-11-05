@@ -15,7 +15,8 @@ import java.util.concurrent.Executors
  *  - Reescribir formal: Google Gemini con tu clave gratis (si el teléfono no trae la IA de Google).
  */
 object CloudText {
-    private val io = Executors.newSingleThreadExecutor()
+    // Varios a la vez: si una pregunta se tarda, las demás no se quedan esperando en fila
+    private val io = Executors.newCachedThreadPool()
     private val main = Handler(Looper.getMainLooper())
 
     /** Resultado de la gramática: texto corregido y las partes que cambiaron (en el texto nuevo). */
@@ -26,7 +27,7 @@ object CloudText {
         try {
             c.requestMethod = "POST"
             c.connectTimeout = 12000
-            c.readTimeout = 30000
+            c.readTimeout = 20000
             c.doOutput = true
             c.setRequestProperty("Content-Type", contentType)
             for ((k, v) in headers) c.setRequestProperty(k, v)
@@ -121,19 +122,34 @@ object CloudText {
     }
 
     /** Le pregunta a Google Gemini ([prompt]) con tu clave; prueba varios modelos si uno falla. */
+    /** El último modelo que funcionó: se prueba primero (así responde más rápido). */
+    @Volatile private var goodModel: String? = null
+
     fun ask(prompt: String, key: String, done: (List<String>?, String?) -> Unit) {
         io.execute {
-            val req = JSONObject().put(
-                "contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))),
-            ).put("generationConfig", JSONObject().put("temperature", 0.4))
+            fun req(thinkOff: Boolean): String {
+                val gen = JSONObject().put("temperature", 0.4)
+                // Sin "pensar" largo: responde en segundos en vez de quedarse pensando
+                if (thinkOff) gen.put("thinkingConfig", JSONObject().put("thinkingBudget", 0))
+                return JSONObject().put(
+                    "contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))),
+                ).put("generationConfig", gen).toString()
+            }
             var lastError: HttpError? = null
             var network = false
-            for (model in MODELS) {
+            var timedOut = false
+            val deadline = System.currentTimeMillis() + 45_000L // nunca más de 45 segundos en total
+            val order = (listOfNotNull(goodModel) + MODELS).distinct()
+            for (model in order) {
+                if (System.currentTimeMillis() > deadline) { timedOut = true; break }
+                var thinkOff = true
                 // Dos intentos por modelo si Google dice que está ocupado (503)
-                for (attempt in 0..1) {
+                var attempt = 0
+                while (attempt < 2) {
+                    if (System.currentTimeMillis() > deadline) { timedOut = true; break }
                     try {
                         val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"
-                        val out = JSONObject(post(url, req.toString(), "application/json", mapOf("x-goog-api-key" to key.trim())))
+                        val out = JSONObject(post(url, req(thinkOff), "application/json", mapOf("x-goog-api-key" to key.trim())))
                         val parts = out.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
                         val sb = StringBuilder()
                         if (parts != null) for (i in 0 until parts.length()) {
@@ -143,6 +159,7 @@ object CloudText {
                         }
                         val result = sb.toString().trim()
                         if (result.isNotEmpty()) {
+                            goodModel = model
                             main.post { done(listOf(result), null); try { onSuccess?.invoke() } catch (_: Throwable) { } }
                             return@execute
                         }
@@ -154,15 +171,25 @@ object CloudText {
                             401, 403 -> { main.post { done(null, keyProblem(e)) }; return@execute }
                             400 -> if (e.body.contains("API key", true) || e.body.contains("API_KEY", true)) {
                                 main.post { done(null, keyProblem(e)) }; return@execute
+                            } else if (thinkOff && e.body.contains("think", true)) {
+                                thinkOff = false; continue // este modelo no deja apagar el "pensar": otra vez sin eso
                             } else break
-                            503, 500 -> if (attempt == 0) { Thread.sleep(1500); continue } else break
+                            503, 500 -> if (attempt == 0) { Thread.sleep(1200); attempt++; continue } else break
                             else -> break // 404 (modelo ya no existe), 429 (límite de ese modelo)...
                         }
+                    } catch (e: java.net.SocketTimeoutException) {
+                        timedOut = true
+                        break // se tardó mucho: probar el siguiente
                     } catch (e: Exception) {
                         network = true
                         break
                     }
                 }
+            }
+            if (timedOut && lastError == null) {
+                main.post { done(null, L.t("La IA se tardó mucho en contestar. Revisa tu internet e inténtalo otra vez.",
+                    "The AI took too long to answer. Check your internet and try again.")) }
+                return@execute
             }
             val err = lastError
             val msg = when {
