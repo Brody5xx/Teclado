@@ -2483,7 +2483,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 val title = Tools.info(action)?.label ?: ""
                 Toast.makeText(this, Emo.strip("$title: $name"), Toast.LENGTH_SHORT).show()
             }
-            KeyboardView.TOOL_HIDE -> requestHideSelf(0)
+            KeyboardView.TOOL_HIDE -> hideByUser()
             KeyboardView.TOOL_EMOJI -> showMode(1)
             KeyboardView.TOOL_CLIP -> showMode(2)
             KeyboardView.TOOL_VOICE -> showMode(3)
@@ -4094,13 +4094,70 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         showBar()
     }
 
+    // ---------------------------------------------------------------- ⌨️ No bajar el teclado solo
+
+    /** true = el siguiente «bajar el teclado» lo pediste tú (botón Bajar, flecha atrás). */
+    private var userHide = false
+
+    /** Bajar el teclado porque tú lo pediste. */
+    private fun hideByUser() { userHide = true; requestHideSelf(0) }
+
+    /**
+     * Si «Mantener el teclado abierto» está prendido, cuando la app intenta bajar el teclado
+     * (por ejemplo al tocar un mensaje para seleccionarlo) no se baja: solo con el botón Bajar o la flecha atrás.
+     */
+    override fun onCreateInputMethodInterface(): android.view.inputmethod.InputMethod = KeepOpenImpl()
+
+    inner class KeepOpenImpl : InputMethodImpl() {
+        override fun hideSoftInput(flags: Int, resultReceiver: android.os.ResultReceiver?) {
+            val keep = prefs.getBoolean(Prefs.KEEP_OPEN, true) && !userHide && isInputViewShown &&
+                (getSystemService(POWER_SERVICE) as? android.os.PowerManager)?.isInteractive != false
+            userHide = false
+            if (keep) {
+                // Espera un momentito: si cambiaste de app o se cerró el cuadro de texto, sí se baja
+                handler.postDelayed({
+                    if (!inputActive || !isInputViewShown) reallyHide(flags, resultReceiver)
+                    else try { resultReceiver?.send(android.view.inputmethod.InputMethodManager.RESULT_UNCHANGED_SHOWN, null) } catch (_: Exception) { }
+                }, 220)
+                return
+            }
+            super.hideSoftInput(flags, resultReceiver)
+        }
+
+        fun reallyHide(flags: Int, rr: android.os.ResultReceiver?) = super.hideSoftInput(flags, rr)
+    }
+
+    /** ¿Hay un cuadro de texto conectado al teclado ahora mismo? */
+    private var inputActive = false
+
+    override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        inputActive = true
+    }
+
+    override fun onFinishInput() {
+        super.onFinishInput()
+        inputActive = false
+    }
+
+    // La flecha atrás del teléfono (o la de abajo) sí baja el teclado
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown) userHide = true
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown) userHide = true
+        return super.onKeyUp(keyCode, event)
+    }
+
     // ---------------------------------------------------------------- Respuestas rápidas
 
     /** Copias el mensaje que te llegó y la IA te da 3 respuestas: corta, formal y en el otro idioma. */
     private fun startReplies() {
         if (isPassword) return
         showMode(0)
-        val title = L.t("💬 Respuestas rápidas", "💬 Quick replies")
+        val title = L.t("💬 Respuestas con IA", "💬 AI replies")
         val ic = currentInputConnection
         val sel = try { ic?.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null }
         val msg = if (!sel.isNullOrEmpty()) sel else try {

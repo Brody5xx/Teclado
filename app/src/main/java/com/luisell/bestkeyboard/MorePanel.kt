@@ -58,7 +58,7 @@ object Tools {
         Info(KeyboardView.TOOL_STAMP, Icons.CLOCK, "Hora, fecha y lugar", "Time, date and place", true),
         Info(KeyboardView.TOOL_WORKDAY, Icons.TRUCK, "Mi jornada", "My workday", true),
         Info(KeyboardView.TOOL_MATERIALS, Icons.BOX, "Materiales", "Materials", true),
-        Info(KeyboardView.TOOL_REPLY, Icons.REPLY, "Respuestas rápidas", "Quick replies", true),
+        Info(KeyboardView.TOOL_REPLY, Icons.REPLY, "Respuestas con IA", "AI replies", true),
         Info(KeyboardView.TOOL_SITES, Icons.MAP_PIN, "Mis sitios", "My sites", true),
         Info(KeyboardView.TOOL_STATUS, Icons.SEND, "Mensajes rápidos", "Quick messages", true),
         Info(KeyboardView.TOOL_WEEK, Icons.WEEK, "Resumen de la semana", "Week summary", true),

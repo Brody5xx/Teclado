@@ -38,6 +38,7 @@ object Prefs {
     const val SUGGEST = "suggest"
     const val AUTOCORRECT = "autocorrect"
     const val LEARN = "learn"
+    const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)
     const val AUTO_LANG = "auto_lang"   // 🌐 cambiar español/inglés solo, según lo que escribo
     const val CLIP_HISTORY = "clip_history"
     const val CLIP_LAST_SIG = "clip_last_sig"

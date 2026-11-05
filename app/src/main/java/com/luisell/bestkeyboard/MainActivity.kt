@@ -580,6 +580,9 @@ class MainActivity : UiActivity() {
 
         // ---- Escritura
         card(tr("Escritura", "Typing"), Icons.SPELL)
+        switch(tr("Mantener el teclado abierto", "Keep the keyboard open"), Prefs.KEEP_OPEN, true,
+            tr("Si tocas algo para seleccionarlo, el teclado no se baja solo. Se baja con el botón Bajar o la flecha atrás.",
+                "If you tap something to select it, the keyboard doesn't go down by itself. It goes down with the Hide button or the back arrow."))
         switch(tr("Mayúscula automática al empezar una oración", "Auto-capitalize sentences"), Prefs.AUTOCAP, true)
         switch(tr("Doble espacio pone un punto", "Double space adds a period"), Prefs.DOUBLE_SPACE, true)
         switch(tr("Mayúsculas en lo seleccionado", "Uppercase the selection"), Prefs.SEL_CAPS, false,
@@ -972,6 +975,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.19.0" to tr("•  Mantener el teclado abierto: si tocas algo para seleccionarlo, el teclado ya no se baja solo; se baja con el botón Bajar o la flecha atrás (lo apagas en Ajustes).\n•  «Respuestas rápidas» (la de la IA) ahora se llama «Respuestas con IA», para no confundirla con «Mensajes rápidos». Mientras piensa, sale el diamante con su luz.",
+            "•  Keep the keyboard open: if you tap something to select it, the keyboard no longer goes down by itself; it goes down with the Hide button or the back arrow (turn it off in Settings).\n•  «Quick replies» (the AI one) is now called «AI replies», so it isn't confused with «Quick messages». While it thinks, the diamond shows with its light."),
         "12.18.2" to tr("•  Modo manejando: el texto de los botones grandes sube un poco (ya no toca el borde de abajo).", "•  Driving mode: the big buttons' text moves up a bit (no longer touches the bottom edge)."),
         "12.18.1" to tr("•  Modo manejando: los íconos de los botones grandes quedan centrados con su texto; el del título va pegado al título, y los de Borrar letra y Borrar todo son más grandes y van junto a su texto.",
             "•  Driving mode: the big buttons' icons are centered with their text; the title icon sits next to the title, and Delete letter / Delete all icons are bigger and next to their text."),
