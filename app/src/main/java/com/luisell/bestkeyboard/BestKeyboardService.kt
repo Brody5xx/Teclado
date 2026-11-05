@@ -1971,6 +1971,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         return true
     }
 
+    private val CONTRACTIONS = mapOf(
+        "ill" to "I'll", "id" to "I'd", "im" to "I'm", "ive" to "I've", "hell" to "he'll", "shell" to "she'll",
+        "wed" to "we'd", "well" to "we'll", "were" to "we're", "its" to "it's", "lets" to "let's", "wont" to "won't",
+        "cant" to "can't", "hed" to "he'd", "shed" to "she'd", "youre" to "you're", "theyre" to "they're", "whos" to "who's",
+    )
+
     /** Si estás corrigiendo una palabra tocada en medio: (letras antes del cursor, letras después). */
     private var fixSpan: Pair<Int, Int>? = null
 
@@ -2145,6 +2151,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val list = res.suggestions.filter { it != word }.toMutableList()
+        // 🇺🇸 Contracciones que también son palabras («ill» = enfermo, pero casi siempre quieres «I'll»): se ofrecen primero
+        if (lang == "en") CONTRACTIONS[word.lowercase()]?.let { c ->
+            val cc = if (c.startsWith("I'")) c else TextUtil.matchCase(c, word)
+            list.remove(cc); list.add(0, cc)
+        }
         val known = eng.isKnown(word.lowercase())
         if (known || res.suggestions.any { it == word }) {
             // Lo que escribiste es una palabra: va en el centro

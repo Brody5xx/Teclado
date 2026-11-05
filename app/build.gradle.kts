@@ -15,7 +15,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = buildNumber
-        versionName = "12.16.4 (build $buildNumber)"
+        versionName = "12.16.5 (build $buildNumber)"
         // Solo los procesadores de teléfonos reales: la app pesa menos
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
