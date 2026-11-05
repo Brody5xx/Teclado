@@ -101,6 +101,11 @@ object Icons {
     const val TAG = 83
     const val UNDO = 84
     const val DIAMOND = 85
+    const val KEYBOARD = 86
+    const val HOME = 87
+    const val MONEY = 88
+    const val WARN = 89
+    const val STAR = 90
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -548,6 +553,63 @@ object Icons {
                 c.drawCircle(cx + s * 0.3f, cy, s * 0.14f, fl)
                 c.drawLine(cx - s * 0.65f, cy - s * 0.12f, cx - s * 0.05f, cy - s * 0.12f, st)
                 c.drawLine(cx - s * 0.65f, cy + s * 0.22f, cx - s * 0.25f, cy + s * 0.22f, st)
+            }
+            KEYBOARD -> {
+                // Teclado: rectángulo con teclitas y barra espaciadora
+                r.set(cx - s * 1.05f, cy - s * 0.65f, cx + s * 1.05f, cy + s * 0.65f)
+                c.drawRoundRect(r, s * 0.18f, s * 0.18f, st)
+                for (row in 0..1) for (k in 0..3) {
+                    val x = cx - s * 0.6f + k * s * 0.4f
+                    val y = cy - s * 0.28f + row * s * 0.3f
+                    c.drawCircle(x, y, s * 0.07f, fl)
+                }
+                c.drawLine(cx - s * 0.45f, cy + s * 0.36f, cx + s * 0.45f, cy + s * 0.36f, st)
+            }
+            HOME -> {
+                // Casa: techo y puerta
+                path.reset()
+                path.moveTo(cx - s * 0.95f, cy - s * 0.05f)
+                path.lineTo(cx, cy - s * 0.9f)
+                path.lineTo(cx + s * 0.95f, cy - s * 0.05f)
+                c.drawPath(path, st)
+                path.reset()
+                path.moveTo(cx - s * 0.7f, cy - s * 0.25f)
+                path.lineTo(cx - s * 0.7f, cy + s * 0.85f)
+                path.lineTo(cx + s * 0.7f, cy + s * 0.85f)
+                path.lineTo(cx + s * 0.7f, cy - s * 0.25f)
+                c.drawPath(path, st)
+                r.set(cx - s * 0.2f, cy + s * 0.25f, cx + s * 0.2f, cy + s * 0.85f)
+                c.drawRect(r, st)
+            }
+            MONEY -> {
+                // Billete con un círculo en medio
+                r.set(cx - s * 1.0f, cy - s * 0.55f, cx + s * 1.0f, cy + s * 0.55f)
+                c.drawRoundRect(r, s * 0.15f, s * 0.15f, st)
+                c.drawCircle(cx, cy, s * 0.28f, st)
+                c.drawCircle(cx - s * 0.68f, cy, s * 0.06f, fl)
+                c.drawCircle(cx + s * 0.68f, cy, s * 0.06f, fl)
+            }
+            WARN -> {
+                // Triángulo con signo de admiración
+                path.reset()
+                path.moveTo(cx, cy - s * 0.9f)
+                path.lineTo(cx + s * 0.98f, cy + s * 0.8f)
+                path.lineTo(cx - s * 0.98f, cy + s * 0.8f)
+                path.close()
+                c.drawPath(path, st)
+                c.drawLine(cx, cy - s * 0.3f, cx, cy + s * 0.25f, st)
+                c.drawCircle(cx, cy + s * 0.52f, s * 0.08f, fl)
+            }
+            STAR -> {
+                // Destello de 4 puntas
+                path.reset()
+                path.moveTo(cx, cy - s)
+                path.quadTo(cx + s * 0.15f, cy - s * 0.15f, cx + s, cy)
+                path.quadTo(cx + s * 0.15f, cy + s * 0.15f, cx, cy + s)
+                path.quadTo(cx - s * 0.15f, cy + s * 0.15f, cx - s, cy)
+                path.quadTo(cx - s * 0.15f, cy - s * 0.15f, cx, cy - s)
+                path.close()
+                c.drawPath(path, fl)
             }
             DIAMOND -> {
                 // 💎 El diamante del logo (Ajustes)

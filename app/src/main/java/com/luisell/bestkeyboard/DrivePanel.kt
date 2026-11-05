@@ -49,7 +49,7 @@ class DrivePanel(context: Context) : FrameLayout(context) {
     private fun setUndo(on: Boolean) {
         undoMode = on
         repeat.removeCallbacks(endUndo)
-        clearBtn.text = if (on) L.t("↩️  Deshacer", "↩️  Undo") else L.t("🗑️  Borrar todo", "🗑️  Delete all")
+        clearBtn.tag = if (on) L.t("↩️ Deshacer", "↩️ Undo") else L.t("🗑️ Borrar todo", "🗑️ Delete all")
         if (on) repeat.postDelayed(endUndo, 8000)
         paint()
         if (on) LightFx.flash(clearBtn, d(18f).toFloat())
@@ -120,11 +120,11 @@ class DrivePanel(context: Context) : FrameLayout(context) {
     /** [next] = lo que toca en la jornada (Llegué o Casa). */
     fun open(next: String) {
         nextKind = next
-        title.text = L.t("🛻 Modo manejando · usa la voz", "🛻 Driving mode · use your voice")
+        Emo.apply(title, L.t("🛻 Modo manejando · usa la voz", "🛻 Driving mode · use your voice"), PanelUi.icon(palette), 18f)
         notDriving.text = L.t("No voy manejando (teclado normal hoy)", "I'm not driving (normal keyboard today)")
-        delBtn.text = L.t("⌫  Borrar letra", "⌫  Delete letter")
+        delBtn.tag = L.t("⌫ Borrar letra", "⌫ Delete letter")
         undoMode = false
-        clearBtn.text = L.t("🗑️  Borrar todo", "🗑️  Delete all")
+        clearBtn.tag = L.t("🗑️ Borrar todo", "🗑️ Delete all")
         grid.removeAllViews()
         big.clear()
         val items = listOf(
@@ -139,7 +139,7 @@ class DrivePanel(context: Context) : FrameLayout(context) {
             for (c in 0..1) {
                 val (label, primary, act) = items[r * 2 + c]
                 val t = TextView(context)
-                t.text = label
+                t.tag = label
                 t.textSize = 18f
                 t.gravity = Gravity.CENTER
                 t.setTypeface(t.typeface, Typeface.BOLD)
@@ -156,14 +156,17 @@ class DrivePanel(context: Context) : FrameLayout(context) {
         val p = palette
         for ((t, primary) in big) {
             t.setTextColor(if (primary) p.onAccent else p.text)
+            // Ícono pequeño (como los de la barra de arriba) en vez de emoji
+            Emo.applyTop(t, (t.tag as? String) ?: "", if (primary) p.onAccent else PanelUi.icon(p))
             t.background = if (primary) PanelUi.pressable(p.accent, p.accentPressed, d(22f).toFloat())
             else PanelUi.pressable(p.key, p.keyPressed, d(22f).toFloat())
         }
         for (b in listOf(delBtn, clearBtn)) {
             b.setTextColor(p.text)
+            Emo.apply(b, (b.tag as? String) ?: "", PanelUi.icon(p), 18f)
             b.background = PanelUi.glassButton(context, p, d(18f).toFloat())
         }
-        if (undoMode) { clearBtn.setTextColor(p.onAccent); clearBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(18f).toFloat()) }
+        if (undoMode) { clearBtn.setTextColor(p.onAccent); Emo.apply(clearBtn, (clearBtn.tag as? String) ?: "", p.onAccent, 18f); clearBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(18f).toFloat()) }
     }
 
     fun applyPalette(p: Palette) {

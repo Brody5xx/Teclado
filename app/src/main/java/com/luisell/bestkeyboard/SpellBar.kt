@@ -172,7 +172,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
 
     private fun chip(label: String, main: Boolean, accentText: Boolean = false, hint: Boolean = false, onClick: () -> Unit) {
         val c = TextView(context)
-        c.text = label
+        Emo.apply(c, label, PanelUi.icon(palette), 15f)
         c.textSize = if (hint) 13f else 15f
         c.gravity = Gravity.CENTER
         c.setPadding(d(14f), d(8f), d(14f), d(8f))
@@ -205,7 +205,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
      * [changes] = partes cambiadas que se pintan de verde (para "Corregir gramática").
      */
     fun showRewrite(versions: List<String>, index: Int, heading: String? = null, changes: List<IntRange> = emptyList()) {
-        title.text = heading ?: L.t("Versión formal", "Formal version")
+        Emo.apply(title, heading ?: L.t("Versión formal", "Formal version"), PanelUi.icon(palette), 16f)
         actionsScroll.visibility = GONE
         previewScroll.visibility = VISIBLE
         val sp = SpannableString(versions[index])
@@ -229,7 +229,7 @@ class SpellBar(context: Context) : LinearLayout(context) {
 
     /** Mensaje (por ejemplo "Revisando…" o "Listo, sin errores"). */
     fun message(text: String, showRewrite: Boolean = rewriteOn) {
-        title.text = text
+        Emo.apply(title, text, PanelUi.icon(palette), 16f) // sin emojis: ícono pequeño
         chips.removeAllViews()
         fixAll.visibility = GONE
         showActions(showRewrite)

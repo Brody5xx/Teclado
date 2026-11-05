@@ -405,6 +405,9 @@ object AutoSites {
         notify(ctx, title, text, if (action == null) emptyList() else listOf(action), id)
 
     fun notify(ctx: Context, title: String, text: String, actions: List<Pair<String, PendingIntent>>, id: Int) {
+        // Sin emojis en los avisos: el texto limpio (Android ya pone el ícono de la app)
+        @Suppress("NAME_SHADOWING") val title = Emo.strip(title)
+        @Suppress("NAME_SHADOWING") val text = Emo.strip(text)
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(NotificationChannel(CHANNEL, L.t("Mi jornada: avisos automáticos", "My workday: automatic alerts"),

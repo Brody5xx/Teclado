@@ -102,7 +102,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
     }
 
     fun setStatus(text: String) {
-        status.text = text
+        status.text = Emo.strip(text)
         status.visibility = if (text.isEmpty()) GONE else VISIBLE
     }
 

@@ -182,7 +182,7 @@ class CodeBar(context: Context) : LinearLayout(context) {
 
     /** "Pensando…", errores, etc. */
     fun showStatus(text: String) {
-        status.text = text
+        status.text = Emo.strip(text)
         status.visibility = VISIBLE
         resultScroll.visibility = GONE
         chipsScroll.visibility = GONE

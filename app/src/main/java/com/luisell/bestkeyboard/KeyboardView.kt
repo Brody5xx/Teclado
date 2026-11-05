@@ -1036,7 +1036,7 @@ class KeyboardView(context: Context) : View(context) {
     fun setChip(thumb: android.graphics.Bitmap?, label: String?, icon: Int = Icons.IMAGE) {
         if (shotThumb === thumb && chipLabel == label && chipIcon == icon) return
         shotThumb = thumb
-        chipLabel = label
+        chipLabel = label?.let { Emo.split(it).second } // sin emojis (el ícono ya va en el círculo)
         chipIcon = icon
         invalidate(0, 0, width, stripH.toInt() + 1)
     }

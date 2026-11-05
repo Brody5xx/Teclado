@@ -942,7 +942,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         lastWasSpace = false
         updateAutoCaps()
         scheduleUpdate()
-        if (q.isCode) Toast.makeText(this, L.t("Código pegado", "Code pasted"), Toast.LENGTH_SHORT).show()
+        if (q.isCode) Toast.makeText(this, Emo.strip(L.t("Código pegado", "Code pasted")), Toast.LENGTH_SHORT).show()
     }
 
     /** Tocaste "Captura de pantalla": se guarda en el portapapeles y se pega aquí. */
@@ -972,7 +972,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (s.isVideo) { pasteUri(s.uri, s.mime); return }
         ClipStore.addImage(this, s.uri, s.mime) { item ->
             if (item != null) pasteImage(item)
-            else Toast.makeText(this, L.t("No se pudo abrir la captura.", "Couldn't open the screenshot."), Toast.LENGTH_SHORT).show()
+            else Toast.makeText(this, Emo.strip(L.t("No se pudo abrir la captura.", "Couldn't open the screenshot.")), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -1163,14 +1163,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Revisa todo el texto y empieza a mostrar los errores uno por uno. */
     private fun startSpell(grammarNow: Boolean = false) {
         if (isPassword || !fieldSuggest) {
-            Toast.makeText(this, L.t("Aquí no se puede revisar la ortografía.", "Spelling can't be checked here."), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, Emo.strip(L.t("Aquí no se puede revisar la ortografía.", "Spelling can't be checked here.")), Toast.LENGTH_SHORT).show()
             return
         }
         if (translating) stopTranslate()
         if (mode != 0) showMode(0)
         val ic = currentInputConnection ?: return
         val eng = WordStore.engine ?: run {
-            Toast.makeText(this, L.t("Un momento, el diccionario se está cargando…", "One moment, the dictionary is loading…"), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, Emo.strip(L.t("Un momento, el diccionario se está cargando…", "One moment, the dictionary is loading…")), Toast.LENGTH_SHORT).show()
             return
         }
         // Si seleccionaste palabras, se revisan solo esas (una por una, incluso tus palabras guardadas)
@@ -1356,7 +1356,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun startTranslate() {
         if (isPassword) {
-            Toast.makeText(this, L.t("La traducción no funciona en campos de contraseña.", "Translation doesn't work in password fields."), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, Emo.strip(L.t("La traducción no funciona en campos de contraseña.", "Translation doesn't work in password fields.")), Toast.LENGTH_SHORT).show()
             return
         }
         val tb = tBar ?: return
@@ -2481,7 +2481,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 // Desde la barra de arriba: un toque pasa a la siguiente opción
                 val name = Cycles.step(prefs, action, 1)
                 val title = Tools.info(action)?.label ?: ""
-                Toast.makeText(this, "$title: $name", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, Emo.strip("$title: $name"), Toast.LENGTH_SHORT).show()
             }
             KeyboardView.TOOL_HIDE -> requestHideSelf(0)
             KeyboardView.TOOL_EMOJI -> showMode(1)
@@ -2521,7 +2521,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (hasPermission(android.Manifest.permission.CAMERA)) {
                     showMode(4)
                 } else {
-                    Toast.makeText(this, L.t("Dale permiso a la cámara y vuelve a tocar el escáner.", "Allow the camera and tap the scanner again."), Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, Emo.strip(L.t("Dale permiso a la cámara y vuelve a tocar el escáner.", "Allow the camera and tap the scanner again.")), Toast.LENGTH_LONG).show()
                     askPermission(MainActivity.EXTRA_ASK_CAMERA)
                 }
             }
@@ -2544,7 +2544,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 manualShift = false
                 rebuild()
                 updateAutoCaps()
-                if (page == Page.IP) Toast.makeText(this, L.t("Teclado IP / MAC · «ABC» vuelve a las letras", "IP / MAC keypad · «ABC» goes back to letters"), Toast.LENGTH_SHORT).show()
+                if (page == Page.IP) Toast.makeText(this, Emo.strip(L.t("Teclado IP / MAC · «ABC» vuelve a las letras", "IP / MAC keypad · «ABC» goes back to letters")), Toast.LENGTH_SHORT).show()
             }
             KeyboardView.TOOL_LABELS -> startSearch(gif = false, custom = "labels", customHint = "PP1-01 a PP1-24" to "PP1-01 to PP1-24",
                 info = Labels.preview(""))
@@ -2554,20 +2554,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_SPEAK -> startSpeak()
             KeyboardView.TOOL_BGSOUND -> {
                 if (BgMedia.kind(this) != "video") {
-                    Toast.makeText(this, L.t("Primero pon un video de fondo en Ajustes → Estilo.", "First set a background video in Settings → Style."), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, Emo.strip(L.t("Primero pon un video de fondo en Ajustes → Estilo.", "First set a background video in Settings → Style.")), Toast.LENGTH_SHORT).show()
                 } else {
                     val on = !prefs.getBoolean(Prefs.BG_SOUND, false)
                     prefs.edit().putBoolean(Prefs.BG_SOUND, on).apply()
                     applySettings()
                     kv?.invalidate()
-                    Toast.makeText(this, if (on) L.t("🔊 Video con sonido", "🔊 Video sound on") else L.t("🔇 Video en silencio", "🔇 Video muted"), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, Emo.strip(if (on) L.t("🔊 Video con sonido", "🔊 Video sound on") else L.t("🔇 Video en silencio", "🔇 Video muted")), Toast.LENGTH_SHORT).show()
                 }
             }
             KeyboardView.TOOL_GLOVES -> {
                 val on = !prefs.getBoolean(Prefs.GLOVES, false)
                 prefs.edit().putBoolean(Prefs.GLOVES, on).apply()
                 applySettings()
-                Toast.makeText(this, if (on) L.t("🧤 Modo guantes: teclas grandes", "🧤 Glove mode: big keys") else L.t("Modo guantes apagado", "Glove mode off"), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, Emo.strip(if (on) L.t("🧤 Modo guantes: teclas grandes", "🧤 Glove mode: big keys") else L.t("Modo guantes apagado", "Glove mode off")), Toast.LENGTH_SHORT).show()
             }
             KeyboardView.TOOL_SITES -> {
                 showMode(0)
@@ -2720,7 +2720,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         rebuild()
         clearSlots()
         if (codeOn) {
-            Toast.makeText(this, L.t("Modo código: Explicar, Escribir código, Arreglar error y Pista", "Code mode: Explain, Write code, Fix error and Hint"), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, Emo.strip(L.t("Modo código: Explicar, Escribir código, Arreglar error y Pista", "Code mode: Explain, Write code, Fix error and Hint")), Toast.LENGTH_SHORT).show()
         } else updateAutoCaps()
         scheduleUpdate()
     }
@@ -2931,7 +2931,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         override fun onCodeCopy(text: String) {
             try {
                 clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("code", text))
-                Toast.makeText(this@BestKeyboardService, L.t("Copiado", "Copied"), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@BestKeyboardService, Emo.strip(L.t("Copiado", "Copied")), Toast.LENGTH_SHORT).show()
             } catch (_: Exception) { }
         }
 
@@ -2956,8 +2956,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (hacker) {
             clearSlots()
             setShift(0)
-            Toast.makeText(this, L.t("Teclado de computadora: Ctrl, Alt, Esc, Tab, flechas y Fn (F1–F12)",
-                "PC keyboard: Ctrl, Alt, Esc, Tab, arrows and Fn (F1–F12)"), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, Emo.strip(L.t("Teclado de computadora: Ctrl, Alt, Esc, Tab, flechas y Fn (F1–F12)",
+                "PC keyboard: Ctrl, Alt, Esc, Tab, arrows and Fn (F1–F12)")), Toast.LENGTH_SHORT).show()
         } else {
             updateAutoCaps()
             scheduleUpdate()
@@ -3105,7 +3105,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             last?.takeIf { it.isNotEmpty() } ?: clip
         }?.take(1200)
         if (text.isNullOrEmpty()) {
-            Toast.makeText(this, L.t("Selecciona un texto (o cópialo) y vuelve a tocar 🔊.", "Select a text (or copy it) and tap 🔊 again."), Toast.LENGTH_LONG).show()
+            Toast.makeText(this, Emo.strip(L.t("Selecciona un texto (o cópialo) y vuelve a tocar 🔊.", "Select a text (or copy it) and tap 🔊 again.")), Toast.LENGTH_LONG).show()
             return
         }
         // ¿En qué idioma está? Una sola palabra sin acentos: el idioma del teclado
@@ -3167,7 +3167,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     })
                     buttons.add(L.t("Copiar", "Copy") to {
                         try { clipboard?.setPrimaryClip(ClipData.newPlainText("Traducción", out)) } catch (_: Exception) { }
-                        Toast.makeText(this, L.t("Copiado", "Copied"), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, Emo.strip(L.t("Copiado", "Copied")), Toast.LENGTH_SHORT).show()
                     })
                     if (!fromSel) buttons.add(L.t("Escribir", "Type it") to { insertText(out); closeInfo() })
                     buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
@@ -3230,7 +3230,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun aiCopy(text: String) {
         try { clipboard?.setPrimaryClip(ClipData.newPlainText("Best Keyboard", text)) } catch (_: Exception) { }
-        Toast.makeText(this, L.t("Copiado", "Copied"), Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, Emo.strip(L.t("Copiado", "Copied")), Toast.LENGTH_SHORT).show()
     }
 
     private fun langName(l: String) = if (l == "en") "English" else "Spanish"
@@ -3857,7 +3857,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (_: Exception) {
-            Toast.makeText(this, L.t("No encontré un navegador.", "No browser found."), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, Emo.strip(L.t("No encontré un navegador.", "No browser found.")), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -3887,7 +3887,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         bar.show(L.t("📍 ¿Al llegar a dónde?", "📍 When I get where?"), "«$text»",
             sites.take(10).map { s -> ("📍 " + s.name) to {
                 Todos.setDue(this, id, 0L, s.name); closeInfo()
-                Toast.makeText(this, L.t("Listo: te aviso al llegar a ${s.name}.", "Done: I'll remind you at ${s.name}."), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, Emo.strip(L.t("Listo: te aviso al llegar a ${s.name}.", "Done: I'll remind you at ${s.name}.")), Toast.LENGTH_SHORT).show()
             } } + listOf(L.t("Cancelar", "Cancel") to { Todos.remove(this, id); closeInfo() }))
     }
 
@@ -3921,7 +3921,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             ic.commitText(snap.text, 1)
             ic.setSelection(snap.sel, snap.sel)
             ic.endBatchEdit()
-            Toast.makeText(this, L.t("↩️ Deshecho (toca otra vez para rehacer)", "↩️ Undone (tap again to redo)"), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, Emo.strip(L.t("↩️ Deshecho (toca otra vez para rehacer)", "↩️ Undone (tap again to redo)")), Toast.LENGTH_SHORT).show()
         } else {
             undoSnap = null
             val ok = try { ic.performContextMenuAction(android.R.id.undo) } catch (_: Exception) { false }
@@ -4035,7 +4035,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         shotIo.execute {
             val name = try { Timesheet.build(app, c.timeInMillis, english) } catch (_: Exception) { null }
             handler.post {
-                if (name == null) Toast.makeText(this, L.t("No se pudo crear el PDF.", "Couldn't create the PDF."), Toast.LENGTH_SHORT).show()
+                if (name == null) Toast.makeText(this, Emo.strip(L.t("No se pudo crear el PDF.", "Couldn't create the PDF.")), Toast.LENGTH_SHORT).show()
                 else Timesheet.share(this, name, english)
             }
         }
@@ -4492,7 +4492,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     val multi = ((currentInputEditorInfo?.inputType ?: 0) and android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0
                     snapUndo()
                     insertText(list.joinToString(if (multi) "\n" else ", "))
-                } else if (q.isNotEmpty()) Toast.makeText(this, L.t("No entendí. Ejemplo: PP1-01 a PP1-24", "I didn't get it. Example: PP1-01 to PP1-24"), Toast.LENGTH_SHORT).show()
+                } else if (q.isNotEmpty()) Toast.makeText(this, Emo.strip(L.t("No entendí. Ejemplo: PP1-01 a PP1-24", "I didn't get it. Example: PP1-01 to PP1-24")), Toast.LENGTH_SHORT).show()
                 return
             }
             "google" -> {
@@ -4531,7 +4531,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (q.isNotEmpty()) {
                 WorkStore.addNote(prefs, q)
                 bar.setText("")
-                Toast.makeText(this, L.t("Apunte guardado en la libreta", "Note saved in the notebook"), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, Emo.strip(L.t("Apunte guardado en la libreta", "Note saved in the notebook")), Toast.LENGTH_SHORT).show()
             } else { stopSearch(); showMode(10) }
             return
         }

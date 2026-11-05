@@ -84,7 +84,7 @@ class ListPanel(context: Context) : FrameLayout(context) {
     var flashRow = -1
 
     fun show(heading: String, items: List<Row>, emptyText: String, bottom: List<Pair<String, () -> Unit>>) {
-        title.text = heading
+        Emo.apply(title, heading, PanelUi.icon(palette), 17f)
         rows = items
         empty = emptyText
         actions = bottom
@@ -115,12 +115,13 @@ class ListPanel(context: Context) : FrameLayout(context) {
             val col = LinearLayout(context)
             col.orientation = LinearLayout.VERTICAL
             val meta = TextView(context)
-            meta.text = r.meta
+            Emo.apply(meta, r.meta, p.accent, 13f)
             meta.textSize = 11.5f
             meta.setTextColor(p.accent)
             col.addView(meta)
             val tx = TextView(context)
-            tx.text = r.text
+            // Si empieza con uno de nuestros emojis (ej. «⏰ Paylociy IN»), va el ícono
+            Emo.split(r.text).let { (k, _) -> if (k >= 0) Emo.apply(tx, r.text, PanelUi.icon(p), 16f) else tx.text = r.text }
             tx.textSize = 14f
             tx.maxLines = 3
             tx.ellipsize = android.text.TextUtils.TruncateAt.END
@@ -154,7 +155,6 @@ class ListPanel(context: Context) : FrameLayout(context) {
         buttons.removeAllViews()
         for ((i, a) in actions.withIndex()) {
             val b = TextView(context)
-            b.text = a.first
             b.textSize = 14f
             b.gravity = Gravity.CENTER
             b.setPadding(d(16f), 0, d(16f), 0)
@@ -166,6 +166,7 @@ class ListPanel(context: Context) : FrameLayout(context) {
                 b.setTextColor(p.text)
                 b.background = PanelUi.pressable(p.special, p.keyPressed, d(18f).toFloat())
             }
+            Emo.apply(b, a.first, if (i == 0) p.onAccent else PanelUi.icon(p), 15f)
             b.setOnClickListener { onFeedback?.invoke(); a.second() }
             buttons.addView(b, LinearLayout.LayoutParams(-2, d(38f)).apply { rightMargin = d(8f) })
         }

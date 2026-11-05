@@ -200,7 +200,7 @@ class SearchBar(context: Context) : LinearLayout(context) {
         if (custom.isNotEmpty()) {
             resultsScroll.visibility = GONE
             hint.visibility = VISIBLE
-            hint.text = customInfo
+            hint.text = Emo.strip(customInfo)
             return
         }
         if (clip) {
@@ -224,7 +224,7 @@ class SearchBar(context: Context) : LinearLayout(context) {
         if (gifs) {
             resultsScroll.visibility = GONE
             hint.visibility = VISIBLE
-            hint.text = L.t("Escribe y toca 🔍 (la tecla de Enter) para ver los GIFs.", "Type and tap 🔍 (the Enter key) to see GIFs.")
+            hint.text = L.t("Escribe y toca Enter para ver los GIFs.", "Type and tap Enter to see GIFs.")
             return
         }
         val empty = list.isEmpty()

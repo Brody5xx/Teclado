@@ -75,8 +75,9 @@ class InfoBar(context: Context) : LinearLayout(context) {
 
     fun show(heading: String, text: String, buttons: List<Pair<String, () -> Unit>>) {
         party.visibility = GONE
-        title.text = heading
-        body.text = text
+        Emo.apply(title, heading, PanelUi.icon(palette), 17f) // sin emojis: ícono pequeño
+        // Los emojis al principio de cada renglón (los nuestros) se quitan; lo demás queda igual
+        body.text = if (keepEmojis) text else text.lines().joinToString("\n") { ln -> Emo.split(ln).second.let { r -> if (r.isEmpty()) ln else r } }
         // Si está esperando (sin botones y el texto termina en «…»), sale el diamante con su luz
         loader.visibility = if (buttons.isEmpty() && text.trim().endsWith("…")) VISIBLE else GONE
         if (loader.visibility == VISIBLE) loader.invalidate()
@@ -85,7 +86,6 @@ class InfoBar(context: Context) : LinearLayout(context) {
         chips.removeAllViews()
         for ((i, b) in buttons.withIndex()) {
             val c = TextView(context)
-            c.text = b.first
             c.textSize = 14f
             c.gravity = Gravity.CENTER
             c.setPadding(d(16f), d(8f), d(16f), d(8f))
@@ -97,11 +97,15 @@ class InfoBar(context: Context) : LinearLayout(context) {
                 c.setTextColor(palette.text)
                 c.background = PanelUi.pressable(palette.key, palette.keyPressed, d(18f).toFloat())
             }
+            Emo.apply(c, b.first, if (i == 0) palette.onAccent else PanelUi.icon(palette), 15f)
             c.setOnClickListener { onFeedback?.invoke(); b.second() }
             chips.addView(c, LayoutParams(-2, -2).apply { rightMargin = d(8f) })
         }
         visibility = VISIBLE
     }
+
+    /** Lo que muestran como resultado (traducciones, lo copiado…): eso no se toca, puede tener tus emojis. */
+    var keepEmojis = false
 
     fun applyPalette(p: Palette) {
         palette = p
