@@ -60,7 +60,7 @@ object Tools {
         Info(KeyboardView.TOOL_MATERIALS, Icons.BOX, "Materiales", "Materials", true),
         Info(KeyboardView.TOOL_REPLY, Icons.REPLY, "Respuestas rápidas", "Quick replies", true),
         Info(KeyboardView.TOOL_SITES, Icons.MAP_PIN, "Mis sitios", "My sites", true),
-        Info(KeyboardView.TOOL_STATUS, Icons.SEND, "Mensaje de estado", "Status message", true),
+        Info(KeyboardView.TOOL_STATUS, Icons.SEND, "Mensajes rápidos", "Quick messages", true),
         Info(KeyboardView.TOOL_WEEK, Icons.WEEK, "Resumen de la semana", "Week summary", true),
         Info(KeyboardView.TOOL_DRIVE, Icons.STEER, "Modo manejando", "Driving mode", true),
         Info(KeyboardView.TOOL_NOTEBOOK, Icons.NOTEBOOK, "Libreta del día", "Day notebook", true),

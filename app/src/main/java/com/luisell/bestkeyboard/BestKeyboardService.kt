@@ -566,6 +566,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 showMode(0)
             }
             override fun onDriveFeedback() = onKeyFeedback()
+            override fun onDriveDelete() = onDeletePress()
+            override fun onDriveClearAll() {
+                // 🗑️ Borra todo lo escrito (se puede recuperar con ↩️ Deshacer)
+                val ic = currentInputConnection ?: return
+                snapUndo()
+                val b = ic.getTextBeforeCursor(20000, 0)?.length ?: 0
+                val a = ic.getTextAfterCursor(20000, 0)?.length ?: 0
+                ic.beginBatchEdit()
+                ic.finishComposingText()
+                ic.deleteSurroundingText(b, a)
+                ic.endBatchEdit()
+                lastCorrection = null
+                Toast.makeText(this@BestKeyboardService, L.t("🗑️ Borrado. ↩️ Deshacer lo recupera.", "🗑️ Deleted. ↩️ Undo brings it back."), Toast.LENGTH_SHORT).show()
+            }
         }
         box.addView(drv, FrameLayout.LayoutParams(-1, -1))
         drivePanel = drv
@@ -3731,7 +3745,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         for (m in msgs.distinct()) buttons.add(m to { insertText(m); closeInfo(); if (driveSticky()) showMode(14) })
         buttons.add(L.t("Cerrar", "Close") to { closeInfo(); if (driveSticky()) showMode(14) })
         infoRegen = { startStatus(english) }
-        bar.show(L.t("📲 Mensaje de estado", "📲 Status message"), "", buttons)
+        bar.show(L.t("📲 Mensajes rápidos", "📲 Quick messages"), "", buttons)
     }
 
     // ---------------------------------------------------------------- Resumen de la semana

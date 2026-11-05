@@ -10,7 +10,7 @@ import android.widget.TextView
 
 /**
  * Modo manejando: botones grandes para no escribir mientras manejas.
- * 🎤 Dictar, 📲 Mensaje de estado, la jornada (Llegué / Casa) y volver al teclado.
+ * 🎤 Dictar, 📲 Mensajes rápidos, ⌫ borrar, la jornada (Llegué / Casa) y volver al teclado.
  */
 @SuppressLint("ViewConstructor")
 class DrivePanel(context: Context) : FrameLayout(context) {
@@ -22,6 +22,10 @@ class DrivePanel(context: Context) : FrameLayout(context) {
         fun onDriveKeyboard()
         fun onDriveNotDriving()
         fun onDriveFeedback()
+        /** ⌫ Borrar una letra. */
+        fun onDriveDelete()
+        /** 🗑️ Borrar todo lo escrito. */
+        fun onDriveClearAll()
     }
 
     var actions: Actions? = null
@@ -33,6 +37,9 @@ class DrivePanel(context: Context) : FrameLayout(context) {
     private val big = ArrayList<Pair<TextView, Boolean>>()
     private val notDriving = TextView(context)
     private val grid = LinearLayout(context)
+    private val delBtn = TextView(context)
+    private val clearBtn = TextView(context)
+    private val repeat = android.os.Handler(android.os.Looper.getMainLooper())
     private var nextKind = WorkDay.ARRIVE
 
     init {
@@ -51,6 +58,32 @@ class DrivePanel(context: Context) : FrameLayout(context) {
         body.addView(head, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = d(6f) })
         grid.orientation = LinearLayout.VERTICAL
         body.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
+        // ⌫ Borrar letra por letra (mantén presionado para borrar seguido) y 🗑️ Borrar todo
+        val tools = LinearLayout(context)
+        tools.orientation = LinearLayout.HORIZONTAL
+        for (b in listOf(delBtn, clearBtn)) {
+            b.textSize = 15f
+            b.gravity = Gravity.CENTER
+            b.setTypeface(b.typeface, Typeface.BOLD)
+        }
+        val tick = object : Runnable {
+            override fun run() { actions?.onDriveDelete(); repeat.postDelayed(this, 70) }
+        }
+        delBtn.setOnTouchListener { v, e ->
+            when (e.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    v.isPressed = true
+                    actions?.onDriveFeedback(); actions?.onDriveDelete()
+                    repeat.postDelayed(tick, 450)
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> { v.isPressed = false; repeat.removeCallbacks(tick) }
+            }
+            true
+        }
+        clearBtn.setOnClickListener { actions?.onDriveFeedback(); actions?.onDriveClearAll() }
+        tools.addView(delBtn, LinearLayout.LayoutParams(0, d(48f), 1f).apply { setMargins(d(5f), d(4f), d(5f), 0) })
+        tools.addView(clearBtn, LinearLayout.LayoutParams(0, d(48f), 1f).apply { setMargins(d(5f), d(4f), d(5f), 0) })
+        body.addView(tools, LinearLayout.LayoutParams(-1, -2))
         notDriving.textSize = 13f
         notDriving.gravity = Gravity.CENTER
         notDriving.setPadding(0, d(8f), 0, d(4f))
@@ -65,11 +98,13 @@ class DrivePanel(context: Context) : FrameLayout(context) {
         nextKind = next
         title.text = L.t("🛻 Modo manejando · usa la voz", "🛻 Driving mode · use your voice")
         notDriving.text = L.t("No voy manejando (teclado normal hoy)", "I'm not driving (normal keyboard today)")
+        delBtn.text = L.t("⌫  Borrar letra", "⌫  Delete letter")
+        clearBtn.text = L.t("🗑️  Borrar todo", "🗑️  Delete all")
         grid.removeAllViews()
         big.clear()
         val items = listOf(
             Triple(L.t("🎤\nDictar", "🎤\nDictate"), true) { actions?.onDriveVoice() },
-            Triple(L.t("📲\nMensaje de estado", "📲\nStatus message"), false) { actions?.onDriveStatus() },
+            Triple(L.t("📲\nMensajes rápidos", "📲\nQuick messages"), false) { actions?.onDriveStatus() },
             Triple(WorkDay.label(next).replaceFirst(" ", "\n"), false) { actions?.onDriveWorkday(nextKind) },
             Triple(L.t("⌨️\nTeclado", "⌨️\nKeyboard"), false) { actions?.onDriveKeyboard() },
         )
@@ -98,6 +133,10 @@ class DrivePanel(context: Context) : FrameLayout(context) {
             t.setTextColor(if (primary) p.onAccent else p.text)
             t.background = if (primary) PanelUi.pressable(p.accent, p.accentPressed, d(22f).toFloat())
             else PanelUi.pressable(p.key, p.keyPressed, d(22f).toFloat())
+        }
+        for (b in listOf(delBtn, clearBtn)) {
+            b.setTextColor(p.text)
+            b.background = PanelUi.glassButton(context, p, d(18f).toFloat())
         }
     }
 
