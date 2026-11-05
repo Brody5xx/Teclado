@@ -79,7 +79,7 @@ class InfoBar(context: Context) : LinearLayout(context) {
         // Los emojis al principio de cada renglón (los nuestros) se quitan; lo demás queda igual
         body.text = if (keepEmojis) text else text.lines().joinToString("\n") { ln -> Emo.split(ln).second.let { r -> if (r.isEmpty()) ln else r } }
         // Si está esperando (sin botones y el texto termina en «…»), sale el diamante con su luz
-        loader.visibility = if (buttons.isEmpty() && text.trim().endsWith("…")) VISIBLE else GONE
+        loader.visibility = if (buttons.size <= 1 && text.trim().endsWith("…")) VISIBLE else GONE // también con «Cancelar»
         if (loader.visibility == VISIBLE) loader.invalidate()
         scroll.visibility = if (text.isEmpty()) GONE else VISIBLE
         scroll.scrollTo(0, 0)
