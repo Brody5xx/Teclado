@@ -972,6 +972,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.22.2" to tr("•  🔐 Datos en el teclado pide tu huella apenas lo abres; después entras libre a tus cuentas y datos.",
+            "•  🔐 Data on the keyboard asks for your fingerprint as soon as you open it; then you can freely open your accounts and items."),
         "12.22.1" to tr("•  🔐 Datos en el teclado ahora es igual que en los ajustes: la lista de cuentas con su flecha; tocas una, pones tu huella y tocas el dato para escribirlo. Se quitaron los repetidos.",
             "•  🔐 Data on the keyboard now works like in settings: the account list with its arrow; tap one, use your fingerprint and tap the item to type it. Duplicates were removed."),
         "12.22.0" to tr("•  🔐 Datos nuevo, como el administrador de contraseñas de Google: una lista de cuentas (página o app) con buscador. Toca una, pon tu huella y ves su usuario, correo, contraseña, preguntas de seguridad, clave de seguridad y PIN, con ojito para ver y botón para copiar (lo copiado se borra solo al minuto). Puedes crear contraseñas seguras. Lo que tenías guardado se juntó solo en cuentas.",

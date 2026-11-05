@@ -44,8 +44,10 @@ class VaultPickActivity : Activity() {
         VaultStore.load(this)
         try { VaultStore.migrate(this) } catch (_: Exception) { }
         all = intent.getBooleanExtra(EXTRA_ALL, false)
-        // 🔐 Igual que «Datos» en los ajustes: la lista de cuentas con su flecha; al tocar una, tu huella y sus datos
-        showAccounts()
+        // 🔐 La huella va primero, apenas abres Datos; después entras libre a tus cuentas
+        if (System.currentTimeMillis() < DataActivity.unlockedUntil) { showAccounts(); return }
+        setContentView(View(this))
+        authenticate(onOk = { DataActivity.unlockedUntil = System.currentTimeMillis() + 60_000L; showAccounts() }, onFail = { finish() })
     }
 
     private fun frame(titleText: String, subText: String, onBack: (() -> Unit)?): Pair<LinearLayout, LinearLayout> {
@@ -113,7 +115,7 @@ class VaultPickActivity : Activity() {
         val loose = VaultStore.items.filter { it.kind != VaultStore.ACCOUNT && (all || it.kind == VaultStore.PASSWORD) }
         val (_, col) = frame(tr("Datos", "Data"),
             if (accs.isEmpty() && loose.isEmpty()) tr("Todavía no guardaste nada. Agrégalo en la app Best Keyboard → «Datos».", "Nothing saved yet. Add it in the Best Keyboard app → «Data».")
-            else tr("Toca una cuenta (te pide tu huella) y luego el dato que quieres escribir.", "Tap an account (it asks for your fingerprint) and then the item you want to type."), null)
+            else tr("Toca una cuenta y luego el dato que quieres escribir.", "Tap an account and then the item you want to type."), null)
         for ((aid, a) in accs) {
             val r = LinearLayout(this)
             r.orientation = LinearLayout.HORIZONTAL
@@ -128,10 +130,7 @@ class VaultPickActivity : Activity() {
             if (sub.isNotBlank()) texts.addView(TextView(this).apply { text = sub; textSize = 12f; setTextColor(MainActivity.SUB); maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
             r.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
             r.addView(IconView(this, Icons.CHEVRON, 6.5f).apply { color = MainActivity.SUB; bgColor = MainActivity.CARD2; isClickable = false }, LinearLayout.LayoutParams(dp(30), dp(30)))
-            r.setOnClickListener {
-                if (System.currentTimeMillis() < DataActivity.unlockedUntil) showAccount(aid)
-                else authenticate(onOk = { DataActivity.unlockedUntil = System.currentTimeMillis() + 60_000L; showAccount(aid) }, onFail = { })
-            }
+            r.setOnClickListener { showAccount(aid) } // ya pusiste tu huella al abrir
             col.addView(r, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         }
         if (loose.isNotEmpty()) {
