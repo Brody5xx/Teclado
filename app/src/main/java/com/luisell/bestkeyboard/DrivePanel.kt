@@ -26,6 +26,8 @@ class DrivePanel(context: Context) : FrameLayout(context) {
         fun onDriveDelete()
         /** 🗑️ Borrar todo lo escrito. */
         fun onDriveClearAll()
+        /** ↩️ Recuperar lo que borraste. */
+        fun onDriveUndo()
     }
 
     var actions: Actions? = null
@@ -40,6 +42,18 @@ class DrivePanel(context: Context) : FrameLayout(context) {
     private val delBtn = TextView(context)
     private val clearBtn = TextView(context)
     private val repeat = android.os.Handler(android.os.Looper.getMainLooper())
+    private var undoMode = false
+    private val endUndo = Runnable { setUndo(false) }
+
+    /** Después de «Borrar todo», el mismo botón dice «↩️ Deshacer» por 8 segundos. */
+    private fun setUndo(on: Boolean) {
+        undoMode = on
+        repeat.removeCallbacks(endUndo)
+        clearBtn.text = if (on) L.t("↩️  Deshacer", "↩️  Undo") else L.t("🗑️  Borrar todo", "🗑️  Delete all")
+        if (on) repeat.postDelayed(endUndo, 8000)
+        paint()
+        if (on) LightFx.flash(clearBtn, d(18f).toFloat())
+    }
     private var nextKind = WorkDay.ARRIVE
 
     init {
@@ -80,7 +94,17 @@ class DrivePanel(context: Context) : FrameLayout(context) {
             }
             true
         }
-        clearBtn.setOnClickListener { actions?.onDriveFeedback(); actions?.onDriveClearAll() }
+        clearBtn.setOnClickListener {
+            actions?.onDriveFeedback()
+            if (undoMode) {
+                // ↩️ Lo recupera y el botón vuelve a ser «Borrar todo»
+                actions?.onDriveUndo()
+                setUndo(false)
+            } else {
+                actions?.onDriveClearAll()
+                setUndo(true) // durante unos segundos el botón se vuelve «↩️ Deshacer»
+            }
+        }
         tools.addView(delBtn, LinearLayout.LayoutParams(0, d(48f), 1f).apply { setMargins(d(5f), d(4f), d(5f), 0) })
         tools.addView(clearBtn, LinearLayout.LayoutParams(0, d(48f), 1f).apply { setMargins(d(5f), d(4f), d(5f), 0) })
         body.addView(tools, LinearLayout.LayoutParams(-1, -2))
@@ -99,6 +123,7 @@ class DrivePanel(context: Context) : FrameLayout(context) {
         title.text = L.t("🛻 Modo manejando · usa la voz", "🛻 Driving mode · use your voice")
         notDriving.text = L.t("No voy manejando (teclado normal hoy)", "I'm not driving (normal keyboard today)")
         delBtn.text = L.t("⌫  Borrar letra", "⌫  Delete letter")
+        undoMode = false
         clearBtn.text = L.t("🗑️  Borrar todo", "🗑️  Delete all")
         grid.removeAllViews()
         big.clear()
@@ -138,6 +163,7 @@ class DrivePanel(context: Context) : FrameLayout(context) {
             b.setTextColor(p.text)
             b.background = PanelUi.glassButton(context, p, d(18f).toFloat())
         }
+        if (undoMode) { clearBtn.setTextColor(p.onAccent); clearBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(18f).toFloat()) }
     }
 
     fun applyPalette(p: Palette) {

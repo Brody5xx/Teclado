@@ -578,8 +578,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 ic.deleteSurroundingText(b, a)
                 ic.endBatchEdit()
                 lastCorrection = null
-                Toast.makeText(this@BestKeyboardService, L.t("🗑️ Borrado. ↩️ Deshacer lo recupera.", "🗑️ Deleted. ↩️ Undo brings it back."), Toast.LENGTH_SHORT).show()
             }
+            override fun onDriveUndo() = doUndo()
         }
         box.addView(drv, FrameLayout.LayoutParams(-1, -1))
         drivePanel = drv

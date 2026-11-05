@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.17.4" to tr("•  ↩️ Modo manejando: después de «Borrar todo», ese mismo botón se vuelve «Deshacer» por 8 segundos para recuperar lo que borraste.",
+            "•  ↩️ Driving mode: after «Delete all», that same button becomes «Undo» for 8 seconds to get back what you deleted."),
         "12.17.3" to tr("•  🛻 Modo manejando: botones nuevos «⌫ Borrar letra» (mantén presionado para borrar seguido) y «🗑️ Borrar todo». «Mensaje de estado» ahora se llama «Mensajes rápidos».",
             "•  🛻 Driving mode: new «⌫ Delete letter» (hold to keep deleting) and «🗑️ Delete all» buttons. «Status message» is now called «Quick messages»."),
         "12.17.2" to tr("•  🎨 Las barras de arriba (búsqueda, traducir, revisar, código) ya no son grises: tienen un degradado con el color de tu tema y la línea de luz. Puedes elegir su color en Estilo → Paneles y botones.",
