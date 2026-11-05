@@ -122,6 +122,40 @@ object CloudText {
     }
 
     /** Le pregunta a Google Gemini ([prompt]) con tu clave; prueba varios modelos si uno falla. */
+    // ---------------------------------------------------------------- Pollinations (respaldo gratis, sin clave)
+
+    /**
+     * 🌸 La IA gratis que usa Best Notes (Pollinations, modelo de OpenAI): no necesita clave.
+     * Se usa si no tienes clave de Gemini o si Gemini no contesta. (Llamar en segundo plano.)
+     */
+    private fun pollinations(prompt: String, until: Long): String? {
+        for (attempt in 0..1) {
+            if (System.currentTimeMillis() > until) return null
+            val seed = (Math.random() * 1_000_000).toInt()
+            try {
+                val body = JSONObject().put("model", "openai").put("seed", seed).put("private", true).put("referrer", "bestkeyboard")
+                    .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", prompt)))
+                val out = JSONObject(post("https://text.pollinations.ai/openai", body.toString(), "application/json"))
+                val t = out.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")?.trim()
+                if (!t.isNullOrEmpty()) return t
+            } catch (_: Exception) { }
+            // La forma sencilla (solo para textos cortos)
+            if (prompt.length < 3500) try {
+                val c = URL("https://text.pollinations.ai/" + java.net.URLEncoder.encode(prompt, "UTF-8").replace("+", "%20") +
+                    "?model=openai&private=true&referrer=bestkeyboard&seed=" + seed).openConnection() as HttpURLConnection
+                c.connectTimeout = 8000; c.readTimeout = 15000
+                try {
+                    if (c.responseCode in 200..299) {
+                        val t = c.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }.trim()
+                        if (t.isNotEmpty()) return t
+                    }
+                } finally { c.disconnect() }
+            } catch (_: Exception) { }
+            try { Thread.sleep(2500) } catch (_: Exception) { }
+        }
+        return null
+    }
+
     /** El último modelo que funcionó: se prueba primero (así responde más rápido). */
     @Volatile private var goodModel: String? = null
 
@@ -132,8 +166,17 @@ object CloudText {
         main.postDelayed({
             done(null, L.t("La IA no contestó a tiempo. Revisa que tengas internet (si usas VPN o DNS privado, pruébalo apagado) e inténtalo otra vez.",
                 "The AI didn't answer in time. Check your internet (if you use a VPN or private DNS, try with it off) and try again."))
-        }, 25_000L)
+        }, 45_000L)
         io.execute {
+            // Sin clave de Gemini: directo a la IA gratis (como Best Notes)
+            if (key.isBlank()) {
+                val p = pollinations(prompt, System.currentTimeMillis() + 40_000L)
+                main.post {
+                    if (p != null) { val first = !finished.get(); done(listOf(p), null); if (first) try { onSuccess?.invoke() } catch (_: Throwable) { } }
+                    else done(null, L.t("La IA no contestó. Revisa tu internet e inténtalo otra vez.", "The AI didn't answer. Check your internet and try again."))
+                }
+                return@execute
+            }
             fun req(thinkOff: Boolean): String {
                 val gen = JSONObject().put("temperature", 0.4)
                 // Sin "pensar" largo: responde en segundos en vez de quedarse pensando
@@ -145,9 +188,10 @@ object CloudText {
             var lastError: HttpError? = null
             var network = false
             var timedOut = false
-            val deadline = System.currentTimeMillis() + 22_000L
+            val deadline = System.currentTimeMillis() + 15_000L
             val order = (listOfNotNull(goodModel) + MODELS).distinct()
-            for (model in order) {
+            var keyBad: HttpError? = null
+            models@ for (model in order) {
                 if (finished.get() || System.currentTimeMillis() > deadline) { timedOut = true; break }
                 var thinkOff = true
                 // Dos intentos por modelo si Google dice que está ocupado (503)
@@ -175,9 +219,9 @@ object CloudText {
                         lastError = e
                         when (e.code) {
                             // Clave mala o no permitida: no tiene caso probar otro modelo
-                            401, 403 -> { main.post { done(null, keyProblem(e)) }; return@execute }
+                            401, 403 -> { keyBad = e; break@models }
                             400 -> if (e.body.contains("API key", true) || e.body.contains("API_KEY", true)) {
-                                main.post { done(null, keyProblem(e)) }; return@execute
+                                keyBad = e; break@models
                             } else if (thinkOff && e.body.contains("think", true)) {
                                 thinkOff = false; continue // este modelo no deja apagar el "pensar": otra vez sin eso
                             } else break
@@ -193,6 +237,15 @@ object CloudText {
                     }
                 }
             }
+            // 🌸 Gemini no pudo: se le pregunta a la IA gratis (Pollinations), como en Best Notes
+            if (!finished.get()) {
+                val p = pollinations(prompt, System.currentTimeMillis() + 28_000L)
+                if (p != null) {
+                    main.post { val first = !finished.get(); done(listOf(p), null); if (first) try { onSuccess?.invoke() } catch (_: Throwable) { } }
+                    return@execute
+                }
+            }
+            keyBad?.let { kb -> main.post { done(null, keyProblem(kb)) }; return@execute }
             if (timedOut && lastError == null) {
                 main.post { done(null, L.t("La IA se tardó mucho en contestar. Revisa tu internet e inténtalo otra vez.",
                     "The AI took too long to answer. Check your internet and try again.")) }

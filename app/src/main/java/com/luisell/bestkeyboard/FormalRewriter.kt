@@ -61,14 +61,8 @@ object FormalRewriter {
     /** El teléfono no trae la IA: se usa Google Gemini por internet con tu clave gratis. */
     private fun cloud(ctx: Context, text: String, status: (String) -> Unit, done: (List<String>?, String?) -> Unit) {
         val key = Prefs.get(ctx).getString(Prefs.GEMINI_KEY, "")?.trim().orEmpty()
-        if (key.isEmpty()) {
-            done(null, L.t(
-                "Para «Más formal» necesitas una clave GRATIS de Google Gemini. Abre la app Best Keyboard → «IA para escribir» y sigue los pasos.",
-                "For «More formal» you need a FREE Google Gemini key. Open the Best Keyboard app → «AI writing» and follow the steps.",
-            ))
-            return
-        }
-        status(L.t("Reescribiendo con Gemini…", "Rewriting with Gemini…"))
+        // Sin clave de Gemini también funciona: usa la IA gratis (Pollinations)
+        status(L.t("Reescribiendo con la IA…", "Rewriting with AI…"))
         CloudText.formal(text, key, done)
     }
 

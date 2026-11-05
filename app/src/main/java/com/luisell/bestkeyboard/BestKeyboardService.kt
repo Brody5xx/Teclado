@@ -1110,7 +1110,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (voiceEnglish) {
             // Hablaste en español: se escribe en inglés. Con la clave de Gemini sale en inglés técnico y profesional
             val key = prefs.getString(Prefs.GEMINI_KEY, "")?.trim().orEmpty()
-            if (key.isNotEmpty()) {
+            if (true) { // con o sin clave (sin clave usa la IA gratis)
                 voicePanel?.setStatus(L.t("Pasando a inglés…", "Translating to English…"))
                 CloudText.ask("Translate the following Spanish into clear, natural, professional English, as a field technician " +
                     "would write it in a work message (use correct technical terms). Keep the meaning, do not add anything. " +
@@ -2843,7 +2843,6 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun codeAsk(prompt: String, onAnswer: (String) -> Unit) {
         val cb = codeBar ?: return
         val key = prefs.getString(Prefs.GEMINI_KEY, "")?.trim().orEmpty()
-        if (key.isEmpty()) { cb.showNeedKey(); return }
         cb.showStatus(L.t("Pensando…", "Thinking…"))
         val token = ++codeToken
         CloudText.ask(prompt, key) { list, err ->
@@ -3195,21 +3194,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var aiLen = -1
     private var aiSeq = 0
 
-    private fun aiKey(title: String): String? {
-        val k = prefs.getString(Prefs.GEMINI_KEY, "")?.trim() ?: ""
-        if (k.isNotEmpty()) return k
-        infoBar?.show(title, L.t(
-            "Esto usa Google Gemini y necesita tu clave gratis. Ponla en Ajustes → «IA para escribir».",
-            "This uses Google Gemini and needs your free key. Add it in Settings → «AI writing»."),
-            listOf(L.t("Poner mi clave", "Add my key") to {
-                closeInfo()
-                try {
-                    startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_SHOW_AI, true)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
-                } catch (_: Exception) { }
-            }, L.t("Cerrar", "Close") to { closeInfo() }))
-        return null
-    }
+    /** La clave de Gemini, o "" si no tienes (entonces se usa la IA gratis, sin clave). */
+    @Suppress("UNUSED_PARAMETER")
+    private fun aiKey(title: String): String? = prefs.getString(Prefs.GEMINI_KEY, "")?.trim() ?: ""
 
     /** Lo seleccionado o, si no hay selección, todo el texto de la caja (texto, inicio, largo). */
     private fun grabField(): Triple<String, Int, Int>? {
