@@ -246,21 +246,23 @@ class SearchBar(context: Context) : LinearLayout(context) {
 
     fun applyPalette(p: Palette) {
         palette = p
-        setBackgroundColor(p.bg)
+        // ✨ Fondo suave en degradado con la línea de luz abajo
+        background = android.graphics.drawable.LayerDrawable(arrayOf(
+            android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(p.bg, p.bg2)),
+            android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(0x0022D3EE, LightFx.COLORS[0], 0xFFFFFFFF.toInt(), LightFx.COLORS[1], 0x00A78BFA)),
+        )).apply { setLayerInset(1, d(30f), 0, d(30f), 0); setLayerGravity(1, Gravity.BOTTOM); setLayerHeight(1, maxOf(1, d(1.2f))) }
         back.color = p.text
-        back.background = PanelUi.pressable(p.special, p.keyPressed, d(20f).toFloat())
-        glass.color = p.hint
+        back.background = PanelUi.glassButton(context, p, d(20f).toFloat())
+        glass.color = PanelUi.icon(p)
         clear.color = p.hint
         box.setTextColor(p.text)
         box.cursorColor = p.accent
         box.setHintTextColor(p.hint)
-        val bg = android.graphics.drawable.GradientDrawable()
-        bg.setColor(p.key)
-        PanelUi.decorate(bg)
-        bg.cornerRadius = d(21f).toFloat()
-        bg.setStroke(d(1.5f), p.accent)
-        field.background = bg
-        hint.setTextColor(p.hint)
+        // 🌈 La caja con borde de colores y una luz que le da vueltas
+        field.background = PanelUi.rainbowField(context, p, d(21f).toFloat())
+        field.foreground = LoopTrace(d(21f).toFloat(), resources.displayMetrics.density)
+        hint.setTextColor(p.text and 0x00FFFFFF or 0xB3000000.toInt())
         saveBtn.setTextColor(p.onAccent)
         saveBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(18f).toFloat())
     }

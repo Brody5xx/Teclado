@@ -127,6 +127,22 @@ object PanelUi {
         return GradientDrawable().apply { setColor(color); cornerRadius = radiusPx }
     }
 
+    /** 🌈 Fondo con borde de colores (azul → violeta → rosa) y relleno de vidrio: para la barra de búsqueda. */
+    fun rainbowField(ctx: Context, p: Palette, radiusPx: Float): android.graphics.drawable.Drawable {
+        val line = maxOf(1, (density * 1.6f).toInt())
+        val edge = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, LightFx.COLORS).apply { cornerRadius = radiusPx }
+        val f = fill(p)
+        val a = if (glass) glassA + 0x22 else 0xFF
+        val inner = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(withAlpha(lighter(f, if (p.isDark) 0.12f else 0f), minOf(255, a)), withAlpha(f, minOf(255, a)))).apply { cornerRadius = maxOf(0f, radiusPx - line) }
+        // El relleno tapa el centro del borde de colores (con fondo de vidrio, se mezcla un poquito con el color)
+        val solid = GradientDrawable().apply { setColor(p.bg or 0xFF000000.toInt()); cornerRadius = maxOf(0f, radiusPx - line) }
+        return android.graphics.drawable.LayerDrawable(arrayOf(edge, solid, inner)).apply {
+            setLayerInset(1, line, line, line, line)
+            setLayerInset(2, line, line, line, line)
+        }
+    }
+
     /** Para tarjetas hechas a mano: les pone el borde fino del color del tema. */
     fun decorate(g: GradientDrawable) {
         val p = pal ?: return

@@ -290,3 +290,42 @@ class Shine(private val radius: Float) : Drawable(), Runnable {
     @Deprecated("Deprecated in Java")
     override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
+
+/**
+ * ✨ Luz que da vueltas sin parar alrededor de un rectángulo redondeado (como en la sugerencia de pegar).
+ * Se pone como «foreground» de una vista.
+ */
+class LoopTrace(private val radius: Float, private val d: Float) : Drawable(), Runnable {
+    private val line = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val path = Path()
+    private val m = PathMeasure()
+    private val r = RectF()
+    private val LAP = 2600L
+
+    override fun draw(c: Canvas) {
+        try {
+            val b = bounds
+            if (b.width() <= 0) return
+            r.set(b.left + 1f * d, b.top + 1f * d, b.right - 1f * d, b.bottom - 1f * d)
+            path.reset(); path.addRoundRect(r, radius, radius, Path.Direction.CW)
+            m.setPath(path, true)
+            val len = m.length
+            if (len <= 0f) return
+            val sh = LinearGradient(r.left, r.top, r.right, r.bottom, LightFx.COLORS, null, Shader.TileMode.CLAMP)
+            val head = ((SystemClock.uptimeMillis() % LAP) / LAP.toFloat()) * len
+            val tail = len * 0.3f
+            if (head >= tail) LightFx.glow(c, m, head - tail, head, 0.9f, d, sh, line, 0.6f)
+            else {
+                LightFx.glow(c, m, 0f, head, 0.9f, d, sh, line, 0.6f)
+                LightFx.glow(c, m, len - (tail - head), len, 0.9f, d, sh, line, 0.6f)
+            }
+            scheduleSelf(this, SystemClock.uptimeMillis() + 16)
+        } catch (_: Throwable) { }
+    }
+
+    override fun run() { invalidateSelf() }
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = PixelFormat.TRANSLUCENT
+}

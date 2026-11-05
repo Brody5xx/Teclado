@@ -971,6 +971,8 @@ class MainActivity : UiActivity() {
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
+        "12.17.1" to tr("•  ✨ La barra de búsqueda (Google, emojis, GIFs, convertidor…) es más bonita: borde de colores, luz que le da vueltas, fondo en degradado y línea de luz.",
+            "•  ✨ The search bar (Google, emojis, GIFs, converter…) looks nicer: colored border, a light circling it, gradient background and light line."),
         "12.17.0" to tr("•  🔎 Buscar en Google (en ⋯ Más opciones): escribe en la barra y Enter abre Google con tu búsqueda. Si seleccionaste texto, lo busca de una vez.",
             "•  🔎 Search Google (in ⋯ More options): type in the bar and Enter opens Google with your search. If you selected text, it searches it right away."),
         "12.16.5" to tr("•  🇺🇸 En inglés, al escribir «ill», «id», «well», «its»… te sugiere primero «I'll», «I'd», «we'll», «it's»… (son palabras reales, por eso no salen en rojo).",
