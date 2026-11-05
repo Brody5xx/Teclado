@@ -120,7 +120,8 @@ class DrivePanel(context: Context) : FrameLayout(context) {
     /** [next] = lo que toca en la jornada (Llegué o Casa). */
     fun open(next: String) {
         nextKind = next
-        Emo.apply(title, L.t("🛻 Modo manejando · usa la voz", "🛻 Driving mode · use your voice"), PanelUi.icon(palette), 18f)
+        Emo.apply(title, L.t("🛻 Modo manejando · usa la voz", "🛻 Driving mode · use your voice"), PanelUi.icon(palette), 22f)
+        Emo.center(title, top = false) // el ícono pegado al título, en el medio
         notDriving.text = L.t("No voy manejando (teclado normal hoy)", "I'm not driving (normal keyboard today)")
         delBtn.tag = L.t("⌫ Borrar letra", "⌫ Delete letter")
         undoMode = false
@@ -158,15 +159,17 @@ class DrivePanel(context: Context) : FrameLayout(context) {
             t.setTextColor(if (primary) p.onAccent else p.text)
             // Ícono pequeño (como los de la barra de arriba) en vez de emoji
             Emo.applyTop(t, (t.tag as? String) ?: "", if (primary) p.onAccent else PanelUi.icon(p))
+            Emo.center(t, top = true) // ícono y texto juntos en el medio del botón
             t.background = if (primary) PanelUi.pressable(p.accent, p.accentPressed, d(22f).toFloat())
             else PanelUi.pressable(p.key, p.keyPressed, d(22f).toFloat())
         }
         for (b in listOf(delBtn, clearBtn)) {
             b.setTextColor(p.text)
-            Emo.apply(b, (b.tag as? String) ?: "", PanelUi.icon(p), 18f)
+            Emo.apply(b, (b.tag as? String) ?: "", PanelUi.icon(p), 28f) // del mismo tamaño que los de arriba
+            Emo.center(b, top = false)
             b.background = PanelUi.glassButton(context, p, d(18f).toFloat())
         }
-        if (undoMode) { clearBtn.setTextColor(p.onAccent); Emo.apply(clearBtn, (clearBtn.tag as? String) ?: "", p.onAccent, 18f); clearBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(18f).toFloat()) }
+        if (undoMode) { clearBtn.setTextColor(p.onAccent); Emo.apply(clearBtn, (clearBtn.tag as? String) ?: "", p.onAccent, 28f); Emo.center(clearBtn, top = false); clearBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(18f).toFloat()) }
     }
 
     fun applyPalette(p: Palette) {

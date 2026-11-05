@@ -87,6 +87,38 @@ fun Emo.applyTop(tv: TextView, text: String, color: Int, iconDp: Float = 28f) {
     } else tv.setCompoundDrawablesRelative(null, null, null, null)
 }
 
+/**
+ * Centra el ícono junto con el texto (Android pone el ícono pegado a la orilla del botón).
+ * [top] = ícono arriba del texto: se centra todo hacia arriba y abajo; si no, ícono a la izquierda: se centra de lado a lado.
+ */
+fun Emo.center(tv: TextView, top: Boolean) {
+    if (tv.getTag(0x7f0b0001) == true) { tv.requestLayout(); return }
+    tv.setTag(0x7f0b0001, true)
+    tv.addOnLayoutChangeListener { v, l, t, r, b, _, _, _, _ ->
+        val t2 = v as TextView
+        val w = r - l; val h = b - t
+        if (w <= 0 || h <= 0) return@addOnLayoutChangeListener
+        val ds = t2.compoundDrawablesRelative
+        if (top) {
+            val dr = ds[1]
+            val ih = dr?.bounds?.height() ?: 0
+            val lines = maxOf(1, t2.lineCount)
+            val th = t2.lineHeight * lines
+            val content = ih + (if (dr != null) t2.compoundDrawablePadding else 0) + th
+            val pad = maxOf(0, (h - content) / 2)
+            if (t2.paddingTop != pad) t2.post { t2.setPadding(t2.paddingLeft, pad, t2.paddingRight, 0); t2.gravity = android.view.Gravity.CENTER_HORIZONTAL or android.view.Gravity.TOP }
+        } else {
+            val dr = ds[0]
+            val iw = dr?.bounds?.width() ?: 0
+            val tw = t2.paint.measureText(t2.text.toString()).toInt()
+            val content = iw + (if (dr != null) t2.compoundDrawablePadding else 0) + tw
+            val pad = maxOf(0, (w - content) / 2)
+            if (t2.paddingLeft != pad) t2.post { t2.setPadding(pad, t2.paddingTop, 0, t2.paddingBottom); t2.gravity = android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL }
+        }
+    }
+    tv.requestLayout()
+}
+
 /** Uno de nuestros íconos como Drawable (para ponerlo al lado de un texto). */
 class IconDrawable(private val kind: Int, var color: Int, private val d: Float) : Drawable() {
     override fun draw(c: Canvas) {
