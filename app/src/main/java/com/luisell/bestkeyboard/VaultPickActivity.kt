@@ -46,7 +46,7 @@ class VaultPickActivity : Activity() {
         if (all) {
             // Primero la huella; si sale bien, se ve la lista
             setContentView(View(this))
-            authenticate(onOk = { showList(VaultStore.items.sortedBy { it.kind }, unlocked = true) }, onFail = { finish() })
+            authenticate(onOk = { showList(VaultStore.flat().sortedBy { it.kind }, unlocked = true) }, onFail = { finish() })
         } else {
             showList(VaultStore.passwords(), unlocked = false)
         }

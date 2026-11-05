@@ -106,6 +106,7 @@ object Icons {
     const val MONEY = 88
     const val WARN = 89
     const val STAR = 90
+    const val KEY = 91
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -599,6 +600,13 @@ object Icons {
                 c.drawPath(path, st)
                 c.drawLine(cx, cy - s * 0.3f, cx, cy + s * 0.25f, st)
                 c.drawCircle(cx, cy + s * 0.52f, s * 0.08f, fl)
+            }
+            KEY -> {
+                // Llave: aro redondo y su palito con dientes
+                c.drawCircle(cx - s * 0.48f, cy, s * 0.38f, st)
+                c.drawLine(cx - s * 0.1f, cy, cx + s * 0.95f, cy, st)
+                c.drawLine(cx + s * 0.55f, cy, cx + s * 0.55f, cy + s * 0.32f, st)
+                c.drawLine(cx + s * 0.85f, cy, cx + s * 0.85f, cy + s * 0.4f, st)
             }
             STAR -> {
                 // Destello de 4 puntas

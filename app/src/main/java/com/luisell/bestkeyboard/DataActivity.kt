@@ -31,9 +31,71 @@ class DataActivity : UiActivity() {
         const val EXTRA_TEXT = "texto"
         /** El texto venía de un campo de contraseña. */
         const val EXTRA_PASSWORD = "es_contrasena"
+        /** Después de tu huella, por 1 minuto no te la vuelve a pedir. */
+        @Volatile var unlockedUntil = 0L
     }
 
     private lateinit var vaultList: LinearLayout
+    private lateinit var accList: LinearLayout
+    private lateinit var search: EditText
+
+
+    private fun openAccount(id: Long, edit: Boolean = false, prefill: String? = null, prefillPass: Boolean = false) {
+        val go = {
+            val i = android.content.Intent(this, AccountActivity::class.java).putExtra(AccountActivity.EXTRA_ID, id).putExtra(AccountActivity.EXTRA_EDIT, edit)
+            if (prefill != null) i.putExtra(AccountActivity.EXTRA_PREFILL, prefill).putExtra(AccountActivity.EXTRA_PREFILL_PASS, prefillPass)
+            startActivity(i)
+        }
+        if (edit && id < 0) go() else authenticate { unlockedUntil = System.currentTimeMillis() + 60_000L; go() }
+    }
+
+    /** La lista de cuentas (como Google): letra de color, nombre, usuario o correo, y la flecha. */
+    private fun refreshAccounts() {
+        if (!::accList.isInitialized) return
+        val all = VaultStore.accounts()
+        search.hint = tr("Buscar ${all.size} cuenta(s)", "Search ${all.size} account(s)")
+        val q = search.text.toString().trim().lowercase()
+        val list = if (q.isEmpty()) all else all.filter { (_, a) -> a.name.lowercase().contains(q) || a.user.lowercase().contains(q) || a.email.lowercase().contains(q) }
+        accList.removeAllViews()
+        if (list.isEmpty()) {
+            accList.addView(TextView(this).apply {
+                text = if (all.isEmpty()) tr("Todavía no tienes cuentas. Toca «Agregar cuenta».", "No accounts yet. Tap «Add account».")
+                    else tr("No encontré «$q».", "Nothing found for «$q».")
+                textSize = 13f; setTextColor(SUB); setPadding(dp(4), dp(12), 0, dp(6))
+            })
+            return
+        }
+        for ((i, p) in list.withIndex()) {
+            val (aid, a) = p
+            if (i > 0) accList.addView(View(this).apply { setBackgroundColor(LINE) }, LinearLayout.LayoutParams(-1, dp(1)).apply { leftMargin = dp(56) })
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+            row.setPadding(dp(4), dp(12), 0, dp(12))
+            row.background = android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x224FD1FF), null,
+                GradientDrawable().apply { setColor(0xFFFFFFFF.toInt()); cornerRadius = dpf(12f) })
+            val av = TextView(this).apply {
+                text = a.name.trim().take(1).uppercase().ifEmpty { "?" }
+                textSize = 16f; gravity = Gravity.CENTER; setTextColor(0xFF0B0D12.toInt()); setTypeface(typeface, Typeface.BOLD)
+                val h = (a.name.lowercase().hashCode() and 0x7fffffff) % 3
+                val cols = listOf(intArrayOf(CYAN, VIOLET), intArrayOf(VIOLET, 0xFFF0ABFC.toInt()), intArrayOf(0xFF67E8F9.toInt(), 0xFFA78BFA.toInt()))
+                background = GradientDrawable(GradientDrawable.Orientation.TL_BR, cols[h]).apply { shape = GradientDrawable.OVAL }
+            }
+            row.addView(av, LinearLayout.LayoutParams(dp(38), dp(38)))
+            val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, dp(6), 0) }
+            texts.addView(TextView(this).apply { text = a.name; textSize = 16f; setTextColor(TEXT); maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
+            val sub = a.user.ifBlank { a.email }
+            if (sub.isNotBlank()) texts.addView(TextView(this).apply { text = sub; textSize = 12f; setTextColor(SUB); maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
+            row.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(IconView(this, Icons.CHEVRON, 6.5f).apply { color = SUB; isClickable = false }, LinearLayout.LayoutParams(dp(32), dp(32)))
+            // Tocar = tu huella y luego se abre la cuenta
+            row.setOnClickListener { if (System.currentTimeMillis() < unlockedUntil) openAccountNow(aid) else openAccount(aid) }
+            accList.addView(row, LinearLayout.LayoutParams(-1, -2))
+        }
+    }
+
+    private fun openAccountNow(id: Long) =
+        startActivity(android.content.Intent(this, AccountActivity::class.java).putExtra(AccountActivity.EXTRA_ID, id))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(android.R.style.Theme_Material_NoActionBar)
@@ -76,16 +138,42 @@ class DataActivity : UiActivity() {
         root.addView(head)
 
         text(tr(
-            "Tus correos, contraseñas y textos. Al escribir 2–3 letras (o el atajo) el teclado te los sugiere. " +
-                "Toca uno para cambiarlo. Todo se guarda cifrado y solo en tu teléfono.",
-            "Your emails, passwords and texts. Type 2–3 letters (or the shortcut) and the keyboard suggests them. " +
-                "Tap one to change it. Everything is encrypted and stays only on your phone.",
+            "Como el administrador de contraseñas de Google: guarda cada página o app con su usuario, correo, contraseña, preguntas de seguridad, clave y PIN. " +
+                "Para entrar a una cuenta te pide tu huella. Todo se guarda cifrado y solo en tu teléfono.",
+            "Like Google's password manager: save each website or app with its username, email, password, security questions, key and PIN. " +
+                "To open an account it asks for your fingerprint. Everything is encrypted and stays only on your phone.",
         ), 13f, faded = true)
-        button(tr("+  Agregar", "+  Add"), primary = true) { editDialog(null, null) }
+        button(tr("+  Agregar cuenta", "+  Add account"), primary = true) { openAccount(-1L, edit = true) }
 
-        card(tr("Guardados", "Saved"), Icons.LOCK)
+        card(tr("Cuentas", "Accounts"), Icons.LOCK)
+        // 🔎 Buscar
+        search = EditText(this).apply {
+            textSize = 15f
+            setTextColor(TEXT)
+            setHintTextColor(SUB)
+            isSingleLine = true
+            setPadding(dp(44), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(CARD2); cornerRadius = dpf(24f); setStroke(dp(1), LINE) }
+            addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) { refreshAccounts() }
+            })
+        }
+        val sf = android.widget.FrameLayout(this)
+        sf.addView(search, android.widget.FrameLayout.LayoutParams(-1, -2))
+        sf.addView(IconView(this, Icons.SEARCH, 8f).apply { color = SUB; bgColor = CARD2; isClickable = false },
+            android.widget.FrameLayout.LayoutParams(dp(40), dp(40), Gravity.START or Gravity.CENTER_VERTICAL).apply { leftMargin = dp(4) })
+        col.addView(sf, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        accList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(accList, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+
+        card(tr("Textos y atajos", "Texts and shortcuts"), Icons.CLIP)
+        text(tr("Direcciones, teléfonos, firmas y correos sueltos. Al escribir 2–3 letras (o el atajo) el teclado te los sugiere.",
+            "Addresses, phones, signatures and loose emails. Type 2–3 letters (or the shortcut) and the keyboard suggests them."), 12f, faded = true)
         vaultList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         col.addView(vaultList, LinearLayout.LayoutParams(-1, -2))
+        button(tr("+  Agregar texto o correo", "+  Add text or email")) { editDialog(null, null) }
 
         card(tr("Opciones", "Options"), Icons.SETTINGS)
         switch(tr("Sugerir mis datos al escribir", "Suggest my data while typing"), Prefs.VAULT_SUGGEST, true)
@@ -97,8 +185,14 @@ class DataActivity : UiActivity() {
 
         refreshVault()
         // Llegaste desde el teclado con un texto seleccionado: se abre "Agregar" con el texto listo
-        intent.getStringExtra(EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let {
-            editDialog(null, it.trim(), intent.getBooleanExtra(EXTRA_PASSWORD, false))
+        intent.getStringExtra(EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let { txt ->
+            val isPass = intent.getBooleanExtra(EXTRA_PASSWORD, false)
+            if (isPass) { openAccount(-1L, edit = true, prefill = txt.trim(), prefillPass = true); return@let }
+            AlertDialog.Builder(this)
+                .setTitle(tr("¿Dónde lo guardo?", "Where should I save it?"))
+                .setItems(arrayOf(tr("En una cuenta nueva (página o app)", "In a new account (website or app)"), tr("Como texto o correo suelto", "As a loose text or email"))) { _, w ->
+                    if (w == 0) openAccount(-1L, edit = true, prefill = txt.trim()) else editDialog(null, txt.trim(), false)
+                }.setNegativeButton(tr("Cancelar", "Cancel"), null).show()
         }
     }
 
@@ -110,18 +204,20 @@ class DataActivity : UiActivity() {
     /** Dibuja la lista (las contraseñas se ven con puntitos). Toca una fila para cambiarla. */
     private fun refreshVault() {
         if (!::vaultList.isInitialized) return
-        try { VaultStore.load(this) } catch (_: Exception) { }
+        try { VaultStore.load(this); VaultStore.migrate(this) } catch (_: Exception) { }
+        refreshAccounts()
         vaultList.removeAllViews()
-        if (VaultStore.items.isEmpty()) {
+        val loose = VaultStore.items.filter { it.kind != VaultStore.ACCOUNT }
+        if (loose.isEmpty()) {
             val t = TextView(this)
-            t.text = tr("Todavía no guardaste nada.", "Nothing saved yet.")
+            t.text = tr("Sin textos guardados.", "No saved texts.")
             t.textSize = 13f
             t.setTextColor(SUB)
             t.setPadding(0, dp(12), 0, dp(6))
             vaultList.addView(t)
             return
         }
-        for (e in VaultStore.items.sortedBy { it.kind }) {
+        for (e in loose.sortedBy { it.kind }) {
             val row = LinearLayout(this)
             row.orientation = LinearLayout.HORIZONTAL
             row.gravity = Gravity.CENTER_VERTICAL
@@ -229,9 +325,8 @@ class DataActivity : UiActivity() {
         shortcut.setText(old?.shortcut ?: "")
         val opts = listOf(
             VaultStore.EMAIL to tr("Correo", "Email"),
-            VaultStore.PASSWORD to tr("Contraseña", "Password"),
             VaultStore.TEXT to tr("Texto / atajo", "Text / shortcut"),
-        )
+        ) + (if (old?.kind == VaultStore.PASSWORD) listOf(VaultStore.PASSWORD to tr("Contraseña", "Password")) else emptyList())
         val tabViews = ArrayList<TextView>()
         var eyeView: IconView? = null
         var shown = false

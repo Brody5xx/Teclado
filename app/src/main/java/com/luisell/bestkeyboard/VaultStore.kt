@@ -22,7 +22,98 @@ object VaultStore {
     const val EMAIL = 0
     const val PASSWORD = 1
     const val TEXT = 2
+    /** Una cuenta completa (página o app): usuario, correo, contraseña, preguntas, clave y PIN (en JSON, cifrado). */
+    const val ACCOUNT = 3
 
+    /** 🔐 Una cuenta, como en el administrador de contraseñas de Google. */
+    class Account(
+        val name: String, val user: String = "", val email: String = "", val pass: String = "",
+        val questions: List<Pair<String, String>> = emptyList(), val secKey: String = "", val pin: String = "", val note: String = "",
+    ) {
+        fun toJson(): String {
+            val q = JSONArray(); for ((a, b) in questions) q.put(JSONObject().put("q", a).put("a", b))
+            return JSONObject().put("n", name).put("u", user).put("e", email).put("p", pass).put("qs", q)
+                .put("k", secKey).put("pin", pin).put("note", note).toString()
+        }
+        companion object {
+            fun from(json: String): Account = try {
+                val o = JSONObject(json)
+                val qa = o.optJSONArray("qs") ?: JSONArray()
+                Account(o.optString("n"), o.optString("u"), o.optString("e"), o.optString("p"),
+                    (0 until qa.length()).map { qa.getJSONObject(it).let { x -> x.optString("q") to x.optString("a") } },
+                    o.optString("k"), o.optString("pin"), o.optString("note"))
+            } catch (_: Exception) { Account("?") }
+        }
+    }
+
+    /** Las cuentas guardadas (id, cuenta), por nombre. */
+    fun accounts(): List<Pair<Long, Account>> = items.filter { it.kind == ACCOUNT }.map { it.id to Account.from(it.value) }
+        .sortedBy { it.second.name.lowercase() }
+
+    fun account(id: Long): Account? = items.firstOrNull { it.id == id && it.kind == ACCOUNT }?.let { Account.from(it.value) }
+
+    /** Guarda una cuenta nueva ([id] = null) o la cambia. Devuelve su id. */
+    fun saveAccount(ctx: Context, id: Long?, a: Account): Long {
+        load(ctx)
+        return if (id == null) {
+            val nid = System.currentTimeMillis()
+            save(ctx, items + Entry(nid, ACCOUNT, a.name.trim(), a.toJson(), ""))
+            nid
+        } else {
+            save(ctx, items.map { if (it.id == id) Entry(id, ACCOUNT, a.name.trim(), a.toJson(), "") else it })
+            id
+        }
+    }
+
+    /**
+     * Para el teclado: lo de las cuentas se ve como datos sueltos (su correo y usuario se sugieren al escribir,
+     * su contraseña sale en «Mis contraseñas»), más los textos y correos sueltos.
+     */
+    fun flat(): List<Entry> {
+        val out = ArrayList<Entry>()
+        for (e in items) {
+            if (e.kind != ACCOUNT) { out += e; continue }
+            val a = Account.from(e.value)
+            if (a.email.isNotBlank()) out += Entry(-(e.id * 4 + 1), EMAIL, a.name, a.email, "")
+            if (a.user.isNotBlank()) out += Entry(-(e.id * 4 + 2), TEXT, a.name, a.user, "")
+            if (a.pass.isNotEmpty()) out += Entry(-(e.id * 4 + 3), PASSWORD, a.name, a.pass, "")
+        }
+        return out
+    }
+
+    /**
+     * Una sola vez: lo que tenías guardado suelto (correo y contraseña con el mismo nombre, ej. «GIPHY»)
+     * se junta en una cuenta. Los textos y los correos aprendidos solos se quedan como estaban.
+     */
+    fun migrate(ctx: Context) {
+        load(ctx)
+        if (items.any { it.kind == ACCOUNT } || items.none { it.kind == PASSWORD }) return
+        val groups = LinkedHashMap<String, MutableList<Entry>>()
+        for (e in items) {
+            if (e.kind == ACCOUNT) continue
+            val auto = e.kind == EMAIL && e.label.equals(e.value.substringAfter('@'), true) // correo aprendido solo
+            if (e.kind == TEXT || auto) continue
+            groups.getOrPut(e.label.trim().lowercase().ifEmpty { "?" }) { ArrayList() }.add(e)
+        }
+        // Un texto con el mismo nombre que una cuenta (ej. «Brody5xx» en GIPHY) es el usuario
+        val used = HashSet<Long>()
+        val newItems = ArrayList<Entry>()
+        var n = 0L
+        for ((key, list) in groups) {
+            if (list.none { it.kind == PASSWORD }) continue
+            val name = list.first().label.ifBlank { L.t("Sin nombre", "No name") }
+            val email = list.firstOrNull { it.kind == EMAIL }?.value ?: ""
+            val pass = list.firstOrNull { it.kind == PASSWORD }?.value ?: ""
+            val userE = items.firstOrNull { it.kind == TEXT && it.label.trim().lowercase() == key }
+            if (userE != null) used += userE.id
+            list.forEach { used += it.id }
+            newItems += Entry(System.currentTimeMillis() + n++, ACCOUNT, name, Account(name, userE?.value ?: "", email, pass).toJson(), "")
+        }
+        if (newItems.isEmpty()) return
+        save(ctx, items.filter { it.id !in used } + newItems)
+    }
+
+    fun passwords() = flat().filter { it.kind == PASSWORD }
     class Entry(val id: Long, val kind: Int, val label: String, val value: String, val shortcut: String)
 
     private const val ALIAS = "best_keyboard_vault"
@@ -128,7 +219,6 @@ object VaultStore {
         save(ctx, items + Entry(System.currentTimeMillis(), EMAIL, email.substringAfter('@'), email, ""))
     }
 
-    fun passwords() = items.filter { it.kind == PASSWORD }
 
     /**
      * Sugerencias para lo que estás escribiendo ([typed] = lo escrito desde el último espacio).
@@ -137,7 +227,7 @@ object VaultStore {
      */
     fun match(typed: String, emailField: Boolean): List<Entry> {
         val t = typed.trim().lowercase()
-        val pool = items.filter { it.kind != PASSWORD }
+        val pool = flat().filter { it.kind != PASSWORD }
         if (t.isEmpty()) return if (emailField) pool.filter { it.kind == EMAIL }.take(3) else emptyList()
         val out = ArrayList<Entry>()
         if (t.length >= 2) out += pool.filter { it.shortcut.isNotEmpty() && it.shortcut == t }
