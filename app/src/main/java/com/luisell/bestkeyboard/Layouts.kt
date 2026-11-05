@@ -76,12 +76,14 @@ object Layouts {
 
     private fun del(w: Float = 1.5f) = sp("⌫", Codes.DELETE, w)
 
-    private fun numberRow() = "1234567890".map { ch(it.toString(), NUM_ALTS[it] ?: "") }
+    /** Fila de números, con ↶ Deshacer a la derecha del 0. */
+    private fun numberRow(undo: Boolean = true) = "1234567890".map { ch(it.toString(), NUM_ALTS[it] ?: "") } +
+        (if (undo) listOf(sp("↶", Codes.UNDO, 1f)) else emptyList())
 
     /** Si es false, no hay botón 🌐 (el idioma se cambia deslizando la barra espaciadora). */
     var showGlobe = true
 
-    private fun bottomRow(modeLabel: String, modeCode: Int, comma: String): List<Key> {
+    private fun bottomRow(modeLabel: String, modeCode: Int, comma: String, undo: Boolean = false): List<Key> {
         val commaKey = when (comma) {
             "@" -> ch("@", ",")
             "/" -> ch("/", ",:")
@@ -91,9 +93,9 @@ object Layouts {
             sp(modeLabel, modeCode, 1.5f),
             commaKey,
             if (showGlobe) sp("🌐", Codes.LANG, 1f) else null,
-            Key(" ", Codes.SPACE, null, if (showGlobe) 3f else 4f, emptyList()),
+            Key(" ", Codes.SPACE, null, (if (showGlobe) 4f else 5f) - (if (undo) 1f else 0f), emptyList()),
             ch(".", ",?¿!¡'\"-:;@/…"),
-            sp("↶", Codes.UNDO, 1f), // ↩️ Deshacer
+            if (undo) sp("↶", Codes.UNDO, 1f) else null, // ↶ Deshacer (si no hay fila de números)
             sp("↵", Codes.ENTER, 1.5f),
         )
     }
@@ -123,7 +125,7 @@ object Layouts {
         rows += listOf(sp("⇧", Codes.SHIFT, 1.5f)) +
             "zxcvbnm".map { ch(it.toString(), ALTS[it] ?: "") } +
             del()
-        rows += bottomRow("?123", Codes.MODE_SYM, comma)
+        rows += bottomRow("?123", Codes.MODE_SYM, comma, undo = !withNumberRow)
         return rows
     }
 

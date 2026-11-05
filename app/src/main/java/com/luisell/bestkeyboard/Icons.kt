@@ -633,14 +633,21 @@ object Icons {
                 c.drawCircle(cx, cy - s * 1.05f, s * 0.14f, fl)
             }
             UNDO -> {
-                // Flecha curva hacia atrás
-                r.set(cx - s * 0.75f, cy - s * 0.55f, cx + s * 0.85f, cy + s * 0.85f)
+                // ↶ Flecha que da la vuelta: sale de arriba, rodea por la derecha y abajo, con su punta de flecha a la izquierda
+                val rr = s * 0.72f
+                val ox = cx + s * 0.08f; val oy = cy + s * 0.08f
+                r.set(ox - rr, oy - rr, ox + rr, oy + rr)
                 path.reset()
-                path.arcTo(r, 200f, 250f, true)
+                path.arcTo(r, 270f, 235f, true)
                 c.drawPath(path, st)
-                val ax = cx - s * 0.68f; val ay = cy - s * 0.2f
-                c.drawLine(ax, ay, ax - s * 0.1f, ay - s * 0.6f, st)
-                c.drawLine(ax, ay, ax + s * 0.52f, ay - s * 0.22f, st)
+                // Punta de flecha rellena, apuntando a la izquierda (hacia atrás)
+                val tipX = ox - s * 0.5f; val tipY = oy - rr
+                path.reset()
+                path.moveTo(tipX, tipY)
+                path.lineTo(ox + s * 0.06f, tipY - s * 0.36f)
+                path.lineTo(ox + s * 0.06f, tipY + s * 0.36f)
+                path.close()
+                c.drawPath(path, fl)
             }
             SOUNDWAVE -> {
                 // Ondas de sonido (escuchar un texto)
