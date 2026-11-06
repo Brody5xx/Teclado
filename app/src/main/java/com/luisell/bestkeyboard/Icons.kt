@@ -107,6 +107,8 @@ object Icons {
     const val WARN = 89
     const val STAR = 90
     const val KEY = 91
+    /** Texto que sigue: dos renglones y una flecha que continúa (terminar la frase con IA). */
+    const val TEXT_GO = 92
 
     /** Íconos de las pestañas de emojis (en el mismo orden que EmojiData.TAB_ICONS). */
     val EMOJI_TABS = intArrayOf(RECENT, EMOJI, PEOPLE, ANIMAL, FOOD, TRAVEL, SPORT, IDEA, HEART, FLAG)
@@ -811,6 +813,19 @@ object Icons {
                 c.drawLine(cx - s * 0.9f, cy - s * 0.5f, cx, cy - s * 0.05f, st)
                 c.drawLine(cx + s * 0.9f, cy - s * 0.5f, cx, cy - s * 0.05f, st)
                 c.drawLine(cx, cy - s * 0.05f, cx, cy + s * 0.95f, st)
+            }
+            TEXT_GO -> {
+                // Dos renglones escritos y el tercero sigue con una flecha →
+                c.drawLine(cx - s * 0.9f, cy - s * 0.6f, cx + s * 0.9f, cy - s * 0.6f, st)
+                c.drawLine(cx - s * 0.9f, cy - s * 0.05f, cx + s * 0.6f, cy - s * 0.05f, st)
+                c.drawLine(cx - s * 0.9f, cy + s * 0.5f, cx - s * 0.15f, cy + s * 0.5f, st)
+                // Flecha
+                c.drawLine(cx + s * 0.1f, cy + s * 0.5f, cx + s * 0.9f, cy + s * 0.5f, st)
+                path.reset()
+                path.moveTo(cx + s * 0.6f, cy + s * 0.22f)
+                path.lineTo(cx + s * 0.92f, cy + s * 0.5f)
+                path.lineTo(cx + s * 0.6f, cy + s * 0.78f)
+                c.drawPath(path, st)
             }
             REPLY -> {
                 // Globo con flecha de responder

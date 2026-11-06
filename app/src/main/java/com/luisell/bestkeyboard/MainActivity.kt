@@ -716,7 +716,7 @@ class MainActivity : UiActivity() {
             try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://aistudio.google.com/apikey"))) } catch (_: Exception) { }
         }
         val keyBox = EditText(this).apply {
-            hint = tr("Pega aquí tu clave (empieza con AIza…)", "Paste your key here (starts with AIza…)")
+            hint = tr("Pega aquí tu clave (empieza con AIza… o AQ.…)", "Paste your key here (starts with AIza… or AQ.…)")
             setText(prefs.getString(Prefs.GEMINI_KEY, ""))
             isSingleLine = true
             textSize = 14f
@@ -1232,6 +1232,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.31.1" to tr("•  Arreglado «Terminar la frase con IA» (y también «Más formal», «Respuestas con IA»…): daba error 404 o se quedaba pensando porque Google le cambió el nombre a sus modelos de Gemini. Ahora el teclado le pregunta a Google cuáles puede usar tu clave y usa el que funcione. También acepta las claves nuevas que empiezan con «AQ.».\n" +
+            "•  «Terminar la frase con IA» tiene su propio icono (renglones con una flecha), ya no el mismo que «Más formal».",
+            "•  Fixed «Finish sentence with AI» (and «More formal», «AI replies»…): it gave error 404 or kept thinking because Google renamed its Gemini models. Now the keyboard asks Google which ones your key can use and uses the one that works. New keys starting with «AQ.» also work.\n" +
+            "•  «Finish sentence with AI» has its own icon (lines with an arrow), no longer the same as «More formal»."),
         "12.31.0" to tr("•  📊 Estadísticas (Secciones › Escribir): cuántas palabras escribiste esta semana, cuántas te adivinó sin escribir ni una letra, cuántas letras te ahorraste y cuántos errores corrigió solo.\n" +
             "•  Cada app recuerda su idioma: si en WhatsApp escribes en español y en la app del trabajo en inglés, el teclado ya abre así en cada una (se puede apagar en Barra espaciadora).\n" +
             "•  Teclas que se acomodan a tu dedo: el teclado aprende si sueles tocar un poquito abajo o a un lado de cada tecla y lo corrige solo (después de unas 150 letras). Se puede apagar en Sugerencias.\n" +

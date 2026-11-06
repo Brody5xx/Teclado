@@ -2873,7 +2873,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_UNDO -> Icons.UNDO
         TOOL_REMIND -> Icons.MAP_PIN
         TOOL_GOOGLE -> Icons.SEARCH
-        TOOL_FINISH -> Icons.FORMAL
+        TOOL_FINISH -> Icons.TEXT_GO
         else -> -1
     }
 

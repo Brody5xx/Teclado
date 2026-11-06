@@ -132,6 +132,15 @@ object CloudText {
         for (attempt in 0..1) {
             if (System.currentTimeMillis() > until) return null
             val seed = (Math.random() * 1_000_000).toInt()
+            // La dirección nueva de Pollinations (si deja usarla sin clave)
+            if (attempt == 0) try {
+                val body = JSONObject().put("model", "openai").put("seed", seed)
+                    .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", prompt)))
+                val out = JSONObject(post("https://gen.pollinations.ai/v1/chat/completions", body.toString(), "application/json"))
+                val t = out.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")?.trim()
+                if (!t.isNullOrEmpty()) return t
+            } catch (_: Exception) { }
+            if (System.currentTimeMillis() > until) return null
             try {
                 val body = JSONObject().put("model", "openai").put("seed", seed).put("private", true).put("referrer", "bestkeyboard")
                     .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", prompt)))
@@ -158,6 +167,52 @@ object CloudText {
 
     /** El último modelo que funcionó: se prueba primero (así responde más rápido). */
     @Volatile private var goodModel: String? = null
+
+    /** Los modelos que TU clave puede usar (Google les cambia el nombre cada tanto: así nunca da 404). */
+    @Volatile private var listedModels: List<String>? = null
+    @Volatile private var listedFor: String? = null
+
+    private fun availableModels(key: String): List<String> {
+        if (listedFor == key) listedModels?.let { return it }
+        val out = ArrayList<String>()
+        try {
+            var page: String? = null
+            var rounds = 0
+            do {
+                val url = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200" + (page?.let { "&pageToken=$it" } ?: "")
+                val c = URL(url).openConnection() as HttpURLConnection
+                c.connectTimeout = 6000; c.readTimeout = 8000
+                c.setRequestProperty("x-goog-api-key", key.trim())
+                try {
+                    if (c.responseCode !in 200..299) break
+                    val j = JSONObject(c.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+                    val arr = j.optJSONArray("models") ?: JSONArray()
+                    for (i in 0 until arr.length()) {
+                        val m = arr.optJSONObject(i) ?: continue
+                        val name = m.optString("name").removePrefix("models/")
+                        val methods = m.optJSONArray("supportedGenerationMethods")?.toString() ?: ""
+                        if (!methods.contains("generateContent") || !name.contains("gemini")) continue
+                        if (BAD_MODEL.any { name.contains(it) }) continue
+                        out.add(name)
+                    }
+                    page = j.optString("nextPageToken").ifEmpty { null }
+                } finally { c.disconnect() }
+            } while (page != null && ++rounds < 3)
+        } catch (_: Exception) { }
+        // Primero los rápidos ("flash"), los más nuevos arriba
+        fun rank(n: String) = when {
+            n.contains("flash") && !n.contains("lite") && n.contains("latest") -> 0
+            n.contains("flash") && !n.contains("lite") -> 1
+            n.contains("flash-lite") || n.contains("flash") -> 2
+            n.contains("pro") -> 3
+            else -> 4
+        }
+        val sorted = out.distinct().sortedWith(compareBy<String> { rank(it) }.thenByDescending { it })
+        if (sorted.isNotEmpty()) { listedModels = sorted; listedFor = key }
+        return sorted
+    }
+
+    private val BAD_MODEL = listOf("image", "tts", "audio", "live", "embedding", "vision", "native", "robotics", "computer-use", "learnlm", "aqa")
 
     fun ask(prompt: String, key: String, doneIn: (List<String>?, String?) -> Unit) {
         // ⏱️ Pase lo que pase, a los 25 segundos se contesta algo (así nunca se queda «pensando»)
@@ -189,7 +244,7 @@ object CloudText {
             var network = false
             var timedOut = false
             val deadline = System.currentTimeMillis() + 15_000L
-            val order = (listOfNotNull(goodModel) + MODELS).distinct()
+            val order = (listOfNotNull(goodModel) + availableModels(key).take(6) + MODELS).distinct()
             var keyBad: HttpError? = null
             models@ for (model in order) {
                 if (finished.get() || System.currentTimeMillis() > deadline) { timedOut = true; break }
