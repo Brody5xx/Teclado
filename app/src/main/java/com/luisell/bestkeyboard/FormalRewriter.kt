@@ -45,6 +45,8 @@ object FormalRewriter {
      */
     fun run(ctx: Context, text: String, lang: String, status: (String) -> Unit, done: (List<String>?, String?) -> Unit) {
         val fallback = { cloud(ctx, text, status, done) }
+        // 🌸 Siempre la IA gratis de Best Notes (más rápida y mejor que la IA de Google del teléfono)
+        if (true) { fallback(); return }
         if (text.length > MAX_CHARS) { fallback(); return }
         val r = try { get(ctx, lang) } catch (e: Throwable) { fallback(); return }
         val f = try { r.checkFeatureStatus() } catch (e: Throwable) { fallback(); return }

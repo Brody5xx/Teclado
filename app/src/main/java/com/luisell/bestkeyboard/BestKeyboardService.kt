@@ -2866,7 +2866,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             done = { list, err ->
                 if (!spellOn || token != spellToken) return@run
                 if (list == null) {
-                    val noKey = prefs.getString(Prefs.GEMINI_KEY, "").isNullOrBlank()
+                    val noKey = false // la IA gratis no necesita clave
                     if (noKey) {
                         bar.messageWithAction(
                             L.t("«Más formal» necesita tu clave GRATIS de Google Gemini (una sola vez).",

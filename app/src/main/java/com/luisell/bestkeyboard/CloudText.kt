@@ -22,12 +22,12 @@ object CloudText {
     /** Resultado de la gramática: texto corregido y las partes que cambiaron (en el texto nuevo). */
     class Fixed(val text: String, val changes: List<IntRange>, val count: Int)
 
-    private fun post(url: String, body: String, contentType: String, headers: Map<String, String> = emptyMap()): String {
+    private fun post(url: String, body: String, contentType: String, headers: Map<String, String> = emptyMap(), readMs: Int = 15000): String {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.requestMethod = "POST"
-            c.connectTimeout = 8000
-            c.readTimeout = 15000
+            c.connectTimeout = 10000
+            c.readTimeout = readMs
             c.doOutput = true
             c.setRequestProperty("Content-Type", contentType)
             for ((k, v) in headers) c.setRequestProperty(k, v)
@@ -128,39 +128,42 @@ object CloudText {
      * 🌸 La IA gratis que usa Best Notes (Pollinations, modelo de OpenAI): no necesita clave.
      * Se usa si no tienes clave de Gemini o si Gemini no contesta. (Llamar en segundo plano.)
      */
-    private fun pollinations(prompt: String, until: Long): String? {
-        for (attempt in 0..1) {
+    private val aiLock = Object()
+    @Volatile private var lastAsk = 0L
+
+    /**
+     * Igual que Best Notes: espera hasta 45 s cada respuesta, hasta 4 intentos (esperando cada vez más),
+     * un pedido a la vez y un respiro de 3 s entre pedidos (el servicio gratis rechaza los que van juntos).
+     */
+    private fun pollinations(prompt: String, until: Long): String? = synchronized(aiLock) {
+        val waits = longArrayOf(0L, 5000L, 10000L, 16000L)
+        for (w in waits) {
+            if (w > 0) try { Thread.sleep(w) } catch (_: Exception) { }
             if (System.currentTimeMillis() > until) return null
+            val since = System.currentTimeMillis() - lastAsk
+            if (since < 3000L) try { Thread.sleep(3000L - since) } catch (_: Exception) { }
+            lastAsk = System.currentTimeMillis()
             val seed = (Math.random() * 1_000_000).toInt()
-            // La dirección nueva de Pollinations (si deja usarla sin clave)
-            if (attempt == 0) try {
-                val body = JSONObject().put("model", "openai").put("seed", seed)
-                    .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", prompt)))
-                val out = JSONObject(post("https://gen.pollinations.ai/v1/chat/completions", body.toString(), "application/json"))
-                val t = out.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")?.trim()
-                if (!t.isNullOrEmpty()) return t
-            } catch (_: Exception) { }
-            if (System.currentTimeMillis() > until) return null
             try {
-                val body = JSONObject().put("model", "openai").put("seed", seed).put("private", true).put("referrer", "bestkeyboard")
+                val body = JSONObject().put("model", "openai").put("seed", seed).put("private", true).put("referrer", "misnotas")
                     .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", prompt)))
-                val out = JSONObject(post("https://text.pollinations.ai/openai", body.toString(), "application/json"))
+                val out = JSONObject(post("https://text.pollinations.ai/openai", body.toString(), "application/json", readMs = 45000))
                 val t = out.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")?.trim()
                 if (!t.isNullOrEmpty()) return t
-            } catch (_: Exception) { }
-            // La forma sencilla (solo para textos cortos)
-            if (prompt.length < 3500) try {
-                val c = URL("https://text.pollinations.ai/" + java.net.URLEncoder.encode(prompt, "UTF-8").replace("+", "%20") +
-                    "?model=openai&private=true&referrer=bestkeyboard&seed=" + seed).openConnection() as HttpURLConnection
-                c.connectTimeout = 8000; c.readTimeout = 15000
-                try {
-                    if (c.responseCode in 200..299) {
-                        val t = c.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }.trim()
-                        if (t.isNotEmpty()) return t
-                    }
-                } finally { c.disconnect() }
-            } catch (_: Exception) { }
-            try { Thread.sleep(2500) } catch (_: Exception) { }
+            } catch (_: Exception) {
+                // La forma sencilla (solo para textos cortos)
+                if (prompt.length <= 5000 && System.currentTimeMillis() < until) try {
+                    val c = URL("https://text.pollinations.ai/" + java.net.URLEncoder.encode(prompt, "UTF-8").replace("+", "%20") +
+                        "?model=openai&private=true&referrer=misnotas&seed=" + seed).openConnection() as HttpURLConnection
+                    c.connectTimeout = 10000; c.readTimeout = 45000
+                    try {
+                        if (c.responseCode in 200..299) {
+                            val t = c.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }.trim()
+                            if (t.isNotEmpty()) return t
+                        }
+                    } finally { c.disconnect() }
+                } catch (_: Exception) { }
+            }
         }
         return null
     }
@@ -219,13 +222,13 @@ object CloudText {
         val finished = java.util.concurrent.atomic.AtomicBoolean(false)
         val done: (List<String>?, String?) -> Unit = { l, e -> if (finished.compareAndSet(false, true)) doneIn(l, e) }
         main.postDelayed({
-            done(null, L.t("La IA no contestó a tiempo. Revisa que tengas internet (si usas VPN o DNS privado, pruébalo apagado) e inténtalo otra vez.",
-                "The AI didn't answer in time. Check your internet (if you use a VPN or private DNS, try with it off) and try again."))
-        }, 45_000L)
+            done(null, L.t("La IA no contestó a tiempo. Revisa que tengas internet e inténtalo otra vez.",
+                "The AI didn't answer in time. Check your internet and try again."))
+        }, 120_000L)
         io.execute {
-            // Sin clave de Gemini: directo a la IA gratis (como Best Notes)
-            if (key.isBlank()) {
-                val p = pollinations(prompt, System.currentTimeMillis() + 40_000L)
+            // 🌸 Siempre la IA gratis de Best Notes (sin Gemini, sin clave)
+            if (true) {
+                val p = pollinations(prompt, System.currentTimeMillis() + 110_000L)
                 main.post {
                     if (p != null) { val first = !finished.get(); done(listOf(p), null); if (first) try { onSuccess?.invoke() } catch (_: Throwable) { } }
                     else done(null, L.t("La IA no contestó. Revisa tu internet e inténtalo otra vez.", "The AI didn't answer. Check your internet and try again."))

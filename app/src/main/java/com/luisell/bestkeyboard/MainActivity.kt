@@ -701,40 +701,16 @@ class MainActivity : UiActivity() {
         card(tr("IA para escribir", "AI writing"), Icons.HACKER)
         aiCard = col
         text(tr(
-            "«Más formal» usa la IA de Google. Si tu teléfono no la trae por dentro, usa Google Gemini por internet con " +
-                "una clave GRATIS:\n" +
-                "1. Toca «Conseguir mi clave gratis» y entra con tu cuenta de Google.\n" +
-                "2. Toca «Create API key» (Crear clave) y cópiala.\n" +
-                "3. Pégala aquí abajo. ¡Listo!",
-            "«More formal» uses Google's AI. If your phone doesn't have it built in, it uses Google Gemini online with " +
-                "a FREE key:\n" +
-                "1. Tap «Get my free key» and sign in with your Google account.\n" +
-                "2. Tap «Create API key» and copy it.\n" +
-                "3. Paste it below. Done!",
+            "La IA del teclado es GRATIS y no necesita clave: es la misma que usa Best Notes. " +
+                "Solo se usa cuando tú tocas un botón de IA (Más formal, Respuestas con IA, Terminar la frase, Notas → Ticket…). " +
+                "A veces tarda unos segundos: si el servicio está ocupado, lo vuelve a intentar solo.",
+            "The keyboard's AI is FREE and needs no key: it's the same one Best Notes uses. " +
+                "It's only used when you tap an AI button (More formal, AI replies, Finish sentence, Notes → Ticket…). " +
+                "Sometimes it takes a few seconds: if the service is busy, it tries again by itself.",
         ), 13f, faded = true)
-        button(tr("Conseguir mi clave gratis", "Get my free key"), primary = true) {
-            try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://aistudio.google.com/apikey"))) } catch (_: Exception) { }
-        }
-        val keyBox = EditText(this).apply {
-            hint = tr("Pega aquí tu clave (empieza con AIza… o AQ.…)", "Paste your key here (starts with AIza… or AQ.…)")
-            setText(prefs.getString(Prefs.GEMINI_KEY, ""))
-            isSingleLine = true
-            textSize = 14f
-            setTextColor(TEXT)
-            setHintTextColor(SUB)
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = GradientDrawable().apply { setColor(BG); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-        }
-        col.addView(keyBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
-        button(tr("Guardar clave", "Save key")) {
-            prefs.edit().putString(Prefs.GEMINI_KEY, keyBox.text.toString().trim()).apply()
-            toast("Clave guardada. Ya puedes usar «Más formal».", "Key saved. You can now use «More formal».")
-        }
-        text(tr("La clave se guarda solo en tu teléfono. El texto se envía a Google solo cuando tocas «Más formal».",
-            "The key is saved only on your phone. Text is sent to Google only when you tap «More formal»."), 12f, faded = true)
+        text(tr("El texto se envía a la IA solo cuando tocas uno de esos botones.",
+            "Text is sent to the AI only when you tap one of those buttons."), 12f, faded = true)
 
-        cardGroup = "media"
         // ---- Permisos y herramientas
         card(tr("Voz, cámara y capturas", "Voice, camera and screenshots"), Icons.MIC)
         micBtn = button("") { askMic() }
@@ -1232,6 +1208,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.32.0" to tr("•  La IA del teclado ahora es la misma de Best Notes (gratis, sin clave) y ya no usa Gemini para nada. Funciona igual que en Best Notes: espera hasta 45 segundos cada respuesta, si el servicio está ocupado lo vuelve a intentar solo (hasta 4 veces) y manda un pedido a la vez. Sirve para Terminar la frase, Más formal, Respuestas con IA, Notas → Ticket, Modo código y todo lo demás.\n" +
+            "•  En ajustes se quitó lo de la clave de Gemini: ya no hace falta.",
+            "•  The keyboard's AI is now the same one Best Notes uses (free, no key) and it no longer uses Gemini at all. It works like in Best Notes: waits up to 45 seconds for each answer, retries by itself if the service is busy (up to 4 times) and sends one request at a time. Works for Finish sentence, More formal, AI replies, Notes → Ticket, Code mode and everything else.\n" +
+            "•  The Gemini key section was removed from settings: it's no longer needed."),
         "12.31.1" to tr("•  Arreglado «Terminar la frase con IA» (y también «Más formal», «Respuestas con IA»…): daba error 404 o se quedaba pensando porque Google le cambió el nombre a sus modelos de Gemini. Ahora el teclado le pregunta a Google cuáles puede usar tu clave y usa el que funcione. También acepta las claves nuevas que empiezan con «AQ.».\n" +
             "•  «Terminar la frase con IA» tiene su propio icono (renglones con una flecha), ya no el mismo que «Más formal».",
             "•  Fixed «Finish sentence with AI» (and «More formal», «AI replies»…): it gave error 404 or kept thinking because Google renamed its Gemini models. Now the keyboard asks Google which ones your key can use and uses the one that works. New keys starting with «AQ.» also work.\n" +
