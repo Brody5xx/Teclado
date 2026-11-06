@@ -22,7 +22,24 @@ class UserData {
     /** Cuándo la escribiste por última vez (solo mientras el teclado está abierto; para que lo reciente salga primero). */
     val recent = HashMap<String, Long>()
     val bigrams = HashMap<String, HashMap<String, Int>>()
+    /** Palabras que borraste de las sugerencias (mantener presionada → Borrar): no vuelven a salir. */
+    val blocked = HashSet<String>()
     @Volatile var dirty = false
+
+    fun isBlocked(lower: String): Boolean = lower in blocked
+
+    /** Borra la palabra de lo aprendido y no la vuelve a sugerir nunca. */
+    fun block(display: String) {
+        val key = display.lowercase()
+        words.remove(key)
+        recent.remove(key)
+        bigrams.remove(key)
+        for (m in bigrams.values) m.remove(key)
+        blocked.add(key)
+        dirty = true
+    }
+
+    fun unblock(lower: String) { if (blocked.remove(lower)) dirty = true }
 
     fun count(lower: String): Int = words[lower]?.count ?: 0
 
@@ -42,6 +59,7 @@ class UserData {
 
     fun add(display: String, amount: Int = 1, lang: String? = null) {
         val key = display.lowercase()
+        if (key in blocked) return
         val e = words[key]
         val enAdd = if (lang == "en") amount else 0
         val esAdd = if (lang == "es") amount else 0
@@ -63,6 +81,7 @@ class UserData {
     /** Confirmar una palabra: desde ya no se autocorrige. */
     fun learn(display: String) {
         val key = display.lowercase()
+        unblock(key) // la confirmaste tú: vuelve a ser tuya
         val c = count(key)
         if (c < KNOWN) add(display, KNOWN - c) else add(display, 1)
         words[key]?.sure = true
@@ -81,6 +100,7 @@ class UserData {
     fun addBigram(prev: String, next: String) {
         val p = prev.lowercase()
         val n = next.lowercase()
+        if (p in blocked || n in blocked) return
         val m = bigrams.getOrPut(p) { HashMap() }
         m[n] = ((m[n] ?: 0) + 1).coerceAtMost(100000)
         dirty = true
@@ -90,6 +110,7 @@ class UserData {
     fun bigramCount(prevLower: String, nextLower: String): Int = bigrams[prevLower]?.get(nextLower) ?: 0
 
     fun clear() {
+        blocked.clear()
         words.clear()
         bigrams.clear()
         dirty = true
@@ -117,6 +138,7 @@ class UserData {
         for ((p, m) in bigrams) for ((n, c) in m) {
             sb.append("b\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
         }
+        for (x in blocked) sb.append("x\t").append(x).append('\n')
         return sb.toString()
     }
 
@@ -132,6 +154,7 @@ class UserData {
                     val es = if (p.size >= 6) (p[5].toIntOrNull() ?: 0) else 0
                     words[p[1].lowercase()] = Entry(p[1], c, sure = flag == "1", legacy = flag == "L", en = en, es = es)
                 }
+                p.size == 2 && p[0] == "x" -> blocked.add(p[1])
                 p.size == 4 && p[0] == "b" -> {
                     val c = p[3].toIntOrNull() ?: return@forEachLine
                     bigrams.getOrPut(p[1]) { HashMap() }[p[2]] = c

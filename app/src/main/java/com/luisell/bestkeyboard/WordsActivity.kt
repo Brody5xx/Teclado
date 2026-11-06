@@ -88,6 +88,11 @@ class WordsActivity : UiActivity() {
         list.background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(22f); setStroke(dp(1), LINE) }
         list.setPadding(dp(14), dp(4), dp(6), dp(4))
         root.addView(list, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        blockedHead = text("", 13f, faded = true)
+        blockedList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        blockedList.background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(22f); setStroke(dp(1), LINE) }
+        blockedList.setPadding(dp(14), dp(4), dp(6), dp(4))
+        root.addView(blockedList, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         setContentView(sv)
 
         count.text = tr("Cargando…", "Loading…")
@@ -101,9 +106,46 @@ class WordsActivity : UiActivity() {
 
     private fun user() = WordStore.engine?.user
 
+    private lateinit var blockedHead: TextView
+    private lateinit var blockedList: LinearLayout
+
+    /** Las que borraste de las sugerencias: puedes devolverlas. */
+    private fun refreshBlocked() {
+        val u = user() ?: return
+        val all = u.blocked.sorted()
+        blockedList.removeAllViews()
+        blockedHead.text = if (all.isEmpty()) "" else tr("\nBorradas de las sugerencias (${all.size}). No vuelven a salir; toca ↶ para devolver una.",
+            "\nDeleted from suggestions (${all.size}). They won't show again; tap ↶ to bring one back.")
+        blockedHead.visibility = if (all.isEmpty()) View.GONE else View.VISIBLE
+        blockedList.visibility = blockedHead.visibility
+        for ((i, x) in all.take(300).withIndex()) {
+            if (i > 0) blockedList.addView(View(this).apply { setBackgroundColor(LINE) }, LinearLayout.LayoutParams(-1, dp(1)))
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+            row.setPadding(0, dp(6), 0, dp(6))
+            val w = TextView(this)
+            w.text = x
+            w.textSize = 16f
+            w.setTextColor(SUB)
+            row.addView(w, LinearLayout.LayoutParams(0, -2, 1f))
+            val back = IconView(this, Icons.UNDO, 7f)
+            back.color = CYAN
+            back.setOnClickListener {
+                u.unblock(x)
+                WordStore.scheduleSave()
+                toast("«$x» puede volver a salir", "«$x» can show up again")
+                refreshBlocked()
+            }
+            row.addView(back, LinearLayout.LayoutParams(dp(40), dp(40)))
+            blockedList.addView(row, LinearLayout.LayoutParams(-1, -2))
+        }
+    }
+
     /** Dibuja la lista (en orden alfabético, con la búsqueda). */
     private fun refresh() {
         val u = user() ?: return
+        refreshBlocked()
         val all = u.words.values.filter { it.known }.sortedBy { it.display.lowercase() }
         val shown = if (filter.isEmpty()) all else all.filter { it.display.lowercase().contains(filter) }
         count.text = tr("${all.size} palabras aprendidas. Toca ✎ para cambiar una o ✕ para borrarla.",
@@ -145,9 +187,9 @@ class WordsActivity : UiActivity() {
             val del = IconView(this, Icons.CLOSE, 6f)
             del.color = SUB
             del.setOnClickListener {
-                user()?.forget(e.display.lowercase())
+                user()?.block(e.display)
                 WordStore.scheduleSave()
-                toast("«${e.display}» borrada", "«${e.display}» deleted")
+                toast("«${e.display}» borrada, ya no saldrá", "«${e.display}» deleted, it won't show up")
                 refresh()
             }
             row.addView(del, LinearLayout.LayoutParams(dp(40), dp(40)))

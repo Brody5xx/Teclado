@@ -115,7 +115,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             s += if (extra == 0) 0.6f else -0.08f * extra
             top.offer(key, e.display, s)
         }
-        return top.words()
+        return top.words().filter { !user.isBlocked(it.lowercase()) }
     }
 
     /** Palabras que sueles escribir después de [prev] (aprendido de ti). */
@@ -124,6 +124,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         // Primero lo de tu idioma; lo del otro idioma solo si no hay más
         return m.entries.sortedByDescending { it.value + (if (langOf(it.key).let { l -> l == null || l == lang }) 1000 else 0) }
             .filter { langOf(it.key).let { l -> l == null || l == lang } || m.size <= max }
+            .filter { !user.isBlocked(it.key) }
             .take(max).map { displayFor(it.key, lang) }
     }
 
@@ -139,7 +140,10 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
      * Si [typed] está mal escrita, devuelve la corrección. Si está bien (o no hay una
      * corrección segura), devuelve null.
      */
-    fun correction(typed: String, lang: String): String? {
+    fun correction(typed: String, lang: String): String? =
+        correctionRaw(typed, lang)?.takeIf { !user.isBlocked(it.lowercase()) }
+
+    private fun correctionRaw(typed: String, lang: String): String? {
         if (typed.isEmpty()) return null
         if (typed == "i") return if (lang == "en") "I" else null
         if (typed.length < 2) return null

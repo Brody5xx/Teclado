@@ -35,6 +35,8 @@ class KeyboardView(context: Context) : View(context) {
         fun onLongPressGlobe()
         fun onKeyFeedback()
         fun onSuggestion(slot: Int)
+        /** Mantener presionada una sugerencia (para borrarla). */
+        fun onSuggestionLong(slot: Int) {}
         /** Terminaste un trazo de "deslizar para escribir" (puntos en píxeles). */
         fun onGesture(xs: FloatArray, ys: FloatArray, count: Int)
         /** Terminaste de cambiar el tamaño del teclado ([scale] = 1 es el normal). */
@@ -1157,6 +1159,15 @@ class KeyboardView(context: Context) : View(context) {
         postInvalidateOnAnimation()
     }
 
+    private val stripSugRunnable = Runnable {
+        if (!stripDown || stripDragging || stripPressed !in 10..12) return@Runnable
+        val slot = stripPressed - 10
+        stripPressed = -1
+        listener?.onKeyFeedback()
+        invalidate()
+        listener?.onSuggestionLong(slot)
+    }
+
     /** Mueve el botón que arrastras al lugar donde está el dedo. */
     private fun editMove() {
         val step = toolStep()
@@ -1273,6 +1284,7 @@ class KeyboardView(context: Context) : View(context) {
             if (stripPressed >= 0 && !showingSuggestions && !showingShot && stripPressed in allTools) {
                 handler.postDelayed(stripEditRunnable, 420L)
             }
+            if (stripPressed in 10..12 && showingSuggestions) handler.postDelayed(stripSugRunnable, 500L)
             invalidate()
             return
         }
@@ -1337,7 +1349,7 @@ class KeyboardView(context: Context) : View(context) {
             return
         }
         if (stripDown) {
-            if (abs(x - downX) > 10f * d) handler.removeCallbacks(stripEditRunnable)
+            if (abs(x - downX) > 10f * d) { handler.removeCallbacks(stripEditRunnable); handler.removeCallbacks(stripSugRunnable) }
             // Deslizar la barra de arriba para ver los demás botones
             if (!showingSuggestions && !showingShot && maxStripScroll() > 0f && (stripDragging || abs(x - downX) > 10f * d)) {
                 if (!stripDragging) { stripLastX = x; stripMoveMs = SystemClock.uptimeMillis() }
@@ -1440,6 +1452,7 @@ class KeyboardView(context: Context) : View(context) {
         }
         gestureCandidate = false
         handler.removeCallbacks(stripEditRunnable)
+        handler.removeCallbacks(stripSugRunnable)
         if (stripDown && editing) {
             stripDown = false
             editing = false

@@ -2180,6 +2180,28 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** Mantener presionada una sugerencia: preguntar si la borras para que no vuelva a salir. */
+    override fun onSuggestionLong(slot: Int) {
+        if (codeActive || vaultActive || slot == formalSlot || slot == emojiSlot) return
+        val w = slotWords.getOrNull(slot)?.trim() ?: return
+        if (w.isEmpty() || w.contains(' ') || !w.any { it.isLetter() }) return
+        val eng = WordStore.engine ?: return
+        val bar = infoBar ?: return
+        infoRegen = null
+        bar.show(L.t("Borrar sugerencia", "Delete suggestion"),
+            L.t("«$w» no volverá a salir en las sugerencias ni en el autocorrector.",
+                "«$w» won't show up again in suggestions or autocorrect."),
+            listOf(
+                L.t("Borrar «$w»", "Delete «$w»") to {
+                    eng.user.block(w)
+                    WordStore.scheduleSave()
+                    closeInfo()
+                    updateSuggestions()
+                },
+                L.t("Cancelar", "Cancel") to { closeInfo() },
+            ))
+    }
+
     override fun onSuggestion(slot: Int) {
         if (codeActive) { useCodeSnippet(slot); return }
         if (slot == formalSlot && !vaultActive) { useFormalSuggestion(); return }
