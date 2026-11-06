@@ -143,47 +143,37 @@ object CloudText {
     }
 
     /**
-     * 🌸 La IA gratis de Pollinations (la de Best Notes). Se le pregunta a la dirección NUEVA y a la vieja
-     * AL MISMO TIEMPO y se usa la primera que conteste (así tarda lo de la más rápida, no la suma).
-     * Si ninguna contesta, otra vuelta (hasta 3).
+     * 🌸 La IA gratis de Pollinations (la de Best Notes). Primero la dirección NUEVA (gen.pollinations.ai),
+     * que es la que contesta ahora; si falla, la vieja. Hasta 3 vueltas, esperando un poco entre una y otra.
      */
     private fun pollinations(prompt: String, until: Long): String? {
         val my = askSeq.incrementAndGet()
+        val waits = longArrayOf(0L, 3000L, 6000L)
         val enc = java.net.URLEncoder.encode(prompt, "UTF-8").replace("+", "%20")
-        for (round in 0 until 3) {
-            if (round > 0) try { Thread.sleep(2500L * round) } catch (_: Exception) { }
+        for (w in waits) {
+            if (w > 0) try { Thread.sleep(w) } catch (_: Exception) { }
             if (System.currentTimeMillis() > until || askSeq.get() != my) return null
+            val since = System.currentTimeMillis() - lastAsk
+            if (since < 1500L) try { Thread.sleep(1500L - since) } catch (_: Exception) { }
+            lastAsk = System.currentTimeMillis()
             val seed = (Math.random() * 1_000_000).toInt()
-            val result = java.util.concurrent.LinkedBlockingQueue<String>()
-            val left = java.util.concurrent.atomic.AtomicInteger(0)
-            fun race(job: () -> String?) {
-                left.incrementAndGet()
-                io.execute {
-                    val t = try { job() } catch (_: Exception) { null }
-                    result.offer(t ?: "")
-                }
-            }
-            if (prompt.length <= 5000) race {
-                getText("https://gen.pollinations.ai/text/$enc?model=openai&seed=$seed", 30000)?.takeIf { !it.startsWith("{\"error") }
-            }
-            race {
+            // 1) La dirección nueva
+            if (prompt.length <= 5000) try {
+                getText("https://gen.pollinations.ai/text/$enc?model=openai&seed=$seed", 30000)?.let { if (!it.startsWith("{\"error")) return it }
+            } catch (_: Exception) { }
+            if (System.currentTimeMillis() > until || askSeq.get() != my) return null
+            // 2) La vieja, como Best Notes
+            try {
                 val body = JSONObject().put("model", "openai").put("seed", seed).put("private", true).put("referrer", "misnotas")
                     .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", prompt)))
                 val out = JSONObject(post("https://text.pollinations.ai/openai", body.toString(), "application/json", readMs = 30000))
-                out.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")?.trim()
-            }
-            if (prompt.length <= 5000) race {
-                getText("https://text.pollinations.ai/$enc?model=openai&private=true&referrer=misnotas&seed=$seed", 30000)
-            }
-            // La primera respuesta buena gana
-            var n = left.get()
-            while (n > 0) {
-                val wait = (until - System.currentTimeMillis()).coerceAtLeast(1L)
-                val t = result.poll(wait, java.util.concurrent.TimeUnit.MILLISECONDS) ?: return null
-                n--
-                if (askSeq.get() != my) return null
-                if (t.isNotBlank()) return t.trim()
-            }
+                val t = out.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")?.trim()
+                if (!t.isNullOrEmpty()) return t
+            } catch (_: Exception) { }
+            if (System.currentTimeMillis() > until || askSeq.get() != my) return null
+            if (prompt.length <= 5000) try {
+                getText("https://text.pollinations.ai/$enc?model=openai&private=true&referrer=misnotas&seed=$seed", 30000)?.let { return it }
+            } catch (_: Exception) { }
         }
         return null
     }

@@ -1208,6 +1208,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.32.3" to tr("•  IA: se regresó a pedir de uno en uno (como Best Notes). Preguntar a dos lugares a la vez hacía que el servicio gratis rechazara todo.\n" +
+            "•  «Terminar la frase con IA» continúa lo que escribiste («Hola como» → estás? / te fue hoy?).",
+            "•  AI: back to one request at a time (like Best Notes). Asking two places at once made the free service reject everything.\n" +
+            "•  «Finish sentence with AI» continues what you wrote («Hola como» → estás? / te fue hoy?)."),
         "12.32.2" to tr("•  IA más rápida: le pregunta a la dirección nueva y a la vieja al mismo tiempo y usa la primera que conteste.\n" +
             "•  «Terminar la frase con IA» ahora sí continúa lo que escribiste («Hola como» → estás? / te fue hoy?) en vez de inventar otra frase, y con instrucciones más cortas contesta antes.",
             "•  Faster AI: it asks the new and the old address at the same time and uses the first one that answers.\n" +

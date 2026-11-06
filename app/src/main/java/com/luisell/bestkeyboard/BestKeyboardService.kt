@@ -4485,12 +4485,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
         }
         handler.postDelayed(tick, 1000)
-        // Instrucciones cortas (la IA contesta más rápido) y con ejemplo, para que CONTINÚE la frase y no invente otra
-        val prompt = "Continue this phone message from exactly where it stops, as the same person, same language and tone. " +
-            "Give 3 different short continuations (max 10 words each). Do NOT repeat the text, do NOT start a new sentence " +
-            "unless the text ends with . ? or !, do not invent names or places.\n" +
-            "Example: text \"Hola como\" -> 1: estás? 2: te fue hoy? 3: va todo por allá?\n" +
-            "Text: \"" + text.takeLast(300) + "\"\nAnswer only:\n1: ...\n2: ...\n3: ..."
+        // Como la versión que funcionaba (el texto entre comillas triples), más un ejemplo para que CONTINÚE la frase
+        val prompt = "A person is typing a message on their phone. This is what they have written so far:\n\"\"\"\n" + text.takeLast(300) +
+            "\n\"\"\"\nGive 3 different natural ways to CONTINUE it from exactly where it stops, as the same person, in the same language and tone. " +
+            "Each continuation must be short (at most 10 words) and must not repeat what is already written. " +
+            "If the text does not end with . ? or !, continue the same sentence (for example \"Hola como\" → \"estás?\", \"te fue hoy?\"). " +
+            "Do not invent names, places or numbers. No quotes, no markdown. Answer exactly in this format:\n1: ...\n2: ...\n3: ..."
         CloudText.ask(prompt, key) { list, err ->
             waiting = false
             if (my != aiSeq) return@ask
