@@ -2215,6 +2215,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             ic.endBatchEdit()
             clearSlots()
             lastCorrection = null
+            autoLangPick(w)
             return
         }
         val before = ic.getTextBeforeCursor(48, 0) ?: ""
@@ -2226,7 +2227,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
         val eng = WordStore.engine
         if (eng != null && learnOn && fieldLearn) {
-            if (slot == slotTyped) eng.user.learn(w) else eng.user.add(w, 1, lang)
+            // Se aprende con el idioma de la palabra (no el del teclado), así no se mezclan
+            val wl = eng.langOf(w.lowercase().trim('\'', '’')) ?: lang
+            if (slot == slotTyped) eng.user.learn(w) else eng.user.add(w, 1, wl)
             if (prev != null) eng.user.addBigram(prev, w)
             WordStore.scheduleSave()
         }
@@ -2235,7 +2238,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         lastWasSpace = true
         if (shift == 1) { manualShift = false; setShift(0) }
         if (page == Page.SYM || page == Page.SYM2) { page = Page.LETTERS; rebuild() }
+        autoLangPick(w)
         updateAutoCaps()
+    }
+
+    /** 🌐 Las palabras que eliges de las sugerencias también cuentan para cambiar el idioma solo. */
+    private fun autoLangPick(w: String) {
+        val words = w.split(Regex("\\s+")).filter { it.any(Char::isLetter) }
+        for (x in words) autoLang(x.trim { !it.isLetter() && it != '\'' && it != '’' })
     }
 
     /**
