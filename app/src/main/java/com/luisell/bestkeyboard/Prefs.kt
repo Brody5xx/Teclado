@@ -40,6 +40,11 @@ object Prefs {
     const val LEARN = "learn"
     /** Sugerir los nombres de mis contactos (necesita el permiso de contactos). */
     const val CONTACT_NAMES = "contact_names"
+    /** Recordar el idioma de cada app (y su lista "app=idioma|…"). */
+    const val APP_LANG_MEMORY = "app_lang_memory"
+    /** Las teclas se acomodan a dónde sueles tocar. */
+    const val ADAPT_TOUCH = "adapt_touch"
+    const val APP_LANGS = "app_langs"
     const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)
     const val AUTO_LANG = "auto_lang"   // 🌐 cambiar español/inglés solo, según lo que escribo
     const val CLIP_HISTORY = "clip_history"

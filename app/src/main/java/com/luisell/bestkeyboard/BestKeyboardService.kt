@@ -1575,6 +1575,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (!restarting) { undoSnap = null; kv?.playIntro() } // ⌨️ la luz de bienvenida
         if (driveSticky() && !isPassword && mode != 14) handler.post { if (driveSticky()) showMode(14) } // 🛻 sigue en modo manejando
         applySettings()
+        // 🌐 Cada app empieza en el idioma que usaste ahí la última vez (WhatsApp en español, la del trabajo en inglés…)
+        try { Stats.flush(prefs) } catch (_: Exception) { }
+        val pkg = info.packageName ?: ""
+        if (pkg != curPkg) {
+            curPkg = pkg
+            if (!restarting && prefs.getBoolean(Prefs.APP_LANG_MEMORY, true)) appLangs()[pkg]?.let { if (it != lang) setLang(it) }
+        }
         if (BgMedia.kind(this) == "video") bgVideoView?.play()
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
         if (prefs.getBoolean(Prefs.FLOAT, false)) handler.post { applyFloat() }
@@ -2357,6 +2364,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val before = ic.getTextBeforeCursor(48, 0) ?: ""
         val cur = TextUtil.currentWord(before)
         val prev = TextUtil.previousWord(before, cur.length)
+        // 📊 Lo que te ahorraste
+        try {
+            val n = w.split(' ').count { it.isNotEmpty() }
+            Stats.add(prefs, Stats.WORDS, n)
+            if (cur.isEmpty()) Stats.add(prefs, Stats.PREDICTED, n)
+            Stats.add(prefs, Stats.SAVED, w.length - cur.length)
+        } catch (_: Exception) { }
         ic.beginBatchEdit()
         if (cur.isNotEmpty()) ic.deleteSurroundingText(cur.length, 0)
         ic.commitText("$w ", 1)
@@ -2432,6 +2446,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         // ✍️ Borraste una palabra mal escrita y pusiste otra parecida: el teclado aprende tu arreglo
         learnFix(eng, final)
+        try { Stats.add(prefs, Stats.WORDS); if (fixed != null) Stats.add(prefs, Stats.FIXED) } catch (_: Exception) { }
         if (fixed == null) { lastFinished = final; lastFinishedAt = SystemClock.uptimeMillis() } else lastFinished = null
         if (learnOn && fieldLearn) {
             // Si parece un error de dedo (hay una palabra casi igual), cuesta más aprenderla
@@ -3737,10 +3752,30 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // ---------------------------------------------------------------- 🌐 Idioma (y cambio solo)
 
     /** Cambia el idioma del teclado (con la luz alrededor de la barra espaciadora). */
+    /** La app donde estás escribiendo (para recordar su idioma). */
+    private var curPkg = ""
+
+    private fun appLangs(): MutableMap<String, String> {
+        val raw = prefs.getString(Prefs.APP_LANGS, "") ?: ""
+        val m = LinkedHashMap<String, String>()
+        for (p in raw.split('|')) { val i = p.indexOf('='); if (i > 0) m[p.substring(0, i)] = p.substring(i + 1) }
+        return m
+    }
+
+    private fun rememberAppLang() {
+        if (curPkg.isEmpty() || curPkg == packageName || !prefs.getBoolean(Prefs.APP_LANG_MEMORY, true)) return
+        val m = appLangs()
+        if (m[curPkg] == lang) return
+        m.remove(curPkg); m[curPkg] = lang
+        while (m.size > 60) m.remove(m.keys.first())
+        prefs.edit().putString(Prefs.APP_LANGS, m.entries.joinToString("|") { it.key + "=" + it.value }).apply()
+    }
+
     private fun setLang(l: String) {
         if (l == lang) return
         lang = l
         prefs.edit().putString(Prefs.LANG, lang).apply()
+        rememberAppLang()
         L.set(lang)
         kv?.spaceLabel = if (lang == "es") "Español" else "English"
         kv?.flashSpace() // 🌐 la luz le da la vuelta a la barra espaciadora

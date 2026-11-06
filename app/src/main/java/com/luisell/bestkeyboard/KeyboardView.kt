@@ -1007,6 +1007,56 @@ class KeyboardView(context: Context) : View(context) {
 
     private var touchX = 0f
     private var touchY = 0f
+
+    // 👆 Teclas que se acomodan a tu dedo: cuánto te sueles correr del centro de cada tecla
+    // (en fracción del tamaño de la tecla). Se aprende solo con cada letra que escribes.
+    private val adaptPrefs by lazy { Prefs.get(context) }
+    private var adaptDx = 0f
+    private var adaptDy = 0f
+    private var adaptN = 0
+    private var adaptLoaded = false
+
+    private fun loadAdapt() {
+        if (adaptLoaded) return
+        adaptLoaded = true
+        try {
+            adaptDx = adaptPrefs.getFloat("adapt_dx", 0f)
+            adaptDy = adaptPrefs.getFloat("adapt_dy", 0f)
+            adaptN = adaptPrefs.getInt("adapt_n", 0)
+        } catch (_: Exception) { }
+    }
+
+    private fun adaptOn() = try { adaptPrefs.getBoolean(Prefs.ADAPT_TOUCH, true) } catch (_: Exception) { false }
+
+    /** Aprende de una letra escrita: dónde tocaste respecto al centro de la tecla. */
+    private fun learnTouch(key: Key, x: Float, y: Float) {
+        if (!isLetterKey(key) || !adaptOn()) return
+        loadAdapt()
+        val w = key.cell.width().coerceAtLeast(1f)
+        val h = key.cell.height().coerceAtLeast(1f)
+        // La posición real (sin el ajuste) respecto al centro
+        val dx = ((x - key.cell.centerX()) / w).coerceIn(-0.6f, 0.6f)
+        val dy = ((y - key.cell.centerY()) / h).coerceIn(-0.6f, 0.6f)
+        val a = if (adaptN < 300) 1f / (adaptN + 1) else 0.004f
+        adaptDx += (dx - adaptDx) * a
+        adaptDy += (dy - adaptDy) * a
+        adaptN++
+        if (adaptN % 40 == 0) try {
+            adaptPrefs.edit().putFloat("adapt_dx", adaptDx).putFloat("adapt_dy", adaptDy).putInt("adapt_n", adaptN).apply()
+        } catch (_: Exception) { }
+    }
+
+    /** Busca la tecla corrigiendo cuánto te sueles correr (después de 150 letras, y máximo un cuarto de tecla). */
+    private fun findKeyAdapted(x: Float, y: Float): Key? {
+        val raw = findKey(x, y) ?: return null
+        if (!adaptOn()) return raw
+        loadAdapt()
+        if (adaptN < 150 || !isLetterKey(raw)) return raw
+        val w = raw.cell.width()
+        val h = raw.cell.height()
+        val k = findKey(x - adaptDx.coerceIn(-0.25f, 0.25f) * w, y - adaptDy.coerceIn(-0.25f, 0.25f) * h) ?: return raw
+        return if (isLetterKey(k)) k else raw
+    }
     /** 👆 La otra letra que pudiste querer (tocaste cerca del borde entre dos teclas), o null. */
     var lastTouchAlt: Char? = null
 
@@ -1326,7 +1376,7 @@ class KeyboardView(context: Context) : View(context) {
             listener?.onOneHand(if (!top) 0 else if (oneHand == 1) 2 else 1)
             return
         }
-        val key = findKey(x, y) ?: return
+        val key = findKeyAdapted(x, y) ?: return
         activeKey = key
         touchX = x; touchY = y
         if (forceTools) { forceTools = false; invalidate(0, 0, width, stripH.toInt() + 1) }
@@ -1458,7 +1508,7 @@ class KeyboardView(context: Context) : View(context) {
         }
         touchX = x; touchY = y
         if (key.code == 0 && !longPressed) {
-            val k = findKey(x, y)
+            val k = findKeyAdapted(x, y)
             if (k != null && k !== key && k.code == 0) {
                 activeKey = k
                 handler.removeCallbacks(longPressRunnable)
@@ -1551,7 +1601,11 @@ class KeyboardView(context: Context) : View(context) {
         }
         if (longPressed) return
         when (key.code) {
-            0 -> key.text?.let { lastTouchAlt = try { altFor(key, touchX, touchY) } catch (_: Exception) { null }; listener?.onKeyText(it) }
+            0 -> key.text?.let {
+                lastTouchAlt = try { altFor(key, touchX, touchY) } catch (_: Exception) { null }
+                try { learnTouch(key, touchX, touchY) } catch (_: Exception) { }
+                listener?.onKeyText(it)
+            }
             Codes.SPACE -> if (!spaceDragging) listener?.onKeyCode(Codes.SPACE)
             Codes.DELETE, Codes.SHIFT -> Unit
             else -> if (!key.repeatable) listener?.onKeyCode(key.code)

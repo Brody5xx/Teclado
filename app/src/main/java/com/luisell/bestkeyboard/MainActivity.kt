@@ -386,6 +386,19 @@ class MainActivity : UiActivity() {
     }
 
     private var contactsBtn: TextView? = null
+    private var statsText: TextView? = null
+
+    private fun refreshStats() {
+        val t = statsText ?: return
+        Stats.flush(prefs)
+        val (ww, wt) = Stats.get(prefs, Stats.WORDS)
+        val (pw, pt) = Stats.get(prefs, Stats.PREDICTED)
+        val (sw, st) = Stats.get(prefs, Stats.SAVED)
+        val (fw, ft) = Stats.get(prefs, Stats.FIXED)
+        fun pct(a: Int, b: Int) = if (b > 0) " (${a * 100 / b}%)" else ""
+        t.text = tr("Esta semana:\n•  $ww palabras escritas\n•  $pw adivinadas sin escribir ni una letra${pct(pw, ww)}\n•  $sw letras que no tuviste que escribir\n•  $fw errores corregidos solos\n\nDesde siempre: $wt palabras · $pt adivinadas · $st letras ahorradas · $ft corregidos",
+            "This week:\n•  $ww words typed\n•  $pw guessed before you typed a letter${pct(pw, ww)}\n•  $sw letters you didn't have to type\n•  $fw mistakes fixed by itself\n\nAll time: $wt words · $pt guessed · $st letters saved · $ft fixed")
+    }
     private fun contactsGranted() = checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
 
     private fun refreshContacts() {
@@ -411,6 +424,7 @@ class MainActivity : UiActivity() {
         refreshStatus()
         refreshMic()
         refreshContacts()
+        refreshStats()
         WordStore.load(this) { refreshLearned() }
         if (AutoSites.isOn(this)) AutoSites.register(this)
     }
@@ -627,6 +641,9 @@ class MainActivity : UiActivity() {
         switch(tr("🌐 Cambiar el idioma solo", "🌐 Switch language automatically"), Prefs.AUTO_LANG, true,
             tr("Si escribes 2 palabras seguidas en inglés, el teclado se pone en inglés solo (y al revés). Verás la luz en la barra espaciadora.",
                 "If you type 2 words in a row in Spanish, the keyboard switches by itself (and the other way). You'll see the light on the space bar."))
+        switch(tr("Recordar el idioma de cada app", "Remember each app's language"), Prefs.APP_LANG_MEMORY, true,
+            tr("Cada app empieza en el idioma que usaste ahí la última vez: si en WhatsApp escribes en español y en la app del trabajo en inglés, el teclado ya abre así.",
+                "Each app starts in the language you last used there: if you write Spanish in WhatsApp and English in your work app, the keyboard opens that way."))
         switch(tr("Deslizar la barra cambia el idioma", "Swipe the space bar to change language"), Prefs.SPACE_LANG, false,
             tr("Se quita el botón 🌐. Desliza rápido para cambiar de idioma; mantén presionado y desliza para mover el cursor.",
                 "The 🌐 key goes away. Swipe fast to change language; press, hold and slide to move the cursor."))
@@ -638,6 +655,9 @@ class MainActivity : UiActivity() {
             tr("Algunas apps (como Instagram) piden no mostrar sugerencias. Con esto encendido salen igual.",
                 "Some apps (like Instagram) ask for no suggestions. With this on, they show anyway."))
         switch(tr("Deslizar el dedo para escribir", "Swipe typing"), Prefs.SWIPE, true)
+        switch(tr("Teclas que se acomodan a tu dedo", "Keys that adapt to your finger"), Prefs.ADAPT_TOUCH, true,
+            tr("El teclado aprende si sueles tocar un poquito abajo o a un lado de cada tecla, y lo corrige solo. Empieza a funcionar después de unas 150 letras.",
+                "The keyboard learns if you usually tap a bit below or to the side of each key, and corrects it by itself. It starts working after about 150 letters."))
         switch(tr("Autocorrector", "Autocorrect"), Prefs.AUTOCORRECT, true,
             tr("Corrige al tocar espacio. Toca ⌫ justo después para deshacerlo.", "Fixes words when you tap space. Tap ⌫ right after to undo."))
         switch(tr("Aprender mis palabras", "Learn my words"), Prefs.LEARN, true, tr("Nombres, siglas y palabras del trabajo.", "Names, acronyms and work words."))
@@ -655,6 +675,12 @@ class MainActivity : UiActivity() {
                 refreshLearned()
             }
         }
+
+        // ---- 📊 Estadísticas: cuánto te ayuda el teclado
+        card(tr("Estadísticas", "Statistics"), Icons.STOPWATCH, keywords = "estadisticas ahorro letras palabras adivinadas stats saved letters")
+        statsText = text("", 14f)
+        text(tr("Se cuenta solo en tu teléfono. Mientras más lo uses, más aprende de ti y más te adivina.",
+            "Counted only on your phone. The more you use it, the more it learns from you and the more it guesses."), 12f, faded = true)
 
         // ---- Ortografía
         card(tr("Revisar ortografía", "Spell check"), Icons.SPELL)
@@ -1206,6 +1232,14 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.31.0" to tr("•  📊 Estadísticas (Secciones › Escribir): cuántas palabras escribiste esta semana, cuántas te adivinó sin escribir ni una letra, cuántas letras te ahorraste y cuántos errores corrigió solo.\n" +
+            "•  Cada app recuerda su idioma: si en WhatsApp escribes en español y en la app del trabajo en inglés, el teclado ya abre así en cada una (se puede apagar en Barra espaciadora).\n" +
+            "•  Teclas que se acomodan a tu dedo: el teclado aprende si sueles tocar un poquito abajo o a un lado de cada tecla y lo corrige solo (después de unas 150 letras). Se puede apagar en Sugerencias.\n" +
+            "•  La copia de seguridad (y la automática de cada semana) ya guarda todo lo que el teclado aprendió de ti: palabras, frases, tus arreglos y las sugerencias que borraste.",
+            "•  📊 Statistics (Sections › Typing): how many words you typed this week, how many it guessed before you typed a letter, how many letters you saved and how many mistakes it fixed.\n" +
+            "•  Each app remembers its language: if you write Spanish in WhatsApp and English in your work app, the keyboard opens that way in each (can be turned off in Space bar).\n" +
+            "•  Keys that adapt to your finger: the keyboard learns if you usually tap a bit below or to the side of each key and corrects it (after about 150 letters). Can be turned off in Suggestions.\n" +
+            "•  The backup (and the weekly automatic one) saves everything the keyboard learned from you: words, phrases, your fixes and the suggestions you deleted."),
         "12.30.0" to tr("•  Más rápido al escribir: las sugerencias tardan hasta 40 veces menos cuando escribes algo que no es palabra, y 3 veces menos con 1 o 2 letras. Así no se traba aunque escribas rápido.\n" +
             "•  Dictado: en teléfonos con Android 14 o más nuevo reconoce si hablas español o inglés en cada frase (puedes mezclar sin tocar nada) y pone la puntuación solo. Si dices una pregunta, pone «¿…?» solo: «cómo estás» → ¿Cómo estás?, «what time do you want to meet» → …meet?\n" +
             "•  Portapapeles: cada cosa copiada dice cuándo la copiaste (Hoy 9:41, Ayer, 3 nov). Con la lupa buscas en todo lo copiado.\n" +
