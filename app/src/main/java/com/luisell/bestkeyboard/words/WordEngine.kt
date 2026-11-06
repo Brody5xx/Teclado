@@ -146,6 +146,12 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         val c = user.count(lower)
         if (c <= 0) return 0f
         var b = 2.2f * ln(1f + c)
+        // ⏳ Lo que ya no usas pesa menos poco a poco (lo de este mes, completo)
+        val e = user.entry(lower)
+        if (e != null && e.day > 0 && !e.sure) {
+            val age = UserData.today() - e.day
+            if (age > 30) b *= if (age > 365) 0.45f else if (age > 180) 0.6f else if (age > 90) 0.75f else 0.88f
+        }
         if (lang != null) {
             // Lo que escribes en este idioma pesa más; lo que solo usas en el otro, menos
             val mine = user.countIn(lower, lang)
@@ -332,6 +338,32 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return out
     }
 
+    /** «nosvemos» → «nos vemos»: dos palabras comunes de tu idioma que se dicen juntas. */
+    private fun splitWord(tf: String, lang: String): String? {
+        val active = dicts.firstOrNull { it.lang == lang } ?: return null
+        val bs = base
+        var best: String? = null
+        var bestS = Float.NEGATIVE_INFINITY
+        for (i in 1 until tf.length) {
+            val a = tf.substring(0, i)
+            val b = tf.substring(i)
+            if (b.length < 2) continue
+            if (a.length == 1 && !(a == "a" || a == "y" || a == "o" || (lang == "en" && a == "i"))) continue
+            val ia = active.bestForFold(a)
+            val ib = active.bestForFold(b)
+            if (ia < 0 || ib < 0) continue
+            val wa = active.words[ia]
+            val wb = active.words[ib]
+            val pair = bs?.count("b", lang, wa.lowercase(), wb.lowercase()) ?: 0
+            val common = minOf(active.logFreq[ia], active.logFreq[ib])
+            if (pair == 0 && common < ln(20000f)) continue
+            if (common < ln(300f)) continue
+            val sc = active.logFreq[ia] + active.logFreq[ib] + 2f * ln(1f + pair)
+            if (sc > bestS) { bestS = sc; best = (if (lang == "en" && wa == "i") "I" else wa) + " " + wb }
+        }
+        return best
+    }
+
     /** ¿Se parecen? (a 2 letras o menos, sin contar acentos) — para aprender tus arreglos. */
     fun similar(a: String, b: String): Boolean {
         val x = TextUtil.fold(a.lowercase())
@@ -391,6 +423,57 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         }
     }
 
+    /**
+     * 💬 La frase completa cuando es obvia: «I will be there» → in a few minutes,
+     * «muchas» → gracias por tu ayuda. Va palabra por palabra mientras esté MUY claro
+     * (tus frases de siempre primero). Devuelve 2 a 4 palabras, o null.
+     */
+    fun phrase(prev: String, lang: String, prev2: String? = null, first: String? = null): String? {
+        var p1 = prev.lowercase()
+        var p2 = prev2?.lowercase()
+        val out = ArrayList<String>()
+        if (first != null) { out.add(first); p2 = p1; p1 = first.lowercase() }
+        while (out.size < 5) {
+            val next = confidentNext(p1, p2, lang) ?: break
+            if (out.size >= 1 && next == out.last().lowercase()) break
+            out.add(next)
+            p2 = p1; p1 = next
+        }
+        if (out.size < 2) return null
+        return out.mapIndexed { i, w -> if (lang == "en" && (w == "i" || w.startsWith("i'"))) "I" + w.drop(1) else if (i == 0 && first != null) w else displayFor(w, lang) }
+            .joinToString(" ")
+    }
+
+    /** La palabra siguiente solo si es muy probable (si no, null). */
+    private fun confidentNext(p1: String, p2: String?, lang: String): String? {
+        // 1) Tus tríos de palabras
+        if (p2 != null) user.trigrams["$p2 $p1"]?.let { m ->
+            val tot = m.values.sum()
+            val top = m.maxByOrNull { it.value }
+            if (top != null && top.value >= 2 && top.value * 10 >= tot * 6 && !user.isBlocked(top.key)) return top.key
+        }
+        // 2) Tus pares de palabras
+        user.bigrams[p1]?.let { m ->
+            val tot = m.values.sum()
+            val top = m.maxByOrNull { it.value }
+            if (top != null && top.value >= 3 && top.value * 10 >= tot * 7 && !user.isBlocked(top.key)) return top.key
+        }
+        val bs = base ?: return null
+        // 3) Las frases de fábrica (tríos)
+        if (p2 != null) {
+            var tot = 0; var best: String? = null; var bc = 0
+            bs.next("t", lang, "$p2 $p1") { w, c -> tot += c; if (c > bc) { bc = c; best = w } }
+            if (best != null && bc >= 3 && bc * 10 >= tot * 5) return best
+        }
+        // 4) Pares de fábrica muy claros («muchas» → gracias)
+        run {
+            var tot = 0; var best: String? = null; var bc = 0
+            bs.next("b", lang, p1) { w, c -> tot += c; if (c > bc) { bc = c; best = w } }
+            if (best != null && bc >= 8 && bc * 10 >= tot * 6) return best
+        }
+        return null
+    }
+
     fun suggest(typed: String, prev: String?, lang: String, prev2: String? = null): Result {
         val corr = correction(typed, lang)
         val comps = completions(typed, prev, lang, prev2 = prev2).map { TextUtil.matchCase(it, typed) }
@@ -421,8 +504,9 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         // Un contacto escrito en minúsculas («luisell» → «Luisell»), si no es también una palabra
         names[lower]?.let { n -> if (typed == lower && n != lower && !inAnyDict(lower)) return n }
         if (user.isKnown(lower)) return null
-        // Palabras pegadas: "porfavor" -> "por favor"
+        // Palabras pegadas: "porfavor" -> "por favor", "alot" -> "a lot"
         if (lang == "es") JOINED[lower]?.let { return it }
+        if (lang == "en") JOINED_EN[lower]?.let { return it }
 
         // ¿Ya es una palabra? Primero en el idioma activo.
         val active = dicts.firstOrNull { it.lang == lang } ?: dicts[0]
@@ -477,6 +561,8 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
                 if (s > bestScore) { bestScore = s; best = e.display }
             }
         }
+        // 2b) Dos palabras pegadas que se dicen juntas ("thankyou", "nosvemos"): solo si no hay otra idea
+        if (best == null && tf.length >= 6 && typed.none { it.isUpperCase() }) splitWord(tf, lang)?.let { return it }
         // 3) Errores de sonido en español: nesecito -> necesito, aser -> hacer, vien -> bien
         for (d in dicts) {
             val i = d.bestForSound(tf)
@@ -729,6 +815,16 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             "sinembargo" to "sin embargo", "almenos" to "al menos", "envez" to "en vez",
             "depronto" to "de pronto", "porsupuesto" to "por supuesto",
             "derepente" to "de repente", "atravez" to "a través", "atraves" to "a través",
+            "adios" to "adiós", "nose" to "no sé", "nomas" to "no más",             "encambio" to "en cambio", "enfin" to "en fin", "sobretodo" to "sobre todo",
+            "talves" to "tal vez", "aver" to "a ver", "porlomenos" to "por lo menos",
+            "deveras" to "de veras", "envezde" to "en vez de", "alrato" to "al rato",             "nisiquiera" to "ni siquiera", "otravez" to "otra vez", "devez" to "de vez",         )
+        private val JOINED_EN = mapOf(
+            "alot" to "a lot", "thankyou" to "thank you", "thanku" to "thank you", "infront" to "in front",
+            "atleast" to "at least", "eachother" to "each other", "aswell" to "as well", "incase" to "in case",
+            "everytime" to "every time", "alittle" to "a little", "noone" to "no one", "inbetween" to "in between",
+            "ofcourse" to "of course", "rightnow" to "right now", "goodmorning" to "good morning",
+            "goodnight" to "good night", "seeyou" to "see you", "letme" to "let me", "iam" to "I am",
+            "imgoing" to "I'm going", "onmyway" to "on my way", "asap" to "ASAP", "wifi" to "Wi-Fi",
         )
         private const val ALPHABET = "abcdefghijklmnopqrstuvwxyz"
         private val MIN_ACCENT_LF = ln(30f)

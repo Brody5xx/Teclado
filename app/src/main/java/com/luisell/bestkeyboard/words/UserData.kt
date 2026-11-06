@@ -13,7 +13,7 @@ class UserData {
      * [legacy] = guardada por una versión vieja (se respeta como antes).
      */
     class Entry(var display: String, var count: Int, var sure: Boolean = false, var legacy: Boolean = false, var en: Int = 0, var es: Int = 0,
-                var typo: Boolean = false) {
+                var typo: Boolean = false, var day: Int = 0) {
         val fold = TextUtil.fold(display)
         /**
          * Cuenta como palabra tuya: confirmada, o escrita varias veces. Si parece un error de dedo
@@ -85,13 +85,14 @@ class UserData {
         val enAdd = if (lang == "en") amount else 0
         val esAdd = if (lang == "es") amount else 0
         if (e == null) {
-            words[key] = Entry(display, amount, en = enAdd, es = esAdd, typo = typo)
+            words[key] = Entry(display, amount, en = enAdd, es = esAdd, typo = typo, day = today())
         } else {
             e.count = (e.count + amount).coerceAtMost(100000)
+            e.day = today()
             e.en = (e.en + enAdd).coerceAtMost(100000)
             e.es = (e.es + esAdd).coerceAtMost(100000)
             // Si la escribes con una mayúscula especial (ej. "Luisell"), se recuerda así
-            if (display != key && e.display == key) words[key] = Entry(display, e.count, e.sure, e.legacy, e.en, e.es, e.typo)
+            if (display != key && e.display == key) words[key] = Entry(display, e.count, e.sure, e.legacy, e.en, e.es, e.typo, e.day)
         }
         recent[key] = System.currentTimeMillis()
         if (recent.size > 400) recent.entries.minByOrNull { it.value }?.let { recent.remove(it.key) }
@@ -173,7 +174,7 @@ class UserData {
         for ((_, e) in words) {
             sb.append("w\t").append(e.display).append('\t').append(e.count).append('\t')
                 .append(if (e.sure) "1" else if (e.legacy) "L" else if (e.typo) "T" else "0").append('\t').append(e.en).append('\t').append(e.es)
-                .append('\t').append(recent[e.display.lowercase()] ?: 0L).append('\n')
+                .append('\t').append(recent[e.display.lowercase()] ?: 0L).append('\t').append(e.day).append('\n')
         }
         for ((p, m) in bigrams) for ((n, c) in m) {
             sb.append("b\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
@@ -191,12 +192,14 @@ class UserData {
         file.forEachLine(Charsets.UTF_8) { line ->
             val p = line.split('\t')
             when {
-                (p.size in 3..7) && p[0] == "w" -> {
+                (p.size in 3..8) && p[0] == "w" -> {
                     val c = p[2].toIntOrNull() ?: return@forEachLine
                     val flag = if (p.size >= 4) p[3] else "L" // versión vieja: se respeta como antes
                     val en = if (p.size >= 5) (p[4].toIntOrNull() ?: 0) else 0
                     val es = if (p.size >= 6) (p[5].toIntOrNull() ?: 0) else 0
-                    words[p[1].lowercase()] = Entry(p[1], c, sure = flag == "1", legacy = flag == "L", en = en, es = es, typo = flag == "T")
+                    // Día en que la usaste por última vez (las viejas sin día cuentan como de hoy)
+                    val day = if (p.size >= 8) (p[7].toIntOrNull() ?: today()) else today()
+                    words[p[1].lowercase()] = Entry(p[1], c, sure = flag == "1", legacy = flag == "L", en = en, es = es, typo = flag == "T", day = day)
                     // Cuándo la escribiste por última vez (así lo reciente sigue saliendo primero después de actualizar)
                     val t = if (p.size >= 7) (p[6].toLongOrNull() ?: 0L) else 0L
                     if (t > 0) recent[p[1].lowercase()] = t
@@ -220,6 +223,8 @@ class UserData {
     }
 
     companion object {
+        /** Hoy, contado en días (para saber qué tan vieja es una palabra). */
+        fun today(): Int = (System.currentTimeMillis() / 86_400_000L).toInt()
         const val KNOWN = 2
         /** Palabras que no están en el diccionario: con escribirlas 2 veces ya las aprende sola. */
         const val AUTO_KNOWN = 2

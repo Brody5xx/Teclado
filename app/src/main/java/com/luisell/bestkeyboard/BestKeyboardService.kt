@@ -2077,6 +2077,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val before = sugBefore ?: ic.getTextBeforeCursor(80, 0) ?: return
         val formalOn = prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)
         val m = accentMatch(before)
+            ?: (WordStore.engine?.let { e -> SmartFormat.match(before, sugLang(e, before, 0) == "es") })
             ?: (if (formalOn) FormalWords.match(before) else null)
             ?: (if (formalOn && prefs.getBoolean(Prefs.WORD_WEEK, true)) WeeklyWord.match(before) else null)
             ?: return
@@ -2199,8 +2200,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             val preds = if (prev != null) eng.predictions(prev, sugLang(eng, before, 0), 3, prev2) else emptyList()
             if (preds.isEmpty()) { clearSlots(); return }
             val capital = shift > 0 && page == Page.LETTERS
-            val p = preds.map { if (capital) TextUtil.matchCase(it, "A") else it }
-            showSlots(p.getOrNull(1), p.getOrNull(0), p.getOrNull(2), bold = false, typedLeft = false)
+            val p = preds.map { if (capital) TextUtil.matchCase(it, "A") else it }.toMutableList()
+            // 💬 Si la frase es obvia, a la derecha sale completa («in a few minutes»)
+            if (prev != null) try {
+                val ph = eng.phrase(prev, sugLang(eng, before, 0), prev2)
+                if (ph != null && ph.contains(' ')) {
+                    val phc = if (capital) TextUtil.matchCase(ph, "A") else ph
+                    if (p.size >= 3) p[2] = phc else { while (p.size < 2) p.add(""); p.add(phc) }
+                }
+            } catch (_: Exception) { }
+            showSlots(p.getOrNull(1)?.ifEmpty { null }, p.getOrNull(0)?.ifEmpty { null }, p.getOrNull(2), bold = false, typedLeft = false)
             return
         }
 
@@ -2303,7 +2312,18 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ic.commitText("$w ", 1)
         ic.endBatchEdit()
         val eng = WordStore.engine
-        if (eng != null && learnOn && fieldLearn) {
+        if (eng != null && learnOn && fieldLearn && w.contains(' ')) {
+            // 💬 Elegiste una frase completa: se aprende palabra por palabra
+            var a = TextUtil.previousWords(before, cur.length).second
+            var b = prev
+            for (x in w.split(' ').filter { it.isNotEmpty() }) {
+                eng.user.add(x, 1, eng.langOf(x.lowercase()) ?: lang)
+                if (b != null) eng.user.addBigram(b, x)
+                if (a != null && b != null) eng.user.addTrigram(a, b, x)
+                a = b; b = x
+            }
+            WordStore.scheduleSave()
+        } else if (eng != null && learnOn && fieldLearn) {
             // Se aprende con el idioma de la palabra (no el del teclado), así no se mezclan
             val wl = eng.langOf(w.lowercase().trim('\'', '’')) ?: lang
             if (slot == slotTyped) eng.user.learn(w) else eng.user.add(w, 1, wl)

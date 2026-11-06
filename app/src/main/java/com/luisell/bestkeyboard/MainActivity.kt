@@ -1206,6 +1206,16 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.28.0" to tr("•  Frases de fábrica 3 veces más grandes (139.000 frases reales en español e inglés): adivina 4 de cada 10 palabras sin escribir ni una letra y escribes 72% menos letras.\n" +
+            "•  Frase completa: cuando lo que sigue es obvio (sobre todo tus frases de siempre), a la derecha sale completo, por ejemplo «I'm on» → my way to the job. Un toque y se escribe todo.\n" +
+            "•  Lo reciente pesa más: las palabras que ya no usas van bajando poco a poco.\n" +
+            "•  Palabras pegadas en los dos idiomas: thankyou → thank you, alot → a lot, atleast → at least, nosvemos → nos vemos, buenosdias → buenos días, notengo → no tengo.\n" +
+            "•  Números, horas y medidas con ✨: 7pm → 7:00 PM (en español 7:00 p. m.), 730am → 7:30 AM, 120ft → 120 ft, 24v → 24 V, cat6 → Cat 6, poe → PoE, nvr → NVR, wifi → Wi-Fi.",
+            "•  Built-in phrases 3 times bigger (139,000 real sentences in Spanish and English): it guesses 4 in 10 words without typing a letter and you type 72% fewer letters.\n" +
+            "•  Full phrase: when what comes next is obvious (especially your usual phrases), it shows the whole thing on the right, for example «I'm on» → my way to the job. One tap types it all.\n" +
+            "•  Recent counts more: words you no longer use slowly go down.\n" +
+            "•  Stuck-together words in both languages: thankyou → thank you, alot → a lot, atleast → at least, nosvemos → nos vemos.\n" +
+            "•  Numbers, times and measures with ✨: 7pm → 7:00 PM, 730am → 7:30 AM, 120ft → 120 ft, 24v → 24 V, cat6 → Cat 6, poe → PoE, nvr → NVR, wifi → Wi-Fi."),
         "12.27.0" to tr("•  Acentos según la frase: «tu puedes» → ✨ tú puedes, «ya esta» → ya está, «esta listo» → está listo, «el dijo» → él dijo, «se que» → sé que. Y deja igual «tu casa», «esta noche», «el carro». Después de ¿ o ¡ pone el acento solo (¿cómo?, ¿qué?, ¿dónde?). «ya termine» → ya terminé, «yo llegue» → yo llegué (pero «cuando yo llegue» se queda igual).\n" +
             "•  Contracciones en inglés sin el apóstrofo: dont → don't, im → I'm, cant → can't, thats → that's, didnt → didn't…\n" +
             "•  Aprende de tus arreglos: si borras una palabra mal escrita y la escribes bien, la próxima vez se corrige sola. Los ves (y puedes quitarlos) en «Ver y editar mis palabras».\n" +

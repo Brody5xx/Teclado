@@ -14,6 +14,9 @@ class NGrams {
     private val map = HashMap<String, Next>(60000)
 
     fun load(input: InputStream) {
+        // Las mismas palabras se repiten miles de veces: se guarda una sola copia de cada una (menos memoria)
+        val pool = HashMap<String, String>(80000)
+        fun intern(x: String): String = pool.getOrPut(x) { x }
         var curKey: String? = null
         val ws = ArrayList<String>(8)
         val cs = ArrayList<Int>(8)
@@ -29,7 +32,7 @@ class NGrams {
                 if (p.size != 5) continue
                 val key = p[0] + "|" + p[1] + "|" + p[2]
                 if (key != curKey) { flush(); curKey = key }
-                ws.add(p[3])
+                ws.add(intern(p[3]))
                 cs.add(p[4].toIntOrNull() ?: 1)
             }
         }
