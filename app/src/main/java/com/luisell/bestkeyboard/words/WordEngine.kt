@@ -39,6 +39,9 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     /** ¿De qué idioma es esta palabra? "es", "en" o null si es de los dos (o de ninguno). */
     fun langOf(lower: String): String? {
         if (lower.any { it in "ñáéíóúü¿¡" }) return "es"
+        // Palabras cortas que casi siempre dicen el idioma (aunque existan en los dos diccionarios)
+        if (lower in SURE_EN) return "en"
+        if (lower in SURE_ES) return "es"
         val es = dicts.firstOrNull { it.lang == "es" }?.indexOf(lower) ?: -1
         val en = dicts.firstOrNull { it.lang == "en" }?.indexOf(lower) ?: -1
         val ue = user.entry(lower)
@@ -501,6 +504,12 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         val lower = typed.lowercase()
         // Tú ya lo corregiste así antes
         user.fixFor(lower)?.let { if (!user.isBlocked(it.lowercase())) return it }
+        // 🔠 Lo que tú siempre escribes con mayúscula («nvr» → «NVR», «luisell» → «Luisell»)
+        // (siglas como NVR siempre; nombres solo si los confirmaste tú, porque antes se aprendían al empezar frase)
+        user.entry(lower)?.let { e ->
+            val acronym = e.display.drop(1).any { it.isUpperCase() }
+            if (typed == lower && e.display != lower && !e.typo && !inAnyDict(lower) && (e.sure || (acronym && e.count >= 3))) return e.display
+        }
         // Un contacto escrito en minúsculas («luisell» → «Luisell»), si no es también una palabra
         names[lower]?.let { n -> if (typed == lower && n != lower && !inAnyDict(lower)) return n }
         if (user.isKnown(lower)) return null
@@ -803,6 +812,13 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     }
 
     companion object {
+        private val SURE_EN = setOf("i", "i'm", "i'll", "i've", "i'd", "hey", "hi", "hello", "yeah", "yes", "yep", "nope", "thanks",
+            "thank", "please", "sorry", "bye", "okay", "lol", "omg", "btw", "the", "you", "your", "what", "where", "when", "how",
+            "who", "why", "is", "are", "was", "were", "do", "does", "did", "will", "would", "can", "could", "should", "have",
+            "had", "it's", "that's", "don't", "can't", "won't", "it", "my", "we", "they", "she", "this", "that")
+        private val SURE_ES = setOf("dale", "oye", "hola", "gracias", "bueno", "pues", "vale", "qué", "sí", "porfa",
+            "ya", "yo", "tú", "usted", "nosotros", "ellos", "ella", "él", "pero", "porque", "también", "aquí", "allí",
+            "ahora", "luego", "después", "mañana", "hoy", "ayer", "tengo", "tienes", "estoy", "estás", "voy", "vas", "eso", "esto")
         private val PAST_WORDS = setOf("yo", "ya", "ayer", "anoche", "hoy", "antier", "anteayer", "recién", "recien")
         private val NOT_PAST_BEFORE = setOf("que", "cuando", "si", "aunque", "hasta", "antes", "para", "ojalá", "ojala", "mientras", "apenas", "en cuanto", "cuanto")
         private fun isVowel(c: Char) = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u'

@@ -1206,6 +1206,18 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.29.0" to tr("•  Cambio de idioma más rápido: ahora cuenta palabras cortas como «I», «hey», «the», «you», «dale», «oye», «ya», «yo». En casi todas las frases cambia en la 2.ª palabra (antes en la 3.ª o 4.ª), escribiendo o tocando sugerencias.\n" +
+            "•  Signo de pregunta: si la frase es una pregunta («can you send me…», «¿me mandas…», «puedes…»), a la izquierda sale «?» y se pone pegado a la palabra.\n" +
+            "•  Coma antes de «pero» y «but»: «ya quedó listo pero» → ✨ «listo, pero».\n" +
+            "•  Mayúsculas inteligentes: las siglas que siempre escribes con mayúscula (NVR, PoE…) se ponen solas.\n" +
+            "•  Más emojis según la frase: «on my way» → 🚗, «ya llegué» → 📍, «todo listo» → ✅, «buen trabajo» → 👍, «feliz cumpleaños» → 🎉.\n" +
+            "•  Nuevo botón «Terminar la frase con IA» (en ⋯): escribe el principio y te da 3 formas de terminarlo. Solo se manda tu texto cuando tú lo tocas.",
+            "•  Faster language switch: it now counts short words like «I», «hey», «the», «you», «dale», «oye». In almost every sentence it switches on the 2nd word (before, the 3rd or 4th), typing or tapping suggestions.\n" +
+            "•  Question mark: if the sentence is a question («can you send me…»), «?» shows on the left and goes right after the word.\n" +
+            "•  Comma before «but» and «pero»: «it works but» → ✨ «works, but».\n" +
+            "•  Smart capitals: acronyms you always capitalize (NVR, PoE…) get capitalized by themselves.\n" +
+            "•  More emojis for whole phrases: «on my way» → 🚗, «all done» → ✅, «good job» → 👍.\n" +
+            "•  New «Finish sentence with AI» button (in ⋯): type the start and get 3 ways to finish it. Your text is only sent when you tap it."),
         "12.28.0" to tr("•  Frases de fábrica 3 veces más grandes (139.000 frases reales en español e inglés): adivina 4 de cada 10 palabras sin escribir ni una letra y escribes 72% menos letras.\n" +
             "•  Frase completa: cuando lo que sigue es obvio (sobre todo tus frases de siempre), a la derecha sale completo, por ejemplo «I'm on» → my way to the job. Un toque y se escribe todo.\n" +
             "•  Lo reciente pesa más: las palabras que ya no usas van bajando poco a poco.\n" +

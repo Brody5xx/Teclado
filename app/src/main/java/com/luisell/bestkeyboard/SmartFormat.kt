@@ -19,6 +19,38 @@ object SmartFormat {
         "kw" to "kW", "mb" to "MB", "gb" to "GB", "tb" to "TB", "mbps" to "Mbps", "gbps" to "Gbps", "ghz" to "GHz", "mhz" to "MHz",
         "awg" to "AWG", "hz" to "Hz")
 
+    /** «…listo pero » → ✨ «…listo, pero » (y «but» en inglés). */
+    fun commaMatch(before: CharSequence): FormalWords.Match? {
+        val b = before.toString()
+        for (c in listOf(" pero ", " but ", " sino ")) {
+            if (!b.endsWith(c) || b.length <= c.length) continue
+            val prevCh = b[b.length - c.length - 1]
+            if (!prevCh.isLetterOrDigit()) return null
+            // Necesita algo antes en la frase (no «Pero …» al empezar)
+            val sentence = b.substring(0, b.length - c.length).substringAfterLast('.').trim()
+            if (sentence.split(' ').size < 2) return null
+            return FormalWords.Match(c.length, "," + c)
+        }
+        return null
+    }
+
+    private val Q_EN = setOf("what", "where", "when", "why", "who", "whose", "which", "how", "can", "could", "would", "will",
+        "do", "does", "did", "is", "are", "was", "were", "should", "may", "have", "has", "am", "shall", "isn't", "aren't",
+        "don't", "doesn't", "didn't", "won't", "can't", "wanna", "u")
+    private val Q_ES = setOf("qué", "cómo", "dónde", "cuándo", "quién", "quiénes", "cuál", "cuáles", "cuánto", "cuánta",
+        "cuántos", "cuántas", "puedes", "podrías", "podrias", "tienes", "sabes", "vienes", "quieres", "vas", "estás", "estas")
+
+    /** ¿La frase que escribes es una pregunta? (para sugerir «?») */
+    fun isQuestion(before: CharSequence): Boolean {
+        val t = before.toString()
+        val start = maxOf(t.lastIndexOf('.'), t.lastIndexOf('!'), t.lastIndexOf('?'), t.lastIndexOf('\n')) + 1
+        val sent = t.substring(start)
+        if (sent.contains('¿')) return true
+        val ws = sent.lowercase().split(Regex("[^\\p{L}'’]+")).filter { it.isNotEmpty() }
+        if (ws.size < 3) return false
+        return ws[0] in Q_EN || ws[0] in Q_ES || (ws[0] == "por" && ws[1] == "qué")
+    }
+
     /** [before] = el texto antes del cursor; [spanish] = la frase va en español. */
     fun match(before: CharSequence, spanish: Boolean): FormalWords.Match? {
         if (before.isEmpty()) return null

@@ -2078,6 +2078,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val formalOn = prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)
         val m = accentMatch(before)
             ?: (WordStore.engine?.let { e -> SmartFormat.match(before, sugLang(e, before, 0) == "es") })
+            ?: SmartFormat.commaMatch(before)
             ?: (if (formalOn) FormalWords.match(before) else null)
             ?: (if (formalOn && prefs.getBoolean(Prefs.WORD_WEEK, true)) WeeklyWord.match(before) else null)
             ?: return
@@ -2209,6 +2210,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     if (p.size >= 3) p[2] = phc else { while (p.size < 2) p.add(""); p.add(phc) }
                 }
             } catch (_: Exception) { }
+            // ❓ La frase es una pregunta: a la izquierda sale «?»
+            val q = try { SmartFormat.isQuestion(before) } catch (_: Exception) { false }
+            if (q && before.isNotEmpty() && before.last() == ' ') {
+                showSlots("?", p.getOrNull(0)?.ifEmpty { null }, p.getOrNull(2) ?: p.getOrNull(1), bold = false, typedLeft = false)
+            } else
             showSlots(p.getOrNull(1)?.ifEmpty { null }, p.getOrNull(0)?.ifEmpty { null }, p.getOrNull(2), bold = false, typedLeft = false)
             return
         }
@@ -2292,6 +2298,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         gestureWord = null
         phantomSpace = false
         val ic = target() ?: return
+        if (w == "?") {
+            // ❓ Pone el signo pegado a la palabra: «address ?» → «address? »
+            val b = ic.getTextBeforeCursor(1, 0)
+            ic.beginBatchEdit()
+            if (b != null && b.length == 1 && b[0] == ' ') ic.deleteSurroundingText(1, 0)
+            ic.commitText("? ", 1)
+            ic.endBatchEdit()
+            lastCorrection = null
+            autoSpace = true
+            lastWasSpace = true
+            updateAutoCaps()
+            return
+        }
         fixSpan?.let { (b, a) ->
             // Cambia la palabra entera (la parte de antes y la de después del cursor)
             fixSpan = null
@@ -2386,7 +2405,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (learnOn && fieldLearn) {
             // Si parece un error de dedo (hay una palabra casi igual), cuesta más aprenderla
             val typo = fixed == null && eng.user.entry(final.lowercase()) == null && eng.looksLikeTypo(final, sugLang(eng, before, word.length))
-            eng.user.add(final, 1, lang, typo)
+            // Al empezar una frase la mayúscula es automática: no se aprende como "siempre con mayúscula"
+            val learnAs = if (final.length > 1 && final[0].isUpperCase() && final.drop(1).none { it.isUpperCase() } &&
+                TextUtil.isSentenceStart(before, word.length)) final.lowercase() else final
+            eng.user.add(learnAs, 1, lang, typo)
             if (prev != null) eng.user.addBigram(prev, final)
             TextUtil.previousWords(before, word.length).second?.let { p2 -> if (prev != null) eng.user.addTrigram(p2, prev, final) }
             WordStore.scheduleSave()
@@ -2730,6 +2752,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 info = Labels.preview(""))
             KeyboardView.TOOL_UNDO -> doUndo()
             KeyboardView.TOOL_GOOGLE -> startGoogle()
+            KeyboardView.TOOL_FINISH -> startFinish()
             KeyboardView.TOOL_REMIND -> startRemind()
             KeyboardView.TOOL_SPEAK -> startSpeak()
             KeyboardView.TOOL_BGSOUND -> {
@@ -3704,7 +3727,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun autoLang(word: String) {
         if (!prefs.getBoolean(Prefs.AUTO_LANG, true) || isPassword || codeOn || hackerActive) return
         val w = word.lowercase().trim('\'', '’')
-        if (w.length < 2) return
+        if (w.length < 2 && w != "i") return
         val v = WordStore.engine?.langOf(w) ?: return
         langVotes.addLast(v)
         while (langVotes.size > 4) langVotes.removeFirst()
@@ -4349,6 +4372,65 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             for (o in opts) buttons.add(o.first to { insertText(o.second); closeInfo() })
             buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
             bar.show(title, body, buttons)
+        }
+    }
+
+    /**
+     * ✍️ Terminar la frase con IA: SOLO cuando tocas el botón se manda lo que llevas escrito
+     * (las últimas líneas) a la IA gratis, y te da 3 formas de terminarlo.
+     */
+    private fun startFinish() {
+        if (isPassword) return
+        showMode(0)
+        val title = L.t("Terminar la frase con IA", "Finish sentence with AI")
+        val bar = infoBar ?: return
+        val ic = currentInputConnection
+        val text = try { ic?.getTextBeforeCursor(400, 0)?.toString() } catch (_: Exception) { null }?.trimEnd()
+        if (text.isNullOrBlank() || text.split(Regex("\\s+")).size < 2) {
+            bar.show(title, L.t("Escribe el principio de tu mensaje (2 palabras o más) y toca este botón: la IA te da 3 formas de terminarlo.",
+                "Type the start of your message (2 words or more) and tap this button: the AI gives you 3 ways to finish it."),
+                listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        val key = aiKey(title) ?: return
+        val my = ++aiSeq
+        val startT = SystemClock.uptimeMillis()
+        var waiting = true
+        bar.show(title, L.t("Pensando…", "Thinking…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+        val tick = object : Runnable {
+            override fun run() {
+                if (!waiting || my != aiSeq || infoBar?.visibility != View.VISIBLE) return
+                val sec = (SystemClock.uptimeMillis() - startT) / 1000
+                bar.show(title, L.t("Pensando ($sec s)…", "Thinking ($sec s)…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+                handler.postDelayed(this, 1000)
+            }
+        }
+        handler.postDelayed(tick, 1000)
+        val prompt = "A person is typing a message on their phone. This is what they have written so far:\n\"\"\"\n" + text +
+            "\n\"\"\"\nGive 3 different natural ways to CONTINUE it from exactly where it stops, as the same person, in the same language and tone. " +
+            "Each continuation must be short (at most 12 words), must not repeat what is already written, and must not invent names, places or numbers. " +
+            "No quotes, no markdown. Answer exactly in this format:\n1: ...\n2: ...\n3: ..."
+        CloudText.ask(prompt, key) { list, err ->
+            waiting = false
+            if (my != aiSeq) return@ask
+            val raw = list?.firstOrNull()?.replace("**", "")?.trim()
+            if (raw.isNullOrEmpty()) {
+                bar.show(title, err ?: L.t("No se pudo.", "Couldn't do it."), listOf(L.t("Reintentar", "Retry") to { startFinish() }, L.t("Cerrar", "Close") to { closeInfo() }))
+                return@ask
+            }
+            val opts = raw.lines().map { it.trim() }.mapNotNull { l ->
+                Regex("^[1-3][:.)]\\s*(.+)$").find(l)?.groupValues?.get(1)?.trim()?.trim('"', '“', '”')
+            }.filter { it.isNotEmpty() }.take(3)
+            if (opts.isEmpty()) { bar.show(title, raw, listOf(L.t("Cerrar", "Close") to { closeInfo() })); return@ask }
+            val buttons = ArrayList<Pair<String, () -> Unit>>()
+            for (o in opts) buttons.add(o to {
+                val b = try { currentInputConnection?.getTextBeforeCursor(1, 0)?.toString() } catch (_: Exception) { null } ?: ""
+                val glue = if (b.isEmpty() || b.endsWith(" ") || o.firstOrNull()?.let { it in ".,!?;:" } == true) "" else " "
+                insertText(glue + o)
+                closeInfo()
+            })
+            buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+            bar.show(title, L.t("Toca la que quieras:", "Tap the one you want:"), buttons)
         }
     }
 
