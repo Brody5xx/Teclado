@@ -2008,6 +2008,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         kv?.setSuggestions(left, center, right, bold, typedLeft)
     }
 
+    /** El idioma para sugerir y corregir: el de la frase que escribes (si se nota), si no el del teclado. */
+    private fun sugLang(eng: com.luisell.bestkeyboard.words.WordEngine, before: CharSequence, curLen: Int): String {
+        if (!prefs.getBoolean(Prefs.AUTO_LANG, true)) return lang
+        return try { eng.contextLang(before, curLen) ?: lang } catch (_: Exception) { lang }
+    }
+
     private fun canCorrect(word: String, before: CharSequence): Boolean {
         if (!autocorrectOn || !fieldCorrect || codeOn) return false
         // Un nombre propio en medio de la frase (ej. "García") no se corrige
@@ -2149,7 +2155,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (word.isEmpty()) {
             // Predicción: lo que sueles escribir después de la palabra anterior
             val prev = TextUtil.previousWord(before, 0)
-            val preds = if (prev != null) eng.predictions(prev, lang) else emptyList()
+            val preds = if (prev != null) eng.predictions(prev, sugLang(eng, before, 0)) else emptyList()
             if (preds.isEmpty()) { clearSlots(); return }
             val capital = shift > 0 && page == Page.LETTERS
             val p = preds.map { if (capital) TextUtil.matchCase(it, "A") else it }
@@ -2158,7 +2164,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
 
         val prev = TextUtil.previousWord(before, word.length)
-        val res = eng.suggest(word, prev, lang)
+        val sl = sugLang(eng, before, word.length)
+        val res = eng.suggest(word, prev, sl)
         val corr = if (canCorrect(word, before)) res.correction else null
         if (corr != null && corr != word) {
             val right = res.suggestions.firstOrNull { !it.equals(corr, true) && !it.equals(word, true) }
@@ -2167,7 +2174,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         val list = res.suggestions.filter { it != word }.toMutableList()
         // 🇺🇸 Contracciones que también son palabras («ill» = enfermo, pero casi siempre quieres «I'll»): se ofrecen primero
-        if (lang == "en") CONTRACTIONS[word.lowercase()]?.let { c ->
+        if (sl == "en") CONTRACTIONS[word.lowercase()]?.let { c ->
             val cc = if (c.startsWith("I'")) c else TextUtil.matchCase(c, word)
             list.remove(cc); list.add(0, cc)
         }
@@ -2178,7 +2185,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         } else {
             // 🔎 No es una palabra: ¿quisiste decir…? (actulizo → actualizo)
             if (list.size < 2) {
-                val near = try { eng.nearWords(word, prev, lang, 3) } catch (_: Exception) { emptyList() }
+                val near = try { eng.nearWords(word, prev, sl, 3) } catch (_: Exception) { emptyList() }
                     .map { TextUtil.matchCase(it, word) }.filter { it != word && it !in list }
                 if (near.isNotEmpty()) list.addAll(0, near)
             }
@@ -2290,7 +2297,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         var final = word
         var fixed: Pair<String, String>? = null
         if (canCorrect(word, before)) {
-            val corr = eng.correction(word, lang)?.let { TextUtil.matchCase(it, word) }
+            val corr = eng.correction(word, sugLang(eng, before, word.length))?.let { TextUtil.matchCase(it, word) }
             if (corr != null && corr != word) {
                 ic.deleteSurroundingText(word.length, 0)
                 ic.commitText(corr, 1)
@@ -2300,7 +2307,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         if (learnOn && fieldLearn) {
             // Si parece un error de dedo (hay una palabra casi igual), cuesta más aprenderla
-            val typo = fixed == null && eng.user.entry(final.lowercase()) == null && eng.looksLikeTypo(final, lang)
+            val typo = fixed == null && eng.user.entry(final.lowercase()) == null && eng.looksLikeTypo(final, sugLang(eng, before, word.length))
             eng.user.add(final, 1, lang, typo)
             if (prev != null) eng.user.addBigram(prev, final)
             WordStore.scheduleSave()

@@ -1175,6 +1175,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.25.0" to tr("•  Sugerencias en inglés mucho mejores: el teclado ahora mira el idioma de la frase que estás escribiendo. Si empiezas «the camera…» con el teclado en español, desde la segunda palabra ya te sugiere y corrige en inglés (antes «chec» salía «chef» y «camer» salía «comer»). Y al revés: escribiendo en español con el teclado en inglés.\n" +
+            "•  Menos nombres de películas en las sugerencias (thomas, adam, todd…): ahora salen al final.",
+            "•  Much better English suggestions: the keyboard now looks at the language of the sentence you're writing. If you start «the camera…» with the keyboard in Spanish, from the second word it already suggests and corrects in English (before, «chec» became «chef»). And the other way: typing Spanish with the keyboard in English.\n" +
+            "•  Fewer movie names in suggestions (thomas, adam, todd…): they now go last."),
         "12.24.0" to tr("•  Sugerencias mucho más inteligentes:\n" +
             "   –  Diccionario 3 veces más grande: 140.000 palabras en español y 85.000 en inglés, con las formas de los verbos que faltaban (actualizo, actualicé, reinicié, conecté…).\n" +
             "   –  Si escribes algo que no es palabra («actulizo», «actuliso»), te sale «¿quisiste decir…?» con las palabras más parecidas: por una letra, por cómo suena (s/z, b/v, h) o porque empiezan casi igual.\n" +

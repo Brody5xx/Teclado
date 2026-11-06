@@ -9,7 +9,7 @@ aahun	3
 aang	165
 aankhon	4
 aarfa	6
-aaron	1370
+aaron	22
 aarón	140
 aarti	51
 aayi	13
@@ -267,7 +267,7 @@ abiertamente	440
 abiertas	916
 abierto	4855
 abiertos	1740
-abigail	614
+abigail	10
 abigarrado	4
 abilene	76
 abílio	6
@@ -2923,7 +2923,7 @@ ada	353
 adacher	8
 adalid	6
 adalind	138
-adam	4611
+adam	76
 adama	147
 adamantio	5
 adams	1051
@@ -3633,9 +3633,9 @@ adrede	160
 adrenales	5
 adrenalina	580
 adrenocromo	2
-adrian	1375
+adrian	22
 adrián	149
-adriana	283
+adriana	4
 adrianna	117
 adriano	64
 adrianópolis	2
@@ -5371,7 +5371,7 @@ ahuyentó	31
 ai	907
 aida	128
 aidan	470
-aiden	396
+aiden	6
 aidid	12
 aigoo	436
 aigout	4
@@ -5630,7 +5630,7 @@ alamedas	2
 alamo	48
 álamo	143
 álamos	52
-alan	3483
+alan	58
 alana	95
 alarcón	87
 alarde	104
@@ -5771,10 +5771,10 @@ albergo	19
 albergó	11
 albergue	360
 albergues	45
-albert	1983
+albert	33
 alberta	77
 albertine	62
-alberto	682
+alberto	11
 albie	72
 albillo	5
 albin	53
@@ -6083,7 +6083,7 @@ alejandra	57
 alejandría	119
 alejandrinos	4
 alejandrita	12
-alejandro	509
+alejandro	8
 aléjanos	4
 alejaos	96
 alejáos	5
@@ -6243,7 +6243,7 @@ aleutianas	13
 alevín	3
 alevines	9
 alevosía	16
-alex	6463
+alex	107
 alexa	144
 alexander	1052
 alexandr	41
@@ -6382,8 +6382,8 @@ alicaído	15
 alicatado	4
 alicate	27
 alicates	68
-alice	3209
-alicia	1860
+alice	53
+alicia	31
 alicianne	2
 aliciente	27
 alicientes	8
@@ -7254,7 +7254,7 @@ amañando	8
 amañar	34
 amañaron	4
 amañaste	6
-amanda	2528
+amanda	42
 amando	201
 amándola	16
 amándole	6
@@ -7436,7 +7436,7 @@ ambar	63
 ámbar	218
 ambarino	5
 ambas	3564
-amber	1086
+amber	18
 amberes	65
 amberley	16
 ambeth	7
@@ -7957,9 +7957,9 @@ amura	11
 amurallada	19
 amurallado	7
 amuras	2
-amy	4821
+amy	80
 an	755
-ana	1773
+ana	29
 anaahj	4
 anabaptistas	2
 anabólicos	17
@@ -8275,7 +8275,7 @@ andrajoso	39
 andrajosos	19
 andre	816
 andré	632
-andrea	1196
+andrea	19
 andreas	233
 andrei	265
 andréi	48
@@ -8317,7 +8317,7 @@ anduviese	5
 anduvimos	31
 anduviste	53
 anduvo	172
-andy	4098
+andy	68
 aneal	41
 anécdota	177
 anécdotas	117
@@ -8404,7 +8404,7 @@ ange	130
 angeiique	3
 angel	1166
 ángel	4239
-angela	1703
+angela	28
 ángela	660
 angéle	4
 angeles	1238
@@ -8667,20 +8667,20 @@ anka	62
 ankara	68
 ankiza	2
 anksunamún	3
-ann	1825
-anna	4306
+ann	30
+anna	71
 annabel	164
 annabelle	182
 annabeth	89
 annalise	204
 annapolis	59
-anne	2286
+anne	38
 annerl	2
 annersley	3
 annesa	15
 annett	8
 annette	259
-annie	3485
+annie	58
 annika	163
 annorax	4
 annuccia	4
@@ -8909,7 +8909,7 @@ antesdeayer	5
 anteúltima	3
 anteúltimo	7
 anthl	2
-anthony	1551
+anthony	25
 anti	352
 antía	11
 antiabortista	2
@@ -9224,7 +9224,7 @@ antonia	219
 antoñico	3
 antonieta	89
 antonini	17
-antonio	2555
+antonio	42
 antoñita	3
 antoñito	46
 antonomasia	5
@@ -12760,7 +12760,7 @@ artesanías	50
 artesano	111
 artesanos	96
 arthit	2
-arthur	2851
+arthur	47
 artiaga	9
 artica	3
 ártica	25
@@ -12822,7 +12822,7 @@ artroscópica	2
 artrosis	12
 artur	48
 arturiana	3
-arturo	751
+arturo	12
 aruba	70
 arukidasu	3
 arun	62
@@ -12834,7 +12834,7 @@ arvejita	3
 arvernos	2
 arvika	3
 arvin	67
-arya	68
+arya	1
 aryan	74
 arzobispado	14
 arzobispo	289
@@ -15197,7 +15197,7 @@ austerkof	3
 austerlich	7
 austero	42
 austeros	8
-austin	875
+austin	14
 austral	18
 australia	1216
 australiana	115
@@ -15534,7 +15534,7 @@ auxiliares	118
 auxilio	1683
 auxilios	296
 av	64
-ava	650
+ava	10
 aval	81
 avalada	6
 avalado	15
@@ -16981,7 +16981,7 @@ barbado	6
 barbados	84
 barbalho	4
 barbanegra	52
-barbara	1301
+barbara	21
 bárbara	900
 bárbaramente	3
 bárbaras	27
@@ -17194,7 +17194,7 @@ barsiniestro	3
 barska	2
 barsoom	6
 barstow	57
-bart	1421
+bart	23
 bartelby	4
 bartholomew	81
 bartimeo	2
@@ -17432,7 +17432,7 @@ batiseñal	8
 batista	119
 batisti	4
 batiteléfono	2
-batman	1428
+batman	23
 batmóvil	22
 batoka	7
 batol	3
@@ -17565,7 +17565,7 @@ beatles	485
 beato	23
 beatos	13
 beatrice	367
-beatriz	251
+beatriz	4
 beatty	57
 beau	284
 beauchamp	58
@@ -17820,7 +17820,7 @@ belworth	4
 belzebú	2
 bemol	88
 bemoles	6
-ben	8003
+ben	133
 bénamar	6
 benamu	2
 benarés	21
@@ -17966,7 +17966,7 @@ benik	9
 benín	3
 benítez	24
 benito	244
-benjamin	897
+benjamin	14
 benjamín	284
 benjamines	6
 benji	230
@@ -18240,14 +18240,14 @@ bettie	98
 bettina	85
 bettman	4
 betts	55
-betty	2303
+betty	38
 betún	62
 betzi	2
 beuys	9
 bev	206
 bevalaqua	2
 bevan	52
-beverly	986
+beverly	16
 bewtell	4
 bexborough	3
 bey	137
@@ -18447,7 +18447,7 @@ billonarios	21
 billones	739
 billonésima	10
 bills	86
-billy	5710
+billy	95
 billywith	2
 bilocación	8
 bilocaciones	3
@@ -18991,7 +18991,7 @@ bo	1297
 boa	110
 boat	57
 boato	7
-bob	6833
+bob	113
 boba	292
 bobada	87
 bobadas	242
@@ -19000,7 +19000,7 @@ bobalicona	7
 bobalicones	7
 bobbi	116
 bobbie	149
-bobby	4827
+bobby	80
 bobeando	4
 bobería	17
 boberías	26
@@ -19590,7 +19590,7 @@ bostezas	7
 bostezo	47
 bostezó	7
 bostezos	11
-boston	2137
+boston	35
 bostoniana	3
 bostoniano	4
 bostonianos	2
@@ -19789,7 +19789,7 @@ bradford	214
 bradicardia	44
 bradicárdica	3
 bradicárdico	6
-bradley	719
+bradley	11
 bradshaw	175
 brady	740
 braga	111
@@ -19955,7 +19955,7 @@ brewster	230
 breyfogle	2
 brezal	8
 bri	135
-brian	4464
+brian	74
 brianna	117
 briansk	2
 briar	57
@@ -20110,7 +20110,7 @@ british	102
 britney	379
 britt	152
 britta	191
-brittany	304
+brittany	5
 brittnee	68
 brixton	51
 briz	5
@@ -20219,7 +20219,7 @@ brontosauro	2
 bronx	428
 brook	127
 brooke	1084
-brooklyn	1201
+brooklyn	20
 brooks	619
 broots	48
 broqueta	2
@@ -20256,7 +20256,7 @@ broyles	68
 brubaker	51
 brubru	3
 brucculeri	4
-bruce	2300
+bruce	38
 brucelosis	4
 bruces	46
 bruchik	3
@@ -20306,7 +20306,7 @@ bruto	773
 brutos	123
 brutus	138
 bruxismo	4
-bryan	569
+bryan	9
 bryant	269
 bryce	405
 bryn	59
@@ -21531,7 +21531,7 @@ caldo	381
 caldos	11
 caldwell	262
 cale	76
-caleb	1016
+caleb	16
 caledonios	7
 calefacción	547
 calefacciones	4
@@ -21702,7 +21702,7 @@ califiqué	10
 califiquen	7
 califiques	4
 califomia	3
-california	3458
+california	57
 californiana	32
 californianas	5
 californiano	38
@@ -22127,7 +22127,7 @@ camelo	21
 camelot	333
 camerino	364
 camerinos	63
-cameron	1140
+cameron	19
 camerún	34
 cami	78
 camila	200
@@ -23375,7 +23375,7 @@ caritativas	20
 caritativo	85
 caritativos	19
 cariton	42
-carl	3467
+carl	57
 carla	1257
 carlene	47
 carlin	73
@@ -23389,7 +23389,7 @@ carlito	106
 carlitos	152
 carlo	765
 carlomagno	40
-carlos	2741
+carlos	45
 carlota	118
 carlotta	126
 carlson	207
@@ -23399,7 +23399,7 @@ carlyle	127
 carmack	13
 carmé	18
 carmel	88
-carmela	225
+carmela	3
 carmelita	50
 carmelitas	14
 carmelo	66
@@ -23453,12 +23453,12 @@ carnoso	20
 carnosos	33
 carnotauros	2
 caro	2531
-carol	2103
+carol	35
 carole	141
-carolina	747
+carolina	12
 caroline	1757
 carolla	9
-carolyn	407
+carolyn	6
 caronte	15
 caros	571
 carótida	156
@@ -25047,7 +25047,7 @@ cesan	37
 cesante	12
 cesantes	4
 cesantía	6
-cesar	524
+cesar	8
 césar	1593
 cesará	39
 cesaran	7
@@ -25236,7 +25236,7 @@ chándales	8
 chandals	2
 chándals	3
 chandje	3
-chandler	735
+chandler	12
 chandra	90
 chandrapur	6
 chandre	27
@@ -25387,13 +25387,13 @@ charlatanerías	3
 charlatanes	89
 charlemos	52
 charlene	217
-charles	4635
+charles	77
 charleston	274
 charlestón	22
 charleta	5
 charleville	7
 charley	523
-charlie	10861
+charlie	181
 charlita	20
 charlitas	5
 charlot	47
@@ -25618,7 +25618,7 @@ cheroquis	3
 cherpray	4
 cherry	347
 cherveyna	3
-cheryl	804
+cheryl	13
 ches	50
 chesapeake	63
 cheshire	52
@@ -25659,7 +25659,7 @@ chiang	90
 chiara	48
 chic	176
 chica	42190
-chicago	3417
+chicago	56
 chicana	12
 chicanas	3
 chicarrón	8
@@ -25947,7 +25947,7 @@ chivita	3
 chivo	356
 chivó	19
 chiyangseong	5
-chloe	2189
+chloe	36
 chloé	193
 chlorium	4
 chlsta	15
@@ -26100,15 +26100,15 @@ chovinistas	2
 chow	343
 choza	385
 chozas	79
-chris	5294
+chris	88
 chriske	3
 chrissie	94
 chrissy	159
 christa	184
 christi	60
-christian	1098
+christian	18
 christie	341
-christina	867
+christina	14
 christine	1532
 christmas	81
 christof	11
@@ -26994,7 +26994,7 @@ clasing	2
 clasista	16
 claude	708
 claudette	101
-claudia	1083
+claudia	18
 claudicación	3
 claudicado	2
 claudicar	8
@@ -28384,7 +28384,7 @@ cólquida	7
 colson	71
 colt	369
 coltán	15
-colton	175
+colton	2
 coltrane	63
 coludido	3
 coludidos	2
@@ -31363,7 +31363,7 @@ connexus	7
 connie	1157
 connivencia	27
 connolly	118
-connor	1522
+connor	25
 connors	205
 connota	3
 connotación	29
@@ -35535,7 +35535,7 @@ crúzate	5
 cruzo	171
 cruzó	543
 cry	68
-crystal	522
+crystal	8
 csi	381
 csu	47
 ct	80
@@ -36860,12 +36860,12 @@ danglars	26
 dangrayne	9
 dani	487
 dánica	4
-daniel	4748
-daniela	96
+daniel	79
+daniela	1
 daniele	52
 danielito	2
 daniella	48
-danielle	722
+danielle	12
 daniels	522
 danilo	72
 danilof	4
@@ -36880,7 +36880,7 @@ dankin	2
 danler	5
 danni	81
 dannville	3
-danny	6600
+danny	110
 dannycorreia	57
 dannysubs	4
 daño	13543
@@ -37033,13 +37033,13 @@ datos	4957
 daubrevil	7
 daurrieux	4
 davanna	3
-dave	3649
+dave	60
 davebray	3
 davenheim	30
 davenport	218
 davey	366
 davicito	2
-david	11014
+david	183
 davídovich	2
 davidson	224
 davie	62
@@ -37256,7 +37256,7 @@ debling	13
 debo	36287
 débora	3
 deborah	293
-debra	449
+debra	7
 debs	123
 debut	257
 debuta	11
@@ -38936,7 +38936,7 @@ denigres	4
 denigró	3
 dening	3
 denis	186
-denise	1169
+denise	19
 denísov	6
 denle	671
 dénle	34
@@ -38950,7 +38950,7 @@ denmelo	3
 dénmelo	17
 dénmelos	6
 denning	70
-dennis	1692
+dennis	28
 dennison	49
 dennos	110
 dénnos	6
@@ -45038,7 +45038,7 @@ dewulf	4
 dex	310
 dexametasona	5
 dexedrina	4
-dexter	753
+dexter	12
 dextroanfetamina	5
 dextroanfetaminas	3
 dextrosa	21
@@ -45148,7 +45148,7 @@ diámetro	218
 diamond	355
 diamorfina	9
 diana	1732
-diane	1593
+diane	26
 dianética	5
 dianne	59
 diantre	41
@@ -45347,7 +45347,7 @@ dieciséis	505
 dieciseisava	2
 dieciseisavo	5
 diecisiete	403
-diego	1563
+diego	26
 dieléctrico	2
 diem	109
 diente	1136
@@ -47766,7 +47766,7 @@ dominguero	11
 domingueros	7
 domínguez	32
 dominguito	3
-dominic	530
+dominic	8
 dominical	136
 dominicales	16
 dominicana	80
@@ -47859,7 +47859,7 @@ dongsoo	2
 donjuán	68
 donjuanes	4
 donkey	77
-donna	2623
+donna	43
 donnadie	5
 donnadies	3
 donneiiy	3
@@ -47925,7 +47925,7 @@ dórico	4
 dóriga	8
 doring	3
 dorinha	5
-doris	685
+doris	11
 dormí	1016
 dormía	898
 dormíais	8
@@ -47978,7 +47978,7 @@ dorniense	2
 dornienses	2
 dorota	76
 dorothea	49
-dorothy	1016
+dorothy	16
 dorrington	12
 dorrit	101
 dorsal	161
@@ -48025,7 +48025,7 @@ doug	2163
 dougal	120
 doughan	2
 dougie	252
-douglas	958
+douglas	15
 douvier	5
 douvres	3
 dov	99
@@ -48429,7 +48429,7 @@ dumas	51
 dumay	3
 dumbar	6
 dumbi	9
-dumbledore	76
+dumbledore	1
 dumbo	77
 dumont	88
 dumortier	5
@@ -48622,7 +48622,7 @@ dwight	849
 dwyer	121
 dyer	57
 dyke	80
-dylan	2298
+dylan	38
 dynam	2
 dynamics	58
 dynamite	70
@@ -48647,7 +48647,7 @@ earth	120
 east	739
 eastern	50
 eastman	94
-easton	78
+easton	1
 eastport	3
 eastview	3
 eastwood	112
@@ -48905,11 +48905,11 @@ ecuestronautas	4
 ecuménica	4
 ecuménico	12
 eczemas	3
-ed	3420
+ed	57
 edad	12462
 edades	257
 edct	2
-eddie	5407
+eddie	90
 eddy	370
 edecán	8
 edelkern	3
@@ -48995,7 +48995,7 @@ eduardiana	5
 eduardiano	6
 eduardianos	2
 eduardito	5
-eduardo	647
+eduardo	10
 eduart	7
 educa	36
 educaban	3
@@ -49051,7 +49051,7 @@ eduqué	47
 eduquen	11
 eduques	3
 edvard	69
-edward	1850
+edward	30
 edwards	563
 edwin	283
 edwina	78
@@ -49603,7 +49603,7 @@ elevó	105
 elfo	226
 elfos	217
 elgin	49
-eli	1362
+eli	22
 elia	76
 eliab	17
 elián	8
@@ -49635,7 +49635,7 @@ eligiría	12
 eligirías	4
 eligor	3
 elija	547
-elijah	374
+elijah	6
 elijáis	9
 elíjalo	4
 elíjame	9
@@ -49739,7 +49739,7 @@ elíxir	13
 elixires	5
 elixirgam	29
 eliza	334
-elizabeth	2585
+elizabeth	43
 elizabethville	3
 eljardín	4
 eljefe	11
@@ -49751,12 +49751,12 @@ eljuicio	5
 elka	168
 elkins	70
 ell	58
-ella	195023
+ella	3250
 ellas	11422
 elle	194
 ellen	1797
 elli	66
-ellie	1264
+ellie	21
 ellingham	66
 ellingsworth	12
 ellington	55
@@ -50381,8 +50381,8 @@ emilia	160
 emiliano	46
 emilie	147
 emiline	8
-emilio	358
-emily	3843
+emilio	5
+emily	64
 eminencia	610
 eminente	98
 eminentemente	14
@@ -50433,7 +50433,7 @@ emitirlo	15
 emitirse	17
 emitiste	5
 emm	113
-emma	3461
+emma	57
 emmalin	69
 emmanuel	87
 emmet	205
@@ -53396,7 +53396,7 @@ enrevesado	19
 enrevesados	2
 enrico	179
 enright	45
-enrique	932
+enrique	15
 enriquece	39
 enriquecedor	19
 enriquecedora	14
@@ -55303,7 +55303,7 @@ erguir	4
 erguirá	2
 erguirse	5
 eri	50
-eric	4357
+eric	72
 erica	948
 érica	96
 ericen	3
@@ -57890,7 +57890,7 @@ este	209214
 esté	21879
 éste	14564
 esteatita	2
-esteban	329
+esteban	5
 estefanés	7
 estefanía	31
 estéfano	5
@@ -58778,7 +58778,7 @@ eternidades	10
 eternizar	3
 eterno	951
 eternos	117
-ethan	1821
+ethan	30
 ethel	398
 ética	717
 éticamente	44
@@ -58864,7 +58864,7 @@ eufóricos	19
 eufrates	7
 eúfrates	2
 éufrates	14
-eugene	622
+eugene	10
 eugenesia	38
 eugenésico	3
 eugenia	134
@@ -59003,7 +59003,7 @@ evalúen	14
 evalúes	4
 evaluó	18
 evalúo	16
-evan	1442
+evan	24
 evanescente	6
 evangélica	17
 evangélicas	3
@@ -59047,7 +59047,7 @@ evasivos	12
 evasor	11
 evasores	11
 eve	1068
-evelyn	753
+evelyn	12
 évelyne	8
 even	157
 evening	97
@@ -62159,7 +62159,7 @@ fernack	20
 fernand	80
 fernanda	106
 fernández	133
-fernando	639
+fernando	10
 feroces	162
 ferocidad	69
 feromona	25
@@ -64253,7 +64253,7 @@ fran	632
 franca	275
 francamente	1719
 france	163
-frances	601
+frances	10
 francés	3906
 francesa	1579
 francesas	361
@@ -64277,7 +64277,7 @@ francis	1603
 franciscana	5
 franciscano	14
 franciscanos	14
-francisco	2661
+francisco	44
 franciscoporcel	2
 francisquinha	2
 francisvhl	72
@@ -64403,8 +64403,8 @@ frecuentes	207
 frecuento	25
 fred	2811
 freda	65
-freddie	1164
-freddy	1078
+freddie	19
+freddy	17
 fredell	2
 frederic	130
 frédéric	79
@@ -64662,7 +64662,7 @@ frívolos	26
 frízer	3
 frobisher	122
 fródi	2
-frodo	142
+frodo	2
 fróes	4
 frogget	3
 frohman	9
@@ -65341,8 +65341,8 @@ gable	102
 gabletes	3
 gabón	32
 gabonu	2
-gabriel	1439
-gabriela	112
+gabriel	23
+gabriela	1
 gabrielacaetano	15
 gabriella	107
 gabrielle	600
@@ -65664,7 +65664,7 @@ gancho	742
 ganchos	158
 ganchuda	4
 gandaif	2
-gandalf	87
+gandalf	1
 gandalfj	2
 gándara	4
 gandárium	2
@@ -65881,7 +65881,7 @@ garryowen	3
 garth	227
 garvey	109
 garvin	55
-gary	3253
+gary	54
 garza	235
 garzón	8
 gas	3955
@@ -66359,7 +66359,7 @@ geopolítico	7
 geopolíticos	3
 geordi	104
 georg	106
-george	10416
+george	173
 georges	378
 georgetown	159
 georgette	64
@@ -66379,7 +66379,7 @@ geotérmica	21
 geotérmico	4
 gepeto	2
 geppeto	4
-gerald	674
+gerald	11
 geraldine	106
 geraldo	73
 geranio	26
@@ -66605,7 +66605,7 @@ gimotees	2
 gimoteo	7
 gimoteos	10
 gin	388
-gina	1278
+gina	21
 ginadecai	4
 ginebra	931
 ginecóloga	39
@@ -67699,7 +67699,7 @@ gravitsap	7
 gravoso	4
 grawp	3
 gray	751
-grayson	798
+grayson	13
 grazia	74
 graziaz	3
 grazie	102
@@ -67739,7 +67739,7 @@ gregorianos	4
 gregoriev	3
 gregorio	125
 gregorious	5
-gregory	636
+gregory	10
 gregson	117
 gregus	6
 greiner	14
@@ -68491,7 +68491,7 @@ guruji	57
 gurús	25
 guruzeta	2
 gurwitch	2
-gus	1746
+gus	29
 gusanillo	20
 gusanito	58
 gusanitos	19
@@ -68545,7 +68545,7 @@ gustaste	129
 gustativas	40
 gustav	285
 gustave	96
-gustavo	179
+gustavo	2
 guste	3639
 gustéis	25
 gustemos	13
@@ -69035,7 +69035,7 @@ haig	46
 haiioran	2
 hail	97
 hailai	10
-hailey	185
+hailey	3
 hailieshel	2
 haindl	3
 haines	87
@@ -69244,7 +69244,7 @@ hanigan	2
 hanisey	5
 hanjo	45
 hanju	5
-hank	2881
+hank	48
 hankle	2
 hanklee	3
 hankmed	118
@@ -69254,7 +69254,7 @@ hanlon	62
 hanly	2
 hanna	966
 hannaford	5
-hannah	1992
+hannah	33
 hanne	58
 hannerl	13
 hannibal	281
@@ -69348,7 +69348,7 @@ harmon	259
 harmonía	19
 harmónica	16
 harmony	131
-harold	1606
+harold	26
 harper	1338
 harpón	5
 harrel	2
@@ -69358,7 +69358,7 @@ harringway	5
 harris	1561
 harrison	1076
 harrow	75
-harry	7340
+harry	122
 hart	579
 harta	1474
 hartaba	3
@@ -69521,7 +69521,7 @@ heart	267
 heat	106
 heath	223
 heathcliff	96
-heather	1346
+heather	22
 heathrow	95
 heaven	158
 heavens	73
@@ -69584,7 +69584,7 @@ hectárea	39
 hectáreas	265
 hectics	2
 hectolitros	5
-hector	583
+hector	9
 héctor	814
 héctorde	7
 héctorno	2
@@ -69665,7 +69665,7 @@ helcats	3
 hélder	5
 helecho	49
 helechos	57
-helen	2642
+helen	44
 helena	912
 helene	188
 heléne	5
@@ -69791,7 +69791,7 @@ henrickson	56
 henrietta	176
 henriette	89
 henrik	227
-henry	7532
+henry	125
 henshaw	58
 henson	76
 henway	8
@@ -69939,7 +69939,7 @@ hermético	78
 herméticos	15
 hermetismo	6
 herminia	109
-hermione	87
+hermione	1
 hermitaño	5
 hermocrate	11
 hermosa	10337
@@ -70706,7 +70706,7 @@ hitch	54
 hitchcock	225
 hitita	9
 hititas	15
-hitler	2287
+hitler	38
 hitleriana	15
 hitlerianas	22
 hitleriano	6
@@ -70858,14 +70858,14 @@ hollis	308
 hollister	66
 hollow	242
 holloway	166
-holly	1653
+holly	27
 hollywood	2445
 hollywoodense	14
 hollywoodenses	4
 hollywoodiense	6
 holm	85
 holman	57
-holmes	2011
+holmes	33
 holobanda	9
 holobandas	3
 holocámara	4
@@ -70931,7 +70931,7 @@ homeopática	7
 homeopáticas	5
 homeopático	9
 homeopáticos	7
-homer	497
+homer	8
 homérico	2
 homerito	2
 homero	958
@@ -71349,7 +71349,7 @@ housewives	54
 houston	994
 houyhnhnms	2
 how	517
-howard	2660
+howard	44
 howdy	72
 howe	117
 howell	110
@@ -71405,7 +71405,7 @@ hucha	45
 huck	263
 huckleberry	49
 huddler	3
-hudson	818
+hudson	13
 hueá	18
 hueca	320
 huecas	82
@@ -71878,7 +71878,7 @@ iachino	2
 iahvé	3
 iaito	2
 iakov	2
-ian	1947
+ian	32
 ias	1124
 iavandera	2
 iba	32945
@@ -72138,7 +72138,7 @@ iglesias	488
 iglú	48
 iglúes	3
 iglús	5
-ignacio	180
+ignacio	3
 ígnea	4
 ígneas	8
 igneel	2
@@ -78324,14 +78324,14 @@ irving	313
 irwin	139
 is	1693
 isa	139
-isaac	972
+isaac	16
 isaacs	48
 isabel	1384
 isabela	47
 isabelina	13
 isabelino	13
 isabelinos	4
-isabella	466
+isabella	7
 isabelle	518
 isaiah	82
 isaías	79
@@ -78463,7 +78463,7 @@ iva	100
 ivailo	20
 ivamos	92
 ivamosi	3
-ivan	748
+ivan	12
 iván	685
 ivana	64
 ivancito	4
@@ -78547,12 +78547,12 @@ jabonoso	4
 jabugo	3
 jaburu	26
 jacarandá	3
-jace	122
+jace	2
 jachman	6
 jacinta	158
 jacinto	97
 jacintos	18
-jack	15337
+jack	255
 jackass	48
 jackes	3
 jackford	2
@@ -78560,11 +78560,11 @@ jackie	2739
 jackman	89
 jacko	77
 jacks	104
-jackson	3006
+jackson	50
 jacksonville	90
 jacky	147
 jaclyn	116
-jacob	1756
+jacob	29
 jacobi	47
 jacobina	4
 jacobino	7
@@ -78645,7 +78645,7 @@ jaien	4
 jaiim	5
 jaikant	19
 jaillac	8
-jaime	409
+jaime	6
 jaimito	8
 jainismo	3
 jainista	2
@@ -78656,7 +78656,7 @@ jajaja	76
 jajajá	2
 jajajaja	11
 jajajajaja	3
-jake	4919
+jake	81
 jakes	50
 jakey	56
 jakimenko	3
@@ -78723,7 +78723,7 @@ jamases	17
 jamelgo	22
 jamelgos	5
 jamert	2
-james	7934
+james	132
 jameson	217
 jamie	2541
 jamieson	51
@@ -78740,11 +78740,11 @@ jana	147
 janaina	9
 janauschek	2
 jancio	8
-jane	5960
+jane	99
 janeiro	158
 janek	83
 janelle	106
-janet	1539
+janet	25
 janeway	204
 janey	231
 jang	582
@@ -78832,7 +78832,7 @@ jasídico	3
 jasídicos	3
 jasmine	379
 jasomoreni	3
-jason	3836
+jason	63
 jasoom	2
 jasper	592
 jaula	1573
@@ -78848,7 +78848,7 @@ javaneses	3
 javed	54
 javert	53
 javi	170
-javier	701
+javier	11
 javierholgado	15
 jawani	7
 jaweed	2
@@ -78902,7 +78902,7 @@ jefecillo	4
 jefecita	3
 jefecito	19
 jefes	1414
-jeff	3824
+jeff	63
 jeffers	45
 jefferson	777
 jeffersonian	78
@@ -78939,10 +78939,10 @@ jenna	1351
 jenner	68
 jenni	48
 jennie	144
-jennifer	1715
+jennifer	28
 jennings	338
 jenniusagi	5
-jenny	3020
+jenny	50
 jens	149
 jensen	380
 jensenver	16
@@ -78971,7 +78971,7 @@ jerbo	28
 jerbos	13
 jeremiah	251
 jeremías	83
-jeremy	2123
+jeremy	35
 jerez	260
 jerezana	2
 jerga	254
@@ -78997,10 +78997,10 @@ jeron	3
 jerónimo	84
 jerónimos	4
 jerri	182
-jerry	4184
+jerry	69
 jerseis	4
 jerséis	29
-jersey	1866
+jersey	31
 jershalaím	3
 jerusalem	75
 jerusalén	654
@@ -79008,9 +79008,9 @@ jervis	50
 jesator	3
 jesper	90
 jess	1877
-jesse	2293
+jesse	38
 jessi	159
-jessica	2076
+jessica	34
 jessie	962
 jessijudith	7
 jesson	7
@@ -79019,8 +79019,8 @@ jessy	54
 jesucristo	1759
 jesuita	50
 jesuitas	53
-jesus	992
-jesús	7483
+jesus	16
+jesús	124
 jesusín	4
 jesusito	10
 jet	761
@@ -79056,17 +79056,17 @@ jihadistas	11
 jilguero	26
 jilgueros	6
 jilipoyas	10
-jill	1257
+jill	20
 jillian	319
 jilly	62
 jilutia	6
-jim	6732
+jim	112
 jimbo	186
 jiménez	77
 jimi	202
 jiminee	7
 jimmie	130
-jimmy	6855
+jimmy	114
 jimson	28
 jin	1576
 jinchuriki	10
@@ -79104,7 +79104,7 @@ jo	2704
 joachim	64
 joaco	6
 joakin	2
-joan	1491
+joan	24
 joana	74
 joanie	204
 joanna	470
@@ -79194,11 +79194,11 @@ jodiste	230
 jodisteis	5
 jodo	88
 jody	366
-joe	11111
+joe	185
 joejoe	2
 joel	964
 joes	59
-joey	2958
+joey	49
 jofaina	4
 jofega	2
 joffrey	108
@@ -79210,10 +79210,10 @@ johanna	199
 johannes	160
 johannesburgo	82
 johansson	76
-john	17045
+john	284
 johnnie	241
 johnno	47
-johnny	5706
+johnny	95
 johnnykins	3
 johns	174
 johnson	2440
@@ -79229,7 +79229,7 @@ jolín	50
 jolines	26
 jolly	177
 jomeini	14
-jon	1055
+jon	17
 jonah	549
 jonas	801
 jonás	154
@@ -79257,13 +79257,13 @@ joo	644
 joon	669
 joong	70
 joplin	65
-jordan	2176
+jordan	36
 jordán	59
 jordania	188
 jordanos	7
 jordi	105
 jordy	64
-jorge	837
+jorge	13
 jorgen	60
 jorio	2
 jornada	530
@@ -79286,7 +79286,7 @@ joroben	3
 jorobes	10
 jos	45
 josafat	4
-jose	198
+jose	3
 josé	1607
 joseba	4
 josef	273
@@ -79302,8 +79302,8 @@ josete	113
 josette	46
 josh	3184
 joshep	3
-joshua	684
-josiah	79
+joshua	11
+josiah	1
 josiana	2
 josías	10
 josie	417
@@ -79339,7 +79339,7 @@ joxer	125
 joy	1130
 joya	742
 joyas	2154
-joyce	791
+joyce	13
 joyería	533
 joyerías	41
 joyero	211
@@ -79353,7 +79353,7 @@ jruschov	5
 jsubmx	24
 jt	218
 ju	246
-juan	2505
+juan	41
 juana	447
 juanes	6
 juanete	30
@@ -79433,7 +79433,7 @@ judith	648
 judlaw	6
 judo	120
 judson	86
-judy	1117
+judy	18
 jueces	1225
 juega	2876
 juégala	2
@@ -79584,13 +79584,13 @@ julepe	12
 julepes	5
 jules	1264
 juli	55
-julia	2933
-julian	1521
+julia	48
+julian	25
 julián	302
 juliana	135
 julianero	5
 julianne	142
-julie	2831
+julie	47
 julien	566
 juliet	436
 julieta	555
@@ -80026,7 +80026,7 @@ karayuki	2
 kardashian	91
 kareem	72
 karel	84
-karen	2889
+karen	48
 karénina	3
 karev	254
 kargyraa	3
@@ -80080,18 +80080,18 @@ katappa	4
 katara	72
 katarina	128
 katasónich	4
-kate	4272
+kate	71
 katerina	77
 kath	66
 katharina	70
 katharine	63
 katherine	1091
 kathie	66
-kathleen	307
-kathryn	271
+kathleen	5
+kathryn	4
 kathy	941
 katia	148
-katie	2250
+katie	37
 katja	72
 katmandú	22
 katniss	70
@@ -80118,7 +80118,7 @@ kayaba	10
 kayac	3
 kayak	97
 kaye	114
-kayla	284
+kayla	4
 kaylee	65
 kaylie	222
 kayo	67
@@ -80174,7 +80174,7 @@ keiko	131
 keinhauer	4
 keira	46
 keisha	93
-keith	1776
+keith	29
 kekes	3
 kekko	19
 kel	265
@@ -80187,7 +80187,7 @@ kellermann	22
 kelley	98
 kelli	60
 kellogg	92
-kelly	3772
+kelly	62
 kelnett	5
 kelsey	200
 kelso	368
@@ -80216,7 +80216,7 @@ kenichi	58
 kenji	131
 kenna	55
 kennedy	1204
-kenneth	599
+kenneth	9
 kennish	48
 kenniston	5
 kenny	2017
@@ -80272,7 +80272,7 @@ ketto	2
 keum	13
 keung	50
 kev	484
-kevin	4538
+kevin	75
 kevlar	59
 key	156
 keyes	106
@@ -80377,7 +80377,7 @@ kilovatios	17
 kilovoltios	3
 kilrahti	7
 kilvinski	4
-kim	3910
+kim	65
 kimball	105
 kimbell	4
 kimber	114
@@ -80442,7 +80442,7 @@ kiran	74
 kirby	371
 kirguistán	5
 kirikú	34
-kirk	1083
+kirk	18
 kirkland	75
 kirkman	48
 kironida	2
@@ -80816,7 +80816,7 @@ kwitny	5
 kwon	167
 kybo	2
 kyla	49
-kyle	3394
+kyle	56
 kylie	192
 kynito	3
 kyoko	111
@@ -81226,7 +81226,7 @@ landing	58
 landis	82
 landish	8
 lando	57
-landon	125
+landon	2
 landou	8
 landry	238
 lane	1598
@@ -81261,7 +81261,7 @@ langures	4
 lanie	104
 lanilla	3
 lanka	113
-lannister	116
+lannister	1
 lannos	2
 lanolina	7
 lanoso	4
@@ -81490,7 +81490,7 @@ larkston	5
 laroche	69
 laronio	3
 larrabee	63
-larry	3908
+larry	65
 lars	414
 larsdotter	3
 larsen	241
@@ -81666,7 +81666,7 @@ laúdes	3
 laughing	47
 laughlin	48
 laughs	56
-laura	3550
+laura	59
 laurapalmer	3
 laure	85
 laureada	3
@@ -81793,7 +81793,7 @@ lavo	277
 lavó	151
 lavon	203
 law	190
-lawrence	1196
+lawrence	19
 lawson	397
 lawton	77
 laxante	83
@@ -81831,7 +81831,7 @@ leach	76
 leaf	51
 leafa	7
 league	101
-leah	402
+leah	6
 leák	8
 leal	1359
 léala	45
@@ -81920,7 +81920,7 @@ leda	74
 lednov	4
 lédouville	3
 ledwaba	2
-lee	7617
+lee	126
 leed	45
 leedme	4
 leeds	220
@@ -82075,7 +82075,7 @@ lehmuskallio	4
 lehri	2
 lei	254
 leí	2852
-leia	108
+leia	1
 leía	389
 leíamos	32
 leían	34
@@ -82193,7 +82193,7 @@ leodyn	2
 leon	917
 león	2051
 leona	215
-leonard	1471
+leonard	24
 leonardito	2
 leonardo	465
 leonas	28
@@ -82418,7 +82418,7 @@ levedad	8
 levemente	90
 leves	123
 levett	3
-levi	292
+levi	4
 leviatán	76
 leviatanes	10
 leviathanes	7
@@ -82481,7 +82481,7 @@ liadísimo	3
 liado	301
 liados	58
 liáis	2
-liam	1505
+liam	25
 liamos	31
 lian	138
 lían	16
@@ -82938,7 +82938,7 @@ lillian	393
 lillie	65
 lilliputienses	3
 lilly	539
-lily	2543
+lily	42
 lilyhammer	6
 lilyjane	2
 lim	127
@@ -83149,8 +83149,8 @@ lincharte	5
 linchemos	2
 linchen	9
 línchenlo	2
-lincoln	1522
-linda	8283
+lincoln	25
+linda	138
 lindamente	5
 lindando	2
 lindante	3
@@ -83320,7 +83320,7 @@ lirio	104
 lirios	162
 lirismo	9
 lis	104
-lisa	3893
+lisa	64
 lisandro	37
 lisarda	4
 lisbeia	2
@@ -84137,7 +84137,7 @@ lodosos	4
 lódz	11
 loeb	65
 loft	187
-logan	1440
+logan	24
 logar	45
 logarítmica	2
 logaritmo	9
@@ -84246,7 +84246,7 @@ loncheras	10
 londinense	91
 londinenses	38
 londo	70
-london	293
+london	4
 londres	6743
 londsdale	2
 lone	80
@@ -84315,7 +84315,7 @@ lorelei	124
 lorelle	4
 loremathison	9
 loren	131
-lorena	101
+lorena	1
 lorenz	53
 lorenzo	622
 lores	112
@@ -84356,7 +84356,7 @@ lotus	118
 lou	1876
 louden	13
 louie	633
-louis	2801
+louis	46
 louisa	292
 louise	1621
 louisiana	261
@@ -84434,7 +84434,7 @@ lubrificante	3
 lubrique	2
 luc	301
 luca	540
-lucas	2537
+lucas	42
 lucca	65
 luce	2008
 lucecita	41
@@ -84493,7 +84493,7 @@ luchen	164
 luches	143
 lucho	329
 luchó	565
-lucia	261
+lucia	4
 lucía	558
 lucian	85
 lucían	40
@@ -84560,7 +84560,7 @@ lucrezia	160
 lucro	170
 luctuoso	5
 lúculo	4
-lucy	3208
+lucy	53
 ludgardita	3
 lúdica	4
 lúdico	9
@@ -84595,7 +84595,7 @@ lúgubres	15
 lui	85
 luigi	317
 luiku	3
-luis	1480
+luis	24
 luisa	531
 luises	28
 luisiana	159
@@ -84616,7 +84616,7 @@ lujurioso	66
 lujuriosos	23
 luka	227
 lukas	176
-luke	3269
+luke	54
 lukum	3
 lukyan	6
 lula	111
@@ -84979,7 +84979,7 @@ madhu	66
 madián	2
 madianitas	6
 madis	7
-madison	1079
+madison	17
 madmuasel	3
 madonna	378
 madrastra	454
@@ -85094,7 +85094,7 @@ mageot	3
 maggelan	3
 maggesi	3
 maggi	52
-maggie	2821
+maggie	47
 maggoo	6
 maghetti	3
 magia	4943
@@ -86101,7 +86101,7 @@ manguerazo	4
 manguis	3
 manguito	47
 manguitos	15
-manhattan	1205
+manhattan	20
 mani	128
 maní	600
 manía	319
@@ -86480,7 +86480,7 @@ manualmente	183
 manubrio	54
 manubrios	5
 manueek	4
-manuel	737
+manuel	12
 manuela	159
 manufactura	48
 manufacturación	3
@@ -86844,13 +86844,13 @@ mares	536
 marfil	280
 marfita	3
 marga	141
-margaret	1949
+margaret	32
 margarina	48
 margarita	760
 margaritas	321
 margaritte	4
 margaux	100
-marge	903
+marge	15
 margen	1250
 margene	76
 márgenes	114
@@ -86875,13 +86875,13 @@ margo	334
 margot	337
 marguerite	184
 mari	285
-maria	1473
+maria	24
 maría	5368
 mariah	85
 mariajoazo	6
 marialva	3
 marian	375
-mariana	273
+mariana	4
 mariángela	7
 marianne	492
 mariano	140
@@ -86905,7 +86905,7 @@ maridaje	9
 maridito	55
 marido	17589
 maridos	626
-marie	2266
+marie	37
 mariel	80
 marietta	45
 marifé	4
@@ -86952,7 +86952,7 @@ marinier	3
 marino	854
 marinos	357
 marinuccia	2
-mario	1207
+mario	20
 marion	610
 marioneta	360
 marionetas	265
@@ -87100,7 +87100,7 @@ martel	57
 martellone	9
 martense	4
 martes	2665
-martha	1773
+martha	29
 marthe	52
 marthica	5
 marti	86
@@ -87118,9 +87118,9 @@ martillear	5
 martillito	3
 martillo	1228
 martillos	104
-martin	4823
+martin	80
 martín	656
-martina	135
+martina	2
 martine	173
 martinete	8
 martinez	133
@@ -87162,7 +87162,7 @@ marx	313
 marxismo	40
 marxista	57
 marxistas	26
-mary	7057
+mary	117
 maryann	50
 marybelle	5
 maryland	341
@@ -87653,7 +87653,7 @@ matrona	113
 matronas	16
 matsugae	9
 matsumoto	57
-matt	3782
+matt	63
 matteo	84
 matter	72
 matthew	1627
@@ -87913,7 +87913,7 @@ meaderos	3
 meadita	5
 meado	161
 meados	32
-meadow	112
+meadow	1
 meadows	150
 mean	154
 meando	198
@@ -88190,7 +88190,7 @@ megalópolis	4
 megaman	4
 megamente	16
 megamillonario	2
-megan	1309
+megan	21
 megapascales	3
 megapíxeles	4
 megatienda	5
@@ -88332,7 +88332,7 @@ melindroso	8
 melindrosos	2
 melipilla	2
 melisenda	4
-melissa	1124
+melissa	18
 melitón	2
 melkotianos	4
 mella	81
@@ -89359,7 +89359,7 @@ mgm	95
 mgobozi	3
 mi	585360
 mí	125601
-mia	1913
+mia	31
 mía	15621
 miami	1821
 miamor	5
@@ -89372,7 +89372,7 @@ micah	227
 micciché	5
 micenas	13
 micénicos	4
-michael	11061
+michael	184
 michaela	132
 michaeleen	2
 michaels	250
@@ -89384,7 +89384,7 @@ michelin	57
 michelín	14
 michelines	14
 michelis	4
-michelle	1832
+michelle	30
 michi	54
 michigan	539
 michiko	94
@@ -89572,7 +89572,7 @@ migratoria	15
 migratorias	26
 migratorio	13
 migratorios	18
-miguel	1538
+miguel	25
 miguelín	7
 miguelón	10
 miguitas	10
@@ -89599,7 +89599,7 @@ mikael	137
 mikaelson	49
 mikanos	2
 mikayla	54
-mike	10003
+mike	166
 mikealeks	3
 mikey	1001
 mikhail	146
@@ -90719,7 +90719,7 @@ mollete	6
 molletes	4
 mollie	88
 molloy	63
-molly	2313
+molly	38
 molniya	3
 moloch	99
 molón	47
@@ -90822,7 +90822,7 @@ mongolo	4
 mongoloide	12
 mongoloides	4
 mongomerry	2
-monica	830
+monica	13
 mónica	874
 monicana	4
 monicanos	2
@@ -92734,7 +92734,7 @@ nana	570
 naná	15
 nanawatai	3
 nance	119
-nancy	1877
+nancy	31
 nanda	49
 nandabayin	5
 nandighat	6
@@ -92902,10 +92902,10 @@ natación	403
 natajang	3
 natal	633
 natales	12
-natalia	272
+natalia	4
 natalicio	4
 natalidad	85
-natalie	1572
+natalie	26
 natamar	19
 natanya	3
 natanz	11
@@ -92914,7 +92914,7 @@ natatoria	4
 natayo	9
 nate	1912
 nathalie	196
-nathan	2245
+nathan	37
 nathaniel	221
 natilla	19
 natillas	37
@@ -93218,7 +93218,7 @@ neechan	14
 need	222
 neefe	2
 neela	161
-neelix	182
+neelix	3
 neelkanto	2
 neely	59
 neerlandés	6
@@ -93700,7 +93700,7 @@ nicholi	17
 nichols	226
 nicholson	185
 nicias	6
-nick	6467
+nick	107
 nickelchair	5
 nicki	364
 nicks	62
@@ -93711,10 +93711,10 @@ nicodemo	22
 nicodipaolo	28
 nicola	336
 nicolai	57
-nicolas	265
+nicolas	4
 nicolás	364
 nicolasito	6
-nicole	1347
+nicole	22
 nicolete	7
 nicotina	166
 nidada	8
@@ -93926,7 +93926,7 @@ nn	48
 nnoitora	3
 no	3015337
 noa	57
-noah	1002
+noah	16
 noahtami	2
 noane	3
 noayak	2
@@ -93993,7 +93993,7 @@ nojoda	4
 nojuegues	2
 nokes	13
 nola	91
-nolan	802
+nolan	13
 nollet	4
 nolter	3
 nómada	100
@@ -95974,8 +95974,8 @@ oliste	42
 oliva	236
 olivas	29
 olive	309
-oliver	2274
-olivia	1878
+oliver	37
+olivia	31
 olivier	191
 olivino	6
 olivo	91
@@ -97035,7 +97035,7 @@ osas	95
 osborn	70
 osborne	192
 osbourne	65
-oscar	1871
+oscar	31
 óscar	166
 oscares	18
 óscares	5
@@ -97289,7 +97289,7 @@ ovulas	3
 óvulo	112
 óvulos	162
 ow	623
-owen	1694
+owen	28
 owens	299
 own	104
 ownear	4
@@ -97382,7 +97382,7 @@ pabellones	33
 pabesa	3
 pablín	4
 pablito	57
-pablo	1528
+pablo	25
 pablodefou	8
 pac	56
 pacana	14
@@ -97833,7 +97833,7 @@ palurda	9
 palurdo	79
 palurdos	40
 pam	1191
-pamela	585
+pamela	9
 pamfilie	3
 pammie	6
 pamplina	3
@@ -98466,7 +98466,7 @@ parió	267
 paripé	17
 parir	150
 parirás	3
-paris	1622
+paris	27
 parís	6116
 parish	135
 parisiense	7
@@ -99268,10 +99268,10 @@ patriarcal	33
 patriarcales	4
 patriarcas	17
 patrice	144
-patricia	670
+patricia	11
 patricio	190
 patricios	10
-patrick	2574
+patrick	42
 patrik	72
 patrimonio	341
 patriota	360
@@ -99362,7 +99362,7 @@ patucos	10
 patudo	2
 pau	83
 pauhne	4
-paul	8428
+paul	140
 paula	1246
 paulatina	2
 paulatinamente	13
@@ -99671,7 +99671,7 @@ pedregosos	2
 pedrín	3
 pedrito	48
 pedrizosa	3
-pedro	1848
+pedro	30
 pedroso	2
 pedrusco	15
 pedruscos	9
@@ -101666,12 +101666,12 @@ petarlo	6
 petate	34
 petates	6
 petatlán	3
-pete	3942
+pete	65
 petequia	7
 petequial	26
 petequiales	8
 petequias	15
-peter	8795
+peter	146
 peterbrito	4
 peters	319
 petersburgo	229
@@ -101781,7 +101781,7 @@ phi	78
 phil	3155
 philadelfia	5
 philadelphia	210
-philip	1270
+philip	21
 philippe	510
 philips	95
 philipsen	7
@@ -101798,7 +101798,7 @@ phipps	54
 phisto	2
 phlox	62
 phocion	12
-phoebe	1264
+phoebe	21
 phoenix	656
 phogat	4
 phonse	10
@@ -101881,7 +101881,7 @@ picaran	4
 picarán	8
 picarás	2
 pícaras	7
-picard	328
+picard	5
 picardía	29
 picardías	12
 picaré	19
@@ -109540,7 +109540,7 @@ rachamanoo	3
 rachas	41
 rache	66
 racheado	2
-rachel	4095
+rachel	68
 rachelle	31
 rachid	78
 racial	319
@@ -109690,7 +109690,7 @@ radue	5
 rae	323
 raf	161
 rafa	157
-rafael	565
+rafael	9
 rafaescayola	10
 ráfaga	204
 ráfagas	109
@@ -109730,7 +109730,7 @@ rainiero	6
 raiot	3
 raiting	3
 raíz	841
-raj	918
+raj	15
 raja	540
 rajá	66
 rajada	41
@@ -109786,7 +109786,7 @@ rallo	132
 rally	160
 rallyes	4
 ralns	3
-ralph	1426
+ralph	23
 ralphie	130
 ralston	72
 raltixx	4
@@ -109827,7 +109827,7 @@ ramitas	50
 ramito	16
 ramle	3
 ramo	476
-ramon	105
+ramon	1
 ramón	573
 ramona	215
 ramone	54
@@ -109870,7 +109870,7 @@ randall	885
 randamonio	2
 randi	90
 randolph	345
-randy	1958
+randy	32
 rang	67
 range	146
 ranger	348
@@ -110300,7 +110300,7 @@ raudal	3
 raudales	32
 raudamente	2
 raudos	5
-raul	111
+raul	1
 raúl	309
 raulito	8
 ravat	4
@@ -110350,7 +110350,7 @@ rayitos	4
 raylan	231
 rayland	9
 raymar	4
-raymond	1491
+raymond	24
 rayna	262
 rayo	1855
 rayos	4492
@@ -110819,7 +110819,7 @@ rebautizado	9
 rebautizó	3
 rebbeca	11
 rebeca	192
-rebecca	2080
+rebecca	34
 rebekah	152
 rebel	87
 rebela	45
@@ -118150,13 +118150,13 @@ ricachonas	6
 ricachones	55
 ricamente	20
 ricardito	16
-ricardo	803
+ricardo	13
 ricas	459
 riccardo	55
 ricci	52
 rice	291
 rich	692
-richard	5627
+richard	93
 richards	410
 richardson	216
 richelieu	67
@@ -118168,11 +118168,11 @@ ricimer	4
 ricina	22
 ricino	41
 ricitos	105
-rick	2526
+rick	42
 rickie	69
 rickman	57
 rickshaw	56
-ricky	2378
+ricky	39
 rico	6094
 ricordi	6
 ricos	2870
@@ -118433,7 +118433,7 @@ risueñas	5
 risueño	40
 risueños	12
 risuké	2
-rita	1435
+rita	23
 ritalin	48
 ritalín	4
 ritalina	10
@@ -118593,7 +118593,7 @@ robaste	1497
 robasteis	33
 robásteis	3
 róbate	5
-robb	50
+robb	1
 robbie	1014
 robbins	326
 robby	222
@@ -118602,9 +118602,9 @@ robé	1174
 robéis	8
 robemos	56
 roben	190
-robert	5330
+robert	88
 roberta	328
-roberto	609
+roberto	10
 roberts	782
 robertson	171
 robes	131
@@ -118859,7 +118859,7 @@ rodó	148
 rododendro	7
 rododendros	6
 rodolfo	103
-rodrigo	363
+rodrigo	6
 rodriguez	112
 rodríguez	290
 roe	109
@@ -118902,7 +118902,7 @@ rogártelo	3
 rogaste	47
 rogatoria	7
 rogelio	90
-roger	3270
+roger	54
 rogers	702
 rogó	186
 rogova	3
@@ -119120,8 +119120,8 @@ romulano	56
 romulanos	113
 rómulo	55
 romy	60
-ron	2551
-ronald	559
+ron	42
+ronald	9
 ronaldo	72
 ronan	62
 ronca	161
@@ -119362,7 +119362,7 @@ roxalanne	2
 roxanne	193
 roxie	128
 roxy	328
-roy	2273
+roy	37
 royal	472
 royce	265
 roz	508
@@ -119612,7 +119612,7 @@ rusos	2274
 russ	540
 russeii	4
 russel	169
-russell	2019
+russell	33
 russo	247
 russoti	5
 rustica	6
@@ -119629,7 +119629,7 @@ rutas	486
 rutelli	4
 ruteno	2
 rutenos	2
-ruth	1675
+ruth	27
 rutherford	138
 ruthie	176
 rutiedge	4
@@ -119647,7 +119647,7 @@ rv	96
 rwandés	3
 rwandeses	3
 ry	52
-ryan	5114
+ryan	85
 rybody	3
 ryddle	3
 rydell	59
@@ -120322,7 +120322,7 @@ salivales	5
 salivares	3
 salkind	8
 sallie	61
-sally	2401
+sally	40
 salma	62
 salman	76
 salmanak	4
@@ -120688,9 +120688,9 @@ salvos	161
 salvuccio	2
 salzburgo	72
 salzman	5
-sam	12929
+sam	215
 samanta	32
-samantha	1171
+samantha	19
 samar	84
 samara	61
 samarcanda	9
@@ -120732,7 +120732,7 @@ sampson	149
 samsagaz	8
 samson	184
 samsón	8
-samuel	945
+samuel	15
 samuels	150
 samurai	446
 samurái	139
@@ -120809,7 +120809,7 @@ sandokán	17
 sandoli	8
 sandor	48
 sandoval	184
-sandra	1091
+sandra	18
 sandrigo	20
 sandrine	78
 sandro	161
@@ -120911,7 +120911,7 @@ sannin	7
 sano	1764
 sanos	465
 sans	236
-sansa	51
+sansa	1
 sánscrita	3
 sánscrito	49
 sánscritos	2
@@ -121052,10 +121052,10 @@ sáquesela	3
 sáqueselo	4
 saquito	17
 saquitos	10
-sara	2704
+sara	45
 saracen	77
 saracinesca	2
-sarah	6218
+sarah	103
 sarajevo	114
 sarakina	3
 sarampión	148
@@ -121243,7 +121243,7 @@ saudís	3
 saudita	139
 sauditas	22
 saugerties	3
-saul	484
+saul	8
 saúl	222
 sauna	348
 saunders	284
@@ -121273,7 +121273,7 @@ sawal	4
 sawanoi	2
 sawasaki	3
 sawbwa	3
-sawyer	444
+sawyer	7
 saxel	10
 saxitoxina	3
 saxo	85
@@ -121390,7 +121390,7 @@ scorsese	72
 scot	65
 scotch	99
 scotland	393
-scott	3978
+scott	66
 scottie	175
 scottsdale	49
 scotty	893
@@ -121428,7 +121428,7 @@ seals	70
 seamie	7
 seamos	2718
 seamus	131
-sean	10712
+sean	178
 seaquest	61
 sears	124
 seas	13348
@@ -121442,7 +121442,7 @@ sebaceanos	3
 sebaceo	3
 sebáceo	8
 sebáceos	5
-sebastian	975
+sebastian	16
 sebastián	441
 sébastien	46
 sebo	47
@@ -122588,7 +122588,7 @@ serfuerte	2
 serge	305
 sergei	430
 sergey	46
-sergio	365
+sergio	6
 sergito	18
 serguéi	55
 serguéievich	11
@@ -122911,7 +122911,7 @@ sharingan	25
 shark	82
 sharknados	3
 sharma	193
-sharon	1033
+sharon	17
 sharona	127
 sharp	185
 sharpe	125
@@ -122948,7 +122948,7 @@ shelah	20
 shelar	3
 shelby	577
 shelda	2
-sheldon	841
+sheldon	14
 shell	182
 shelley	421
 shellner	3
@@ -122979,7 +122979,7 @@ shérif	4
 sheriff	4121
 sheriffs	45
 sherine	2
-sherlock	862
+sherlock	14
 sherman	623
 sherminator	6
 sherri	96
@@ -123505,7 +123505,7 @@ silverfoot	2
 silverman	78
 silvestre	240
 silvestres	139
-silvia	313
+silvia	5
 silvicultura	4
 silvio	114
 sim	207
@@ -123575,7 +123575,7 @@ simios	250
 simmons	488
 simms	229
 simnhor	2
-simon	3316
+simon	55
 simón	615
 simona	46
 simone	609
@@ -124163,7 +124163,7 @@ skwaznik	3
 sky	318
 skye	273
 skylar	96
-skyler	119
+skyler	1
 skynet	68
 skype	162
 skywalker	180
@@ -124205,7 +124205,7 @@ smernoff	3
 smile	55
 smiley	117
 smireya	5
-smith	3148
+smith	52
 smithers	143
 smithsonian	65
 smithsoniano	24
@@ -124770,7 +124770,7 @@ soeces	6
 soez	21
 sofá	2769
 sofás	72
-sofia	347
+sofia	5
 sofía	714
 sofico	3
 sofie	129
@@ -125483,7 +125483,7 @@ sopesó	3
 sopetón	25
 soph	106
 sophia	571
-sophie	1935
+sophie	32
 sopita	12
 sopla	640
 soplaba	71
@@ -125978,7 +125978,7 @@ spivali	3
 splash	51
 splinter	55
 split	62
-spock	749
+spock	12
 spoiler	57
 spokane	48
 spolano	3
@@ -126032,7 +126032,7 @@ stacey	482
 stacie	63
 stack	93
 stackhouse	114
-stacy	670
+stacy	11
 stadium	49
 staff	68
 stafford	146
@@ -126077,7 +126077,7 @@ starbuck	249
 starbucks	194
 stardust	62
 stargate	370
-stark	972
+stark	16
 starkey	52
 starlight	50
 starling	157
@@ -126137,16 +126137,16 @@ stepanovitch	6
 steph	275
 stephan	107
 stéphane	91
-stephanie	769
+stephanie	12
 stephany	8
-stephen	1878
+stephen	31
 stephens	197
 stephmeister	4
 sterling	379
 stern	286
 stesha	2
-steve	6416
-steven	1898
+steve	106
+steven	31
 stevens	784
 stevenson	166
 stevie	896
@@ -127679,7 +127679,7 @@ superlisto	2
 superluna	7
 supermacho	2
 supermamá	5
-superman	1272
+superman	21
 supermán	198
 supermantecas	7
 supermartes	2
@@ -128103,7 +128103,7 @@ survietnamitas	15
 survivor	678
 survivorenspa	2
 sus	136910
-susan	3171
+susan	52
 susana	200
 susanna	128
 susannah	105
@@ -129414,7 +129414,7 @@ tectónica	17
 tectónicas	30
 tectónico	5
 tectónicos	5
-ted	3334
+ted	55
 teddy	1775
 teddyar	3
 tedeum	8
@@ -130360,7 +130360,7 @@ terrosa	3
 terroso	8
 terrosos	2
 terruño	9
-terry	2507
+terry	41
 tersas	3
 tersille	3
 tersites	4
@@ -130516,7 +130516,7 @@ texana	13
 texanas	2
 texano	39
 texanos	25
-texas	2380
+texas	39
 textea	2
 texteando	6
 textear	7
@@ -130582,7 +130582,7 @@ theodore	285
 theratos	10
 there	751
 theremín	4
-theresa	464
+theresa	7
 therese	132
 therns	2
 théron	3
@@ -130605,7 +130605,7 @@ thistlewaite	5
 tholiana	3
 tholianos	3
 thom	76
-thomas	4149
+thomas	69
 thompson	992
 thomson	71
 thor	565
@@ -130738,7 +130738,7 @@ tiestos	8
 tiesura	3
 tifanny	4
 tiff	48
-tiffany	550
+tiffany	9
 tifoidea	70
 tifoideas	3
 tifón	119
@@ -130789,7 +130789,7 @@ tillem	7
 tillman	87
 tilly	125
 tilonorrinco	4
-tim	2996
+tim	49
 timado	60
 timador	101
 timadora	22
@@ -130836,12 +130836,12 @@ timorato	7
 timorenses	3
 timoshenko	5
 timoshkin	5
-timothy	471
+timothy	7
 tímpano	50
 tímpanos	54
 timul	4
 tin	250
-tina	2360
+tina	39
 tinaja	26
 tinajas	6
 tinción	8
@@ -131321,7 +131321,7 @@ todala	3
 todas	55327
 todavía	40585
 today	163
-todd	2017
+todd	33
 toddy	59
 todita	7
 toditas	2
@@ -131417,7 +131417,7 @@ tolteca	2
 toltecas	7
 tolueno	14
 tolva	13
-tom	10587
+tom	176
 toma	25023
 tomaba	869
 tomábamos	99
@@ -131503,7 +131503,7 @@ tomarte	866
 tomártela	9
 tomártelas	4
 tomártelo	92
-tomas	4083
+tomas	68
 tomás	403
 tomase	52
 tomásemos	9
@@ -131567,7 +131567,7 @@ tomie	77
 tomillo	52
 tomisawa	2
 tommaso	71
-tommy	5919
+tommy	98
 tomo	3780
 tomó	6783
 tomografía	322
@@ -131652,7 +131652,7 @@ tontorrones	5
 tontos	2259
 tontuela	9
 tontuelo	14
-tony	6406
+tony	106
 tonya	231
 too	289
 took	51
@@ -132186,7 +132186,7 @@ tractatores	5
 tracto	79
 tractor	465
 tractores	106
-tracy	1443
+tracy	24
 trade	121
 tradición	1807
 tradicional	1009
@@ -134578,7 +134578,7 @@ ty	556
 tybal	4
 tygro	9
 tylenol	49
-tyler	2395
+tyler	39
 tylio	2
 tyllette	2
 typees	2
@@ -135487,7 +135487,7 @@ vacuolas	4
 vadeado	2
 vadeando	7
 vadear	15
-vader	224
+vader	3
 vadim	56
 vadísima	2
 vadivasov	3
@@ -135588,7 +135588,7 @@ valenti	67
 valentía	700
 valentin	115
 valentín	1045
-valentina	289
+valentina	4
 valentine	420
 valentiniano	8
 valentino	170
@@ -136046,7 +136046,7 @@ veganas	7
 veganismo	4
 vegano	73
 veganos	28
-vegas	2480
+vegas	41
 vegeta	79
 vegetación	174
 vegetaciones	6
@@ -136781,7 +136781,7 @@ vernos	2832
 vérnoslas	3
 veroldy	7
 verona	122
-veronica	563
+veronica	9
 verónica	601
 veronika	91
 veronkha	4
@@ -137101,7 +137101,7 @@ vick	111
 vickers	110
 vicki	524
 vickie	107
-vicky	841
+vicky	14
 vickywasy	3
 vicodin	109
 vicodín	12
@@ -137121,7 +137121,7 @@ victimizados	5
 victimizar	5
 victimizarán	2
 victimología	47
-victor	1777
+victor	29
 víctor	1055
 victoria	5612
 victoriana	87
@@ -137444,7 +137444,7 @@ vinatería	6
 vinatero	6
 viñatero	3
 vince	1886
-vincent	2185
+vincent	36
 vincenzini	2
 vincenzo	227
 vincha	17
@@ -137639,7 +137639,7 @@ virgilio	85
 virgin	63
 virginal	53
 virginales	5
-virginia	1654
+virginia	27
 virginiano	21
 virginianos	4
 virginidad	539
@@ -138180,7 +138180,7 @@ volcaron	14
 volcarse	11
 volcaste	11
 volcó	107
-voldemort	46
+voldemort	1
 voldi	11
 volé	227
 volea	8
@@ -138647,8 +138647,8 @@ wallmart	4
 wally	711
 walmart	51
 walsh	662
-walt	1258
-walter	3887
+walt	20
+walter	64
 walternativo	15
 walters	244
 walton	174
@@ -138701,7 +138701,7 @@ waterman	53
 waterpolo	35
 waters	254
 watkins	176
-watson	1573
+watson	26
 watt	68
 wattereus	3
 watts	252
@@ -138711,7 +138711,7 @@ wave	66
 waverly	141
 wavertree	4
 way	492
-wayne	1909
+wayne	31
 wayward	53
 waziristán	4
 wazpinator	3
@@ -138768,7 +138768,7 @@ wenceslao	10
 wendeii	3
 wendell	306
 wendol	3
-wendy	1478
+wendy	24
 wenneveria	3
 went	52
 wentworth	171
@@ -138900,11 +138900,11 @@ willa	167
 willard	219
 willem	61
 willi	79
-william	3656
+william	60
 williams	1659
 williamsburg	83
 williamson	100
-willie	1624
+willie	27
 willis	436
 willoughby	195
 willow	409
@@ -139039,7 +139039,7 @@ woozie	2
 word	106
 wordsworth	60
 wordy	72
-worf	368
+worf	6
 work	126
 world	668
 worry	75
@@ -139065,7 +139065,7 @@ wudalchi	17
 wufeng	2
 wusami	3
 wuyang	3
-wyatt	1007
+wyatt	16
 wyciiffe	3
 wycroft	4
 wyler	61
@@ -139081,7 +139081,7 @@ xanax	116
 xander	342
 xantosis	2
 xarátanga	5
-xavier	332
+xavier	5
 xbox	125
 xcarles	6
 xceom	3
@@ -139327,7 +139327,7 @@ yno	90
 ynq	3
 yo	466673
 yocasta	5
-yoda	161
+yoda	2
 yodo	101
 yoduro	15
 yog	88
@@ -139371,7 +139371,7 @@ yoquis	2
 yorgakis	7
 yorgy	2
 yorioyajima	2
-york	12414
+york	206
 yorker	96
 yorknew	8
 yorkshire	180
@@ -139489,7 +139489,7 @@ zac	197
 zacarías	35
 zacate	4
 zach	1087
-zachary	237
+zachary	3
 zack	1059
 zaef	2
 zafa	9
@@ -139829,7 +139829,7 @@ zodiaco	133
 zodíaco	79
 zodiacos	6
 zodíacos	2
-zoe	1608
+zoe	26
 zoey	470
 zoidberg	69
 zoila	64

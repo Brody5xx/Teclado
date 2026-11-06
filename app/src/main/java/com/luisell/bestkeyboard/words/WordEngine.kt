@@ -37,6 +37,35 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return null
     }
 
+    /**
+     * 🌐 El idioma de la frase que estás escribiendo (la última palabra clara pesa más).
+     * Así, si escribes «the camera» con el teclado en español, las sugerencias ya salen en inglés
+     * sin esperar a que el teclado se cambie. [currentLength] = lo que llevas de la palabra actual.
+     */
+    fun contextLang(before: CharSequence, currentLength: Int): String? {
+        val end = (before.length - currentLength).coerceIn(0, before.length)
+        val text = before.subSequence(0, end)
+        var start = 0
+        for (i in text.indices.reversed()) { val c = text[i]; if (c == '.' || c == '!' || c == '?' || c == '\n') { start = i + 1; break } }
+        val ws = ArrayList<String>()
+        var i = text.length
+        while (i > start && ws.size < 4) {
+            while (i > start && !TextUtil.isWordChar(text[i - 1])) i--
+            val e = i
+            while (i > start && TextUtil.isWordChar(text[i - 1])) i--
+            if (e > i) ws.add(text.subSequence(i, e).toString().lowercase().trim('\'', '’'))
+        }
+        var es = 0f
+        var en = 0f
+        var w = 1f
+        for (x in ws) {
+            val v = if (x == "i" || x == "i'm" || x == "i'll") "en" else if (x.length < 2) null else langOf(x)
+            if (v == "es") es += w else if (v == "en") en += w
+            w *= 0.55f
+        }
+        return if (en > es) "en" else if (es > en) "es" else null
+    }
+
     /** ¿La palabra [cand] conserva los acentos y la ñ que escribiste? ("mañna" no debe volverse "manna") */
     private fun keepsMarks(typedLower: String, cand: String): Boolean {
         val c = cand.lowercase()
