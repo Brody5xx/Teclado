@@ -63,6 +63,7 @@ class MainActivity : UiActivity() {
         private const val REQ_NOTIF = 23
         private const val REQ_AUTO = 24
         private const val REQ_HOURS = 25
+        private const val KEY_SECTION = "settings_section"
         private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
         private const val REQ_CAMERA = 8
@@ -113,9 +114,11 @@ class MainActivity : UiActivity() {
         if (i?.getBooleanExtra(EXTRA_ASK_PHOTOS, false) == true) askPhotos()
         if (i?.getBooleanExtra(EXTRA_SHOW_AI, false) == true) {
             // Bajar hasta la tarjeta de la IA para pegar la clave
+            selectSec("ai", scroll = false)
             scrollView.postDelayed({ aiCard?.let { scrollView.smoothScrollTo(0, maxOf(0, it.top - dp(60))) } }, 250)
         }
         if (i?.getBooleanExtra(EXTRA_GIFS, false) == true) {
+            selectSec("media", scroll = false)
             scrollView.postDelayed({ gifCard?.let { scrollView.smoothScrollTo(0, maxOf(0, it.top - dp(60))) } }, 250)
         }
     }
@@ -505,6 +508,7 @@ class MainActivity : UiActivity() {
 
         // ---- Buscador de ajustes
         val searchBox = EditText(this).apply {
+            this@MainActivity.searchBox = this
             hint = tr("🔎  Buscar en ajustes (vibración, ticket, GIF…)", "🔎  Search settings (vibration, ticket, GIF…)")
             isSingleLine = true
             textSize = 15f
@@ -523,16 +527,19 @@ class MainActivity : UiActivity() {
             visibility = View.GONE
         }
         root.addView(noResults, LinearLayout.LayoutParams(-1, -2))
+        root.addView(sectionBar(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
         searchBox.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
                 val q = s?.toString() ?: ""
                 val n = filterCards(q)
+                sectionBarView?.visibility = if (q.isBlank()) View.VISIBLE else View.GONE
                 noResults.visibility = if (q.isNotBlank() && n == 0) View.VISIBLE else View.GONE
             }
         })
 
+        cardGroup = "start"
         // ---- Idioma de la app
         card(tr("Idioma", "Language"), Icons.GLOBE)
         segmented(tr("Idioma de esta pantalla", "Language of this screen"), Prefs.APP_LANG, "auto",
@@ -578,6 +585,7 @@ class MainActivity : UiActivity() {
         }
         text(tr("Para hacer el teclado más alto o más bajo: toca ⋯ arriba del teclado → «Tamaño».", "To resize: tap ⋯ above the keyboard → «Resize»."), 12f, faded = true)
 
+        cardGroup = "type"
         // ---- Escritura
         card(tr("Escritura", "Typing"), Icons.SPELL)
         switch(tr("Mayúscula automática al empezar una oración", "Auto-capitalize sentences"), Prefs.AUTOCAP, true)
@@ -631,6 +639,7 @@ class MainActivity : UiActivity() {
             tr("Subraya en rojo en las apps que lo usan.", "Underlines in red in apps that use it."))
         button(tr("Abrir los ajustes del corrector de Android", "Open Android spell checker settings")) { openSpellSettings() }
 
+        cardGroup = "ai"
         // ---- IA para escribir
         card(tr("IA para escribir", "AI writing"), Icons.HACKER)
         aiCard = col
@@ -668,6 +677,7 @@ class MainActivity : UiActivity() {
         text(tr("La clave se guarda solo en tu teléfono. El texto se envía a Google solo cuando tocas «Más formal».",
             "The key is saved only on your phone. Text is sent to Google only when you tap «More formal»."), 12f, faded = true)
 
+        cardGroup = "media"
         // ---- Permisos y herramientas
         card(tr("Voz, cámara y capturas", "Voice, camera and screenshots"), Icons.MIC)
         micBtn = button("") { askMic() }
@@ -677,6 +687,7 @@ class MainActivity : UiActivity() {
         text(tr("Dictado: di \"coma\", \"punto final\", \"nueva línea\"… Traducción y escáner funcionan dentro del teléfono.",
             "Dictation: say \"comma\", \"period\", \"new line\"… Translation and scanner work on the phone."), 12f, faded = true)
 
+        cardGroup = "data"
         // ---- Datos (como Samsung Pass): pantalla aparte
         card(tr("Datos: correos, contraseñas y atajos", "Data: emails, passwords and shortcuts"), Icons.MAIL)
         text(tr(
@@ -687,6 +698,7 @@ class MainActivity : UiActivity() {
         ), 13f, faded = true)
         button(tr("Abrir Datos", "Open Data"), primary = true) { startActivity(Intent(this, DataActivity::class.java)) }
 
+        cardGroup = "ai"
         // ---- Trabajo: tickets, reportes y escribir más formal
         card(tr("Escribir como profesional", "Write like a pro"), Icons.TICKET)
         text(tr(
@@ -710,12 +722,14 @@ class MainActivity : UiActivity() {
             tr("El teclado se vuelve una ventanita: muévela con la barrita de arriba. El botón de la izquierda lo regresa abajo.",
                 "The keyboard becomes a small window: move it with the bar on top. The left button puts it back at the bottom."))
 
+        cardGroup = "type"
         // ---- Emojis
         card(tr("Emojis", "Emojis"), Icons.EMOJI)
         switch(tr("Sugerir emojis mientras escribo", "Suggest emojis while I type"), Prefs.EMOJI_SUGGEST, true,
             tr("Escribe «casa» y sale 🏠, «jajaja» 😂, «te quiero» ❤️, «estoy cansado» 😴. Tócalo y se pone después de la palabra.",
                 "Type «house» and get 🏠, «haha» 😂, «love you» ❤️, «so tired» 😴. Tap it and it goes after the word."))
 
+        cardGroup = "ai"
         // ---- Frases rápidas
         card(tr("Frases rápidas", "Quick phrases"), Icons.BUBBLE)
         text(tr(
@@ -756,6 +770,7 @@ class MainActivity : UiActivity() {
             "17" to "5 PM", "18" to "6 PM", "19" to "7 PM", "20" to "8 PM", "21" to "9 PM",
         ))
 
+        cardGroup = "work"
         // ---- Mi jornada: widget, pantalla de bloqueo y mis sitios
         card(tr("Mi jornada", "My workday"), Icons.TRUCK, keywords = "horas horario widget bloqueo camioneta sitios gps hours lock screen truck sites")
         text(tr(
@@ -794,6 +809,7 @@ class MainActivity : UiActivity() {
             } catch (_: Exception) { }
         }
 
+        cardGroup = "word"
         // ---- Palabra de la semana
         card(tr("Palabra de la semana", "Word of the week"), Icons.BOOK)
         val ww = WeeklyWord.current()
@@ -805,6 +821,7 @@ class MainActivity : UiActivity() {
             "Challenge: use it in at least 3 conversations this week. A new one comes every Monday."), 12f, faded = true)
         switch(tr("Mostrarla en el teclado y sugerirla", "Show it on the keyboard and suggest it"), Prefs.WORD_WEEK, true)
 
+        cardGroup = "type"
         // ---- Una mano
         card(tr("Modo una mano", "One-hand mode"), Icons.ONEHAND)
         segmented(tr("Teclado más angosto", "Narrower keyboard"), Prefs.ONE_HAND, "off", listOf(
@@ -815,6 +832,7 @@ class MainActivity : UiActivity() {
         text(tr("También con el botón «Una mano» del teclado. En el costado vacío: la flecha cambia de lado y el otro botón lo vuelve normal.",
             "Also with the «One hand» button on the keyboard. On the empty side: the arrow switches sides and the other button makes it normal."), 12f, faded = true)
 
+        cardGroup = "media"
         // ---- GIFs
         card(tr("GIFs y stickers", "GIFs and stickers"), Icons.GIF)
         gifCard = col
@@ -850,6 +868,7 @@ class MainActivity : UiActivity() {
         text(tr("Si la app no acepta GIFs desde el teclado, el GIF queda copiado para que lo pegues.",
             "If the app doesn't accept GIFs from the keyboard, the GIF is copied so you can paste it."), 12f, faded = true)
 
+        cardGroup = "backup"
         // ---- Copia de seguridad
         card(tr("Copia de seguridad", "Backup"), Icons.CLIP)
         text(tr(
@@ -888,6 +907,7 @@ class MainActivity : UiActivity() {
             button(tr("Prender copia automática", "Turn on automatic backup")) { askBackupPassword(true, auto = true) }
         }
 
+        cardGroup = "data"
         // ---- Sugerencias rápidas: copiado y códigos
         card(tr("Copiado y códigos", "Copied text and codes"), Icons.LOCK)
         switch(tr("Sugerir lo que acabo de copiar", "Suggest what I just copied"), Prefs.CLIP_SUGGEST, true,
@@ -909,6 +929,7 @@ class MainActivity : UiActivity() {
             }
         }
 
+        cardGroup = "more"
         // ---- Trucos
         card(tr("Trucos", "Tips"), Icons.IDEA)
         text(tr(
@@ -966,12 +987,196 @@ class MainActivity : UiActivity() {
         foot.setTextColor(SUB)
         foot.gravity = Gravity.CENTER
         root.addView(foot, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(28) })
-        return sv
+        cardGroup = null
+        return withEdgePanel(sv)
+    }
+
+    // ---------------------------------------------------------------- Panel Edge (como el de Samsung)
+
+    private class Sec(val id: String, val es: String, val en: String, val icon: Int)
+    private val secs = listOf(
+        Sec("start", "Inicio", "Start", Icons.SETTINGS),
+        Sec("type", "Escribir", "Typing", Icons.SPELL),
+        Sec("ai", "IA y trabajo", "AI and work", Icons.HACKER),
+        Sec("work", "Mi jornada", "My workday", Icons.TRUCK),
+        Sec("data", "Datos y copiado", "Data and copy", Icons.LOCK),
+        Sec("media", "Voz y GIFs", "Voice and GIFs", Icons.MIC),
+        Sec("word", "Palabra", "Word", Icons.BOOK),
+        Sec("backup", "Copia", "Backup", Icons.CLIP),
+        Sec("more", "Trucos y novedades", "Tips and news", Icons.IDEA),
+    )
+    private var searchBox: EditText? = null
+    private var sectionBarView: View? = null
+    private var secLabel: TextView? = null
+    private var secIcon: IconView? = null
+    private var edgeDim: View? = null
+    private var edgePanel: LinearLayout? = null
+    private var edgeHandle: View? = null
+    private val secRows = HashMap<String, LinearLayout>()
+
+    /** La barrita debajo del buscador: dice en qué sección estás y abre el panel. */
+    private fun sectionBar(): View {
+        val bar = LinearLayout(this)
+        bar.orientation = LinearLayout.HORIZONTAL
+        bar.gravity = Gravity.CENTER_VERTICAL
+        bar.setPadding(dp(14), dp(10), dp(10), dp(10))
+        bar.background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0x3322D3EE, 0x338B5CF6)).apply {
+            cornerRadius = dpf(18f); setStroke(dp(1), 0x664FD1FF)
+        }
+        val iv = IconView(this, Icons.SETTINGS, 8f)
+        iv.isClickable = false
+        iv.color = CYAN
+        iv.bgColor = CARD
+        secIcon = iv
+        bar.addView(iv, LinearLayout.LayoutParams(dp(24), dp(24)))
+        val t = TextView(this)
+        t.textSize = 16f
+        t.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD))
+        t.setTextColor(TEXT)
+        t.setPadding(dp(10), 0, 0, 0)
+        secLabel = t
+        bar.addView(t, LinearLayout.LayoutParams(0, -2, 1f))
+        val more = TextView(this)
+        more.text = tr("Secciones  ›", "Sections  ›")
+        more.textSize = 13f
+        more.setTextColor(CYAN)
+        bar.addView(more)
+        bar.setOnClickListener { openEdge() }
+        sectionBarView = bar
+        return bar
+    }
+
+    /** Pone la lista de ajustes dentro de un marco con la manija del borde y el panel. */
+    private fun withEdgePanel(sv: View): View {
+        val frame = android.widget.FrameLayout(this)
+        frame.addView(sv, android.widget.FrameLayout.LayoutParams(-1, -1))
+
+        // Manija en el borde derecho (como la del panel Edge)
+        val handle = object : View(this) {
+            val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+            override fun onDraw(c: Canvas) {
+                val w = width.toFloat(); val h = height.toFloat()
+                p.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(0xFF22D3EE.toInt(), 0xFF8B5CF6.toInt()), null, Shader.TileMode.CLAMP)
+                p.alpha = 210
+                c.drawRoundRect(android.graphics.RectF(w - dp(7), 0f, w - dp(2), h), dpf(4f), dpf(4f), p)
+            }
+        }
+        var downX = 0f
+        handle.setOnTouchListener { _, e ->
+            when (e.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> { downX = e.rawX; true }
+                android.view.MotionEvent.ACTION_UP -> { openEdge(); true }
+                android.view.MotionEvent.ACTION_MOVE -> { if (downX - e.rawX > dp(20)) openEdge(); true }
+                else -> true
+            }
+        }
+        edgeHandle = handle
+        frame.addView(handle, android.widget.FrameLayout.LayoutParams(dp(26), dp(110), Gravity.END or Gravity.CENTER_VERTICAL))
+
+        // Fondo oscuro que cierra el panel al tocar afuera
+        val dim = View(this)
+        dim.setBackgroundColor(0x99000000.toInt())
+        dim.visibility = View.GONE
+        dim.setOnClickListener { closeEdge() }
+        edgeDim = dim
+        frame.addView(dim, android.widget.FrameLayout.LayoutParams(-1, -1))
+
+        // El panel con todas las secciones
+        val panel = LinearLayout(this)
+        panel.orientation = LinearLayout.VERTICAL
+        panel.setPadding(dp(10), dp(14), dp(10), dp(14))
+        panel.background = GradientDrawable().apply {
+            setColor(0xF0161B26.toInt()); cornerRadius = dpf(26f); setStroke(dp(1), 0x804FD1FF.toInt())
+        }
+        panel.elevation = dpf(12f)
+        panel.isClickable = true
+        val title = TextView(this)
+        title.text = tr("SECCIONES", "SECTIONS")
+        title.textSize = 11f
+        title.letterSpacing = 0.14f
+        title.setTextColor(SUB)
+        title.gravity = Gravity.CENTER
+        panel.addView(title, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        for (sec in secs) {
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+            row.setPadding(dp(8), dp(7), dp(12), dp(7))
+            val circle = android.widget.FrameLayout(this)
+            circle.background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(CARD2); setStroke(dp(1), LINE) }
+            val iv = IconView(this, sec.icon, 8f)
+            iv.isClickable = false
+            iv.color = CYAN
+            iv.bgColor = CARD2
+            circle.addView(iv, android.widget.FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
+            row.addView(circle, LinearLayout.LayoutParams(dp(40), dp(40)))
+            val t = TextView(this)
+            t.text = tr(sec.es, sec.en)
+            t.textSize = 14f
+            t.setTextColor(TEXT)
+            t.setPadding(dp(12), 0, 0, 0)
+            row.addView(t)
+            row.setOnClickListener { selectSec(sec.id); closeEdge() }
+            secRows[sec.id] = row
+            panel.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(2) })
+        }
+        panel.visibility = View.GONE
+        edgePanel = panel
+        frame.addView(panel, android.widget.FrameLayout.LayoutParams(dp(230), -2, Gravity.END or Gravity.CENTER_VERTICAL).apply { rightMargin = dp(10) })
+
+        val saved = prefs.getString(KEY_SECTION, "start") ?: "start"
+        selectSec(if (secs.any { it.id == saved }) saved else "start", scroll = false)
+        return frame
+    }
+
+    private fun openEdge() {
+        val panel = edgePanel ?: return
+        if (panel.visibility == View.VISIBLE) return
+        edgeDim?.apply { alpha = 0f; visibility = View.VISIBLE; animate().alpha(1f).setDuration(180).start() }
+        panel.visibility = View.VISIBLE
+        panel.translationX = dpf(260f)
+        panel.animate().translationX(0f).setDuration(240).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        edgeHandle?.visibility = View.INVISIBLE
+        LightFx.flash(panel, dpf(26f))
+    }
+
+    private fun closeEdge() {
+        val panel = edgePanel ?: return
+        if (panel.visibility != View.VISIBLE) return
+        edgeDim?.animate()?.alpha(0f)?.setDuration(160)?.withEndAction { edgeDim?.visibility = View.GONE }?.start()
+        panel.animate().translationX(dpf(260f)).setDuration(200).withEndAction { panel.visibility = View.GONE }.start()
+        edgeHandle?.visibility = View.VISIBLE
+    }
+
+    /** Muestra solo las tarjetas de esa sección. */
+    private fun selectSec(id: String, scroll: Boolean = true) {
+        activeGroup = id
+        try { prefs.edit().putString(KEY_SECTION, id).apply() } catch (_: Exception) { }
+        val box = searchBox
+        if (box != null && box.text.isNotEmpty()) box.setText("") else filterCards("")
+        val sec = secs.firstOrNull { it.id == id }
+        if (sec != null) {
+            secLabel?.text = tr(sec.es, sec.en)
+            secIcon?.kind = sec.icon
+            secIcon?.invalidate()
+        }
+        for ((k, row) in secRows) {
+            row.background = if (k == id) GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0x5522D3EE, 0x558B5CF6)).apply { cornerRadius = dpf(16f) } else null
+        }
+        if (scroll) sectionBarView?.let { b -> scrollView.post { scrollView.smoothScrollTo(0, maxOf(0, b.top - dp(8))) } }
+    }
+
+    override fun onBackPressed() {
+        if (edgePanel?.visibility == View.VISIBLE) { closeEdge(); return }
+        @Suppress("DEPRECATION")
+        super.onBackPressed()
     }
 
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.23.0" to tr("•  Ajustes más limpios: ahora se ve una sola sección a la vez. Toca la barrita «Secciones ›» debajo del buscador, o la rayita de luz en el borde derecho de la pantalla, y se abre un panel Edge (como el de Samsung) con todas las secciones: Inicio, Escribir, IA y trabajo, Mi jornada, Datos y copiado, Voz y GIFs, Palabra, Copia y Trucos. El buscador sigue buscando en todo.",
+            "•  Cleaner settings: now you see one section at a time. Tap the «Sections ›» bar under the search box, or the light strip on the right edge of the screen, and an Edge panel (like Samsung's) opens with every section: Start, Typing, AI and work, My workday, Data and copy, Voice and GIFs, Word, Backup and Tips. The search box still searches everything."),
         "12.22.5" to tr("•  📚 Palabra de la semana: ahora hay 105 palabras (antes 35), una cada lunes por 2 años, todas con su significado, ejemplo y traducción al inglés.",
             "•  📚 Word of the week: now there are 105 words (was 35), one every Monday for 2 years, all with meaning, example and English translation."),
         "12.22.4" to tr("•  Se quitó «Dictar reporte» de la barra de arriba: ya está dentro del micrófono.", "•  «Dictate report» was removed from the top bar: it's already inside the microphone."),

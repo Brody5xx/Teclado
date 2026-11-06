@@ -412,11 +412,16 @@ abstract class UiActivity : Activity() {
     /** Empieza una tarjeta nueva con título e ícono; lo que se agregue después va dentro. */
     /** Palabras extra para el buscador de ajustes (por tarjeta). "-" = no sale en la búsqueda. */
     protected val cardKeywords = HashMap<View, String>()
+    /** Sección (del panel Edge) de cada tarjeta; las tarjetas sin sección se ven siempre. */
+    protected val cardGroups = HashMap<View, String>()
+    protected var cardGroup: String? = null
+    protected var activeGroup: String? = null
 
     protected fun card(title: String, icon: Int, glow: Boolean = false, keywords: String = "") {
         val head = LinearLayout(this)
         head.tag = "cardHead"
         if (keywords.isNotEmpty()) cardKeywords[head] = keywords
+        cardGroup?.let { cardGroups[head] = it }
         head.orientation = LinearLayout.HORIZONTAL
         head.gravity = Gravity.CENTER_VERTICAL
         val iv = IconView(this, icon, 8f)
@@ -466,7 +471,8 @@ abstract class UiActivity : Activity() {
             if (head.tag != "cardHead" || i + 1 >= root.childCount) { i++; continue }
             val body = root.getChildAt(i + 1)
             val kw = cardKeywords[head] ?: ""
-            val ok = if (words.isEmpty()) true else if (kw == "-") false else {
+            val grp = cardGroups[head]
+            val ok = if (words.isEmpty()) (grp == null || activeGroup == null || grp == activeGroup) else if (kw == "-") false else {
                 val sb = StringBuilder(kw)
                 allText(head, sb)
                 allText(body, sb)
