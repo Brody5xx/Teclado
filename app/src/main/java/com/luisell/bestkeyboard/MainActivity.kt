@@ -1208,6 +1208,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.32.1" to tr("•  IA: la IA gratis (Pollinations) se está cambiando de dirección y la vieja casi no contesta. Ahora el teclado prueba primero la dirección nueva y la vieja solo de respaldo.\n" +
+            "•  Arreglado que un intento atorado hacía esperar al siguiente (por eso salía «Pensando 82 s»). Ahora cada vez que tocas empieza enseguida, y en 90 segundos como máximo te dice si no se pudo.",
+            "•  AI: the free AI (Pollinations) is moving to a new address and the old one barely answers. The keyboard now tries the new address first and the old one only as a backup.\n" +
+            "•  Fixed a stuck attempt making the next one wait (that's why it said «Thinking 82 s»). Now every tap starts right away, and within 90 seconds at most it tells you if it couldn't."),
         "12.32.0" to tr("•  La IA del teclado ahora es la misma de Best Notes (gratis, sin clave) y ya no usa Gemini para nada. Funciona igual que en Best Notes: espera hasta 45 segundos cada respuesta, si el servicio está ocupado lo vuelve a intentar solo (hasta 4 veces) y manda un pedido a la vez. Sirve para Terminar la frase, Más formal, Respuestas con IA, Notas → Ticket, Modo código y todo lo demás.\n" +
             "•  En ajustes se quitó lo de la clave de Gemini: ya no hace falta.",
             "•  The keyboard's AI is now the same one Best Notes uses (free, no key) and it no longer uses Gemini at all. It works like in Best Notes: waits up to 45 seconds for each answer, retries by itself if the service is busy (up to 4 times) and sends one request at a time. Works for Finish sentence, More formal, AI replies, Notes → Ticket, Code mode and everything else.\n" +
