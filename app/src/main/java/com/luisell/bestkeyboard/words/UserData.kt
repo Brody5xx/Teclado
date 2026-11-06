@@ -26,6 +26,8 @@ class UserData {
     /** Cuándo la escribiste por última vez (solo mientras el teclado está abierto; para que lo reciente salga primero). */
     val recent = HashMap<String, Long>()
     val bigrams = HashMap<String, HashMap<String, Int>>()
+    /** Las 3 palabras seguidas que escribes ("nos vemos" → "mañana"). Clave: "nos vemos". */
+    val trigrams = HashMap<String, HashMap<String, Int>>()
     /** Palabras que borraste de las sugerencias (mantener presionada → Borrar): no vuelven a salir. */
     val blocked = HashSet<String>()
     @Volatile var dirty = false
@@ -39,6 +41,8 @@ class UserData {
         recent.remove(key)
         bigrams.remove(key)
         for (m in bigrams.values) m.remove(key)
+        trigrams.keys.filter { it.split(' ').contains(key) }.forEach { trigrams.remove(it) }
+        for (m in trigrams.values) m.remove(key)
         blocked.add(key)
         dirty = true
     }
@@ -113,8 +117,24 @@ class UserData {
 
     fun bigramCount(prevLower: String, nextLower: String): Int = bigrams[prevLower]?.get(nextLower) ?: 0
 
+    fun addTrigram(prev2: String, prev: String, next: String) {
+        val k = prev2.lowercase() + " " + prev.lowercase()
+        val n = next.lowercase()
+        if (n in blocked || prev.lowercase() in blocked || prev2.lowercase() in blocked) return
+        val m = trigrams.getOrPut(k) { HashMap() }
+        m[n] = ((m[n] ?: 0) + 1).coerceAtMost(100000)
+        dirty = true
+        if (trigrams.size > MAX_TRIGRAM_KEYS) {
+            val drop = trigrams.entries.sortedBy { it.value.values.sum() }.take(trigrams.size - MAX_TRIGRAM_KEYS * 9 / 10)
+            for (e in drop) trigrams.remove(e.key)
+        }
+    }
+
+    fun trigramCount(ctxLower: String, nextLower: String): Int = trigrams[ctxLower]?.get(nextLower) ?: 0
+
     fun clear() {
         blocked.clear()
+        trigrams.clear()
         words.clear()
         bigrams.clear()
         dirty = true
@@ -143,6 +163,9 @@ class UserData {
         for ((p, m) in bigrams) for ((n, c) in m) {
             sb.append("b\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
         }
+        for ((p, m) in trigrams) for ((n, c) in m) {
+            sb.append("t\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
+        }
         for (x in blocked) sb.append("x\t").append(x).append('\n')
         return sb.toString()
     }
@@ -163,6 +186,10 @@ class UserData {
                     if (t > 0) recent[p[1].lowercase()] = t
                 }
                 p.size == 2 && p[0] == "x" -> blocked.add(p[1])
+                p.size == 4 && p[0] == "t" -> {
+                    val c = p[3].toIntOrNull() ?: return@forEachLine
+                    trigrams.getOrPut(p[1]) { HashMap() }[p[2]] = c
+                }
                 p.size == 4 && p[0] == "b" -> {
                     val c = p[3].toIntOrNull() ?: return@forEachLine
                     bigrams.getOrPut(p[1]) { HashMap() }[p[2]] = c
@@ -183,5 +210,6 @@ class UserData {
         const val TYPO_KNOWN = 4
         const val MAX_WORDS = 20000
         const val MAX_BIGRAM_KEYS = 15000
+        const val MAX_TRIGRAM_KEYS = 15000
     }
 }

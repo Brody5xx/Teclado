@@ -2155,7 +2155,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (word.isEmpty()) {
             // Predicción: lo que sueles escribir después de la palabra anterior
             val prev = TextUtil.previousWord(before, 0)
-            val preds = if (prev != null) eng.predictions(prev, sugLang(eng, before, 0)) else emptyList()
+            val prev2 = TextUtil.previousWords(before, 0).second
+            val preds = if (prev != null) eng.predictions(prev, sugLang(eng, before, 0), 3, prev2) else emptyList()
             if (preds.isEmpty()) { clearSlots(); return }
             val capital = shift > 0 && page == Page.LETTERS
             val p = preds.map { if (capital) TextUtil.matchCase(it, "A") else it }
@@ -2165,7 +2166,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
         val prev = TextUtil.previousWord(before, word.length)
         val sl = sugLang(eng, before, word.length)
-        val res = eng.suggest(word, prev, sl)
+        val res = eng.suggest(word, prev, sl, TextUtil.previousWords(before, word.length).second)
         val corr = if (canCorrect(word, before)) res.correction else null
         if (corr != null && corr != word) {
             val right = res.suggestions.firstOrNull { !it.equals(corr, true) && !it.equals(word, true) }
@@ -2266,6 +2267,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             val wl = eng.langOf(w.lowercase().trim('\'', '’')) ?: lang
             if (slot == slotTyped) eng.user.learn(w) else eng.user.add(w, 1, wl)
             if (prev != null) eng.user.addBigram(prev, w)
+            TextUtil.previousWords(before, cur.length).second?.let { p2 -> if (prev != null) eng.user.addTrigram(p2, prev, w) }
             WordStore.scheduleSave()
         }
         lastCorrection = null
@@ -2310,6 +2312,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             val typo = fixed == null && eng.user.entry(final.lowercase()) == null && eng.looksLikeTypo(final, sugLang(eng, before, word.length))
             eng.user.add(final, 1, lang, typo)
             if (prev != null) eng.user.addBigram(prev, final)
+            TextUtil.previousWords(before, word.length).second?.let { p2 -> if (prev != null) eng.user.addTrigram(p2, prev, final) }
             WordStore.scheduleSave()
         }
         autoLang(final)

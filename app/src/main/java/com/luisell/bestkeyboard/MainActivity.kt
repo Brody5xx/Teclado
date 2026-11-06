@@ -1175,6 +1175,14 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.26.0" to tr("•  Adivina la palabra siguiente desde el primer día, en inglés y en español: «thank you» → so much, «I will be there in» → a few minutes, «muchas» → gracias, «no te» → preocupes. Antes solo adivinaba lo que tú ya habías escrito.\n" +
+            "•  Ahora recuerda las 2 palabras anteriores (no solo 1): aprende tus frases completas y te las va completando. Lo que tú escribes siempre pesa más que lo de fábrica.\n" +
+            "•  En pruebas con frases normales: adivina 1 de cada 3 palabras sin escribir ni una letra, y escribes 66% menos letras.\n" +
+            "   (Frases de ejemplo de tatoeba.org, licencia CC-BY 2.0.)",
+            "•  Guesses the next word from day one, in English and Spanish: «thank you» → so much, «I will be there in» → a few minutes, «no te» → preocupes. Before, it only guessed what you had already typed.\n" +
+            "•  It now remembers the 2 previous words (not just 1): it learns your full phrases and completes them for you. What you type always counts more than the built-in ones.\n" +
+            "•  In tests with normal sentences: it guesses 1 in 3 words without typing a single letter, and you type 66% fewer letters.\n" +
+            "   (Example sentences from tatoeba.org, CC-BY 2.0 license.)"),
         "12.25.0" to tr("•  Sugerencias en inglés mucho mejores: el teclado ahora mira el idioma de la frase que estás escribiendo. Si empiezas «the camera…» con el teclado en español, desde la segunda palabra ya te sugiere y corrige en inglés (antes «chec» salía «chef» y «camer» salía «comer»). Y al revés: escribiendo en español con el teclado en inglés.\n" +
             "•  Menos nombres de películas en las sugerencias (thomas, adam, todd…): ahora salen al final.",
             "•  Much better English suggestions: the keyboard now looks at the language of the sentence you're writing. If you start «the camera…» with the keyboard in Spanish, from the second word it already suggests and corrects in English (before, «chec» became «chef»). And the other way: typing Spanish with the keyboard in English.\n" +

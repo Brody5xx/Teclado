@@ -9,6 +9,9 @@ import kotlin.math.ln
  */
 class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
 
+    /** Las frases de fábrica (qué palabra suele venir después). Se cargan aparte. */
+    @Volatile var base: NGrams? = null
+
     class Result(val suggestions: List<String>, val correction: String?)
 
     /** El otro idioma casi no aparece en las sugerencias (solo si no hay nada en el tuyo). */
@@ -99,6 +102,24 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return if (c > 0) 3.4f * ln(1f + c) else 0f
     }
 
+    /** Lo que dice la frase: tus pares y tríos de palabras, y los de fábrica (más suaves). */
+    private fun ctxBonus(prevLower: String?, prev2Lower: String?, key: String, lang: String): Float {
+        var b = bigramBonus(prevLower, key)
+        if (prevLower == null) return b
+        if (prev2Lower != null) {
+            val c = user.trigramCount("$prev2Lower $prevLower", key)
+            if (c > 0) b += 3.0f * ln(1f + c)
+        }
+        val bs = base ?: return b
+        val c = bs.count("b", lang, prevLower, key)
+        if (c > 0) b += 1.1f * ln(1f + c)
+        if (prev2Lower != null) {
+            val t = bs.count("t", lang, "$prev2Lower $prevLower", key)
+            if (t > 0) b += 1.5f * ln(1f + t)
+        }
+        return b
+    }
+
     private fun inAnyDict(lower: String): Boolean = dicts.any { it.indexOf(lower) >= 0 }
 
     /** ¿Es una palabra conocida (del diccionario o aprendida de ti)? */
@@ -117,11 +138,12 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     // ---------------------------------------------------------------- Sugerencias
 
     /** Las mejores palabras que empiezan como [typed]. */
-    fun completions(typed: String, prev: String?, lang: String, max: Int = 6): List<String> {
+    fun completions(typed: String, prev: String?, lang: String, max: Int = 6, prev2: String? = null): List<String> {
         val tf = TextUtil.fold(typed)
         if (tf.isEmpty()) return emptyList()
         val tl = typed.lowercase()
         val prevLower = prev?.lowercase()
+        val prev2Lower = prev2?.lowercase()
         val top = TopN(max)
         for (d in dicts) {
             val range = d.prefixRange(tf)
@@ -129,7 +151,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             for (i in range) {
                 val w = d.words[i]
                 val key = if (w[0].isUpperCase()) w.lowercase() else w
-                var s = d.logFreq[i] + lb + userBonus(key, lang) + bigramBonus(prevLower, key)
+                var s = d.logFreq[i] + lb + userBonus(key, lang) + ctxBonus(prevLower, prev2Lower, key, lang)
                 val extra = d.folds[i].length - tf.length
                 s += if (extra == 0) 0.6f else -0.08f * extra
                 if (key.startsWith(tl)) s += 0.4f
@@ -139,7 +161,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         }
         for ((key, e) in user.words) {
             if (!e.known || !e.fold.startsWith(tf) || inAnyDict(key)) continue
-            var s = 9f + userBonus(key, lang) + bigramBonus(prevLower, key)
+            var s = 9f + userBonus(key, lang) + ctxBonus(prevLower, prev2Lower, key, lang)
             val extra = e.fold.length - tf.length
             s += if (extra == 0) 0.6f else -0.08f * extra
             top.offer(key, e.display, s)
@@ -232,19 +254,31 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return found
     }
 
-    /** Palabras que sueles escribir después de [prev] (aprendido de ti). */
-    fun predictions(prev: String, lang: String, max: Int = 3): List<String> {
-        val m = user.bigrams[prev.lowercase()] ?: return emptyList()
-        // Primero lo de tu idioma; lo del otro idioma solo si no hay más
-        return m.entries.sortedByDescending { it.value + (if (langOf(it.key).let { l -> l == null || l == lang }) 1000 else 0) }
-            .filter { langOf(it.key).let { l -> l == null || l == lang } || m.size <= max }
-            .filter { !user.isBlocked(it.key) }
-            .take(max).map { displayFor(it.key, lang) }
+    /**
+     * La palabra siguiente: lo que TÚ sueles escribir después (lo que más pesa) y, si no hay,
+     * lo que se suele decir en ese idioma ("thank you" → for, so; "nos vemos" → mañana…).
+     */
+    fun predictions(prev: String, lang: String, max: Int = 3, prev2: String? = null): List<String> {
+        val p = prev.lowercase()
+        val p2 = prev2?.lowercase()
+        val score = HashMap<String, Float>()
+        fun okLang(k: String) = langOf(k).let { l -> l == null || l == lang }
+        fun add(k: String, v: Float) { if (!user.isBlocked(k)) score[k] = (score[k] ?: 0f) + v }
+        user.bigrams[p]?.forEach { (k, c) -> add(k, 2.5f + 3.4f * ln(1f + c) + (if (okLang(k)) 0f else -5f)) }
+        if (p2 != null) user.trigrams["$p2 $p"]?.forEach { (k, c) -> add(k, 3.5f + 3.0f * ln(1f + c) + (if (okLang(k)) 0f else -5f)) }
+        base?.let { bs ->
+            bs.next("b", lang, p) { k, c -> add(k, 1.1f * ln(1f + c)) }
+            if (p2 != null) bs.next("t", lang, "$p2 $p") { k, c -> add(k, 0.8f + 1.5f * ln(1f + c)) }
+        }
+        return score.entries.sortedByDescending { it.value }.take(max).map { e ->
+            val k = e.key
+            if (lang == "en" && (k == "i" || k.startsWith("i'"))) "I" + k.drop(1) else displayFor(k, lang)
+        }
     }
 
-    fun suggest(typed: String, prev: String?, lang: String): Result {
+    fun suggest(typed: String, prev: String?, lang: String, prev2: String? = null): Result {
         val corr = correction(typed, lang)
-        val comps = completions(typed, prev, lang).map { TextUtil.matchCase(it, typed) }
+        val comps = completions(typed, prev, lang, prev2 = prev2).map { TextUtil.matchCase(it, typed) }
         return Result(comps, corr?.let { TextUtil.matchCase(it, typed) })
     }
 

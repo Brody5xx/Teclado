@@ -50,6 +50,23 @@ object TextUtil {
         return w.ifEmpty { null }
     }
 
+    /** Las 2 palabras antes de la actual, en la misma frase: (anterior, la de antes). */
+    fun previousWords(before: CharSequence, currentLength: Int): Pair<String?, String?> {
+        fun wordBefore(end0: Int): Pair<String, Int>? {
+            var i = end0
+            var sawSpace = false
+            while (i > 0 && before[i - 1] == ' ') { i--; sawSpace = true }
+            if (!sawSpace || i == 0 || !isWordChar(before[i - 1])) return null
+            val end = i
+            while (i > 0 && isWordChar(before[i - 1])) i--
+            val w = before.subSequence(i, end).toString().trim('\'', '’')
+            return if (w.isEmpty()) null else w to i
+        }
+        val a = wordBefore(before.length - currentLength) ?: return null to null
+        val b = wordBefore(a.second)
+        return a.first to b?.first
+    }
+
     /** ¿Empieza una oración en esta posición? (inicio del texto o después de . ? ! y espacio) */
     fun isSentenceStart(before: CharSequence, wordLength: Int): Boolean {
         var i = before.length - wordLength

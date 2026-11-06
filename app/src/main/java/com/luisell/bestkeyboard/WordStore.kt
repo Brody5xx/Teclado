@@ -51,6 +51,8 @@ object WordStore {
                 }
             } catch (_: Exception) { }
             io.execute {
+                // 📚 Frases de fábrica para adivinar la palabra siguiente
+                try { val ng = com.luisell.bestkeyboard.words.NGrams(); app.assets.open("ngrams.txt").use { ng.load(it) }; e.base = ng } catch (_: Throwable) { }
                 val g = try { GestureDecoder(listOf(es, en), user) } catch (_: Throwable) { null }
                 main.post { gesture = g }
             }
