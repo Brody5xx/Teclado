@@ -86,7 +86,21 @@ class ClipPanel(context: Context) : FrameLayout(context) {
     }
     private val decoder = Executors.newSingleThreadExecutor()
 
-    private inner class Holder(val box: FrameLayout, val text: TextView, val image: ImageView, val pin: IconView, val check: IconView)
+    private inner class Holder(val box: FrameLayout, val text: TextView, val image: ImageView, val pin: IconView, val check: IconView, val time: TextView)
+
+    /** 🕐 Cuándo lo copiaste: «Hoy 9:41», «Ayer 18:05», «3 nov». */
+    private fun whenLabel(t: Long): String {
+        val now = java.util.Calendar.getInstance()
+        val c = java.util.Calendar.getInstance().apply { timeInMillis = t }
+        val hm = android.text.format.DateFormat.getTimeFormat(context).format(java.util.Date(t))
+        val sameYear = now.get(java.util.Calendar.YEAR) == c.get(java.util.Calendar.YEAR)
+        val dayDiff = if (sameYear) now.get(java.util.Calendar.DAY_OF_YEAR) - c.get(java.util.Calendar.DAY_OF_YEAR) else 99
+        return when (dayDiff) {
+            0 -> L.t("Hoy ", "Today ") + hm
+            1 -> L.t("Ayer ", "Yesterday ") + hm
+            else -> java.text.SimpleDateFormat("d MMM", if (L.english) java.util.Locale.US else java.util.Locale("es")).format(java.util.Date(t))
+        }
+    }
 
     private val adapter = object : BaseAdapter() {
         override fun getCount() = items.size
@@ -107,6 +121,11 @@ class ClipPanel(context: Context) : FrameLayout(context) {
             h.check.background = null
             h.check.invalidate()
             h.text.setTextColor(palette.text)
+            h.time.text = if (it.pinned) "" else whenLabel(it.time)
+            h.time.visibility = if (it.pinned || selecting) GONE else VISIBLE
+            h.time.setTextColor(palette.text)
+            h.time.alpha = 0.55f
+            h.time.background = PanelUi.rounded(palette.key, d(8f).toFloat())
             h.pin.visibility = if (it.pinned && !selecting) VISIBLE else GONE
             h.pin.color = palette.accent
             h.pin.bgColor = palette.bg
@@ -233,7 +252,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         text.textSize = 14f
         text.maxLines = 4
         text.ellipsize = TextUtils.TruncateAt.END
-        text.setPadding(d(10f), d(8f), d(10f), d(8f))
+        text.setPadding(d(10f), d(8f), d(10f), d(16f))
         box.addView(text, FrameLayout.LayoutParams(-1, -1))
         val image = ImageView(context)
         image.scaleType = ImageView.ScaleType.CENTER_CROP
@@ -255,7 +274,11 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         box.addView(check, FrameLayout.LayoutParams(d(26f), d(26f), Gravity.TOP or Gravity.END).apply {
             topMargin = d(4f); rightMargin = d(4f)
         })
-        val h = Holder(box, text, image, pin, check)
+        val time = TextView(context)
+        time.textSize = 10f
+        time.setPadding(d(6f), d(1f), d(6f), d(1f))
+        box.addView(time, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = d(3f); rightMargin = d(4f) })
+        val h = Holder(box, text, image, pin, check, time)
         box.tag = h
         return h
     }

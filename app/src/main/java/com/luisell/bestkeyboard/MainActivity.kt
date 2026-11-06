@@ -1206,6 +1206,16 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.30.0" to tr("•  Más rápido al escribir: las sugerencias tardan hasta 40 veces menos cuando escribes algo que no es palabra, y 3 veces menos con 1 o 2 letras. Así no se traba aunque escribas rápido.\n" +
+            "•  Dictado: en teléfonos con Android 14 o más nuevo reconoce si hablas español o inglés en cada frase (puedes mezclar sin tocar nada) y pone la puntuación solo. Si dices una pregunta, pone «¿…?» solo: «cómo estás» → ¿Cómo estás?, «what time do you want to meet» → …meet?\n" +
+            "•  Portapapeles: cada cosa copiada dice cuándo la copiaste (Hoy 9:41, Ayer, 3 nov). Con la lupa buscas en todo lo copiado.\n" +
+            "•  Mi jornada: nuevo botón «Resumen de la semana» dentro del panel, y en el resumen el botón «Mandar» abre WhatsApp, correo o Mensajes con tus horas listas.\n" +
+            "•  Revisión: arreglado un cierre que podía pasar si apagabas todos los botones de Mi jornada, y otros detalles internos.",
+            "•  Faster typing: suggestions take up to 40 times less when you type something that isn't a word, and 3 times less with 1 or 2 letters. No lag even when typing fast.\n" +
+            "•  Dictation: on Android 14 or newer it detects whether you speak Spanish or English in each sentence (mix freely) and adds punctuation by itself. If you say a question, it adds «?» by itself.\n" +
+            "•  Clipboard: each copied item shows when you copied it (Today 9:41, Yesterday, Nov 3). Use the magnifier to search everything you copied.\n" +
+            "•  My workday: new «Week summary» button inside the panel, and the summary's «Send» button opens WhatsApp, email or Messages with your hours ready.\n" +
+            "•  Review: fixed a crash that could happen if you turned off every My workday button, and other internal details."),
         "12.29.0" to tr("•  Cambio de idioma más rápido: ahora cuenta palabras cortas como «I», «hey», «the», «you», «dale», «oye», «ya», «yo». En casi todas las frases cambia en la 2.ª palabra (antes en la 3.ª o 4.ª), escribiendo o tocando sugerencias.\n" +
             "•  Signo de pregunta: si la frase es una pregunta («can you send me…», «¿me mandas…», «puedes…»), a la izquierda sale «?» y se pone pegado a la palabra.\n" +
             "•  Coma antes de «pero» y «but»: «ya quedó listo pero» → ✨ «listo, pero».\n" +

@@ -128,10 +128,10 @@ object WorkDay {
     fun customName(kind: String): String = names[kind] ?: ""
 
     /** Los botones que usas, en orden. */
-    fun enabledKinds(): List<String> = ALL_KINDS.filter { it in on }
+    fun enabledKinds(): List<String> = ALL_KINDS.filter { it in on }.ifEmpty { ALL_KINDS } // nunca vacío (si apagas todos, no se cierra)
 
     /** El que cierra el día (Casa; si no lo usas, Salí; si tampoco, el último que tengas). */
-    fun finalKind(): String = enabledKinds().last()
+    fun finalKind(): String = enabledKinds().lastOrNull() ?: HOME
 
     /** El nombre que se ve: el tuyo, o el de fábrica. */
     fun label(kind: String): String = (if (isBreak(kind)) null else names[kind]) ?: defaultLabel(kind)

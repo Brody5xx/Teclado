@@ -1024,6 +1024,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+        // 🎙️ Teléfonos nuevos: puntuación automática y reconoce si hablas español o inglés en cada frase
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            intent.putExtra(RecognizerIntent.EXTRA_ENABLE_FORMATTING, RecognizerIntent.FORMATTING_OPTIMIZE_QUALITY)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 34 && !voiceEnglish && prefs.getBoolean(Prefs.AUTO_LANG, true)) {
+            intent.putExtra(RecognizerIntent.EXTRA_ENABLE_LANGUAGE_DETECTION, true)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_DETECTION_ALLOWED_LANGUAGES, arrayListOf("es-US", "en-US"))
+                .putExtra(RecognizerIntent.EXTRA_ENABLE_LANGUAGE_SWITCH, RecognizerIntent.LANGUAGE_SWITCH_BALANCED)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_SWITCH_ALLOWED_LANGUAGES, arrayListOf("es-US", "en-US"))
+        }
         listening = true
         vp.setListening(true)
         vp.setStatus(L.t("Escuchando… habla ahora", "Listening… speak now"))
@@ -1071,6 +1081,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
         override fun onResults(results: android.os.Bundle?) {
             val t = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+            // ¿En qué idioma hablaste? (teléfonos nuevos): los signos y el «¿» van con ese idioma
+            spokenLang = if (android.os.Build.VERSION.SDK_INT >= 34) try {
+                results?.getString(SpeechRecognizer.DETECTED_LANGUAGE)?.let { if (it.startsWith("en")) "en" else if (it.startsWith("es")) "es" else null }
+            } catch (_: Exception) { null } else null
             if (reportMode) {
                 // Modo reporte: se junta todo lo que dices y al final la IA lo escribe formal
                 if (!t.isNullOrBlank()) reportBuf.append(' ').append(t.trim())
@@ -1087,6 +1101,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private var reportMode = false
     private val reportBuf = StringBuilder()
+    /** El idioma en que hablaste la última frase (si el teléfono lo sabe). */
+    private var spokenLang: String? = null
 
     /** Terminaste de dictar el reporte: la IA lo convierte en ticket formal. */
     private fun finishReport() {
@@ -1105,7 +1121,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Escribe lo dictado con signos, espacio y mayúscula donde corresponde. */
     private fun commitVoice(raw: String) {
-        val t = VoiceText.process(raw, voiceLang)
+        val vl = spokenLang ?: WordStore.engine?.let { e -> e.contextLang(raw + " ", 0) } ?: voiceLang
+        val t = VoiceText.process(raw, vl)
         if (t.isEmpty()) return
         if (voiceEnglish) {
             // Hablaste en español: se escribe en inglés. Con la clave de Gemini sale en inglés técnico y profesional
@@ -2022,8 +2039,22 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** El idioma para sugerir y corregir: el de la frase que escribes (si se nota), si no el del teclado. */
+    private var sugLangKey = ""
+    private var sugLangVal = ""
+    private var sugLangAt = 0L
+
     private fun sugLang(eng: com.luisell.bestkeyboard.words.WordEngine, before: CharSequence, curLen: Int): String {
         if (!prefs.getBoolean(Prefs.AUTO_LANG, true)) return lang
+        // ⚡ En la misma tecla se pregunta varias veces: se guarda la respuesta un momento
+        val k = lang + "|" + curLen + "|" + before
+        val now = SystemClock.uptimeMillis()
+        if (k == sugLangKey && now - sugLangAt < 400L) return sugLangVal
+        val v = sugLangRaw(eng, before, curLen)
+        sugLangKey = k; sugLangVal = v; sugLangAt = now
+        return v
+    }
+
+    private fun sugLangRaw(eng: com.luisell.bestkeyboard.words.WordEngine, before: CharSequence, curLen: Int): String {
         return try {
             eng.contextLang(before, curLen)
                 // Primera palabra de la frase: el idioma de lo último que escribiste en este cuadro
@@ -2594,6 +2625,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val cur = TextUtil.currentWord(ic.getTextBeforeCursor(48, 0) ?: "")
         if (cur != touchFor) { touchHints.setLength(0); repeat(cur.length) { touchHints.append(' ') } }
         touchHints.append(kv?.lastTouchAlt ?: ' ')
+        kv?.lastTouchAlt = null // se usa una sola vez
         touchFor = cur + t
     }
 
@@ -3787,7 +3819,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             WorkdayCenter.record(this, k) { refreshWorkday(); maybeAskSaveSite() }
             refreshWorkday()
             if (k == WorkDay.HOME) celebrateDay()
-            if (k == WorkDay.START || (k == WorkDay.enabledKinds().first() && k != WorkDay.ARRIVE)) {
+            if (k == WorkDay.START || (k == WorkDay.enabledKinds().firstOrNull() && k != WorkDay.ARRIVE)) {
                 askDriving()
                 // 🧰 ¿Llevas todo? (la checklist de antes de salir)
                 if (prefs.getBoolean(Prefs.CHECK_ON, true) && Todos.checkItems(prefs).isNotEmpty()) showMode(16)
@@ -3800,6 +3832,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             })
         }
         buttons.add(L.t("🕐 Anotar con otra hora", "🕐 Log with another time") to { askLogAt() })
+        buttons.add(L.t("📊 Resumen de la semana", "📊 Week summary") to { startWeek(ticketLang()) })
         buttons.add(L.t("📄 Hoja de horas (PDF)", "📄 Timesheet (PDF)") to { askTimesheet() })
         buttons.add(L.t("📅 Calendario", "📅 Calendar") to {
             showMode(0)
@@ -4231,6 +4264,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** 📤 Abre WhatsApp, correo, Mensajes… con este texto listo para mandar. */
+    private fun shareText(text: String, subject: String) {
+        showMode(0)
+        try {
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, text).putExtra(Intent.EXTRA_SUBJECT, subject)
+            startActivity(Intent.createChooser(send, subject).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: Exception) { aiCopy(text) }
+    }
+
     private fun startWeek(outLang: String) {
         showMode(0)
         val bar = infoBar ?: return
@@ -4238,6 +4281,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val text = weekText(en)
         infoRegen = { startWeek(outLang) }
         bar.show(L.t("📊 Resumen de la semana", "📊 Week summary"), text, listOf(
+            L.t("Mandar", "Send") to { closeInfo(); shareText(text, L.t("Mis horas de la semana", "My hours this week")) },
             L.t("Escribir", "Type it") to { insertText(text); closeInfo() },
             L.t("Copiar", "Copy") to { aiCopy(text) },
             L.t("📄 PDF", "📄 PDF") to { closeInfo(); sendTimesheet(WorkDay.weekStart(), en) },

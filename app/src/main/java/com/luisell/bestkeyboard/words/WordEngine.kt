@@ -223,8 +223,13 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         for (d in dicts) {
             val range = d.prefixRange(tf)
             val lb = langBonus(d, lang)
+            // Con 1–2 letras hay miles de palabras: las muy raras se saltan (salvo las tuyas) para ir rápido
+            val big = range.last - range.first > 2500
+            val cut = if (lb < 0f) MIN_EDIT_LF + 2f else MIN_EDIT_LF
             for (i in range) {
                 val w = d.words[i]
+                if (big && d.logFreq[i] < cut && user.words.isNotEmpty() && user.count(w.lowercase()) == 0) continue
+                if (big && d.logFreq[i] < cut && user.words.isEmpty()) continue
                 val key = if (w[0].isUpperCase()) w.lowercase() else w
                 var s = d.logFreq[i] + lb + userBonus(key, lang) + ctxBonus(prevLower, prev2Lower, key, lang)
                 val extra = d.folds[i].length - tf.length
@@ -302,7 +307,9 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         for (d in dicts) offerIdx(d, d.bestForSound(tf), -1.5f)
         edits(tf) { v, pen ->
             for (d in dicts) {
-                offerIdx(d, d.bestForFold(v), pen)
+                // Todas las formas (actualizo y actualizó), no solo la más común
+                val bi = d.bestForFold(v)
+                if (bi >= 0) for (j in d.variants(v)) offerIdx(d, j, if (j == bi) pen else pen - 0.3f)
                 // Una letra mal + cómo suena: "actuliso" -> "actualizo"
                 offerIdx(d, d.bestForSound(v), pen - 1.2f)
             }
@@ -320,17 +327,18 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
                 val r = d.prefixRange(v)
                 var n = 0
                 for (i in r) {
-                    if (++n > 60) break
+                    if (++n > 25) break
                     if (d.folds[i].length == v.length) continue
                     offerIdx(d, i, pen - 1.0f - 0.06f * (d.folds[i].length - v.length))
                 }
             }
         }
-        // Nada a una letra: busca a dos letras (más lento, solo si hace falta)
-        if (top.words().isEmpty() && tf.length in 5..12) {
+        // Nada a una letra: busca a dos letras, pero solo con los errores de dedo más comunes
+        // (tecla de al lado, vocal que faltó, letra de más, dos al revés) — así no se traba
+        if (top.words().isEmpty() && tf.length in 5..12 && tf.count { isVowel(it) } >= 1) {
             val seen = HashSet<String>()
-            edits(tf) { v1, p1 ->
-                if (seen.add(v1)) edits(v1) { v2, p2 ->
+            cheapEdits(tf) { v1, p1 ->
+                if (seen.add(v1)) cheapEdits(v1) { v2, p2 ->
                     for (d in dicts) offerIdx(d, d.bestForFold(v2), p1 + p2)
                 }
             }
@@ -744,6 +752,24 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             }
         }
         return best
+    }
+
+    /** Solo los errores de dedo más comunes (mucho más rápido que [edits]). */
+    private inline fun cheapEdits(w: String, visit: (String, Float) -> Unit) {
+        val n = w.length
+        val sb = StringBuilder(n + 1)
+        for (i in 0 until n) { sb.setLength(0); sb.append(w, 0, i).append(w, i + 1, n); visit(sb.toString(), -2.2f) }
+        for (i in 0 until n - 1) {
+            if (w[i] == w[i + 1]) continue
+            sb.setLength(0); sb.append(w); sb.setCharAt(i, w[i + 1]); sb.setCharAt(i + 1, w[i]); visit(sb.toString(), -2.0f)
+        }
+        for (i in 0 until n) for (c in ALPHABET) {
+            if (c == w[i] || !Keys.near(w[i], c)) continue
+            sb.setLength(0); sb.append(w); sb.setCharAt(i, c); visit(sb.toString(), -1.8f)
+        }
+        for (i in 0..n) for (c in "aeiou") {
+            sb.setLength(0); sb.append(w, 0, i).append(c).append(w, i, n); visit(sb.toString(), -1.9f)
+        }
     }
 
     /** Genera todas las variantes a una "tecla" de distancia, con su castigo. */

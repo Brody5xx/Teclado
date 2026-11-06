@@ -49,8 +49,34 @@ object VoiceText {
         s = s.replace(Regex("([.,;:!?…])(?=[^\\s.,;:!?…\\n])"), "$1 ")
         s = s.replace(Regex(" *\\n *"), "\n")
         s = s.trim(' ')
+        // ❓ Si es una pregunta y no dijiste el signo, se pone solo
+        if (s.isNotEmpty() && s.last().isLetterOrDigit() && looksLikeQuestion(s, lang)) s += "?"
         if (lang == "es") s = addSpanishOpeners(s)
         return capitalizeSentences(s)
+    }
+
+    private val Q_EN = setOf("what", "where", "when", "why", "who", "whose", "which", "how", "can", "could", "would", "will",
+        "do", "does", "did", "is", "are", "was", "were", "should", "may", "have", "has", "am", "isn't", "aren't", "don't", "doesn't", "didn't")
+    private val Q_ES = setOf("qué", "cómo", "dónde", "cuándo", "quién", "quiénes", "cuál", "cuáles", "cuánto", "cuánta", "cuántos",
+        "cuántas", "puedes", "podrías", "tienes", "sabes", "vienes", "quieres", "vas", "estás", "me puedes", "por qué")
+
+    /** La última frase empieza como pregunta («what time…», «cómo estás», «puedes…»). */
+    private fun looksLikeQuestion(s: String, lang: String): Boolean {
+        val start = maxOf(s.lastIndexOf('.'), s.lastIndexOf('!'), s.lastIndexOf('?'), s.lastIndexOf('\n')) + 1
+        val sent = s.substring(start)
+        // La frase entera, o lo que va después de la última coma («hola, qué hora es»)
+        val parts = listOfNotNull(sent, sent.substringAfterLast(", ", "").ifEmpty { null })
+        for (part in parts) {
+            val ws = part.lowercase().split(Regex("[^\\p{L}'’]+")).filter { it.isNotEmpty() }
+            if (ws.size < 2) continue
+            val first = ws[0]
+            val accented = lang == "es" && first.any { it in "áéíóú" } && first in Q_ES
+            if (ws.size < 3 && !accented) continue
+            val q = if (lang == "es") first in Q_ES || (first == "por" && ws[1] == "qué") || (first == "me" && ws[1] in setOf("puedes", "podrías", "mandas", "avisas"))
+                else first in Q_EN
+            if (q) return true
+        }
+        return false
     }
 
     /** "cómo estás?" -> "¿cómo estás?" (español abre las preguntas y exclamaciones). */

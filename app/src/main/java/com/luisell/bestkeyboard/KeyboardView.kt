@@ -1009,7 +1009,6 @@ class KeyboardView(context: Context) : View(context) {
     private var touchY = 0f
     /** 👆 La otra letra que pudiste querer (tocaste cerca del borde entre dos teclas), o null. */
     var lastTouchAlt: Char? = null
-        private set
 
     private fun isLetterKey(k: Key) = k.code == 0 && k.label.length == 1 && k.label[0].isLetter()
 
@@ -1546,6 +1545,7 @@ class KeyboardView(context: Context) : View(context) {
         invalidate()
         if (key == null || !commit) return
         if (alts != null) {
+            lastTouchAlt = null
             listener?.onKeyText(alts[altSel])
             return
         }

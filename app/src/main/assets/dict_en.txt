@@ -1944,7 +1944,6 @@ alonzo	128
 aloof	81
 aloofness	4
 alors	47
-alot	119
 aloud	231
 alouette	8
 aloysha	10
@@ -30129,7 +30128,6 @@ gouty	4
 gouverneur	5
 gov	43
 govardhan	16
-goverment	27
 govern	209
 governance	45
 governed	127
@@ -51968,7 +51966,6 @@ occupies	59
 occupy	332
 occupying	116
 occur	785
-occured	40
 occurence	4
 occuring	4
 occurred	1369
@@ -66308,7 +66305,6 @@ separatism	4
 separatist	55
 separatists	52
 separator	11
-seperate	24
 sephardic	11
 sepoys	8
 sepp	27
@@ -76126,7 +76122,6 @@ tommaso	63
 tommi	33
 tommie	48
 tommies	10
-tommorow	25
 tommy	85
 tommyrot	4
 tomo	42
@@ -79330,7 +79325,6 @@ untidy	58
 untie	616
 untied	102
 until	32223
-untill	56
 untimely	102
 untiring	7
 unto	698
@@ -82480,7 +82474,6 @@ wi	285
 wibble	4
 wiccan	28
 wiccans	9
-wich	38
 wichai	5
 wichita	100
 wichitawx	8
