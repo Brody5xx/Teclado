@@ -101,8 +101,8 @@ class Dictionary private constructor(
 
         /** Lee un archivo "palabra<TAB>frecuencia" ya ordenado por forma plegada. */
         fun load(lang: String, input: InputStream): Dictionary {
-            val words = ArrayList<String>(52000)
-            val freqs = ArrayList<Float>(52000)
+            val words = ArrayList<String>(150000)
+            val freqs = ArrayList<Float>(150000)
             BufferedReader(InputStreamReader(input, Charsets.UTF_8), 1 shl 16).use { r ->
                 while (true) {
                     val line = r.readLine() ?: break
@@ -114,7 +114,8 @@ class Dictionary private constructor(
                 }
             }
             val w = words.toTypedArray()
-            val folds = Array(w.size) { TextUtil.fold(w[it]) }
+            // Si la forma sin acentos es igual a la palabra, se usa la misma (ahorra memoria)
+            val folds = Array(w.size) { val f = TextUtil.fold(w[it]); if (f == w[it]) w[it] else f }
             val lf = FloatArray(freqs.size) { freqs[it] }
             return Dictionary(lang, w, folds, lf)
         }

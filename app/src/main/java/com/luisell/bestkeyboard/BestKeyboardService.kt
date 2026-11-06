@@ -2176,6 +2176,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             // Lo que escribiste es una palabra: va en el centro
             showSlots(list.getOrNull(0), word, list.getOrNull(1), bold = false, typedLeft = false)
         } else {
+            // 🔎 No es una palabra: ¿quisiste decir…? (actulizo → actualizo)
+            if (list.size < 2) {
+                val near = try { eng.nearWords(word, prev, lang, 3) } catch (_: Exception) { emptyList() }
+                    .map { TextUtil.matchCase(it, word) }.filter { it != word && it !in list }
+                if (near.isNotEmpty()) list.addAll(0, near)
+            }
             showSlots(word, list.getOrNull(0), list.getOrNull(1), bold = false, typedLeft = true)
         }
     }
@@ -2293,7 +2299,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
         }
         if (learnOn && fieldLearn) {
-            eng.user.add(final, 1, lang)
+            // Si parece un error de dedo (hay una palabra casi igual), cuesta más aprenderla
+            val typo = fixed == null && eng.user.entry(final.lowercase()) == null && eng.looksLikeTypo(final, lang)
+            eng.user.add(final, 1, lang, typo)
             if (prev != null) eng.user.addBigram(prev, final)
             WordStore.scheduleSave()
         }

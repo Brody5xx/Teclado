@@ -42,6 +42,14 @@ object WordStore {
             val user = UserData()
             try { user.load(file) } catch (_: Exception) { }
             val e = WordEngine(listOf(es, en), user)
+            // 🧹 Lo aprendido que parece error de dedo ("clmo" ~ "como"): ya no sale hasta que
+            // lo escribas 4 veces (si es una palabra tuya de verdad, vuelve sola)
+            try {
+                for (x in user.words.values) {
+                    if (x.sure || x.typo || x.count >= UserData.TYPO_KNOWN) continue
+                    if (e.looksLikeTypo(x.display, "es")) { x.typo = true; x.legacy = false; user.dirty = true }
+                }
+            } catch (_: Exception) { }
             io.execute {
                 val g = try { GestureDecoder(listOf(es, en), user) } catch (_: Throwable) { null }
                 main.post { gesture = g }

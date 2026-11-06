@@ -118,6 +118,91 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return top.words().filter { !user.isBlocked(it.lowercase()) }
     }
 
+    private var nearKey = ""
+    private var nearCache: List<String> = emptyList()
+
+    /**
+     * 🔎 Escribiste algo que no es palabra ("actulizo", "actuliso"): las palabras que más se le
+     * parecen, aunque sean poco comunes. Busca una letra de más, de menos, cambiada o al revés,
+     * cómo suena (s/z/c, b/v, h…), y palabras que EMPIEZAN parecido (mientras escribes).
+     * Solo para la barra de sugerencias (el autocorrector sigue siendo prudente).
+     */
+    fun nearWords(typed: String, prev: String?, lang: String, max: Int = 3): List<String> {
+        val tl = typed.lowercase()
+        val tf = TextUtil.fold(tl)
+        if (tf.length < 3 || tf.length > 20) return emptyList()
+        val key = "$lang|${prev?.lowercase()}|$tl"
+        if (key == nearKey) return nearCache
+        val prevLower = prev?.lowercase()
+        val top = TopN(max + 2)
+        fun offerIdx(d: Dictionary, i: Int, base: Float) {
+            if (i < 0 || d.logFreq[i] < MIN_NEAR_LF) return
+            val k = d.words[i].lowercase()
+            if (k == tl || user.isBlocked(k)) return
+            val marks = if (keepsMarks(tl, d.words[i])) 0f else -2.5f
+            top.offer(k, d.words[i], d.logFreq[i] + langBonus(d, lang) + base + marks + userBonus(k, lang) + bigramBonus(prevLower, k))
+        }
+        // Cómo suena lo que escribiste, tal cual
+        for (d in dicts) offerIdx(d, d.bestForSound(tf), -1.5f)
+        edits(tf) { v, pen ->
+            for (d in dicts) {
+                offerIdx(d, d.bestForFold(v), pen)
+                // Una letra mal + cómo suena: "actuliso" -> "actualizo"
+                offerIdx(d, d.bestForSound(v), pen - 1.2f)
+            }
+        }
+        // Tus palabras también (una letra de distancia)
+        val mine = HashMap<String, UserData.Entry>()
+        for (e in user.words.values) if (e.known && !e.typo) mine[e.fold] = e
+        if (mine.isNotEmpty()) edits(tf) { v, pen ->
+            val e = mine[v]
+            if (e != null && e.display.lowercase() != tl) top.offer(e.display.lowercase(), e.display, 9f + pen + userBonus(e.display.lowercase(), lang))
+        }
+        // Mientras escribes: palabras que empiezan casi igual ("actuliz" -> actualizar, actualización)
+        if (tf.length >= 4) edits(tf) { v, pen ->
+            for (d in dicts) {
+                val r = d.prefixRange(v)
+                var n = 0
+                for (i in r) {
+                    if (++n > 60) break
+                    if (d.folds[i].length == v.length) continue
+                    offerIdx(d, i, pen - 1.0f - 0.06f * (d.folds[i].length - v.length))
+                }
+            }
+        }
+        // Nada a una letra: busca a dos letras (más lento, solo si hace falta)
+        if (top.words().isEmpty() && tf.length in 5..12) {
+            val seen = HashSet<String>()
+            edits(tf) { v1, p1 ->
+                if (seen.add(v1)) edits(v1) { v2, p2 ->
+                    for (d in dicts) offerIdx(d, d.bestForFold(v2), p1 + p2)
+                }
+            }
+        }
+        val out = top.words().take(max)
+        nearKey = key
+        nearCache = out
+        return out
+    }
+
+    /** ¿Parece un error de dedo? (no es palabra, pero hay una palabra casi igual) */
+    fun looksLikeTypo(typed: String, lang: String): Boolean {
+        val tl = typed.lowercase()
+        if (inAnyDict(tl) || user.isSure(tl)) return false
+        if (typed.length > 1 && typed.drop(1).any { it.isUpperCase() }) return false // iPhone, McDonald
+        val tf = TextUtil.fold(tl)
+        if (tf.length < 3) return false
+        var found = false
+        edits(tf) { v, _ ->
+            if (!found) for (d in dicts) {
+                val i = d.bestForFold(v)
+                if (i >= 0 && d.logFreq[i] >= MIN_NEAR_LF && d.words[i].lowercase() != tl) { found = true; break }
+            }
+        }
+        if (!found) for (d in dicts) { val i = d.bestForSound(tf); if (i >= 0 && d.folds[i] != tf) { found = true; break } }
+        return found
+    }
+
     /** Palabras que sueles escribir después de [prev] (aprendido de ti). */
     fun predictions(prev: String, lang: String, max: Int = 3): List<String> {
         val m = user.bigrams[prev.lowercase()] ?: return emptyList()
@@ -192,7 +277,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
 
         // 2) Una letra de más, de menos, cambiada o al revés
         val mine = HashMap<String, UserData.Entry>()
-        for (e in user.words.values) if (e.known) mine[e.fold] = e
+        for (e in user.words.values) if (e.known && !e.typo) mine[e.fold] = e
         edits(tf) { variant, penalty ->
             for (d in dicts) {
                 val i = d.bestForFold(variant)
@@ -461,6 +546,8 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         private const val ALPHABET = "abcdefghijklmnopqrstuvwxyz"
         private val MIN_ACCENT_LF = ln(30f)
         private val MIN_EDIT_LF = ln(300f)
+        /** Para las sugerencias de "¿quisiste decir…?": basta con que sea una palabra real. */
+        private val MIN_NEAR_LF = ln(4f)
         private val LN150 = ln(150f)
     }
 }

@@ -1175,6 +1175,16 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.24.0" to tr("•  Sugerencias mucho más inteligentes:\n" +
+            "   –  Diccionario 3 veces más grande: 140.000 palabras en español y 85.000 en inglés, con las formas de los verbos que faltaban (actualizo, actualicé, reinicié, conecté…).\n" +
+            "   –  Si escribes algo que no es palabra («actulizo», «actuliso»), te sale «¿quisiste decir…?» con las palabras más parecidas: por una letra, por cómo suena (s/z, b/v, h) o porque empiezan casi igual.\n" +
+            "   –  Ya no aprende tan fácil los errores de dedo: si escribes algo como «clmo» y existe «como», hay que escribirlo 4 veces para que lo aprenda. Las palabras raras que ya había aprendido así se esconden solas.\n" +
+            "   –  Lo que aprendió de ti NO se borra al actualizar: tus palabras, cuántas veces las usas y ahora también lo que escribiste hace poco.",
+            "•  Much smarter suggestions:\n" +
+            "   –  A 3 times bigger dictionary: 140,000 Spanish words and 85,000 English words, with the verb forms that were missing.\n" +
+            "   –  If you type something that isn't a word, you get «did you mean…?» with the closest words: by one letter, by how it sounds, or because they start almost the same.\n" +
+            "   –  It no longer learns typos so easily: if you type something like «clmo» and «como» exists, you have to type it 4 times for it to learn it. Odd words it already learned that way hide by themselves.\n" +
+            "   –  What it learned from you is NOT erased when you update: your words, how often you use them and now also what you typed recently."),
         "12.23.3" to tr("•  Borrar sugerencias: deja presionada una sugerencia (por ejemplo una palabra mal escrita que aprendió) y toca «Borrar». No vuelve a salir ni en las sugerencias ni en el autocorrector. En «Ver y editar mis palabras» ves las que borraste y puedes devolverlas con ↶.",
             "•  Delete suggestions: press and hold a suggestion (for example a misspelled word it learned) and tap «Delete». It won't show up again in suggestions or autocorrect. In «See and edit my words» you can see the ones you deleted and bring them back with ↶."),
         "12.23.2" to tr("•  Cambio de idioma solo, también con las sugerencias: si eliges 2 palabras seguidas del otro idioma tocando las sugerencias (sin escribirlas), el teclado se cambia solo a ese idioma, con la luz en la barra espaciadora. Y esas palabras se aprenden en su idioma correcto, para que no se mezclen.",

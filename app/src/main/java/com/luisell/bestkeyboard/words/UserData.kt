@@ -12,10 +12,14 @@ class UserData {
      * [sure] = la confirmaste tú ("+ Mi palabra", tocarla entre comillas, deshacer una corrección).
      * [legacy] = guardada por una versión vieja (se respeta como antes).
      */
-    class Entry(var display: String, var count: Int, var sure: Boolean = false, var legacy: Boolean = false, var en: Int = 0, var es: Int = 0) {
+    class Entry(var display: String, var count: Int, var sure: Boolean = false, var legacy: Boolean = false, var en: Int = 0, var es: Int = 0,
+                var typo: Boolean = false) {
         val fold = TextUtil.fold(display)
-        /** Cuenta como palabra tuya: confirmada, o escrita varias veces. */
-        val known get() = sure || count >= (if (legacy) KNOWN else AUTO_KNOWN)
+        /**
+         * Cuenta como palabra tuya: confirmada, o escrita varias veces. Si parece un error de dedo
+         * ([typo]: hay una palabra casi igual, como "clmo" ~ "como"), hace falta escribirla más veces.
+         */
+        val known get() = sure || count >= (if (typo) TYPO_KNOWN else if (legacy) KNOWN else AUTO_KNOWN)
     }
 
     val words = HashMap<String, Entry>()
@@ -57,20 +61,20 @@ class UserData {
         return if (lang == "en") e.en else e.es
     }
 
-    fun add(display: String, amount: Int = 1, lang: String? = null) {
+    fun add(display: String, amount: Int = 1, lang: String? = null, typo: Boolean = false) {
         val key = display.lowercase()
         if (key in blocked) return
         val e = words[key]
         val enAdd = if (lang == "en") amount else 0
         val esAdd = if (lang == "es") amount else 0
         if (e == null) {
-            words[key] = Entry(display, amount, en = enAdd, es = esAdd)
+            words[key] = Entry(display, amount, en = enAdd, es = esAdd, typo = typo)
         } else {
             e.count = (e.count + amount).coerceAtMost(100000)
             e.en = (e.en + enAdd).coerceAtMost(100000)
             e.es = (e.es + esAdd).coerceAtMost(100000)
             // Si la escribes con una mayúscula especial (ej. "Luisell"), se recuerda así
-            if (display != key && e.display == key) words[key] = Entry(display, e.count, e.sure, e.legacy, e.en, e.es)
+            if (display != key && e.display == key) words[key] = Entry(display, e.count, e.sure, e.legacy, e.en, e.es, e.typo)
         }
         recent[key] = System.currentTimeMillis()
         if (recent.size > 400) recent.entries.minByOrNull { it.value }?.let { recent.remove(it.key) }
@@ -84,7 +88,7 @@ class UserData {
         unblock(key) // la confirmaste tú: vuelve a ser tuya
         val c = count(key)
         if (c < KNOWN) add(display, KNOWN - c) else add(display, 1)
-        words[key]?.sure = true
+        words[key]?.let { it.sure = true; it.typo = false }
     }
 
     /** Deshiciste una corrección: no la vuelve a corregir, pero la revisión a fondo sí la revisa. */
@@ -133,7 +137,8 @@ class UserData {
         val sb = StringBuilder()
         for ((_, e) in words) {
             sb.append("w\t").append(e.display).append('\t').append(e.count).append('\t')
-                .append(if (e.sure) "1" else if (e.legacy) "L" else "0").append('\t').append(e.en).append('\t').append(e.es).append('\n')
+                .append(if (e.sure) "1" else if (e.legacy) "L" else if (e.typo) "T" else "0").append('\t').append(e.en).append('\t').append(e.es)
+                .append('\t').append(recent[e.display.lowercase()] ?: 0L).append('\n')
         }
         for ((p, m) in bigrams) for ((n, c) in m) {
             sb.append("b\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
@@ -147,12 +152,15 @@ class UserData {
         file.forEachLine(Charsets.UTF_8) { line ->
             val p = line.split('\t')
             when {
-                (p.size in 3..6) && p[0] == "w" -> {
+                (p.size in 3..7) && p[0] == "w" -> {
                     val c = p[2].toIntOrNull() ?: return@forEachLine
                     val flag = if (p.size >= 4) p[3] else "L" // versión vieja: se respeta como antes
                     val en = if (p.size >= 5) (p[4].toIntOrNull() ?: 0) else 0
                     val es = if (p.size >= 6) (p[5].toIntOrNull() ?: 0) else 0
-                    words[p[1].lowercase()] = Entry(p[1], c, sure = flag == "1", legacy = flag == "L", en = en, es = es)
+                    words[p[1].lowercase()] = Entry(p[1], c, sure = flag == "1", legacy = flag == "L", en = en, es = es, typo = flag == "T")
+                    // Cuándo la escribiste por última vez (así lo reciente sigue saliendo primero después de actualizar)
+                    val t = if (p.size >= 7) (p[6].toLongOrNull() ?: 0L) else 0L
+                    if (t > 0) recent[p[1].lowercase()] = t
                 }
                 p.size == 2 && p[0] == "x" -> blocked.add(p[1])
                 p.size == 4 && p[0] == "b" -> {
@@ -161,12 +169,18 @@ class UserData {
                 }
             }
         }
+        if (recent.size > 400) {
+            val keep = recent.entries.sortedByDescending { it.value }.take(400).map { it.key to it.value }
+            recent.clear(); for ((k, v) in keep) recent[k] = v
+        }
     }
 
     companion object {
         const val KNOWN = 2
         /** Palabras que no están en el diccionario: con escribirlas 2 veces ya las aprende sola. */
         const val AUTO_KNOWN = 2
+        /** Las que parecen error de dedo ("clmo", "actulizo"): hay que escribirlas 4 veces. */
+        const val TYPO_KNOWN = 4
         const val MAX_WORDS = 20000
         const val MAX_BIGRAM_KEYS = 15000
     }
