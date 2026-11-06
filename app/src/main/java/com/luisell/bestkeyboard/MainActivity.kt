@@ -1208,6 +1208,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.32.2" to tr("•  IA más rápida: le pregunta a la dirección nueva y a la vieja al mismo tiempo y usa la primera que conteste.\n" +
+            "•  «Terminar la frase con IA» ahora sí continúa lo que escribiste («Hola como» → estás? / te fue hoy?) en vez de inventar otra frase, y con instrucciones más cortas contesta antes.",
+            "•  Faster AI: it asks the new and the old address at the same time and uses the first one that answers.\n" +
+            "•  «Finish sentence with AI» now really continues what you wrote («Hola como» → estás? / te fue hoy?) instead of making up another sentence, and with shorter instructions it answers sooner."),
         "12.32.1" to tr("•  IA: la IA gratis (Pollinations) se está cambiando de dirección y la vieja casi no contesta. Ahora el teclado prueba primero la dirección nueva y la vieja solo de respaldo.\n" +
             "•  Arreglado que un intento atorado hacía esperar al siguiente (por eso salía «Pensando 82 s»). Ahora cada vez que tocas empieza enseguida, y en 90 segundos como máximo te dice si no se pudo.",
             "•  AI: the free AI (Pollinations) is moving to a new address and the old one barely answers. The keyboard now tries the new address first and the old one only as a backup.\n" +
