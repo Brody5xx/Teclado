@@ -93,6 +93,11 @@ class WordsActivity : UiActivity() {
         blockedList.background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(22f); setStroke(dp(1), LINE) }
         blockedList.setPadding(dp(14), dp(4), dp(6), dp(4))
         root.addView(blockedList, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        fixHead = text("", 13f, faded = true)
+        fixList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        fixList.background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(22f); setStroke(dp(1), LINE) }
+        fixList.setPadding(dp(14), dp(4), dp(6), dp(4))
+        root.addView(fixList, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         setContentView(sv)
 
         count.text = tr("Cargando…", "Loading…")
@@ -105,6 +110,42 @@ class WordsActivity : UiActivity() {
     }
 
     private fun user() = WordStore.engine?.user
+
+    private lateinit var fixHead: TextView
+    private lateinit var fixList: LinearLayout
+
+    /** Tus arreglos aprendidos ("clmo" → "como"). */
+    private fun refreshFixes() {
+        val u = user() ?: return
+        val all = u.fixes.entries.sortedBy { it.key }
+        fixList.removeAllViews()
+        fixHead.text = if (all.isEmpty()) "" else tr("\nTus arreglos (${all.size}): lo de la izquierda se cambia solo por lo de la derecha. Toca ✕ para quitar uno.",
+            "\nYour fixes (${all.size}): the left one changes by itself into the right one. Tap ✕ to remove one.")
+        fixHead.visibility = if (all.isEmpty()) View.GONE else View.VISIBLE
+        fixList.visibility = fixHead.visibility
+        for ((i, e) in all.take(300).withIndex()) {
+            if (i > 0) fixList.addView(View(this).apply { setBackgroundColor(LINE) }, LinearLayout.LayoutParams(-1, dp(1)))
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+            row.setPadding(0, dp(6), 0, dp(6))
+            val w = TextView(this)
+            w.text = e.key + "  →  " + e.value.first
+            w.textSize = 16f
+            w.setTextColor(TEXT)
+            row.addView(w, LinearLayout.LayoutParams(0, -2, 1f))
+            val del = IconView(this, Icons.CLOSE, 6f)
+            del.color = SUB
+            val key = e.key
+            del.setOnClickListener {
+                u.fixes.remove(key); u.dirty = true
+                WordStore.scheduleSave()
+                refreshFixes()
+            }
+            row.addView(del, LinearLayout.LayoutParams(dp(40), dp(40)))
+            fixList.addView(row, LinearLayout.LayoutParams(-1, -2))
+        }
+    }
 
     private lateinit var blockedHead: TextView
     private lateinit var blockedList: LinearLayout
@@ -146,6 +187,7 @@ class WordsActivity : UiActivity() {
     private fun refresh() {
         val u = user() ?: return
         refreshBlocked()
+        refreshFixes()
         val all = u.words.values.filter { it.known }.sortedBy { it.display.lowercase() }
         val shown = if (filter.isEmpty()) all else all.filter { it.display.lowercase().contains(filter) }
         count.text = tr("${all.size} palabras aprendidas. Toca ✎ para cambiar una o ✕ para borrarla.",

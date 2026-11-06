@@ -1986,10 +1986,23 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         return true
     }
 
+    private val QUESTION_ACCENT = mapOf(
+        "que" to "qué", "como" to "cómo", "donde" to "dónde", "cuando" to "cuándo", "quien" to "quién",
+        "quienes" to "quiénes", "cual" to "cuál", "cuales" to "cuáles", "cuanto" to "cuánto", "cuanta" to "cuánta",
+        "cuantos" to "cuántos", "cuantas" to "cuántas", "adonde" to "adónde",
+    )
+
     private val CONTRACTIONS = mapOf(
         "ill" to "I'll", "id" to "I'd", "im" to "I'm", "ive" to "I've", "hell" to "he'll", "shell" to "she'll",
         "wed" to "we'd", "well" to "we'll", "were" to "we're", "its" to "it's", "lets" to "let's", "wont" to "won't",
         "cant" to "can't", "hed" to "he'd", "shed" to "she'd", "youre" to "you're", "theyre" to "they're", "whos" to "who's",
+        // Las que no son palabras: el autocorrector ya las arregla solo, pero también salen primero
+        "dont" to "don't", "doesnt" to "doesn't", "didnt" to "didn't", "isnt" to "isn't", "arent" to "aren't",
+        "wasnt" to "wasn't", "werent" to "weren't", "havent" to "haven't", "hasnt" to "hasn't", "hadnt" to "hadn't",
+        "couldnt" to "couldn't", "wouldnt" to "wouldn't", "shouldnt" to "shouldn't", "aint" to "ain't",
+        "thats" to "that's", "whats" to "what's", "theres" to "there's", "heres" to "here's", "wheres" to "where's",
+        "hows" to "how's", "hes" to "he's", "shes" to "she's", "youll" to "you'll", "youve" to "you've", "youd" to "you'd",
+        "theyll" to "they'll", "theyve" to "they've", "theyd" to "they'd", "weve" to "we've", "itll" to "it'll", "yall" to "y'all",
     )
 
     /** Si estás corrigiendo una palabra tocada en medio: (letras antes del cursor, letras después). */
@@ -2011,7 +2024,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** El idioma para sugerir y corregir: el de la frase que escribes (si se nota), si no el del teclado. */
     private fun sugLang(eng: com.luisell.bestkeyboard.words.WordEngine, before: CharSequence, curLen: Int): String {
         if (!prefs.getBoolean(Prefs.AUTO_LANG, true)) return lang
-        return try { eng.contextLang(before, curLen) ?: lang } catch (_: Exception) { lang }
+        return try {
+            eng.contextLang(before, curLen)
+                // Primera palabra de la frase: el idioma de lo último que escribiste en este cuadro
+                ?: target()?.getTextBeforeCursor(240, 0)?.let { full -> eng.contextLang(full, curLen, anySentence = true) }
+                ?: lang
+        } catch (_: Exception) { lang }
     }
 
     private fun canCorrect(word: String, before: CharSequence): Boolean {
@@ -2030,15 +2048,37 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         sugBefore = null
     }
 
+    /**
+     * 🇪🇸 La palabra de antes lleva (o no) acento según la que acabas de escribir:
+     * «tu puedes » → ✨ tú puedes, «ya esta » → ✨ ya está, «esta noche» se queda igual.
+     */
+    private fun accentMatch(before: CharSequence): FormalWords.Match? {
+        if (!autocorrectOn || !fieldCorrect || before.isEmpty() || before.last() != ' ') return null
+        val eng = WordStore.engine ?: return null
+        if (sugLang(eng, before, 0) != "es") return null
+        val (w2, w1) = TextUtil.previousWords(before, 0)
+        if (w2 == null || w1 == null) return null
+        // w1 = palabra a revisar, w2 = la que acabas de escribir, left = la de antes de w1
+        val start1 = before.length - 1 - w2.length - 1 - w1.length
+        if (start1 < 0 || before.subSequence(start1, start1 + w1.length).toString() != w1) return null
+        val leftWord = TextUtil.previousWords(before.subSequence(0, start1 + w1.length), w1.length).first
+        val fix = eng.accentFor(w1, leftWord, w2) ?: return null
+        if (fix == w1) return null
+        val tail = before.subSequence(start1, before.length).toString()
+        return FormalWords.Match(tail.length, fix + tail.substring(w1.length))
+    }
+
     /** Si escribiste algo informal ("arreglé", "ya sirve"), sugiere la forma formal con ✨. */
     private fun addFormalSuggestion() {
         formalSlot = -1
         if (vaultActive || codeActive || codeOn || searching != 0 || isPassword || hackerActive || numLike) return
-        if (!suggestOn || !fieldSuggest || !prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)) return
+        if (!suggestOn || !fieldSuggest) return
         val ic = target() ?: return
         val before = sugBefore ?: ic.getTextBeforeCursor(80, 0) ?: return
-        val m = FormalWords.match(before)
-            ?: (if (prefs.getBoolean(Prefs.WORD_WEEK, true)) WeeklyWord.match(before) else null)
+        val formalOn = prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)
+        val m = accentMatch(before)
+            ?: (if (formalOn) FormalWords.match(before) else null)
+            ?: (if (formalOn && prefs.getBoolean(Prefs.WORD_WEEK, true)) WeeklyWord.match(before) else null)
             ?: return
         val slot = when {
             slotWords.all { it == null } -> 1
@@ -2166,6 +2206,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
         val prev = TextUtil.previousWord(before, word.length)
         val sl = sugLang(eng, before, word.length)
+        applyTouch(eng, word)
         val res = eng.suggest(word, prev, sl, TextUtil.previousWords(before, word.length).second)
         val corr = if (canCorrect(word, before)) res.correction else null
         if (corr != null && corr != word) {
@@ -2270,6 +2311,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             TextUtil.previousWords(before, cur.length).second?.let { p2 -> if (prev != null) eng.user.addTrigram(p2, prev, w) }
             WordStore.scheduleSave()
         }
+        if (eng != null) { learnFix(eng, w); lastFinished = w; lastFinishedAt = SystemClock.uptimeMillis() }
         lastCorrection = null
         autoSpace = true
         lastWasSpace = true
@@ -2298,8 +2340,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val prev = TextUtil.previousWord(before, word.length)
         var final = word
         var fixed: Pair<String, String>? = null
+        applyTouch(eng, word)
         if (canCorrect(word, before)) {
-            val corr = eng.correction(word, sugLang(eng, before, word.length))?.let { TextUtil.matchCase(it, word) }
+            val wl = sugLang(eng, before, word.length)
+            var corr = eng.correction(word, wl)?.let { TextUtil.matchCase(it, word) }
+            if (corr == null && wl == "es") {
+                // ¿como? ¡que…! → ¿cómo? ¡qué…!  (después de ¿ o ¡ las preguntas llevan acento)
+                val st = before.length - word.length
+                val opener = st > 0 && (before[st - 1] == '¿' || before[st - 1] == '¡')
+                val acc = QUESTION_ACCENT[word.lowercase()]
+                corr = if (opener && acc != null) TextUtil.matchCase(acc, word)
+                    // «ya esta» → «ya está» (solo si las frases lo dicen MUY claro)
+                    else eng.accentFor(word, prev, null, minGain = 2.2f, minCount = 6) ?: eng.pastTense(word, prev, TextUtil.previousWords(before, word.length).second)
+            }
             if (corr != null && corr != word) {
                 ic.deleteSurroundingText(word.length, 0)
                 ic.commitText(corr, 1)
@@ -2307,6 +2360,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 fixed = Pair(word, corr)
             }
         }
+        // ✍️ Borraste una palabra mal escrita y pusiste otra parecida: el teclado aprende tu arreglo
+        learnFix(eng, final)
+        if (fixed == null) { lastFinished = final; lastFinishedAt = SystemClock.uptimeMillis() } else lastFinished = null
         if (learnOn && fieldLearn) {
             // Si parece un error de dedo (hay una palabra casi igual), cuesta más aprenderla
             val typo = fixed == null && eng.user.entry(final.lowercase()) == null && eng.looksLikeTypo(final, sugLang(eng, before, word.length))
@@ -2356,6 +2412,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
         }
         autoSpace = false
+        noteTouch(ic, t)
         if (punct) {
             ic.beginBatchEdit()
             val fixed = finishWord(ic)
@@ -2470,6 +2527,48 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (multiLine) ic.commitText("\n", 1) else sendKey(KeyEvent.KEYCODE_ENTER)
     }
 
+    /** La última palabra que dejaste tal cual (para notar si la borras y la escribes distinta). */
+    private var lastFinished: String? = null
+    private var lastFinishedAt = 0L
+    /** Estás arreglando esta palabra (la borraste): al terminar la nueva, el teclado aprende el arreglo. */
+    private var editingFrom: String? = null
+
+    private fun learnFix(eng: com.luisell.bestkeyboard.words.WordEngine, final: String) {
+        val ef = editingFrom
+        editingFrom = null
+        if (ef != null && learnOn && fieldLearn && !ef.equals(final, true) && eng.similar(ef, final) &&
+            !eng.inDictionary(ef.lowercase()) && !eng.user.isSure(ef.lowercase()) && eng.isKnown(final.lowercase())) {
+            eng.user.addFix(ef, final)
+            WordStore.scheduleSave()
+        }
+    }
+
+    // 👆 Dónde tocaste cada letra de la palabra que escribes
+    private val touchHints = StringBuilder()
+    private var touchFor = ""
+
+    private fun noteTouch(ic: InputConnection, t: String) {
+        if (t.length != 1 || !t[0].isLetter()) { touchHints.setLength(0); touchFor = ""; return }
+        val cur = TextUtil.currentWord(ic.getTextBeforeCursor(48, 0) ?: "")
+        if (cur != touchFor) { touchHints.setLength(0); repeat(cur.length) { touchHints.append(' ') } }
+        touchHints.append(kv?.lastTouchAlt ?: ' ')
+        touchFor = cur + t
+    }
+
+    private fun applyTouch(eng: com.luisell.bestkeyboard.words.WordEngine, word: String) {
+        if (word == touchFor && touchHints.length == word.length) eng.setTouch(word, touchHints.toString()) else eng.setTouch(null, null)
+    }
+
+    /** Al borrar: ¿estás borrando la palabra que acabas de escribir? */
+    private fun noteDeleting(ic: InputConnection) {
+        val lf = lastFinished ?: return
+        if (SystemClock.uptimeMillis() - lastFinishedAt > 45_000L) { lastFinished = null; return }
+        val b = ic.getTextBeforeCursor(lf.length + 4, 0)?.toString() ?: return
+        val cur = TextUtil.currentWord(b)
+        val trimmed = b.trimEnd(' ')
+        if (trimmed.endsWith(lf) || (cur.isNotEmpty() && lf.startsWith(cur) && cur.length < lf.length)) editingFrom = lf
+    }
+
     override fun onDeletePress() {
         if (spellOn) stopSpell()
         // ↩️ Al empezar a borrar se guarda cómo estaba (Deshacer lo recupera) y la tecla se ilumina
@@ -2513,6 +2612,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 return
             }
         }
+        try { noteDeleting(ic) } catch (_: Exception) { }
         sendKey(KeyEvent.KEYCODE_DEL)
     }
 
@@ -4646,7 +4746,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         // Si estabas a mitad de una palabra escrita con toques, termínala primero
         val partial = TextUtil.currentWord(before)
         val prev = if (partial.isEmpty()) TextUtil.previousWord(before, 0) else partial
-        val found = dec.decode(xs, ys, count, v.letterCenters(), v.letterWidth(), lang, prev)
+        val prev2 = if (partial.isEmpty()) TextUtil.previousWords(before, 0).second else TextUtil.previousWords(before, partial.length).first
+        val gl = WordStore.engine?.let { sugLang(it, before, partial.length) } ?: lang
+        val found = dec.decode(xs, ys, count, v.letterCenters(), v.letterWidth(), gl, prev, prev2 = prev2)
         if (found.isEmpty()) return
         fun cased(w: String) = when {
             shift == 2 -> w.uppercase()
@@ -4662,8 +4764,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
         val eng = WordStore.engine
         if (eng != null && learnOn && fieldLearn) {
-            eng.user.add(word, 1, lang)
+            eng.user.add(word, 1, gl)
             if (prev != null) eng.user.addBigram(prev, word)
+            if (prev != null && prev2 != null) eng.user.addTrigram(prev2, prev, word)
             WordStore.scheduleSave()
         }
         lastCorrection = null

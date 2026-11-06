@@ -53,6 +53,13 @@ class Dictionary private constructor(
     /** La palabra más común con esta forma sin acentos ("tambien" -> "también"), o -1. */
     fun bestForFold(fold: String): Int = bestByFold[fold] ?: -1
 
+    /** Todas las palabras con esta forma sin acentos ("termine" → termine, terminé). */
+    fun variants(fold: String): List<Int> {
+        val out = ArrayList<Int>(3)
+        for (i in prefixRange(fold)) if (folds[i] == fold) out.add(i)
+        return out
+    }
+
     /** Rango de palabras cuya forma plegada empieza con [prefix]. */
     fun prefixRange(prefix: String): IntRange {
         val lo = lowerBound(prefix)

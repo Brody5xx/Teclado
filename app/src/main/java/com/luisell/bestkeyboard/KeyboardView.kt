@@ -1003,6 +1003,36 @@ class KeyboardView(context: Context) : View(context) {
         }
     }
 
+    private var touchX = 0f
+    private var touchY = 0f
+    /** 👆 La otra letra que pudiste querer (tocaste cerca del borde entre dos teclas), o null. */
+    var lastTouchAlt: Char? = null
+        private set
+
+    private fun isLetterKey(k: Key) = k.code == 0 && k.label.length == 1 && k.label[0].isLetter()
+
+    private fun altFor(key: Key, x: Float, y: Float): Char? {
+        if (!isLetterKey(key)) return null
+        val w = key.cell.width().coerceAtLeast(1f)
+        val h = key.cell.height().coerceAtLeast(1f)
+        fun dist(k: Key): Float {
+            val dx = (x - k.cell.centerX()) / w
+            val dy = (y - k.cell.centerY()) / h
+            return kotlin.math.sqrt(dx * dx + dy * dy)
+        }
+        val d1 = dist(key)
+        var best: Key? = null
+        var d2 = Float.MAX_VALUE
+        for (row in rows) for (k in row) {
+            if (k === key || !isLetterKey(k)) continue
+            val dd = dist(k)
+            if (dd < d2) { d2 = dd; best = k }
+        }
+        val b = best ?: return null
+        // Solo si el dedo quedó casi en el medio de las dos
+        return if (d2 < d1 * 1.5f && d2 < 0.95f) b.label[0].lowercaseChar() else null
+    }
+
     private fun findKey(x: Float, yIn: Float): Key? {
         if (rows.isEmpty()) return null
         val lastRow = rows.last()
@@ -1297,6 +1327,7 @@ class KeyboardView(context: Context) : View(context) {
         }
         val key = findKey(x, y) ?: return
         activeKey = key
+        touchX = x; touchY = y
         if (forceTools) { forceTools = false; invalidate(0, 0, width, stripH.toInt() + 1) }
         if (key.code == Codes.ENTER) { enterFlashKey = key; enterFlashAt = SystemClock.uptimeMillis() }
         lastPressKind = when (key.code) {
@@ -1424,6 +1455,7 @@ class KeyboardView(context: Context) : View(context) {
             }
             return
         }
+        touchX = x; touchY = y
         if (key.code == 0 && !longPressed) {
             val k = findKey(x, y)
             if (k != null && k !== key && k.code == 0) {
@@ -1517,7 +1549,7 @@ class KeyboardView(context: Context) : View(context) {
         }
         if (longPressed) return
         when (key.code) {
-            0 -> key.text?.let { listener?.onKeyText(it) }
+            0 -> key.text?.let { lastTouchAlt = try { altFor(key, touchX, touchY) } catch (_: Exception) { null }; listener?.onKeyText(it) }
             Codes.SPACE -> if (!spaceDragging) listener?.onKeyCode(Codes.SPACE)
             Codes.DELETE, Codes.SHIFT -> Unit
             else -> if (!key.repeatable) listener?.onKeyCode(key.code)

@@ -38,6 +38,8 @@ object Prefs {
     const val SUGGEST = "suggest"
     const val AUTOCORRECT = "autocorrect"
     const val LEARN = "learn"
+    /** Sugerir los nombres de mis contactos (necesita el permiso de contactos). */
+    const val CONTACT_NAMES = "contact_names"
     const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)
     const val AUTO_LANG = "auto_lang"   // 🌐 cambiar español/inglés solo, según lo que escribo
     const val CLIP_HISTORY = "clip_history"

@@ -15,6 +15,10 @@ import kotlin.math.ln
  * Las posiciones se miden en "anchos de tecla", así funciona igual en cualquier pantalla.
  */
 class GestureDecoder(private val dicts: List<Dictionary>, private val user: UserData) {
+    /** Frases de fábrica y nombres de contactos (los pone WordStore). */
+    @Volatile var base: NGrams? = null
+    @Volatile var names: () -> Map<String, String> = { emptyMap() }
+
 
     /** Una tecla: letra y centro (en anchos de tecla). */
     class KeyPos(val ch: Char, val x: Float, val y: Float)
@@ -48,7 +52,7 @@ class GestureDecoder(private val dicts: List<Dictionary>, private val user: User
      */
     fun decode(
         pathX: FloatArray, pathY: FloatArray, count: Int,
-        keysPx: List<KeyPos>, keyWidth: Float, lang: String, prev: String?, max: Int = 4,
+        keysPx: List<KeyPos>, keyWidth: Float, lang: String, prev: String?, max: Int = 4, prev2: String? = null,
     ): List<String> {
         if (count < 2 || keysPx.isEmpty() || keyWidth <= 0f) return emptyList()
         // Todo en "anchos de tecla"
@@ -65,6 +69,8 @@ class GestureDecoder(private val dicts: List<Dictionary>, private val user: User
         val starts = nearKeys(keys, px[0], py[0])
         val ends = nearKeys(keys, px[count - 1], py[count - 1])
         val prevLower = prev?.lowercase()
+        val prev2Lower = prev2?.lowercase()
+        val bs = base
 
         val tx = FloatArray(N)
         val ty = FloatArray(N)
@@ -105,6 +111,19 @@ class GestureDecoder(private val dicts: List<Dictionary>, private val user: User
             if (prevLower != null) {
                 val bc = user.bigramCount(prevLower, lower)
                 if (bc > 0) score += 0.6f * ln(1f + bc)
+                // Lo que dice la frase: tus tríos de palabras y las frases de fábrica
+                if (prev2Lower != null) {
+                    val tc = user.trigramCount("$prev2Lower $prevLower", lower)
+                    if (tc > 0) score += 0.6f * ln(1f + tc)
+                }
+                if (bs != null && !other) {
+                    val b = bs.count("b", lang, prevLower, lower)
+                    if (b > 0) score += 0.3f * ln(1f + b)
+                    if (prev2Lower != null) {
+                        val t = bs.count("t", lang, "$prev2Lower $prevLower", lower)
+                        if (t > 0) score += 0.4f * ln(1f + t)
+                    }
+                }
             }
             best.offer(lower, word, score)
         }
@@ -123,6 +142,13 @@ class GestureDecoder(private val dicts: List<Dictionary>, private val user: User
                 if (k.length < 2 || k[0] != s || k[k.length - 1] != e) continue
                 if (dicts.any { it.indexOf(e2.display.lowercase()) >= 0 }) continue
                 consider(e2.display, 9f, false)
+            }
+            // Los nombres de tus contactos
+            for ((low, disp) in names()) {
+                val k = keyChars(disp, buf)
+                if (k.length < 2 || k[0] != s || k[k.length - 1] != e) continue
+                if (dicts.any { it.indexOf(low) >= 0 }) continue
+                consider(disp, 8.5f, false)
             }
         }
         return best.words(max)

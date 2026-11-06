@@ -10784,7 +10784,6 @@ canopy	152
 cans	710
 canst	57
 can't	164263
-cant	563
 cantabile	4
 cantaloupe	54
 cantaloupes	16
@@ -20815,7 +20814,6 @@ donors	191
 donovan	554
 dons	41
 don't	595130
-dont	1363
 dontcha	6
 donut	229
 donuts	283
@@ -35288,7 +35286,6 @@ ilyin	6
 ilyitch	6
 ilyusha	5
 I'm	465143
-im	938
 ima	82
 image	3101
 imagery	137
@@ -74940,7 +74937,6 @@ thatjob	9
 thatjohn	5
 thatjust	19
 that's	175227
-thats	553
 thatta	14
 thattaboy	25
 thattagirl	12
@@ -75141,10 +75137,8 @@ theyare	4
 they'd	4379
 theyjust	26
 they'll	8759
-theyll	16
 they're	43794
 they've	8759
-theyve	10
 theywant	9
 theywere	23
 theywill	11
@@ -82158,7 +82152,6 @@ whatjust	3
 whatnot	205
 whatnots	6
 what's	78997
-whats	356
 whatsapp	31
 whatshername	7
 whatshisname	16
@@ -83073,7 +83066,6 @@ wong	755
 wonka	62
 wonky	51
 won't	49082
-wont	524
 wonton	24
 wontons	6
 woo	1709
@@ -84237,7 +84229,6 @@ youkali	3
 youknow	8
 youko	22
 you'll	41197
-youll	56
 youn	24
 young	27879
 youngblood	26
@@ -84328,7 +84319,6 @@ youtube	350
 youuu	3
 youuuu	4
 you've	41197
-youve	55
 youwant	16
 youwere	7
 youwhat	3

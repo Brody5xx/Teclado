@@ -63,6 +63,7 @@ class MainActivity : UiActivity() {
         private const val REQ_NOTIF = 23
         private const val REQ_AUTO = 24
         private const val REQ_HOURS = 25
+        private const val REQ_CONTACTS = 26
         private const val KEY_SECTION = "settings_section"
         private const val REQ_PHOTOS = 9
         private const val REQ_MIC = 7
@@ -343,6 +344,11 @@ class MainActivity : UiActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         refreshMic()
         when (requestCode) {
+            REQ_CONTACTS -> {
+                refreshContacts()
+                if (contactsGranted()) { WordStore.loadContacts(this); toast("¡Listo! Escribe el nombre de un contacto y sale bien escrito.", "Done! Type a contact's name and it shows up spelled right.") }
+                else toast("Sin el permiso de contactos no puedo sugerir sus nombres.", "Without the contacts permission I can't suggest their names.")
+            }
             REQ_NOTIF -> WorkdayCenter.refresh(this)
             REQ_PHOTOS -> if (Screenshots.hasPermission(this)) toast("¡Listo! Toma una captura y abre el teclado.", "Done! Take a screenshot and open the keyboard.")
                 else toast("Sin ese permiso no puedo sugerir tus capturas.", "Without that permission I can't suggest your screenshots.")
@@ -379,10 +385,32 @@ class MainActivity : UiActivity() {
         if (::camBtn.isInitialized) camBtn.text = if (cameraGranted()) tr("✓  Cámara permitida", "✓  Camera allowed") else tr("Permitir la cámara", "Allow the camera")
     }
 
+    private var contactsBtn: TextView? = null
+    private fun contactsGranted() = checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+
+    private fun refreshContacts() {
+        val on = prefs.getBoolean(Prefs.CONTACT_NAMES, true) && contactsGranted()
+        contactsBtn?.text = if (on) tr("✓ Sugerir nombres de mis contactos (toca para apagar)", "✓ Suggest my contacts' names (tap to turn off)")
+            else tr("Sugerir nombres de mis contactos", "Suggest my contacts' names")
+    }
+
+    private fun toggleContacts() {
+        if (!contactsGranted()) {
+            prefs.edit().putBoolean(Prefs.CONTACT_NAMES, true).apply()
+            requestPermissions(arrayOf(android.Manifest.permission.READ_CONTACTS), REQ_CONTACTS)
+            return
+        }
+        val on = !prefs.getBoolean(Prefs.CONTACT_NAMES, true)
+        prefs.edit().putBoolean(Prefs.CONTACT_NAMES, on).apply()
+        WordStore.loadContacts(this)
+        refreshContacts()
+    }
+
     override fun onResume() {
         super.onResume()
         refreshStatus()
         refreshMic()
+        refreshContacts()
         WordStore.load(this) { refreshLearned() }
         if (AutoSites.isOn(this)) AutoSites.register(this)
     }
@@ -613,6 +641,9 @@ class MainActivity : UiActivity() {
         switch(tr("Autocorrector", "Autocorrect"), Prefs.AUTOCORRECT, true,
             tr("Corrige al tocar espacio. Toca ⌫ justo después para deshacerlo.", "Fixes words when you tap space. Tap ⌫ right after to undo."))
         switch(tr("Aprender mis palabras", "Learn my words"), Prefs.LEARN, true, tr("Nombres, siglas y palabras del trabajo.", "Names, acronyms and work words."))
+        contactsBtn = button("") { toggleContacts() }
+        text(tr("Los nombres se leen solo dentro de tu teléfono para escribirlos bien y con mayúscula. Nada se envía.",
+            "Names are read only on your phone to spell them right and capitalized. Nothing is sent."), 12f, faded = true)
         learnedInfo = text("", 12f, faded = true)
         button(tr("Ver y editar mis palabras", "See and edit my words"), primary = true) {
             startActivity(Intent(this, WordsActivity::class.java))
@@ -1175,6 +1206,20 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.27.0" to tr("•  Acentos según la frase: «tu puedes» → ✨ tú puedes, «ya esta» → ya está, «esta listo» → está listo, «el dijo» → él dijo, «se que» → sé que. Y deja igual «tu casa», «esta noche», «el carro». Después de ¿ o ¡ pone el acento solo (¿cómo?, ¿qué?, ¿dónde?). «ya termine» → ya terminé, «yo llegue» → yo llegué (pero «cuando yo llegue» se queda igual).\n" +
+            "•  Contracciones en inglés sin el apóstrofo: dont → don't, im → I'm, cant → can't, thats → that's, didnt → didn't…\n" +
+            "•  Aprende de tus arreglos: si borras una palabra mal escrita y la escribes bien, la próxima vez se corrige sola. Los ves (y puedes quitarlos) en «Ver y editar mis palabras».\n" +
+            "•  Sabe dónde tocó tu dedo: si tocas entre dos teclas, considera las dos letras (tecka → tecla).\n" +
+            "•  La primera palabra de una frase usa el idioma de lo último que escribiste ahí.\n" +
+            "•  Nombres de tus contactos bien escritos y con mayúscula (Ajustes › Escribir › Sugerencias). Nada sale del teléfono.\n" +
+            "•  Deslizar el dedo para escribir ahora también usa la frase, tus frases y los nombres de tus contactos.",
+            "•  Accents by sentence (Spanish): «tu puedes» → ✨ tú puedes, «ya esta» → ya está, «el dijo» → él dijo; «tu casa», «esta noche» stay the same. After ¿ or ¡ it adds the accent by itself. «ya termine» → ya terminé.\n" +
+            "•  English contractions without the apostrophe: dont → don't, im → I'm, cant → can't, thats → that's, didnt → didn't…\n" +
+            "•  Learns from your fixes: if you delete a misspelled word and type it right, next time it fixes itself. See (and remove) them in «See and edit my words».\n" +
+            "•  Knows where your finger landed: if you tap between two keys, it considers both letters.\n" +
+            "•  The first word of a sentence uses the language of what you last wrote there.\n" +
+            "•  Your contacts' names spelled right and capitalized (Settings › Typing › Suggestions). Nothing leaves the phone.\n" +
+            "•  Swipe typing now also uses the sentence, your phrases and your contacts' names."),
         "12.26.0" to tr("•  Adivina la palabra siguiente desde el primer día, en inglés y en español: «thank you» → so much, «I will be there in» → a few minutes, «muchas» → gracias, «no te» → preocupes. Antes solo adivinaba lo que tú ya habías escrito.\n" +
             "•  Ahora recuerda las 2 palabras anteriores (no solo 1): aprende tus frases completas y te las va completando. Lo que tú escribes siempre pesa más que lo de fábrica.\n" +
             "•  En pruebas con frases normales: adivina 1 de cada 3 palabras sin escribir ni una letra, y escribes 66% menos letras.\n" +

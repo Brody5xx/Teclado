@@ -54,11 +54,14 @@ object WordStore {
                 // 📚 Frases de fábrica para adivinar la palabra siguiente
                 try { val ng = com.luisell.bestkeyboard.words.NGrams(); app.assets.open("ngrams.txt").use { ng.load(it) }; e.base = ng } catch (_: Throwable) { }
                 val g = try { GestureDecoder(listOf(es, en), user) } catch (_: Throwable) { null }
+                g?.base = e.base
+                g?.names = { e.names }
                 main.post { gesture = g }
             }
             main.post {
                 engine = e
                 loading = false
+                try { loadContacts(app) } catch (_: Exception) { }
                 val l = ArrayList(listeners)
                 listeners.clear()
                 l.forEach { it() }
@@ -96,6 +99,33 @@ object WordStore {
         val f = File(ctx.applicationContext.filesDir, "aprendido.txt")
         io.execute { f.delete() }
         engine?.user?.dirty = false
+    }
+
+    /** 📇 Lee los nombres de tus contactos (solo en tu teléfono) para sugerirlos bien escritos. */
+    fun loadContacts(ctx: Context) {
+        val app = ctx.applicationContext
+        val e = engine ?: return
+        val on = Prefs.get(app).getBoolean(Prefs.CONTACT_NAMES, true)
+        val ok = app.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!on || !ok) { e.names = emptyMap(); return }
+        io.execute {
+            val map = HashMap<String, String>()
+            try {
+                app.contentResolver.query(android.provider.ContactsContract.Contacts.CONTENT_URI,
+                    arrayOf(android.provider.ContactsContract.Contacts.DISPLAY_NAME_PRIMARY), null, null, null)?.use { c ->
+                    while (c.moveToNext()) {
+                        val n = c.getString(0) ?: continue
+                        for (part in n.split(Regex("[^\\p{L}'’-]+"))) {
+                            if (part.length < 2 || part.length > 24 || !part[0].isLetter()) continue
+                            val disp = if (part[0].isLowerCase()) part.replaceFirstChar { it.uppercaseChar() } else part
+                            map[part.lowercase()] = disp
+                            if (map.size > 5000) break
+                        }
+                    }
+                }
+            } catch (_: Exception) { }
+            main.post { e.names = map }
+        }
     }
 
     fun learnedCount(): Int = engine?.user?.words?.count { it.value.known } ?: 0

@@ -9,6 +9,23 @@ import kotlin.math.ln
  */
 class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
 
+    /**
+     * 👆 Dónde tocó el dedo: para la palabra [touchWord] (sin acentos), [touchAlt] dice en cada letra
+     * cuál otra tecla estaba casi igual de cerca (o ' '). Esa letra cuesta poco cambiarla.
+     */
+    @Volatile var touchWord: String? = null
+    @Volatile var touchAlt: String? = null
+
+    fun setTouch(word: String?, alt: String?) {
+        if (word == null || alt == null || alt.isBlank()) { touchWord = null; touchAlt = null; return }
+        val f = TextUtil.fold(word.lowercase())
+        if (f.length != alt.length) { touchWord = null; touchAlt = null; return }
+        touchWord = f; touchAlt = alt
+    }
+
+    /** 📇 Nombres de tus contactos (en minúsculas → como se escribe: "luisell" → "Luisell"). */
+    @Volatile var names: Map<String, String> = emptyMap()
+
     /** Las frases de fábrica (qué palabra suele venir después). Se cargan aparte. */
     @Volatile var base: NGrams? = null
 
@@ -45,14 +62,14 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
      * Así, si escribes «the camera» con el teclado en español, las sugerencias ya salen en inglés
      * sin esperar a que el teclado se cambie. [currentLength] = lo que llevas de la palabra actual.
      */
-    fun contextLang(before: CharSequence, currentLength: Int): String? {
+    fun contextLang(before: CharSequence, currentLength: Int, anySentence: Boolean = false): String? {
         val end = (before.length - currentLength).coerceIn(0, before.length)
         val text = before.subSequence(0, end)
         var start = 0
-        for (i in text.indices.reversed()) { val c = text[i]; if (c == '.' || c == '!' || c == '?' || c == '\n') { start = i + 1; break } }
+        if (!anySentence) for (i in text.indices.reversed()) { val c = text[i]; if (c == '.' || c == '!' || c == '?' || c == '\n') { start = i + 1; break } }
         val ws = ArrayList<String>()
         var i = text.length
-        while (i > start && ws.size < 4) {
+        while (i > start && ws.size < (if (anySentence) 6 else 4)) {
             while (i > start && !TextUtil.isWordChar(text[i - 1])) i--
             val e = i
             while (i > start && TextUtil.isWordChar(text[i - 1])) i--
@@ -67,6 +84,55 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             w *= 0.55f
         }
         return if (en > es) "en" else if (es > en) "es" else null
+    }
+
+    /**
+     * 🇪🇸 ¿Esta palabra lleva acento según las palabras de al lado? (tu/tú, esta/está, termine/terminé…)
+     * [left] = la palabra de antes, [right] = la de después (puede faltar). Devuelve la forma correcta
+     * solo si las frases reales lo dicen claramente; si no, null.
+     */
+    fun accentFor(word: String, left: String?, right: String?, minGain: Float = 1.1f, minCount: Int = 2): String? {
+        val bs = base ?: return null
+        val es = dicts.firstOrNull { it.lang == "es" } ?: return null
+        val lower = word.lowercase()
+        if (lower.length < 2) return null
+        val vars = es.variants(TextUtil.fold(lower))
+        if (vars.size < 2) return null
+        val cur = vars.firstOrNull { es.words[it].lowercase() == lower } ?: return null
+        val l = left?.lowercase()
+        val r = right?.lowercase()
+        fun ev(i: Int): Pair<Float, Int> {
+            val w = es.words[i].lowercase()
+            val a = if (l != null) bs.count("b", "es", l, w) else 0
+            val b = if (r != null) bs.count("b", "es", w, r) else 0
+            return (ln(1f + a) + ln(1f + b)) to (a + b)
+        }
+        val sc = ev(cur).first
+        var best = -1
+        var bestS = sc
+        var bestN = 0
+        for (i in vars) if (i != cur) {
+            val (sv, n) = ev(i)
+            if (sv > bestS) { bestS = sv; best = i; bestN = n }
+        }
+        if (best < 0 || bestS - sc < minGain || bestN < minCount) return null
+        if (user.isBlocked(es.words[best].lowercase())) return null
+        return TextUtil.matchCase(es.words[best], word)
+    }
+
+    /** «ya termine» → terminé, «yo llegue» → llegué, «ayer arregle» → arreglé (pasado, yo). */
+    fun pastTense(word: String, left: String?, left2: String? = null): String? {
+        val l = left?.lowercase() ?: return null
+        if (l !in PAST_WORDS) return null
+        // «cuando yo llegue», «que ya termine»: ahí NO es pasado
+        if (left2 != null && left2.lowercase() in NOT_PAST_BEFORE) return null
+        val lower = word.lowercase()
+        if (lower.length < 4 || !lower.endsWith("e")) return null
+        val es = dicts.firstOrNull { it.lang == "es" } ?: return null
+        val cand = lower.dropLast(1) + "é"
+        val i = es.indexOf(cand)
+        if (i < 0 || es.indexOf(lower) < 0) return null
+        return TextUtil.matchCase(es.words[i], word)
     }
 
     /** ¿La palabra [cand] conserva los acentos y la ñ que escribiste? ("mañna" no debe volverse "manna") */
@@ -123,7 +189,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     private fun inAnyDict(lower: String): Boolean = dicts.any { it.indexOf(lower) >= 0 }
 
     /** ¿Es una palabra conocida (del diccionario o aprendida de ti)? */
-    fun isKnown(lower: String): Boolean = inAnyDict(lower) || user.isKnown(lower)
+    fun isKnown(lower: String): Boolean = inAnyDict(lower) || user.isKnown(lower) || names.containsKey(lower)
 
     /** Cómo se muestra una palabra (con su acento o mayúscula correcta). */
     fun displayFor(lower: String, lang: String): String {
@@ -158,6 +224,36 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
                 if (!keepsMarks(tl, w)) s -= 4f // escribiste "mañ": no sugerir "man"
                 top.offer(key, w, s)
             }
+        }
+        // 👆 Tocaste entre dos teclas: también lo que empieza con la otra letra
+        val ta = if (tf == touchWord) touchAlt else null
+        if (ta != null && tf.length >= 2) {
+            for (pos in ta.indices) {
+                val alt = ta[pos]
+                if (alt == ' ') continue
+                val v = tf.substring(0, pos) + alt + tf.substring(pos + 1)
+                for (d in dicts) {
+                    val lb = langBonus(d, lang)
+                    var n = 0
+                    for (i in d.prefixRange(v)) {
+                        if (++n > 400) break
+                        val w = d.words[i]
+                        val key = if (w[0].isUpperCase()) w.lowercase() else w
+                        var s = d.logFreq[i] + lb + userBonus(key, lang) + ctxBonus(prevLower, prev2Lower, key, lang) - 1.3f
+                        val extra = d.folds[i].length - v.length
+                        s += if (extra == 0) 0.6f else -0.08f * extra
+                        top.offer(key, w, s)
+                    }
+                }
+            }
+        }
+        // 📇 Nombres de tus contactos, bien escritos y con mayúscula
+        if (tf.length >= 2) for ((key, disp) in names) {
+            if (!TextUtil.fold(key).startsWith(tf) || user.isBlocked(key)) continue
+            var s = 8.5f + userBonus(key, lang) + ctxBonus(prevLower, prev2Lower, key, lang)
+            val extra = key.length - tf.length
+            s += if (extra == 0) 0.6f else -0.08f * extra
+            top.offer(key, disp, s)
         }
         for ((key, e) in user.words) {
             if (!e.known || !e.fold.startsWith(tf) || inAnyDict(key)) continue
@@ -236,6 +332,25 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         return out
     }
 
+    /** ¿Se parecen? (a 2 letras o menos, sin contar acentos) — para aprender tus arreglos. */
+    fun similar(a: String, b: String): Boolean {
+        val x = TextUtil.fold(a.lowercase())
+        val y = TextUtil.fold(b.lowercase())
+        if (x == y) return true
+        if (kotlin.math.abs(x.length - y.length) > 2 || x.length < 2 || y.length < 2) return false
+        var prev = IntArray(y.length + 1) { it }
+        for (i in 1..x.length) {
+            val cur = IntArray(y.length + 1)
+            cur[0] = i
+            for (j in 1..y.length) cur[j] = minOf(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + if (x[i - 1] == y[j - 1]) 0 else 1)
+            prev = cur
+        }
+        return prev[y.length] <= 2
+    }
+
+    /** ¿Está en el diccionario? */
+    fun inDictionary(lower: String): Boolean = inAnyDict(lower)
+
     /** ¿Parece un error de dedo? (no es palabra, pero hay una palabra casi igual) */
     fun looksLikeTypo(typed: String, lang: String): Boolean {
         val tl = typed.lowercase()
@@ -301,6 +416,10 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         if (typed.drop(1).any { it.isUpperCase() }) return null                // McDonald, iPhone
 
         val lower = typed.lowercase()
+        // Tú ya lo corregiste así antes
+        user.fixFor(lower)?.let { if (!user.isBlocked(it.lowercase())) return it }
+        // Un contacto escrito en minúsculas («luisell» → «Luisell»), si no es también una palabra
+        names[lower]?.let { n -> if (typed == lower && n != lower && !inAnyDict(lower)) return n }
         if (user.isKnown(lower)) return null
         // Palabras pegadas: "porfavor" -> "por favor"
         if (lang == "es") JOINED[lower]?.let { return it }
@@ -344,7 +463,9 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         edits(tf) { variant, penalty ->
             for (d in dicts) {
                 val i = d.bestForFold(variant)
-                if (i < 0 || d.logFreq[i] < MIN_EDIT_LF) continue
+                // 👆 Tocaste entre dos teclas: basta con que sea una palabra real (aunque poco común)
+                val minLf = if (penalty >= -1f) LN20 else MIN_EDIT_LF
+                if (i < 0 || d.logFreq[i] < minLf) continue
                 val key = d.words[i].lowercase()
                 val marks = if (keepsMarks(lower, d.words[i])) 0f else -2.5f
                 val s = d.logFreq[i] + fixBonus(d, lang) + penalty + marks + userBonus(key, lang)
@@ -548,12 +669,13 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             sb.setCharAt(i, w[i + 1]); sb.setCharAt(i + 1, w[i])
             visit(sb.toString(), -2.0f)
         }
-        // Letra cambiada por otra
+        // Letra cambiada por otra (si el dedo quedó entre las dos teclas, casi no cuesta)
+        val ta = if (w == touchWord) touchAlt else null
         for (i in 0 until n) {
             for (c in ALPHABET) {
                 if (c == w[i]) continue
                 sb.setLength(0); sb.append(w); sb.setCharAt(i, c)
-                visit(sb.toString(), if (Keys.near(w[i], c)) -1.8f else -3.2f)
+                visit(sb.toString(), if (ta != null && ta[i] == c) -0.8f else if (Keys.near(w[i], c)) -1.8f else -3.2f)
             }
         }
         // Letra que faltó
@@ -595,6 +717,8 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
     }
 
     companion object {
+        private val PAST_WORDS = setOf("yo", "ya", "ayer", "anoche", "hoy", "antier", "anteayer", "recién", "recien")
+        private val NOT_PAST_BEFORE = setOf("que", "cuando", "si", "aunque", "hasta", "antes", "para", "ojalá", "ojala", "mientras", "apenas", "en cuanto", "cuanto")
         private fun isVowel(c: Char) = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u'
         private val LN3 = ln(3f)
         private val LN1000 = ln(1000f)
@@ -612,6 +736,7 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         /** Para las sugerencias de "¿quisiste decir…?": basta con que sea una palabra real. */
         private val MIN_NEAR_LF = ln(4f)
         private val LN150 = ln(150f)
+        private val LN20 = ln(20f)
     }
 }
 

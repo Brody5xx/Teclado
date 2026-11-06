@@ -28,6 +28,19 @@ class UserData {
     val bigrams = HashMap<String, HashMap<String, Int>>()
     /** Las 3 palabras seguidas que escribes ("nos vemos" → "mañana"). Clave: "nos vemos". */
     val trigrams = HashMap<String, HashMap<String, Int>>()
+    /** Tus arreglos: escribiste "clmo", lo borraste y pusiste "como" → la próxima vez se corrige solo. */
+    val fixes = HashMap<String, Pair<String, Int>>()
+
+    fun addFix(typo: String, fix: String) {
+        val k = typo.lowercase()
+        val old = fixes[k]
+        fixes[k] = fix to (if (old != null && old.first.equals(fix, true)) (old.second + 1).coerceAtMost(1000) else 1)
+        if (!isSure(k)) words.remove(k)
+        dirty = true
+        if (fixes.size > 3000) fixes.entries.minByOrNull { it.value.second }?.let { fixes.remove(it.key) }
+    }
+
+    fun fixFor(lower: String): String? = fixes[lower]?.first
     /** Palabras que borraste de las sugerencias (mantener presionada → Borrar): no vuelven a salir. */
     val blocked = HashSet<String>()
     @Volatile var dirty = false
@@ -89,6 +102,7 @@ class UserData {
     /** Confirmar una palabra: desde ya no se autocorrige. */
     fun learn(display: String) {
         val key = display.lowercase()
+        fixes.remove(key) // la confirmaste tal cual: ya no se cambia
         unblock(key) // la confirmaste tú: vuelve a ser tuya
         val c = count(key)
         if (c < KNOWN) add(display, KNOWN - c) else add(display, 1)
@@ -135,6 +149,7 @@ class UserData {
     fun clear() {
         blocked.clear()
         trigrams.clear()
+        fixes.clear()
         words.clear()
         bigrams.clear()
         dirty = true
@@ -167,6 +182,7 @@ class UserData {
             sb.append("t\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
         }
         for (x in blocked) sb.append("x\t").append(x).append('\n')
+        for ((k, v) in fixes) sb.append("f\t").append(k).append('\t').append(v.first).append('\t').append(v.second).append('\n')
         return sb.toString()
     }
 
@@ -186,6 +202,7 @@ class UserData {
                     if (t > 0) recent[p[1].lowercase()] = t
                 }
                 p.size == 2 && p[0] == "x" -> blocked.add(p[1])
+                p.size == 4 && p[0] == "f" -> fixes[p[1]] = p[2] to (p[3].toIntOrNull() ?: 1)
                 p.size == 4 && p[0] == "t" -> {
                     val c = p[3].toIntOrNull() ?: return@forEachLine
                     trigrams.getOrPut(p[1]) { HashMap() }[p[2]] = c
