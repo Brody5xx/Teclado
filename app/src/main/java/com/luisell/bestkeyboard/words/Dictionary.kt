@@ -33,7 +33,7 @@ class Dictionary private constructor(
 
     init {
         if (lang == "es") {
-            val minLf = ln(100f)
+            val minLf = ln(5f) // el autocorrector igual pide palabras comunes; las sugerencias aceptan raras
             for (i in words.indices) {
                 if (logFreq[i] < minLf) continue
                 val k = soundKey(folds[i])
