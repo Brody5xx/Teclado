@@ -44,6 +44,9 @@ object Prefs {
     const val APP_LANG_MEMORY = "app_lang_memory"
     /** Las teclas se acomodan a dónde sueles tocar. */
     const val ADAPT_TOUCH = "adapt_touch"
+    /** Cuándo hiciste tu última copia a mano, y cuándo te recordamos hacerla. */
+    const val BACKUP_LAST = "backup_last"
+    const val BACKUP_NAG = "backup_nag"
     const val APP_LANGS = "app_langs"
     const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)
     const val AUTO_LANG = "auto_lang"   // 🌐 cambiar español/inglés solo, según lo que escribo

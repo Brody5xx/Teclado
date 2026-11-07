@@ -57,6 +57,7 @@ class MainActivity : UiActivity() {
         const val EXTRA_SHOW_AI = "ver_ia"
         /** Abrir la app directo en la tarjeta "GIFs". */
         const val EXTRA_GIFS = "ver_gifs"
+        const val EXTRA_BACKUP = "ver_copia"
         /** Pedir el permiso de ubicación (para escribir dónde estás). */
         const val EXTRA_ASK_LOCATION = "pedir_ubicacion"
         private const val REQ_LOCATION = 22
@@ -118,6 +119,7 @@ class MainActivity : UiActivity() {
             selectSec("ai", scroll = false)
             scrollView.postDelayed({ aiCard?.let { scrollView.smoothScrollTo(0, maxOf(0, it.top - dp(60))) } }, 250)
         }
+        if (i?.getBooleanExtra(EXTRA_BACKUP, false) == true) selectSec("backup", scroll = false)
         if (i?.getBooleanExtra(EXTRA_GIFS, false) == true) {
             selectSec("media", scroll = false)
             scrollView.postDelayed({ gifCard?.let { scrollView.smoothScrollTo(0, maxOf(0, it.top - dp(60))) } }, 250)
@@ -321,6 +323,7 @@ class MainActivity : UiActivity() {
                     val ok = try {
                         val bytes = Backup.export(this, pw)
                         contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+                        prefs.edit().putLong(Prefs.BACKUP_LAST, System.currentTimeMillis()).apply()
                         true
                     } catch (_: Throwable) { false }
                     runOnUiThread {
@@ -912,6 +915,10 @@ class MainActivity : UiActivity() {
                 "My workday (hours, sites, your home, your pay), tickets, notebook, materials, to-dos, checklist and your background. " +
                 "Keep it in Google Drive or move it to your new phone and tap «Restore».",
         ), 13f, faded = true)
+        prefs.getLong(Prefs.BACKUP_LAST, 0L).let { last ->
+            text(if (last > 0) tr("Tu última copia: ", "Your last backup: ") + java.text.DateFormat.getDateInstance().format(java.util.Date(last))
+                else tr("Todavía no has hecho una copia.", "You haven't made a backup yet."), 13f)
+        }
         button(tr("Guardar copia de seguridad", "Save backup"), primary = true) { askBackupPassword(true) }
         button(tr("Restaurar copia de seguridad", "Restore backup")) {
             try {
@@ -1208,6 +1215,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.33.1" to tr("•  Recordatorio de la copia de seguridad: si no tienes la copia automática prendida y hace más de un mes que no haces una, el teclado te lo recuerda una vez al mes, con un botón que te lleva directo a hacerla. En la sección Copia ahora sale la fecha de tu última copia.",
+            "•  Backup reminder: if automatic backup is off and you haven't made one in over a month, the keyboard reminds you once a month, with a button that takes you straight there. The Backup section now shows the date of your last backup."),
         "12.33.0" to tr("•  Sin emojis en ninguna pantalla: ajustes, Estilo, Calendario, Mis sitios, Datos, la guía, la notificación de Mi jornada y el widget. Se ve más limpio y moderno. (El ☺️ de la coma y los emojis que tú escribes se quedan.)\n" +
             "•  «Terminar la frase con IA»: si cambias de idioma, el título y los botones se cambian también.",
             "•  No emojis on any screen: settings, Style, Calendar, My sites, Data, the guide, the My workday notification and the widget. Cleaner and more modern. (The comma's ☺️ and the emojis you type stay.)\n" +

@@ -1586,6 +1586,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         // Android vuelve a poner el teclado abajo al abrirse: si es flotante, se acomoda otra vez
         if (prefs.getBoolean(Prefs.FLOAT, false)) handler.post { applyFloat() }
         if (!isPassword) maybeShowWord()
+        if (!isPassword) maybeBackupNag()
         if (!isPassword) handler.postDelayed({ if (isInputViewShown && mode == 0) { maybeDriving(); maybeAskSaveSite() } }, 350)
 
         val type = info.inputType
@@ -4648,6 +4649,45 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** La primera vez que abres el teclado en la semana, te enseña la palabra nueva. */
+    /**
+     * 💾 Una vez al mes, si NO tienes la copia automática prendida y hace más de un mes que no haces
+     * una copia, te recuerda hacerla (así no pierdes lo que el teclado aprendió de ti si cambias de teléfono).
+     */
+    private fun maybeBackupNag() {
+        try {
+            if (AutoBackup.enabled(this)) return
+            val now = System.currentTimeMillis()
+            val month = 30L * 24 * 3600 * 1000
+            val last = maxOf(prefs.getLong(Prefs.BACKUP_LAST, 0L), prefs.getLong(Prefs.AUTO_BACKUP_LAST, 0L))
+            if (now - last < month || now - prefs.getLong(Prefs.BACKUP_NAG, 0L) < month) return
+            // Recién instalado no: espera a que el teclado ya haya aprendido algo de ti
+            if (WordStore.learnedCount() < 50) return
+            prefs.edit().putLong(Prefs.BACKUP_NAG, now).apply()
+            handler.postDelayed({
+                if (!isInputViewShown || mode != 0 || infoBar?.visibility == View.VISIBLE) return@postDelayed
+                fun show() {
+                    infoRegen = { show() }
+                    infoBar?.show(L.t("Copia de seguridad", "Backup"),
+                        L.t(if (last == 0L) "Todavía no tienes una copia de tu teclado. Hazla para no perder tus palabras, frases, Datos y horas si cambias o pierdes el teléfono."
+                            else "Hace más de un mes que no haces una copia de tu teclado. Hazla para no perder lo que aprendió de ti, tus Datos y tus horas.",
+                            if (last == 0L) "You don't have a backup of your keyboard yet. Make one so you don't lose your words, phrases, Data and hours if you change or lose your phone."
+                            else "It's been over a month since your last keyboard backup. Make one so you don't lose what it learned from you, your Data and your hours."),
+                        listOf(
+                            L.t("Hacer la copia", "Back up now") to {
+                                closeInfo(); showMode(0)
+                                try {
+                                    startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_BACKUP, true)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                                } catch (_: Exception) { }
+                            },
+                            L.t("Después", "Later") to { closeInfo() },
+                        ))
+                }
+                show()
+            }, 1200)
+        } catch (_: Exception) { }
+    }
+
     private fun maybeShowWord() {
         if (!prefs.getBoolean(Prefs.WORD_WEEK, true)) return
         val idx = WeeklyWord.weekIndex()
