@@ -87,6 +87,76 @@ abstract class UiActivity : Activity() {
         return dlg
     }
 
+    /**
+     * Ventana bonita para elegir una opción: tarjeta oscura redondeada, un título y cada opción
+     * como un botón grande (título + explicación). La elegida lleva el borde con los colores del diamante.
+     */
+    protected fun choiceDialog(title: String, items: List<Pair<String, String?>>, selected: Int = -1,
+                               cancelable: Boolean = true, onPick: (Int) -> Unit): android.app.Dialog {
+        val dlg = android.app.Dialog(this)
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(22), dp(20), dp(16))
+            background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(26f); setStroke(dp(1), LINE) }
+        }
+        box.addView(TextView(this).apply {
+            text = title; textSize = 20f; setTextColor(TEXT)
+            setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD))
+            setPadding(dp(4), 0, dp(4), dp(4))
+        })
+        // La rayita de luz debajo del título
+        box.addView(View(this).apply {
+            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET, 0x008B7CFF)).apply { cornerRadius = dpf(2f) }
+        }, LinearLayout.LayoutParams(dp(90), dp(3)).apply { topMargin = dp(8); bottomMargin = dp(12); leftMargin = dp(4) })
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        items.forEachIndexed { i, (name, sub) ->
+            val on = i == selected
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(16), dp(14), dp(14), dp(14))
+                isClickable = true
+                val shape = if (on) GradientDrawable().apply {
+                    setColor(0xFF1A2236.toInt()); cornerRadius = dpf(18f); setStroke(dp(2), CYAN)
+                } else GradientDrawable().apply { setColor(CARD2); cornerRadius = dpf(18f) }
+                background = android.graphics.drawable.RippleDrawable(
+                    android.content.res.ColorStateList.valueOf(0x334FD1FF), shape, null)
+                setOnClickListener { try { dlg.dismiss() } catch (_: Exception) { }; onPick(i) }
+            }
+            val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            texts.addView(TextView(this).apply {
+                text = name; textSize = 16f; setTextColor(if (on) CYAN else TEXT)
+                setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL))
+            })
+            if (!sub.isNullOrBlank()) texts.addView(TextView(this).apply {
+                text = sub; textSize = 13f; setTextColor(SUB); setPadding(0, dp(3), 0, 0)
+            })
+            row.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+            // Circulito a la derecha: lleno con degradado si es la elegida
+            row.addView(View(this).apply {
+                background = if (on) GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(CYAN, VIOLET)).apply { shape = GradientDrawable.OVAL }
+                else GradientDrawable().apply { shape = GradientDrawable.OVAL; setStroke(dp(2), LINE) }
+            }, LinearLayout.LayoutParams(dp(20), dp(20)).apply { leftMargin = dp(12) })
+            list.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = if (i == 0) 0 else dp(10) })
+        }
+        val scroll = android.widget.ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(list) }
+        box.addView(scroll, LinearLayout.LayoutParams(-1, -2, 1f))
+        if (cancelable) box.addView(TextView(this).apply {
+            text = tr("Cancelar", "Cancel"); textSize = 15f; setTextColor(SUB); gravity = Gravity.CENTER
+            setPadding(0, dp(14), 0, dp(4)); isClickable = true
+            setOnClickListener { try { dlg.dismiss() } catch (_: Exception) { } }
+        }, LinearLayout.LayoutParams(-1, -2))
+        val wrap = android.widget.FrameLayout(this).apply { setPadding(dp(18), dp(24), dp(18), dp(24)); addView(box) }
+        dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        dlg.setContentView(wrap)
+        dlg.setCancelable(cancelable)
+        dlg.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+        dlg.window?.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+        dlg.window?.setDimAmount(0.7f)
+        try { dlg.show() } catch (_: Exception) { }
+        return dlg
+    }
+
     protected fun android.app.Dialog.close() { try { if (isShowing) dismiss() } catch (_: Exception) { } }
 
     protected fun toast(es: String, en: String) = Toast.makeText(this, tr(es, en), Toast.LENGTH_LONG).show()

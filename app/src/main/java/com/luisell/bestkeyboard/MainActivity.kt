@@ -117,10 +117,9 @@ class MainActivity : UiActivity() {
 
     private fun askProfile(first: Boolean) {
         val list = profiles
-        val labels = list.map { it.second + "\n" + it.third }.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle(tr("¿Para qué vas a usar el teclado?", "What will you use the keyboard for?"))
-            .setItems(labels) { _, which ->
+        val curId = prefs.getString(Prefs.PROFILE, null)
+        choiceDialog(tr("¿Para qué vas a usar el teclado?", "What will you use the keyboard for?"),
+            list.map { it.second to it.third }, list.indexOfFirst { it.first == curId }, cancelable = !first) { which ->
                 val id = list[which].first
                 prefs.edit().putString(Prefs.PROFILE, id).putBoolean(Prefs.WORK_PACK, id == "tech")
                     .putBoolean(Prefs.FORMAL_SUGGEST, id == "office" || id == "tech").apply()
@@ -130,8 +129,6 @@ class MainActivity : UiActivity() {
                 }
                 recreate()
             }
-            .setCancelable(!first)
-            .show()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -644,6 +641,31 @@ class MainActivity : UiActivity() {
         segmented(tr("Idioma de esta pantalla", "Language of this screen"), Prefs.APP_LANG, "auto",
             listOf("auto" to tr("Del teléfono", "Phone's"), "es" to "Español", "en" to "English")) { recreate() }
 
+        // ---- 🌍 Idiomas del teclado
+        card(tr("Idiomas del teclado", "Keyboard languages"), Icons.GLOBE, keywords = "idiomas portugues frances italiano aleman languages portuguese french italian german")
+        text(tr("Elige tus 2 idiomas. El teclado cambia solo entre ellos mientras escribes, con su diccionario y sus sugerencias.",
+            "Pick your 2 languages. The keyboard switches between them by itself while you type, with their dictionary and suggestions."), 13f, faded = true)
+        val (kl1, kl2) = Langs.pair(prefs)
+        fun pickLang(key: String, current: String) {
+            choiceDialog(tr("Elige el idioma", "Pick the language"), Langs.ALL.map { it.name to null },
+                Langs.ALL.indexOfFirst { it.code == current }) { which ->
+                    val code = Langs.ALL[which].code
+                    val e = prefs.edit().putString(key, code)
+                    // Si eliges el mismo que el otro, se cambian de lugar
+                    val otherKey = if (key == Prefs.KB_LANG1) Prefs.KB_LANG2 else Prefs.KB_LANG1
+                    if (Langs.pair(prefs).let { if (key == Prefs.KB_LANG1) it.second else it.first } == code)
+                        e.putString(otherKey, current)
+                    e.putString(Prefs.LANG, if (key == Prefs.KB_LANG1) code else Langs.pair(prefs).first)
+                    e.apply()
+                    val busyDlg = busy("Cargando el diccionario…", "Loading the dictionary…")
+                    WordStore.reload(this) { busyDlg.close(); recreate() }
+                }
+        }
+        button(tr("Idioma 1: ", "Language 1: ") + Langs.name(kl1)) { pickLang(Prefs.KB_LANG1, kl1) }
+        button(tr("Idioma 2: ", "Language 2: ") + Langs.name(kl2)) { pickLang(Prefs.KB_LANG2, kl2) }
+        text(tr("Todos usan el teclado QWERTY. Las letras con acento (é, ü, ç, ã, ß…) salen manteniendo la letra.",
+            "All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter."), 12f, faded = true)
+
         // ---- ¿Para qué lo usas?
         card(tr("Para qué lo usas", "What you use it for"), Icons.BRIEFCASE, keywords = "perfil trabajo paquete tickets profile work pack")
         val cur = profiles.firstOrNull { it.first == (prefs.getString(Prefs.PROFILE, "tech") ?: "tech") } ?: profiles.last()
@@ -710,36 +732,6 @@ class MainActivity : UiActivity() {
         switch(tr("Mayúsculas en lo seleccionado", "Uppercase the selection"), Prefs.SEL_CAPS, false,
             tr("Selecciona un texto y toca ⇧: pasa a MAYÚSCULAS. Otra vez: minúsculas. Otra: Tipo Título.",
                 "Select text and tap ⇧: it becomes UPPERCASE. Again: lowercase. Again: Title Case."))
-
-        // ---- 🌍 Idiomas del teclado
-        card(tr("Idiomas del teclado", "Keyboard languages"), Icons.GLOBE, keywords = "idiomas portugues frances italiano aleman languages portuguese french italian german")
-        text(tr("Elige tus 2 idiomas. El teclado cambia solo entre ellos mientras escribes, con su diccionario y sus sugerencias.",
-            "Pick your 2 languages. The keyboard switches between them by itself while you type, with their dictionary and suggestions."), 13f, faded = true)
-        val (kl1, kl2) = Langs.pair(prefs)
-        fun pickLang(key: String, current: String) {
-            val names = Langs.ALL.map { it.name }.toTypedArray()
-            AlertDialog.Builder(this)
-                .setTitle(tr("Elige el idioma", "Pick the language"))
-                .setSingleChoiceItems(names, Langs.ALL.indexOfFirst { it.code == current }) { d, which ->
-                    val code = Langs.ALL[which].code
-                    val e = prefs.edit().putString(key, code)
-                    // Si eliges el mismo que el otro, se cambian de lugar
-                    val otherKey = if (key == Prefs.KB_LANG1) Prefs.KB_LANG2 else Prefs.KB_LANG1
-                    if (Langs.pair(prefs).let { if (key == Prefs.KB_LANG1) it.second else it.first } == code)
-                        e.putString(otherKey, current)
-                    e.putString(Prefs.LANG, if (key == Prefs.KB_LANG1) code else Langs.pair(prefs).first)
-                    e.apply()
-                    d.dismiss()
-                    val busyDlg = busy("Cargando el diccionario…", "Loading the dictionary…")
-                    WordStore.reload(this) { busyDlg.close(); recreate() }
-                }
-                .setNegativeButton(tr("Cancelar", "Cancel"), null)
-                .show()
-        }
-        button(tr("Idioma 1: ", "Language 1: ") + Langs.name(kl1)) { pickLang(Prefs.KB_LANG1, kl1) }
-        button(tr("Idioma 2: ", "Language 2: ") + Langs.name(kl2)) { pickLang(Prefs.KB_LANG2, kl2) }
-        text(tr("Todos usan el teclado QWERTY. Las letras con acento (é, ü, ç, ã, ß…) salen manteniendo la letra.",
-            "All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter."), 12f, faded = true)
 
         // ---- Barra espaciadora
         card(tr("Barra espaciadora", "Space bar"), Icons.GLOBE)
@@ -1333,6 +1325,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.0.2" to tr("•  La ventana «¿Para qué vas a usar el teclado?» ahora es bonita: tarjeta oscura con cada opción como un botón grande y la elegida marcada con los colores del diamante.\n" +
+            "•  La ventana para elegir el idioma tiene el mismo estilo.\n" +
+            "•  «Idiomas del teclado» (español, inglés, portugués, francés, italiano y alemán) ahora está en Inicio, justo debajo del idioma de la pantalla, para encontrarlo fácil.",
+            "•  The «What will you use the keyboard for?» window looks nice now: a dark card with each option as a big button and the chosen one marked with the diamond's colors.\n" +
+            "•  The language picker has the same style.\n" +
+            "•  «Keyboard languages» (Spanish, English, Portuguese, French, Italian and German) is now in Start, right under the screen language, so it's easy to find."),
         "13.0.1" to tr("•  El ojito del modo incógnito ahora tiene animación: al prenderlo, una línea de luz (los colores del diamante) cruza el ojo; al apagarlo, la línea se regresa y el ojo queda descubierto.",
             "•  The incognito eye now animates: turning it on draws a line of light (the diamond's colors) across the eye; turning it off pulls the line back and the eye is uncovered."),
         "13.0.0" to tr("Best Keyboard 13: para cualquier persona.\n" +
