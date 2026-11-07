@@ -45,6 +45,7 @@ class FxPanel(context: Context) : FrameLayout(context) {
     private val fromBadge = TextView(context); private val fromName = TextView(context); private val fromAmt = TextView(context)
     private val toBadge = TextView(context); private val toName = TextView(context); private val toAmt = TextView(context)
     private val rateLine = TextView(context)
+    private val swapBtn = TextView(context)
     private val keys = ArrayList<Pair<TextView, Int>>()
 
     // La lista para elegir moneda (tapa el panel)
@@ -97,28 +98,46 @@ class FxPanel(context: Context) : FrameLayout(context) {
         }
         fromRow.setOnClickListener { actions?.onFxFeedback(); openPicker(true) }
         toRow.setOnClickListener { actions?.onFxFeedback(); openPicker(false) }
-        body.addView(fromRow, LinearLayout.LayoutParams(-1, d(44f)).apply { topMargin = d(4f) })
-        body.addView(toRow, LinearLayout.LayoutParams(-1, d(44f)).apply { topMargin = d(5f) })
+        // Las dos monedas, y a la derecha las flechitas ↑↓ para cambiarlas de lugar
+        val pair = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+        val rows = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        rows.addView(fromRow, LinearLayout.LayoutParams(-1, d(40f)))
+        rows.addView(toRow, LinearLayout.LayoutParams(-1, d(40f)).apply { topMargin = d(4f) })
+        pair.addView(rows, LinearLayout.LayoutParams(0, -2, 1f))
+        swapBtn.text = "↑↓"
+        swapBtn.textSize = 19f
+        swapBtn.gravity = Gravity.CENTER
+        swapBtn.includeFontPadding = false
+        swapBtn.setTypeface(Typeface.DEFAULT_BOLD)
+        swapBtn.setOnClickListener {
+            actions?.onFxFeedback()
+            val x = from; from = to; to = x
+            swapBtn.animate().rotationBy(180f).setDuration(260).start()
+            save(); refresh()
+        }
+        pair.addView(swapBtn, LinearLayout.LayoutParams(d(46f), d(84f)).apply { leftMargin = d(5f) })
+        body.addView(pair, LinearLayout.LayoutParams(-1, -2).apply { topMargin = d(3f) })
         rateLine.textSize = 11.5f
         rateLine.gravity = Gravity.CENTER
         rateLine.maxLines = 1
-        rateLine.setPadding(0, d(3f), 0, d(1f))
+        rateLine.setPadding(0, d(2f), 0, 0)
         body.addView(rateLine, LinearLayout.LayoutParams(-1, -2))
 
         val grid = listOf(
             listOf("7", "8", "9", "÷", "⌫"),
             listOf("4", "5", "6", "×", "C"),
-            listOf("1", "2", "3", "−", "⇅"),
-            listOf("0", ".", "%", "+", "="),
-            listOf("ABC", L.t("Escribir", "Type it")),
+            listOf("1", "2", "3", "−", "%"),
+            listOf("ABC", "0", ".", "+", L.t("Escribir", "Type it")),
         )
         for (row in grid) {
             val r = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
             for (k in row) {
                 val t = TextView(context)
                 t.text = k
-                t.textSize = if (k.length > 2) 15f else 19f
+                t.textSize = if (k.length > 2) 15f else 21f
                 t.gravity = Gravity.CENTER
+                t.includeFontPadding = false // los números quedan en el centro de la tecla
+                t.setPadding(0, 0, 0, 0)
                 val type = when {
                     k.length > 3 -> 2
                     k[0].isDigit() || k == "." -> 0
@@ -126,7 +145,7 @@ class FxPanel(context: Context) : FrameLayout(context) {
                 }
                 t.setOnClickListener { actions?.onFxFeedback(); press(k) }
                 keys.add(t to type)
-                r.addView(t, LinearLayout.LayoutParams(0, -1, if (k.length > 3) 4f else 1f).apply { setMargins(d(2.5f), d(2.5f), d(2.5f), d(2.5f)) })
+                r.addView(t, LinearLayout.LayoutParams(0, -1, if (k.length > 3) 1.6f else 1f).apply { setMargins(d(3f), d(3f), d(3f), d(3f)) })
             }
             body.addView(r, LinearLayout.LayoutParams(-1, 0, 1f))
         }
@@ -167,8 +186,6 @@ class FxPanel(context: Context) : FrameLayout(context) {
             "C" -> expr.setLength(0)
             "⌫" -> if (expr.isNotEmpty()) expr.setLength(expr.length - 1)
             "ABC" -> { actions?.onFxBack(); return }
-            "⇅" -> { val x = from; from = to; to = x }
-            "=" -> Calc.eval(expr.toString())?.let { expr.setLength(0); expr.append(plain(it)) }
             else -> if (k.length > 3) {
                 val t = resultText()
                 if (t != null) actions?.onFxInsert(t)
@@ -279,6 +296,8 @@ class FxPanel(context: Context) : FrameLayout(context) {
             row.background = PanelUi.pressable(p.key, p.keyPressed, d(14f).toFloat())
         }
         badgeStyle(fromBadge, false); badgeStyle(toBadge, true)
+        swapBtn.setTextColor(p.onAccent)
+        swapBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(16f).toFloat())
         fromName.setTextColor(p.hint); toName.setTextColor(p.hint)
         fromAmt.setTextColor(p.text); toAmt.setTextColor(p.accent)
         val r = d(12f).toFloat()

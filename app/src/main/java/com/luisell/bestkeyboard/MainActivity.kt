@@ -1364,6 +1364,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.4.1" to tr("•  Divisas: nuevo botón ↑↓ al lado de las monedas para cambiarlas de lugar (da la vuelta al tocarlo).\n" +
+            "•  Las teclas de Divisas son más grandes y los números quedan bien centrados (4 filas en vez de 5).",
+            "•  Currency: new ↑↓ button next to the currencies to swap them (it spins when you tap it).\n" +
+            "•  The Currency keys are bigger and the numbers are properly centered (4 rows instead of 5)."),
         "13.4.0" to tr("•  Divisas (como en Best Notes): toca ⋯ › Divisas. Ves a cuánto está cada moneda del mundo hoy y la conversión al instante.\n" +
             "•  Toca una moneda para cambiarla: arriba las más usadas y abajo todas de la A a la Z, con su nombre.\n" +
             "•  En la cantidad puedes hacer cuentas (50+25×2, 15%) y ⇅ cambia las monedas de lugar. Debajo sale 1 = … en los dos sentidos.\n" +
