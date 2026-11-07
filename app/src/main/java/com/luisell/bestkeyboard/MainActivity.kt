@@ -755,6 +755,12 @@ class MainActivity : UiActivity() {
                 "Passwords ask for your fingerprint. All encrypted and only on your phone.",
         ), 13f, faded = true)
         button(tr("Abrir Datos", "Open Data"), primary = true) { startActivity(Intent(this, DataActivity::class.java)) }
+        text(tr("Qué guarda el teclado, que todo se queda en tu teléfono, y borrar cada cosa:",
+            "What the keyboard saves, that it all stays on your phone, and delete each thing:"), 12f, faded = true)
+        button(tr("Mis datos y privacidad", "My data and privacy")) { startActivity(Intent(this, PrivacyActivity::class.java)) }
+        switch(tr("Modo incógnito", "Incognito mode"), Prefs.INCOGNITO, false,
+            tr("No aprende ni guarda nada de lo que escribes o copias. También se prende solo en las pestañas privadas. Lo prendes rápido con el botón «Modo incógnito» en ⋯.",
+                "It doesn't learn or save anything you type or copy. It also turns on by itself in private tabs. Turn it on quickly with the «Incognito mode» button in ⋯."))
 
         cardGroup = "ai"
         // ---- Trabajo: tickets, reportes y escribir más formal

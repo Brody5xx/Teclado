@@ -109,6 +109,8 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_GOOGLE = 68
         /** ✍️ Terminar la frase con IA (solo cuando lo tocas). */
         const val TOOL_FINISH = 69
+        /** 🕶 Modo incógnito. */
+        const val TOOL_INCOGNITO = 70
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -2874,6 +2876,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_REMIND -> Icons.MAP_PIN
         TOOL_GOOGLE -> Icons.SEARCH
         TOOL_FINISH -> Icons.TEXT_GO
+        TOOL_INCOGNITO -> Icons.EYE_OFF
         else -> -1
     }
 

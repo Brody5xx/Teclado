@@ -78,6 +78,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var fieldSuggest = true
     private var fieldCorrect = true
     private var fieldLearn = true
+    /** 🕶 Incógnito: no aprende ni guarda nada (lo prendes tú, o la app lo pide, como las pestañas privadas). */
+    private var incognito = false
+    private val manualIncognito get() = prefs.getBoolean(Prefs.INCOGNITO, false)
+
+    /** Lo que dice la barra espaciadora (con «Incógnito» si está prendido). */
+    private fun langLabel(): String = (if (incognito) L.t("Incógnito · ", "Incognito · ") else "") + (if (lang == "es") "Español" else "English")
 
     // Sugerencias
     private val slotWords = arrayOfNulls<String>(3)
@@ -1526,6 +1532,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
             if (mime == null) mime = try { contentResolver.getType(uri) } catch (_: Exception) { null }
             if (mime != null && mime.startsWith("image/")) {
+                if (incognito) return
                 ClipStore.addImage(this, uri, mime)
                 return
             }
@@ -1533,6 +1540,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val text = item.text?.toString()
             ?: (if (item.htmlText != null || uri != null) try { item.coerceToText(this)?.toString() } catch (_: Exception) { null } else null)
             ?: return
+        if (incognito) return // 🕶 en incógnito no se guarda lo que copias
         ClipStore.addText(text)
     }
 
@@ -1614,7 +1622,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         prefs.edit().putString(Prefs.LAST_FIELD,
             "${info.packageName} · 0x${Integer.toHexString(type)} · 0x${Integer.toHexString(info.imeOptions)}").apply()
         fieldCorrect = fieldSuggest && variation != InputType.TYPE_TEXT_VARIATION_FILTER
-        fieldLearn = fieldSuggest && (info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
+        val privateField = (info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0
+        incognito = manualIncognito || privateField
+        fieldLearn = fieldSuggest && !incognito
         kv?.enterAction = enterActionFor(info)
 
         if (!restarting) {
@@ -1894,7 +1904,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             Layouts.showGlobe = !spaceLang
             rebuild()
         }
-        v.spaceLabel = if (lang == "es") "Español" else "English"
+        v.spaceLabel = langLabel()
     }
 
     @Suppress("DEPRECATION")
@@ -2447,7 +2457,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         // ✍️ Borraste una palabra mal escrita y pusiste otra parecida: el teclado aprende tu arreglo
         learnFix(eng, final)
-        try { Stats.add(prefs, Stats.WORDS); if (fixed != null) Stats.add(prefs, Stats.FIXED) } catch (_: Exception) { }
+        if (!incognito) try { Stats.add(prefs, Stats.WORDS); if (fixed != null) Stats.add(prefs, Stats.FIXED) } catch (_: Exception) { }
         if (fixed == null) { lastFinished = final; lastFinishedAt = SystemClock.uptimeMillis() } else lastFinished = null
         if (learnOn && fieldLearn) {
             // Si parece un error de dedo (hay una palabra casi igual), cuesta más aprenderla
@@ -2801,6 +2811,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_UNDO -> doUndo()
             KeyboardView.TOOL_GOOGLE -> startGoogle()
             KeyboardView.TOOL_FINISH -> startFinish()
+            KeyboardView.TOOL_INCOGNITO -> toggleIncognito()
             KeyboardView.TOOL_REMIND -> startRemind()
             KeyboardView.TOOL_SPEAK -> startSpeak()
             KeyboardView.TOOL_BGSOUND -> {
@@ -3753,6 +3764,18 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // ---------------------------------------------------------------- 🌐 Idioma (y cambio solo)
 
     /** Cambia el idioma del teclado (con la luz alrededor de la barra espaciadora). */
+    /** 🕶 Prende o apaga el modo incógnito (no aprende ni guarda lo que escribes o copias). */
+    private fun toggleIncognito() {
+        val on = !manualIncognito
+        prefs.edit().putBoolean(Prefs.INCOGNITO, on).apply()
+        incognito = on || (currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) ?: 0) != 0
+        fieldLearn = fieldSuggest && !incognito
+        kv?.spaceLabel = langLabel()
+        kv?.flashSpace()
+        Toast.makeText(this, if (on) L.t("Incógnito prendido: no aprendo ni guardo nada de lo que escribas o copies.", "Incognito on: I won't learn or save anything you type or copy.")
+            else L.t("Incógnito apagado.", "Incognito off."), Toast.LENGTH_SHORT).show()
+    }
+
     /** La app donde estás escribiendo (para recordar su idioma). */
     private var curPkg = ""
 
@@ -3764,7 +3787,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun rememberAppLang() {
-        if (curPkg.isEmpty() || curPkg == packageName || !prefs.getBoolean(Prefs.APP_LANG_MEMORY, true)) return
+        if (incognito || curPkg.isEmpty() || curPkg == packageName || !prefs.getBoolean(Prefs.APP_LANG_MEMORY, true)) return
         val m = appLangs()
         if (m[curPkg] == lang) return
         m.remove(curPkg); m[curPkg] = lang
@@ -3778,7 +3801,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         prefs.edit().putString(Prefs.LANG, lang).apply()
         rememberAppLang()
         L.set(lang)
-        kv?.spaceLabel = if (lang == "es") "Español" else "English"
+        kv?.spaceLabel = langLabel()
         kv?.flashSpace() // 🌐 la luz le da la vuelta a la barra espaciadora
         langVotes.clear()
         rebuild() // en inglés el teclado cambia de verdad: sin la ñ (sale manteniendo la n)

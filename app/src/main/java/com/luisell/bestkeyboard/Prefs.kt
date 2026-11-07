@@ -46,6 +46,8 @@ object Prefs {
     const val ADAPT_TOUCH = "adapt_touch"
     /** Cuándo hiciste tu última copia a mano, y cuándo te recordamos hacerla. */
     const val BACKUP_LAST = "backup_last"
+    /** 🕶 Modo incógnito prendido a mano. */
+    const val INCOGNITO = "incognito"
     const val BACKUP_NAG = "backup_nag"
     const val APP_LANGS = "app_langs"
     const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)

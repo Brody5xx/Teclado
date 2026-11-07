@@ -94,6 +94,11 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Mis datos y privacidad -->
+        <activity
+            android:name=".PrivacyActivity"
+            android:exported="false" />
+
         <!-- "Mis palabras": ver y editar lo aprendido -->
         <activity
             android:name=".WordsActivity"

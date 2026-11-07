@@ -72,6 +72,7 @@ object Tools {
         Info(KeyboardView.TOOL_SPEAK, Icons.SOUNDWAVE, "Escuchar texto", "Listen to text", true),
         Info(KeyboardView.TOOL_GOOGLE, Icons.SEARCH, "Buscar en Google", "Search Google", true),
         Info(KeyboardView.TOOL_FINISH, Icons.TEXT_GO, "Terminar la frase con IA", "Finish sentence with AI", true),
+        Info(KeyboardView.TOOL_INCOGNITO, Icons.EYE_OFF, "Modo incógnito", "Incognito mode", false),
         Info(KeyboardView.TOOL_IPPAD, Icons.NETWORK, "Teclado IP / MAC", "IP / MAC keypad", false),
         Info(KeyboardView.TOOL_LABELS, Icons.TAG, "Etiquetas en serie", "Serial labels", true),
         Info(KeyboardView.TOOL_REMIND, Icons.MAP_PIN, "Recordar al llegar", "Remind on arrival", true),
