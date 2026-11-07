@@ -985,6 +985,59 @@ class KeyboardView(context: Context) : View(context) {
         layoutKeys()
     }
 
+    // ---------------------------------------------------------------- 🕶 El ojito del modo incógnito
+
+    /** Prendido: la línea de luz cruza el ojo. Apagado: la línea se regresa y el ojo queda descubierto. */
+    var incognitoOn = false
+        set(v) {
+            if (field == v) return
+            field = v
+            incogFrom = incogNow()
+            incogTo = if (v) 1f else 0f
+            incogStart = android.os.SystemClock.uptimeMillis()
+            postInvalidateOnAnimation()
+        }
+    private var incogFrom = 0f
+    private var incogTo = 0f
+    private var incogStart = 0L
+    private val INCOG_MS = 520L
+    private val incogPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
+    private val incogGlow = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    private fun incogNow(): Float {
+        if (incogStart == 0L) return incogTo
+        val t = ((android.os.SystemClock.uptimeMillis() - incogStart).toFloat() / INCOG_MS).coerceIn(0f, 1f)
+        val e = 1f - (1f - t) * (1f - t) * (1f - t) // suave al final
+        return incogFrom + (incogTo - incogFrom) * e
+    }
+
+    private fun drawIncognito(c: Canvas, cx: Float, cy: Float, s: Float, col: Int, bgc: Int) {
+        Icons.draw(c, Icons.EYE, cx, cy, s, col, bgc, d)
+        val prog = incogNow()
+        val animating = incogStart != 0L && android.os.SystemClock.uptimeMillis() - incogStart < INCOG_MS
+        if (prog > 0.01f) {
+            val x0 = cx - s * 0.85f; val y0 = cy - s * 0.85f
+            val x1 = x0 + (s * 1.7f) * prog; val y1 = y0 + (s * 1.7f) * prog
+            // Primero un corte del color del fondo (así la línea se separa del ojo), luego la luz
+            incogPaint.shader = null
+            incogPaint.color = bgc
+            incogPaint.strokeWidth = 4.6f * d
+            c.drawLine(x0, y0, x1, y1, incogPaint)
+            incogPaint.shader = android.graphics.LinearGradient(x0, y0, cx + s * 0.85f, cy + s * 0.85f,
+                intArrayOf(0xFF67E8F9.toInt(), 0xFFA78BFA.toInt(), 0xFFF0ABFC.toInt()), null, android.graphics.Shader.TileMode.CLAMP)
+            incogPaint.strokeWidth = 2.2f * d
+            c.drawLine(x0, y0, x1, y1, incogPaint)
+            incogPaint.shader = null
+            // La puntita de luz mientras se traza
+            if (animating) {
+                incogGlow.shader = android.graphics.RadialGradient(x1, y1, 5.5f * d, intArrayOf(0xFFFFFFFF.toInt(), 0x66F0ABFC, 0x00F0ABFC), null, android.graphics.Shader.TileMode.CLAMP)
+                c.drawCircle(x1, y1, 5.5f * d, incogGlow)
+                incogGlow.shader = null
+            }
+        }
+        if (animating) postInvalidateOnAnimation() else if (incogStart != 0L) incogStart = 0L
+    }
+
     /** ✌️ Teclado dividido en dos mitades (acostado o en tablet), con un hueco en el medio. */
     var splitMode = false
         set(v) { if (field != v) { field = v; if (width > 0) { layoutKeys(); invalidate() } } }
@@ -3163,6 +3216,7 @@ class KeyboardView(context: Context) : View(context) {
             val col = if (on) p.accent else if (lit > 0.05f) blendColor(p.hint, p.text, lit) else p.hint
             if (i == toolFlashTool && toolFlashAt > 0L) { toolFlashX = cx; toolFlashY = cy + arcY }
             if (i == TOOL_SETTINGS) diamondLit = drawDiamond(c, cx, cy, s) or diamondLit
+            else if (i == TOOL_INCOGNITO) drawIncognito(c, cx, cy, s, col, bgc)
             else Icons.draw(c, kind, cx, cy, s, col, bgc, d)
             if (moved) c.restore()
             if (k == selE && ext > 0f) {

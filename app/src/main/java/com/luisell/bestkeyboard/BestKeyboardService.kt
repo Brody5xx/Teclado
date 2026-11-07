@@ -83,7 +83,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private val manualIncognito get() = prefs.getBoolean(Prefs.INCOGNITO, false)
 
     /** Lo que dice la barra espaciadora (con «Incógnito» si está prendido). */
-    private fun langLabel(): String = (if (incognito) L.t("Incógnito · ", "Incognito · ") else "") + Langs.name(lang)
+    private fun langLabel(): String {
+        kv?.incognitoOn = incognito // 🕶 el ojito con (o sin) su línea de luz
+        return (if (incognito) L.t("Incógnito · ", "Incognito · ") else "") + Langs.name(lang)
+    }
 
     // Sugerencias
     private val slotWords = arrayOfNulls<String>(3)

@@ -1333,6 +1333,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.0.1" to tr("•  El ojito del modo incógnito ahora tiene animación: al prenderlo, una línea de luz (los colores del diamante) cruza el ojo; al apagarlo, la línea se regresa y el ojo queda descubierto.",
+            "•  The incognito eye now animates: turning it on draws a line of light (the diamond's colors) across the eye; turning it off pulls the line back and the eye is uncovered."),
         "13.0.0" to tr("Best Keyboard 13: para cualquier persona.\n" +
             "•  Al instalarlo te pregunta para qué lo usas (chatear, estudiar, oficina o trabajo de campo) y prende solo lo que te sirve. Las herramientas del trabajo (tickets, Mi jornada, sitios…) son un paquete que se puede apagar (Secciones › Inicio).\n" +
             "•  6 idiomas: español, inglés, portugués, francés, italiano y alemán. Eliges tus 2 y cambia solo entre ellos (Secciones › Escribir › Idiomas del teclado).\n" +
