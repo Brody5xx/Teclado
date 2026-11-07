@@ -326,6 +326,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onCreateInputView(): View {
         // Los textos de los paneles siguen al idioma del teclado (español / English)
         L.clearListeners()
+        UiTr.init(this)
+        L.setScreen(this)
         L.set(prefs.getString(Prefs.LANG, "es") ?: "es")
         val v = KeyboardView(this)
         v.listener = this
@@ -1804,6 +1806,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun applySettings() {
+        L.setScreen(this) // 🌍 por si cambiaste el idioma de las pantallas
         val v = kv ?: return
         val theme = Prefs.theme(prefs)
         val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==

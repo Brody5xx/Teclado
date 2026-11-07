@@ -80,6 +80,8 @@ class MainActivity : UiActivity() {
         super.onCreate(savedInstanceState)
         prefs = Prefs.get(this)
         loadLang()
+        // Después de una actualización: traduce en silencio los textos nuevos que falten
+        if (uiCode in UiTr.LANGS && UiTr.missing(this, uiCode) > 0) UiTr.translate(this, uiCode, {}, {})
         title = "Best Keyboard"
         window.statusBarColor = BG
         window.navigationBarColor = BG
@@ -105,6 +107,30 @@ class MainActivity : UiActivity() {
             prefs.edit().putBoolean(Prefs.GUIDE_SEEN, true).apply()
             startActivity(Intent(this, GuideActivity::class.java))
         }
+    }
+
+    /** 🌍 Cambia el idioma de las pantallas (si es uno nuevo, primero lo traduce dentro del teléfono). */
+    private fun setScreenLang(code: String) {
+        val target = if (code == "auto") java.util.Locale.getDefault().language else code
+        if (target !in UiTr.LANGS || UiTr.missing(this, target) == 0) {
+            prefs.edit().putString(Prefs.APP_LANG, code).apply()
+            recreate()
+            return
+        }
+        val dlg = busy("Traduciendo la app… 0%", "Translating the app… 0%")
+        val label = busyLabel
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        UiTr.translate(this, target, progress = { pct ->
+            label?.text = tr("Traduciendo la app… ", "Translating the app… ") + pct + "%"
+        }, done = { ok ->
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            dlg.close()
+            if (ok || UiTr.has(this, target)) {
+                prefs.edit().putString(Prefs.APP_LANG, code).apply()
+                recreate()
+            } else toast("No se pudo traducir. Conéctate a internet la primera vez (baja el idioma, unos 30 MB).",
+                "Couldn't translate. Connect to the internet the first time (it downloads the language, about 30 MB).")
+        })
     }
 
     /** 👋 ¿Para qué usas el teclado? Así se prende solo lo que te sirve. */
@@ -638,8 +664,16 @@ class MainActivity : UiActivity() {
         cardGroup = "start"
         // ---- Idioma de la app
         card(tr("Idioma", "Language"), Icons.GLOBE, keywords = "idiomas teclado portugues frances italiano aleman chino traductor languages keyboard portuguese french italian german chinese translator")
-        segmented(tr("Idioma de esta pantalla", "Language of this screen"), Prefs.APP_LANG, "auto",
-            listOf("auto" to tr("Del teléfono", "Phone's"), "es" to "Español", "en" to "English")) { recreate() }
+        // Idioma de las pantallas: español, inglés y 5 más (se traducen dentro del teléfono la primera vez)
+        text(tr("Idioma de esta pantalla", "Language of this screen"), 16f, bold = true)
+        val screenCodes = listOf("auto", "es", "en") + UiTr.LANGS
+        val curPick = prefs.getString(Prefs.APP_LANG, "auto") ?: "auto"
+        fun pickName(c: String) = if (c == "auto") tr("Del teléfono", "Phone's") else UiTr.native(c)
+        button(pickName(curPick) + "  ›") {
+            choiceDialog(tr("Idioma de esta pantalla", "Language of this screen"),
+                screenCodes.map { c -> pickName(c) to (if (c == "auto") tr("El mismo idioma de tu teléfono", "Same language as your phone") else if (c in UiTr.LANGS && !UiTr.has(this, c)) tr("Se traduce la primera vez (necesita internet)", "Translated the first time (needs internet)") else null) },
+                screenCodes.indexOf(curPick)) { w -> setScreenLang(screenCodes[w]) }
+        }
 
         // ---- 🌍 Idiomas del teclado (en la misma tarjeta del idioma)
         divider()
@@ -1328,6 +1362,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.2.0" to tr("•  La app ahora está en 7 idiomas: español, inglés, portugués, francés, italiano, alemán y chino. Ve a Inicio › Idioma › «Idioma de esta pantalla» y elige el tuyo.\n" +
+            "•  La primera vez que eliges portugués, francés, italiano, alemán o chino, el teléfono traduce toda la app (necesita internet una vez; tarda menos de un minuto). Después funciona al instante y sin internet.\n" +
+            "•  Los ajustes, la guía, Mis datos, los paneles del teclado y los mensajes salen en el idioma que elijas.",
+            "•  The app now comes in 7 languages: Spanish, English, Portuguese, French, Italian, German and Chinese. Go to Start › Language › «Language of this screen» and pick yours.\n" +
+            "•  The first time you pick Portuguese, French, Italian, German or Chinese, the phone translates the whole app (needs internet once; takes less than a minute). After that it works instantly and offline.\n" +
+            "•  Settings, the guide, My data, the keyboard panels and the messages show in the language you pick."),
         "13.1.0" to tr("•  Chino en el traductor: copia un mensaje en chino, toca «Traducir mensaje» y te sale en español. En la barra de traducir, toca el nombre de un idioma para cambiarlo (Español, Inglés, Chino, Portugués, Francés, Italiano o Alemán).\n" +
             "•  «Idiomas del teclado» ahora está en la misma tarjeta de «Idioma», junto al idioma de la pantalla.\n" +
             "•  La rayita de luz debajo del título de las ventanas se traza con una estrellita y después un brillo la recorre.\n" +

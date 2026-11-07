@@ -26,18 +26,44 @@ object L {
         v.hint = t(es, en)
     }
 
+    /** Idioma del teclado ("es", "en", "pt"…). */
+    @Volatile private var cur = "es"
+    /** Si elegiste las pantallas en portugués, francés, italiano, alemán o chino, el teclado también. */
+    @Volatile var screen: String? = null
+
     /** El texto en el idioma actual del teclado. */
-    fun t(es: String, en: String): String = if (english) en else es
+    fun t(es: String, en: String): String {
+        screen?.let { return UiTr.of(it, en) ?: en }
+        return when (cur) {
+            "es" -> es
+            "en" -> en
+            else -> UiTr.of(cur, en) ?: if (english) en else es
+        }
+    }
+
+    /** Lee el idioma de las pantallas (se llama al abrir el teclado). */
+    fun setScreen(ctx: android.content.Context) {
+        val c = UiTr.screenLang(ctx)
+        val v = if (c in UiTr.LANGS) c else null
+        if (v == screen) return
+        screen = v
+        refresh()
+    }
+
+    private fun refresh() {
+        for ((v, a, b) in bound) v.text = t(a, b)
+        for ((v, a, b) in hints) v.hint = t(a, b)
+        for (l in ArrayList(listeners)) l()
+    }
 
     /** Cambia el idioma de los textos y avisa a todos los paneles para que se actualicen. */
     fun set(lang: String) {
         // Los textos del teclado van en español o inglés (francés y alemán → inglés; portugués e italiano → español)
         val en = lang == "en" || lang == "fr" || lang == "de"
-        if (en == english) return
+        if (en == english && lang == cur) return
         english = en
-        for ((v, a, b) in bound) v.text = t(a, b)
-        for ((v, a, b) in hints) v.hint = t(a, b)
-        for (l in ArrayList(listeners)) l()
+        cur = lang
+        refresh()
     }
 
     /** Los paneles se anotan aquí para volver a poner sus textos al cambiar de idioma. */

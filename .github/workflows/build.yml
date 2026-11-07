@@ -30,6 +30,7 @@ jobs:
       - name: Probar y construir el APK
         run: |
           set -o pipefail
+          python3 tools/ui_strings.py
           gradle testReleaseUnitTest assembleRelease --no-daemon 2>&1 | tee build.log
 
       - name: Preparar el archivo

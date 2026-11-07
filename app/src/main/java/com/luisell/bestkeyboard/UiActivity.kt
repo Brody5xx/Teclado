@@ -63,7 +63,15 @@ abstract class UiActivity : Activity() {
 
     /** Idioma de la pantalla: el del teléfono, o el que elijas. */
     protected var en = false
-    protected fun tr(es: String, en: String) = if (this.en) en else es
+    /** El idioma de las pantallas: "es", "en", o uno de los traducidos ("pt", "fr", "it", "de", "zh"). */
+    protected var uiCode = "es"
+    protected fun tr(es: String, en: String) = when (uiCode) {
+        "es" -> es
+        "en" -> en
+        else -> UiTr.of(uiCode, en) ?: en
+    }
+    /** El texto de la ventanita de espera (para poner el porcentaje). */
+    protected var busyLabel: TextView? = null
     /** ⏳ Ventanita de «espera»: el diamante con la luz dando vueltas y un texto. Ciérrala con [android.app.Dialog.dismiss]. */
     protected fun busy(es: String, en: String): android.app.Dialog {
         val box = LinearLayout(this).apply {
@@ -75,6 +83,7 @@ abstract class UiActivity : Activity() {
         box.addView(DiamondView(this, loader = true), LinearLayout.LayoutParams(dp(64), dp(64)))
         box.addView(TextView(this).apply {
             text = tr(es, en); textSize = 15f; setTextColor(TEXT); gravity = Gravity.CENTER; setPadding(0, dp(14), 0, 0)
+            busyLabel = this
         })
         val wrap = android.widget.FrameLayout(this).apply { setPadding(dp(40), 0, dp(40), 0); addView(box) }
         val dlg = android.app.Dialog(this)
@@ -206,11 +215,8 @@ abstract class UiActivity : Activity() {
 
     /** Lee el idioma elegido para las pantallas. */
     protected fun loadLang() {
-        en = when (prefs.getString(Prefs.APP_LANG, "auto")) {
-            "es" -> false
-            "en" -> true
-            else -> java.util.Locale.getDefault().language != "es"
-        }
+        uiCode = UiTr.screenLang(this)
+        en = uiCode != "es"
     }
 
     companion object {

@@ -33,8 +33,8 @@ class VaultPickActivity : Activity() {
 
     private var chosen: String? = null
     private var all = false
-    private val en get() = Locale.getDefault().language != "es"
-    private fun tr(es: String, en: String) = if (this.en) en else es
+    private val uiCode by lazy { UiTr.screenLang(this) }
+    private fun tr(es: String, en: String) = when (uiCode) { "es" -> es; "en" -> en; else -> UiTr.of(uiCode, en) ?: en }
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {

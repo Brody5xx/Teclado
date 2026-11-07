@@ -1,0 +1,1325 @@
+\n⚠️ Very small: GPS may miss it.
+  (English)
+  (Spanish)
+  (tap to change)
+  ·  ⚠️ no GPS
+  · Enter types them
+  · you have changes
+ (default)
+ (fixed, not logged)
+ /hour
+ day(s) worked
+ ft)
+ since 
+ to 
+ · deducted 
+ · in progress
+ · paid
+ · working
+ · ❌ a line is over 328 ft
+(no address)
++  Add account
++  Add phrase
++  Add question
++  Add text or email
++  Add word
++ My word
++ New shortcut
+/hour
+1 Short
+1 grammar fix
+1 hour
+1 selected
+1 word to check
+1. Enable Best Keyboard
+2 Formal
+2. Choose Best Keyboard
+3 Other language
+A PDF is made with your days, hours, sites, lunch and overtime, ready to send by WhatsApp or email.
+A lot
+A short tour of everything the keyboard has.
+A website or app with user and password.
+AI writing
+Accents and punctuation
+Access control, cameras, cabling and fiber reports, in Spanish and English.
+Account
+Accounts
+Add account
+Add my key
+Add phrase
+Add site
+Add the name and address.
+Add the website or app name.
+Add to Data
+Add word
+Address
+Addresses, phones, signatures and loose emails. Type 2–3 letters (or the shortcut) and the keyboard suggests them.
+All buttons are in the top bar. Tap ✎ to arrange them.
+All of the above plus: tickets, work hours, sites and tools.
+All set!
+All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter.
+Allow
+Allow location for Best Keyboard and tap «Where I am» again.
+Allow photos
+Allow reading SMS codes
+Allow reading codes
+Allow seeing my screenshots
+Allow the camera
+Allow the camera and tap the scanner again.
+Allow the microphone
+Also with the «One hand» button on the keyboard. On the empty side: the arrow switches sides and the other button makes it normal.
+Always
+Always fixed
+Always fixed: every day you work the fixed time is deducted, even on short days or if you take more or less.\nWhat I log: what you logged with «Lunch break» and «Back from lunch» is deducted (if you don't, the fixed time on 5+ hour days).\nPaid: nothing is deducted, it's just logged.
+Amount in dollars (e.g. 25)
+Android spell checker
+Android warns that the keyboard "may collect what you type". It shows for ALL keyboards. What you type stays on your phone, except when you tap «Fix grammar» or «More formal».
+Answer
+Anything else to remember
+Are you home right now? Only the GPS point is saved, only on your phone. Tickets, the PDF and the summary will only say «Home».
+Arrival
+Arrived
+As a loose text or email
+At home, wait before closing the day
+Auto-capitalize sentences
+Autocorrect
+Automatic weekly backup
+Awesome!
+Back
+Back up now
+Backup
+Backup password
+Backup saved.
+Backup saved. Your background video is too big for the backup: pick it again on the new phone.
+Balloon
+Best Keyboard 13: for everyone.\n•  When installed it asks what you use it for (chat, study, office or field work) and turns on only what helps you. Work tools (tickets, My workday, sites…) are a pack you can turn off (Sections › Start).\n•  6 languages: Spanish, English, Portuguese, French, Italian and German. Pick your 2 and it switches between them by itself (Sections › Typing › Keyboard languages).\n•  Easy mode: big keys, high contrast and strong vibration. With TalkBack it says each key as you slide your finger.\n•  Incognito mode (in ⋯ and in Data): it doesn't learn or save anything; turns on by itself in private tabs. The space bar says «Incognito».\n•  My data and privacy: what the keyboard saves and a button to delete each thing.\n•  Calculator and converter: 25*4= → 100, «120 ft to m» → 36.58 m, «70 f to c» → 21.11 °C, «20 usd to eur» with today's rates.\n•  Shortcuts with date and time: /today, /time, /now; and in your shortcuts {date}, {time} and [what you fill in] selected.\n•  Split keyboard in two halves in landscape or on tablets (can be changed).
+Big
+Big buttons to send Quick messages and your status without looking much. It stays on until you tap «Keyboard» or the Driving mode button again. It also deletes letter by letter or everything at once (and you can undo it).
+Big letter on tap
+Big, easy-to-see keys
+Bigger letters, taller keys, black with white and yellow (maximum contrast) and strong vibration. Great for older people or low vision.
+Border
+Border and light color
+Bounce
+Briefcase
+Bright
+Bubble
+Bubbles
+Building
+Built in: /today (today's date), /time (the time now) and /now (both).\nIn your phrases you can put {date}, {time} or {day} and they fill in by themselves. Whatever you put in brackets gets selected so you can change it: «I'll be there in [10] minutes».
+Butterfly
+Button color
+Button color (Enter and what's on)
+Button name
+Cable tester
+Calculator and converter
+Calendar
+Cancel
+Cancelled. Your background didn't change.
+Card: this is how messages and notices look.
+Challenge: use it in at least 3 conversations this week.
+Challenge: use it in at least 3 conversations this week. A new one comes every Monday.
+Change
+Change my pay or deductions
+Change phrase
+Change word
+Chatting and social media
+Checking grammar…
+Checking your text…
+Chinese
+Circle
+Classic
+Clear
+Clear all?
+Clear history (except pinned)
+Clear the clipboard (except pinned)
+Clipboard
+Clipboard history is off.\nYou can turn it on in settings.
+Clock
+Close
+Close the day
+Code
+Code mode
+Code mode uses Google Gemini: it needs your FREE key (just once).
+Code mode: Explain, Write code, Fix error and Hint
+Code pasted
+Code ready
+Code: 
+Coin
+Colors
+Confetti
+Confirm it's you
+Confirmed by you
+Continue
+Copied
+Copied text and codes
+Copied. It's also in your clipboard.
+Copied. Long-press where you type and tap Paste.
+Copy
+Copy error
+Copy the text
+Couldn't create the PDF.
+Couldn't create the ticket.
+Couldn't do it.
+Couldn't download the AI. Check your internet and try again.
+Couldn't download the GIF.
+Couldn't download the language. Connect to the internet once to download it.
+Couldn't find the camera app. Use the Gallery button.
+Couldn't find the gallery.
+Couldn't get your location. Turn on location.
+Couldn't get your location. Turn on the phone's location.
+Couldn't open the camera. Tap the gallery button to pick a photo.
+Couldn't open the camera. Use the Gallery button.
+Couldn't open the file.
+Couldn't open the folder picker.
+Couldn't open the image.
+Couldn't open the photo.
+Couldn't open the screenshot.
+Couldn't prepare the video.
+Couldn't read the text. Try again.
+Couldn't review.
+Couldn't rewrite. Try again.
+Couldn't save the file.
+Couldn't save.
+Couldn't take the photo. Try again.
+Couldn't translate (the first time needs internet).
+Couldn't translate. Connect to the internet the first time (it downloads the language, about 30 MB).
+Couldn't translate. The first time it needs internet to download the language.
+Couldn't translate. Try again.
+Couldn't use the mic. Try again.
+Counted only on your phone. The more you use it, the more it learns from you and the more it guesses.
+Create
+Create a strong password
+Crimper
+Customize
+Cut
+Daily ticket
+Daily ticket reminder
+Darken the background (to read the letters)
+Data
+Data (your passwords)
+Data: emails, passwords and shortcuts
+Day
+Day starts at
+Default
+Delete
+Delete account
+Delete fixes and deleted suggestions
+Delete learned words
+Delete my phrases
+Delete my words
+Delete statistics
+Delete suggestion
+Delete this item?
+Delete what it learned from my finger
+Delete?
+Deleted.
+Departure
+Describe what the code should do…
+Dictation: say "comma", "period", "new line"… Translation and scanner work on the phone.
+Does a site pay more? In «My sites» tap that site and set its hourly pay.
+Does this site pay a different hourly rate? Type it. Leave it empty to use your normal pay.
+Done
+Done! A copy is saved every week in that folder.
+Done! Arrivals and departures are now logged automatically.
+Done! Go back to where you were typing and tap the mic to dictate.
+Done! Go back to where you were typing and tap the scanner.
+Done! Take a screenshot and open the keyboard.
+Done! Type a contact's name and it shows up spelled right.
+Done! When a code arrives by SMS, it shows above the keyboard.
+Done. Check the text (you can fix it or delete what you don't want) and tap Insert.
+Done: new 16-character password.
+Done: the text shows up where you were typing.
+Double space adds a period
+Downloading the phone's AI (first time only)…
+Drag here what you don't want in the bar
+Drag up or down
+Drill and bits
+Driving mode
+E.g. 5:32pm
+E.g.: Gmail, Bank, Netflix
+Each app starts again in the keyboard's current language.
+Each app starts in the language you last used there: if you write Spanish in WhatsApp and English in your work app, the keyboard opens that way.
+Each theme already has its colors. Open this only if you want to change one. The first (multicolor) circle keeps the theme's color.
+Easy mode
+Edit
+Edit item
+Edit shortcut
+Effect
+Email
+Emojis
+Emojis, GIFs and stickers
+End  ›|
+English
+English: ON
+Enter = new line
+Enter how much you make per hour (driving and on site) and it works out your take-home pay here.
+Error copied. Paste it in the chat.
+Every Monday there's a new word with its meaning, an example and how to say it in Spanish. There are 105 words: one a week for 2 years.
+Everything copied is deleted, except what you pinned.
+Everything stays on your phone. In «My data and privacy» you see what it saves and delete it. With Incognito mode (in ⋯) it doesn't learn or save anything, and it turns on by itself in private tabs.
+Everything the keyboard saves stays ONLY on your phone. Here you can see what it is and delete each thing.
+Everything you copy (text and images) shows up here.\nIt lasts 2 days; what you pin 📌 stays forever.
+Example: 80 steps ceiling 10
+Explain
+Explanation
+Field work tools
+Find it in Settings → System → Languages → Spell checker.
+Finding where you are…
+Finish sentence with AI
+Fire
+First save your places in «My sites». Then type what to remember and pick the place: I'll remind you when you arrive.
+First set a background video in Settings → Style.
+Fix all
+Fix error
+Fix grammar
+Fixed code:
+Fixes words when you tap space. Tap ⌫ right after to undo.
+Flat
+Flip
+Floating and one hand
+Floating keyboard
+Flower
+Flying letter
+Follow these 2 steps to start using the keyboard:
+For everyone
+Forget each app's language
+Formal emails, AI writing and shortcuts.
+Formal version
+Free AI: replies and finish sentence
+French
+From now on, what you work this week counts as overtime. ✨
+Full address
+GIFs
+GIFs and stickers
+GIFs come from GIPHY and need a FREE key (only once):\n1. Tap «Get a GIPHY key» and create an account (or sign in).\n2. Tap «Create an API Key», choose «API» (not SDK) and give it any name, like «Best Keyboard».\n3. Copy the key and paste it below.
+Gallery
+German
+Get a GIPHY key
+Getting ready… (the first time it downloads the language, about 30 MB)
+Give it a name.
+Give the path from the rack to the device: in feet («120»), steps («80 steps»), ceiling tiles («40 tiles») or meters. Add the ceiling («ceiling 12») and how many lines («x 6»).
+Glass (with your photo or video background)
+Glitch
+Glove mode off
+Glow
+Got it
+Gross: 
+Hacker theme color
+Hard hat
+Heartbeat
+Hearts
+Hidden
+Hide
+Hide older versions
+High
+High: logs the arrival after 1 minute inside and the phone reacts right away. Uses a little more battery.
+Hint
+Home
+Hourly pay at this site (empty = normal)
+Hours saved. Open it with Excel or Google Sheets.
+How far from the saved point counts as «I'm here». Tap a place below to give it its own distance on the map.
+How it's deducted
+How many minutes are deducted?
+How the top button bar moves when you swipe it.
+I didn't get it. Example: 120 x 6 + 10%
+I didn't get it. Example: PP1-01 to PP1-24
+I didn't get the time. Try: 5:32pm
+I need permission to use the mic. Open it and tap "Allow".
+I'm here.
+I'm making it smaller so it runs light on the keyboard. Don't close this screen.
+I'm not driving (normal keyboard today)
+IP / MAC keypad · «ABC» goes back to letters
+IP/MAC pad to type addresses fast, Labels with serial numbers, and «How many feet per line?» which works out the cable you need to run.
+Icon
+Icon color
+If Android didn't let you give the permission:\n\n1. Tap «Open app info».\n2. Tap the 3 dots ⋮ at the top right → «Allow restricted settings».\n3. Go to Permissions → SMS → Allow.\n4. Come back here.
+If on, the keyboard uses a day theme and a night theme, and switches by itself by the time.
+If the app doesn't accept GIFs from the keyboard, the GIF is copied so you can paste it.
+If you delete a misspelled word and type it right, next time it fixes itself. Keys adapt to where you usually tap, each app remembers its language and, if you want, it suggests your contacts' names spelled right.
+If you don't pick one, they use the border color.
+If you drive, the keyboard shows big buttons and voice first while you're on the road.
+If you turn it on, when you arrive at one of your sites and stay a few minutes, «Arrived» is logged with the time you got there, and when you leave, «Left» is logged. You always get an alert with «Undo».
+If you type 2 words in a row in Spanish, the keyboard switches by itself (and the other way). You'll see the light on the space bar.
+If you type 2 words in a row in the other language, the keyboard switches by itself. You'll see the light on the space bar. In English there's no ñ: hold the n to get it.
+If your theme is animated, its animations show on top of your background.
+In 1 hour
+In Settings tap «Sections ›» or the light strip on the right edge to see every section, or use the search. If you change phones, make a backup in «Backup»: it takes everything, even what the keyboard learned from you.
+In Settings › Typing you see how many words it guessed this week, how many letters you saved and how many mistakes it fixed.
+In Style you change the theme (like Diamond), the colors of panels and buttons, the shape and size of the keys, the light animations, vibration and sound.
+In a new account
+In the Notebook you jot things down during the day and at the end tap «Create the day's ticket». My tickets saves each ticket with its number.
+In the top bar (swipe) or in ⋯ you have:\n•  📋 Notes → Ticket: type quickly in your own words and the AI turns it into a formal ticket (Spanish or English).\n•  🎤 Dictate report: say it out loud and tap «Create report».\n•  ✨ Formal words: professional options for a word or phrase.\n•  ✅ Review before sending: spelling, clarity and professional tone.\nThey use your free Gemini key (card «AI writing»).
+Incognito mode
+Incognito off.
+Incognito on: I won't learn or save anything you type or copy.
+Incognito · 
+Ink
+Insert
+Insert  ↑
+Insert code
+Inside buildings GPS sometimes jumps. If you «come back in» before that time, no departure is logged.
+It doesn't learn or save anything you type or copy. It also turns on by itself in private tabs. Turn it on quickly with the «Incognito mode» button in ⋯.
+It doesn't play when the phone is on silent or vibrate.
+It guesses the next word before you type («thank you» → so much) and, if the sentence is obvious, gives you the whole phrase. If you misspell something, it shows «did you mean…?». Press and hold a suggestion to delete it forever.
+It learns from you
+It will be deleted from your phone.
+It's deleted from your phone with all its data.
+Italian
+Jelly
+Jump
+Keep at least one button.
+Keep it always (with 🛻 Start before you begin)
+Key color
+Key height
+Key saved. Tap the emoji button and then GIF on the keyboard.
+Key, code or token
+Keyboard languages
+Keyboard style
+Keys
+Keys that adapt to your finger
+Ladder
+Landscape or tablet
+Language
+Language 1: 
+Language 2: 
+Language of this screen
+Last text box: 
+Last week
+Lasts 48 hours; pinned items stay forever. Passwords aren't saved.
+Later
+Learn my words
+Left
+Let's go!
+Letter color
+Letter size
+Life insurance: −
+Light line
+Lightning
+Like Google's password manager: each account keeps user, email, password, questions, key and PIN. On the keyboard tap the lock, use your fingerprint and pick what to paste. All encrypted and only on your phone.
+Like Google's password manager: save each website or app with its username, email, password, security questions, key and PIN. To open an account it asks for your fingerprint. Everything is encrypted and stays only on your phone.
+Listening… speak now
+Little
+Loading the dictionary…
+Loading…
+Log arrival
+Log 🛻 Started, 📍 Arrived, 🚪 Left and 🏠 Home from the keyboard, the widget or the lock screen.
+Long-press the home screen → Widgets → Best Keyboard → My workday.
+Long-press the message you got and tap Copy. Then tap this button again.\n\nYou can also select text here and tap it.
+Long-press the message you got and tap Copy. Then tap this button.
+Looking for codes…
+Low
+Low: only if you stay 6 minutes inside (just passing by doesn't count). Uses less battery.
+Lunch
+Lunch deducted: 
+Lunch type
+Made with Best Keyboard · 
+Made with care · Best Keyboard
+Make a copy now
+Making the backup…
+Material name (e.g. Cat 6A cable)
+Medium
+Mic permission is missing (open settings ⚙).
+Microphone
+Minutes (e.g. 20)
+Modern
+More formal
+More formal words
+More options
+More options (tap to move to the bar)
+Move the bar: the circle is the area where it counts as arrived.
+Music notes
+My data
+My data and privacy
+My hours this week
+My passwords
+My phrases
+My sites
+My words
+My workday
+My workday: automatic alerts
+Name (e.g. Main office, Warehouse, Store 12)
+Name (e.g. North warehouse)
+Name (e.g. Truck parking)
+Name (e.g.: Bank, Work)
+Name of the middle button
+Names are read only on your phone to spell them right and capitalized. Nothing is sent.
+Names, acronyms and work words.
+Narrower keyboard
+Neon
+Never
+New shortcut
+Next
+Next ticket number (keeps counting, never resets):
+Next to the 0 is the undo key. If you delete something by mistake, it lights up: tap it and what you deleted comes back.
+Night starts at
+No accounts yet. Tap «Add account».
+No answer.
+No background
+No browser found.
+No codes found. Get a little closer with good light.
+No custom background (the theme's is used).
+No data yet. Tap «Edit».
+No emojis for that word.
+No internet needed. Type «fixed» and get ✨ repaired; «works now» → ✨ is now working properly.
+No internet or GIPHY didn't respond.
+No internet. Connect and try again.
+No internet. To dictate offline, download the language in the Google app (Voice → Offline speech recognition).
+No learned words yet.
+No name
+No options found.
+No photos from that day.
+No phrases. Tap ✎ to add yours.
+No reminder
+No results.
+No saved texts.
+No sites yet. When you're at a job, tap «Save where I am now».
+No text found in the photo. Try with more light or closer.
+No text or codes found. Try more light or get closer.
+No work logged.
+No, I'm a passenger
+None
+Normal
+Normal: logs the arrival after 3 minutes inside.
+Not now
+Note
+Note saved in the notebook
+Note what you do during the day (tap ➕ Add note). At the end, «Create the day's ticket» puts it all in one ticket.
+Notebook
+Notebook and My tickets
+Notes
+Notes → Ticket
+Nothing found for that word.
+Nothing found.
+Nothing is sent by itself. Only what you ask for, when you tap the button:\n•  AI (More formal, Replies, Finish sentence, Ticket): the text goes to the free AI.\n•  Fix grammar: the text goes to the grammar checker.\n•  GIFs and Search Google: what you search.\nYour contacts' names are read on the phone and are not saved or sent.\nIn incognito mode (in ⋯) the keyboard doesn't learn or save what you type or copy.
+Nothing saved yet. Add it in the Best Keyboard app → «Data».
+Now
+Number in 
+Number row on top
+Numbers only (e.g. 25.5)
+OT
+Off
+Off = muted. You can also switch it quickly with the sound button on the keyboard.
+Office
+Ok, perfect. Thanks.
+On my way, I'll be there in a few minutes.
+On site
+On site: 
+On the keyboard: select some text (email, password or anything) and «Save to Data» shows on top.
+On the screen that opens, tap «Allow all the time». That way the phone knows when you arrive or leave even with the keyboard closed.
+One moment, the dictionary is loading…
+One more permission
+One-hand mode
+Open Android spell checker settings
+Open Data
+Open My sites
+Open Phrases
+Open Style
+Open app info
+Open the keyboard and tap Notes → Ticket to write it.
+Opening the photo…
+Optional shortcut (e.g.: lp)
+Options
+Orbit
+Other deductions: −
+Other saved things
+Outline
+Overtime
+Overtime (over 40): 
+PC keyboard: Ctrl, Alt, Esc, Tab, arrows and Fn (F1–F12)
+Paid
+Panels and buttons
+Password
+Paste
+Paste or select your code or the error first.
+Paste with one tap
+Paste your GIPHY key here
+Paste: 
+Percent (e.g. 12.5)
+Petals
+Phone charger
+Phone's
+Photos from that day
+Phrases
+Pick a password and a folder (for example, in Google Drive). Every week a new copy is saved by itself, keeping the 4 most recent.
+Pick a photo
+Pick a photo…
+Pick one and then type the time it happened (e.g. 5:32pm).
+Pick one. Your fingerprint or PIN is asked before typing it.
+Pick the color of the panel buttons and cards (More options, Translate message, My workday…). The first (multicolor) circle keeps the theme's.
+Pick the language
+Pick what you use it for and only what helps you turns on. Choose your 2 languages (Spanish, English, Portuguese, French, Italian or German), use Easy mode (big keys and high contrast) and, in landscape or on a tablet, the keyboard splits in two.
+Pick your 2 languages. The keyboard switches between them by itself while you type, with their dictionary and suggestions.
+Picking a color switches to the Hacker theme. The last one is rainbow 🌈.
+Pill
+Pixels
+Point at the text or code (barcode or QR) and take the photo
+Portuguese
+Press
+Pulse
+Put a photo or video from your gallery behind the keys. The video is compressed to stay light, plays in full and loops forever.
+Question
+Question (e.g.: First pet's name?)
+Quick guide
+Quick messages, emojis, GIFs and photos.
+Quick phrases
+Rainbow
+Reading the text…
+Reading…
+Regular hours per day
+Remember each app's language
+Remind me if I didn't log «Home»
+Reminder time
+Remove
+Remove your home? «Home» won't be logged automatically anymore.
+Repeat the password
+Replace
+Reset
+Resize
+Restore backup
+Restore defaults
+Restoring your backup…
+Retry
+Review before sending
+Reviewing…
+Rewriting with AI…
+Rewriting with the phone's AI…
+Rewriting…
+Right
+Rings
+Ripple
+Round
+Rubber
+Runs in feet: «120 x 6» (6 of 120), «85, 90, 120» or with extra «+ 10%».
+SECTIONS
+SMS are read only on your phone, just to find the code. Nothing is sent.
+Safety glasses
+Same language as your phone
+Save
+Save EVERYTHING of yours to one file, protected with a password: settings, style, everything the keyboard learned from you (words, phrases, your fixes, deleted suggestions), statistics, each app's language, Data, quick phrases, shortcuts, clipboard, My workday (hours, sites, your home, your pay), tickets, notebook, materials, to-dos, checklist and your background. Keep it in Google Drive or move it to your new phone and tap «Restore».
+Save backup
+Save everything I copy
+Save key
+Save number
+Save site
+Save the emails I type
+Save the places where you work and the keyboard marks Arrived and Left by itself. For each site you set the distance on the map and the sensitivity. With «Remind on arrival» it tells you something when you get to a site.
+Save to Data
+Save your emails, passwords and texts you use a lot. The keyboard suggests them after 2–3 letters. Passwords ask for your fingerprint. All encrypted and only on your phone.
+Saved sites
+Saved, but I couldn't find the address on the map. Better use «Save where I am now» when you're there.
+Saved.
+Saving the backup…
+Saving the first backup…
+Scan
+Scan text
+Screenshot
+Search
+Search GIFs
+Search emojis
+Search stickers
+Searches your tickets, the day notebook and the clipboard.
+Search…
+Sections  ›
+Security key
+Security questions
+See and edit my words
+See last week
+See older versions
+See the guide
+See this week
+Select
+Select a text (or copy it) and tap 🔊 again.
+Select a word or phrase (or put the cursor on it) and tap this button.
+Select all
+Select text and tap ⇧: it becomes UPPERCASE. Again: lowercase. Again: Title Case.
+Send
+Send ticket
+Sending…
+Sent it, delete
+Set my hourly pay
+Set to 0
+Settings, style, words, Data, phrases, shortcuts, clipboard, My workday, tickets, sites, to-dos, your pay and your background are here.\n\nOn this phone you only need to give the permissions again (Android doesn't transfer them):\n1. Enable and choose Best Keyboard (above).\n2. Microphone, photos, notifications and SMS (buttons above).\n3. Location «Allow all the time» in My sites, if you use automatic arrival and departure.\n4. Turn the automatic backup on again (pick the folder again).\n5. Add the My workday widget to your screen, if you used it.
+Setup
+Shake
+Shape
+Shatter
+Shortcut (e.g. /omw)
+Shortcuts with date and time
+Show
+Show My workday on the lock screen
+Show example work phrases
+Show it on the keyboard and suggest it
+Show word suggestions
+Shows «✅ TICKET REGISTERED» or «❌ NO TICKET» with the date.
+Signature: ______________________________
+Site saved.
+Site(s)
+Skip
+Skip ›
+Slide
+Slide your finger over the words
+Small
+Smoke
+Snow
+So you can tap 🛻 Start from the lock screen, without unlocking.
+Soft
+Solid
+Some apps (like Instagram) ask for no suggestions. With this on, they show anyway.
+Sound
+Sound on tap
+Space bar
+Spanish
+Spanish accents by sentence: «tu puedes» → ✨ tú puedes, «ya esta» → ya está. If it's a question, «?» shows up, and it suggests the comma before «but». In English: dont → don't, im → I'm.
+Spanish and English by itself
+Sparks
+Speak Spanish: it's typed in English.
+Speak in your own words. When done tap «Create report».
+Spell check
+Spelling can't be checked here.
+Spin
+Spiral
+Splash
+Split keyboard
+Square
+Stars
+Start
+Start and end of day · 
+Started (in the truck), Arrived on site, Left the site and Home. It adds up your hours, tells you at 8 hours on site and celebrates with you. With «Week summary» → «Send» you send your hours by WhatsApp or email.
+Statistics
+Statistics go back to zero.
+Statistics: how many words it guessed and fixed.
+Step 2 left: tap the button and choose Best Keyboard.
+Stickers
+Stopwatch
+Strength
+Strong
+Studying
+Style
+Suggest emojis while I type
+Suggest more formal words while I type
+Suggest my contacts' names
+Suggest my data while typing
+Suggest my latest screenshot
+Suggest verification codes
+Suggest what I just copied
+Suggestions and autocorrect
+Suggestions in every app
+Suggestions that know you
+Suggestions with a little star swap simple words for formal ones (fixed → repaired). «Review before sending» checks the whole message and «Fix grammar» fixes it.
+Surprise emoji
+Swing
+Swipe the bar sideways to see all buttons. Press and hold one and drag it to rearrange. The three dots (⋯) open «More options», and the pencil lets you arrange everything.
+Swipe the space bar to change language
+Swipe typing
+Take a photo of the text you want to type (labels, serial numbers, papers...).
+Take photo
+Take-home approx. 
+Tall
+Tap Permissions → Photos and videos → "Allow all".
+Tap a day and then the time you want to change (or ✕ to delete it).
+Tap a day to see when you arrived, left and where you were.
+Tap a material to set the quantity.
+Tap a time to change it.
+Tap an account and then the item you want to type.
+Tap an item and it's typed where you were.
+Tap animation
+Tap here to try the keyboard
+Tap one and it's typed where you were.
+Tap the code to type it
+Tap the emoji button (or hold the comma): at the top you can search emojis and the GIF button opens GIFs and stickers. It also suggests emojis while you type.
+Tap the eye to see and the copy button to copy. What you copy is cleared from the clipboard in 1 minute.
+Tap the keys above to see the effect.
+Tap the mic to speak
+Tap the one you want:
+Tap the photos you want to send (before and after the job).
+Tap the spell check button: ALL your text gets selected and mistakes show in red; tap one to fix it or «Fix all». If you select only a part first, only that part is checked.\n\nThen you can tap «Fix grammar» (free, uses internet) or «More formal».
+Tap the 💬 «Phrases» button on the keyboard (in ⋯) and write a full report line with one tap, in Spanish or English. The ___ part gets selected so you can fill it in.
+Tap to add or subtract.
+Tap to paste · Hold to select
+Tap to try
+Tap what you already have. It shows up when you tap «Started». It resets every day.
+Tap «
+Taxes 
+Technical English with Date, Location, Arrival/Departure Time, Job Description and Equipment List. «Service Call» tickets use Issue Reported, Issue Found, Action Taken and Next Steps.
+Technician or field work
+Text
+Text (address, phone, signature…)
+Text / shortcut
+Text editing
+Text is sent to the AI only when you tap one of those buttons.
+Text shortcuts
+Texts and shortcuts
+Thank you very much, have a great day.
+Thanks
+That number doesn't look right.
+That way, if you just stop at home to pick up or drop off something and leave before, your day stays open.
+The AI didn't answer in time. Check your internet and try again.
+The AI didn't answer. Check your internet and try again.
+The AI gave no answer. Try again.
+The AI gave no version. Try other text.
+The AI took too long to answer. Check your internet and try again.
+The GIPHY key doesn't work. Check it in Settings → GIFs.
+The Gemini key doesn't work. Check it in the keyboard settings.
+The Mi jornada picture on the keyboard bar, the notification and Quick Settings.
+The app or keyboard closed because of an error. Tap «Copy error» and paste it in the chat with Claude to fix it.
+The full phrase
+The globe (language) key goes away. Swipe fast to change language; press, hold and slide to move the cursor.
+The grammar service didn't respond. Try again.
+The keyboard becomes a small window: move it with the bar on top. The left button puts it back at the bottom.
+The keyboard can be a small window you move around, or get narrower to use with one hand.
+The keyboard learns if you usually tap a bit below or to the side of each key, and corrects it by itself. It starts working after about 150 letters.
+The keyboard will forget the words it learned from you.
+The keyboard will forget your phrases (the built-in ones stay).
+The keyboard's AI is FREE and needs no key: it's the same one Best Notes uses. It's only used when you tap an AI button (More formal, AI replies, Finish sentence, Notes → Ticket…). Sometimes it takes a few seconds: if the service is busy, it tries again by itself.
+The keys go back to normal and it starts learning again.
+The last one is rainbow 🌈.
+The mic is busy. Tap to try again.
+The multicolor one uses a gradient with your theme color.
+The parking lot is where you pick up and drop off the truck: when you leave it your day starts, and when you come back and stay, it ends.
+The password must have at least 4 characters.
+The password you used when saving it.
+The passwords don't match.
+The photo didn't come through. Try again.
+The text will show up here. You can fix it before inserting it.
+The ticket text is also copied, in case the app doesn't add it.
+The top bar
+The translator also has Chinese: copy a message in Chinese and tap «Translate message», or in the translate bar tap the language name to change it (English → Chinese → …).
+Theme
+Themes, colors, key shape and size, animations, vibration and sound. With a sample keyboard that changes instantly.
+There's also a Quick Settings button: swipe down from the top of the phone, tap the pencil and drag «Start / My workday».
+Thick
+Thin
+Thinking of replies…
+Thinking…
+This app doesn't accept images from the keyboard. It's copied: long-press where you type and tap Paste.
+This app doesn't accept videos from the keyboard. It's copied: long-press where you type and tap Paste (or share it from the gallery).
+This is a quick tour of Best Keyboard. Swipe sideways or tap «Next».
+This month: 
+This place has no GPS. Save it while you're there.
+This week
+Ticket 
+Ticket in English
+Ticket in Spanish
+Ticket with photos
+Tickets you create with 📋 Notes → Ticket are saved here. Tap one to type it and use it as a base.
+Tickets, Notebook, My workday, My sites, checklist, glove mode, IP/MAC pad and labels. Turn it off if you don't use them and the keyboard looks simpler.
+Time deducted
+Timesheet
+Tips
+Tips: good light, straight text that fills the photo. The text is read on the phone, no internet needed.
+To estimate your weekly pay. It's saved only on your phone. It's an approximate calculation: your pay stub is the exact one.
+To resize: tap ⋯ above the keyboard → «Resize».
+To see GIFs you need a free GIPHY key.\n\nTap here and follow the steps in Settings → GIFs.
+To see your photos, allow «Photos and videos».
+To see «Data»
+To work with the keyboard closed, under Location choose «Allow all the time». The phone uses geofences, which use very little battery.
+Today
+Today 
+Today 7 PM
+Tomorrow 6 AM
+Tomorrow 7 AM
+Too many checks in a row. Wait a minute.
+Too many searches this hour. Try again in a while.
+Top bar
+Top bar — press, hold and drag
+Top bars background (search, translate…)
+Total
+Translate message
+Translate what you type or what you got. When dictating it adds punctuation by itself and, on newer phones, understands whether you speak Spanish or English in each sentence. «Search Google» searches without leaving the keyboard.
+Translate, dictate and search
+Translated the first time (needs internet)
+Translating the app… 
+Translating the app… 0%
+Translating to English…
+Translating…
+Translation doesn't work in password fields.
+Truck
+Truck parking
+Turn off automatic backup
+Turn on automatic backup
+Turn on only the buttons you use and rename them however you like (you can put an emoji first). They change on the keyboard, the widget, the lock screen and Quick Settings.
+Turn on screen recording suggestions
+Turn on screenshot suggestions
+Turn on «Automatic arrival and departure» so it's logged by itself.
+Turn on «Automatic arrival and departure» so your day starts and ends by itself.
+Two halves to type with your thumbs
+Type
+Type /today, /time or /now and a space: you get today's date or the time. In your shortcuts you can use {date} or {time}, and whatever is in [brackets] gets selected so you can change it.
+Type 25*4= and it suggests 100. «120 ft to m» → 36.58 m, «70 f to c» → 21.11 °C, «20 usd to eur» with today's rates. And 7pm → 7:00 PM, cat6 → Cat 6.
+Type ___ (three underscores) where you need to fill something in: when the phrase is inserted it gets selected so you can type over it.
+Type a number from 0 to 240.
+Type a number.
+Type a number…
+Type a single word, no spaces.
+Type a word (e.g. door, cable)
+Type and tap Enter to see GIFs.
+Type and tap Enter: Google opens with your search.
+Type here to translate
+Type in English
+Type it
+Type it and tap Enter.
+Type it and tap Enter. Then pick when to remind you.
+Type or select some code first.
+Type quickly in your own words and tap Notes → Ticket: the AI turns it into a formal ticket in your work format. In the mic you can also dictate the report.
+Type something first.
+Type the lunch minutes (0 = none, 90 = an hour and a half).
+Type the material and tap Enter to add it to your list.
+Type the number. Enter types it in your text.
+Type the shortcut (for example /omw) and tap the space bar: it turns into your full phrase.
+Type the shortcut and the phrase.
+Type the start of your message (2 words or more) and tap this button: the AI gives you 3 ways to finish it.
+Type the time in the box (e.g. 5:32pm).
+Type what you want to save…
+Type your message and tap this button before sending it.
+Type your note and tap Enter to save it in the notebook.
+Type your notes quickly in your own words (e.g. «swapped maglock door 3 works now») and tap this button again.
+Type «house», «haha», «love you» or «so tired» and it suggests the matching emoji above. Tap it and it goes after the word.
+Type: house, happy, dog, pizza, heart…
+Type: house, happy, dog…
+Typing
+Typing…
+Underlines in red in apps that use it.
+Undo
+Unpaid
+Uppercase the selection
+Use default
+Use my work ticket format
+Use this
+Use this text
+Username
+Version 
+Vibrate on tap
+Vibration
+Visible
+Voice, camera and screenshots
+Volume
+Wait before logging the departure
+Wave
+Website or app *
+Week of 
+Week total: 
+Welcome!
+What I log
+What do you want to convert?
+What goes online
+What it learned from you
+What should I remind you? Then pick the place.
+What the keyboard saves, that it all stays on your phone, and delete each thing:
+What time did you get home?
+What time? Type it any way: 5:32pm, 532p or 17:32.
+What was wrong
+What will you use the keyboard for?
+What you copy, verification codes and your screenshots show above the keyboard: one tap pastes it, or tap the ✕ to remove it. In the clipboard each item says when you copied it (Today, Yesterday, Nov 3).
+What you use it for
+What's new
+Wheel curve
+When an SMS with a code arrives (or you copy one), «Code: 123456» shows up.
+When you pass those hours you get an alert and My workday shows the overtime. For the week, anything over 40 hours.
+When you tap «📍 Arrived on site», the keyboard uses GPS to know which one you're at and puts it in your workday and ticket (Location).
+When you type your email in an email field, it's saved automatically.
+Where should I save it?
+While you work you'll see «Lunch break» and then «Back from lunch», to log how long you took.
+While you're working, a notification shows the running time and the Arrived / Left / Home buttons, which you can tap without unlocking.
+With TalkBack (Android's screen reader) the keyboard says each key as you slide your finger and types it when you lift.
+With one photo, the scanner reads the text and also barcodes and QR codes: serial numbers and MACs without typing.
+Without that permission I can't suggest your screenshots.
+Without the camera permission you can't scan.
+Without the contacts permission I can't suggest their names.
+Without the microphone permission you can't dictate.
+Word
+Word of the week
+Work tickets
+Work tools
+Workday · 
+Works with the saved sites below. Uses very little battery. If you're not working one day, tap «Undo» on the alert.
+Write a note…
+Write code
+Write down what you can't forget (e.g. «bring the ladder tomorrow»). Tap one to mark it done.
+Write it down: without it the backup can't be opened.
+Write like a pro
+Write more formally
+Writing the ticket…
+Writing well, translating, fixing and a calculator.
+Wrong password or invalid file.
+Yes, I'm driving
+Yes, I'm home
+Yes, it ended at 
+Yes, it started at 
+Yesterday 
+You don't have tickets yet. Create one with 📋 Notes → Ticket on the keyboard.
+You haven't added phrases yet.
+You haven't made a backup yet.
+You reached Gemini's free limit for now. Wait a while.
+Your buttons
+Your fixes are deleted and the suggestions you deleted can show up again.
+Your last backup: 
+Your learned words: 
+Your own background
+Your pay
+Your phone doesn't have Google's on-device AI (Gemini Nano) needed to rewrite. Only some new phones have it (Pixel 9 or newer, Galaxy S25…).
+Your phone has no speech recognition. Install or update the Google app.
+Your phone has no voice installed (Settings → Text-to-speech).
+Your phrase…
+Your privacy
+Your shortcuts
+Your style
+change language
+delete
+email@example.com
+enter
+letters
+next: 
+none
+not yet
+shift
+shortcut: 
+space
+symbols
+tap to rename
+tap to set
+undo
+week 
+|‹  Start
+«AI replies»: copy the message you got and it gives you several replies. «Finish sentence with AI»: type the start and get 3 ways to finish it. Same free AI as Best Notes, no key needed.
+«More formal» needs your FREE Google Gemini key (just once).
+«Paste: …» shows above the keyboard for 3 minutes. One tap types it.
+» to start
+•  11 themes (Midnight, Ocean, Neon, Forest, Sunset, Rose, Hacker, Aurora…) and accent color.\n•  Key shape, letter size and tap animations (Bounce, Ripple, Glow).\n•  Modern vibration (the phone's click) and new sounds: letter, delete and space.
+•  AI: back to one request at a time (like Best Notes). Asking two places at once made the free service reject everything.\n•  «Finish sentence with AI» continues what you wrote («Hola como» → estás? / te fue hoy?).
+•  AI: the free AI (Pollinations) is moving to a new address and the old one barely answers. The keyboard now tries the new address first and the old one only as a backup.\n•  Fixed a stuck attempt making the next one wait (that's why it said «Thinking 82 s»). Now every tap starts right away, and within 90 seconds at most it tells you if it couldn't.
+•  Accents by sentence (Spanish): «tu puedes» → ✨ tú puedes, «ya esta» → ya está, «el dijo» → él dijo; «tu casa», «esta noche» stay the same. After ¿ or ¡ it adds the accent by itself. «ya termine» → ya terminé.\n•  English contractions without the apostrophe: dont → don't, im → I'm, cant → can't, thats → that's, didnt → didn't…\n•  Learns from your fixes: if you delete a misspelled word and type it right, next time it fixes itself. See (and remove) them in «See and edit my words».\n•  Knows where your finger landed: if you tap between two keys, it considers both letters.\n•  The first word of a sentence uses the language of what you last wrote there.\n•  Your contacts' names spelled right and capitalized (Settings › Typing › Suggestions). Nothing leaves the phone.\n•  Swipe typing now also uses the sentence, your phrases and your contacts' names.
+•  Arrange the top bar with the pencil ✎.
+•  Automatic language switch, also with suggestions: if you pick 2 words in a row in the other language by tapping the suggestions (without typing them), the keyboard switches to that language by itself, with the light on the space bar. And those words are learned in their right language, so they don't get mixed.
+•  Backup reminder: if automatic backup is off and you haven't made one in over a month, the keyboard reminds you once a month, with a button that takes you straight there. The Backup section now shows the date of your last backup.
+•  Backup: the password has an eye button to show it and check it's typed right (in both fields, and also when restoring).
+•  Built-in phrases 3 times bigger (139,000 real sentences in Spanish and English): it guesses 4 in 10 words without typing a letter and you type 72% fewer letters.\n•  Full phrase: when what comes next is obvious (especially your usual phrases), it shows the whole thing on the right, for example «I'm on» → my way to the job. One tap types it all.\n•  Recent counts more: words you no longer use slowly go down.\n•  Stuck-together words in both languages: thankyou → thank you, alot → a lot, atleast → at least, nosvemos → nos vemos.\n•  Numbers, times and measures with ✨: 7pm → 7:00 PM, 730am → 7:30 AM, 120ft → 120 ft, 24v → 24 V, cat6 → Cat 6, poe → PoE, nvr → NVR, wifi → Wi-Fi.
+•  Chinese in the translator: copy a message in Chinese, tap «Translate message» and you get it in your language. In the translate bar, tap a language name to change it (Spanish, English, Chinese, Portuguese, French, Italian or German).\n•  «Keyboard languages» is now in the same «Language» card, next to the screen language.\n•  The light line under the windows' title draws in with a little star, then a shine runs along it.\n•  All the pick-one windows (save in My data, site options) have the new style.\n•  The incognito eye's line no longer has the black outline: it's a clean line of light.
+•  Cleaner settings: now you see one section at a time. Tap the «Sections ›» bar under the search box, or the light strip on the right edge of the screen, and an Edge panel (like Samsung's) opens with every section: Start, Typing, AI and work, My workday, Data and copy, Voice and GIFs, Word, Backup and Tips. The search box still searches everything.
+•  Clearer My workday notification: the clock counts your worked hours (lunch already taken out).\n•  Automatic arrival and departure: if GPS jumps and logs a false «departure» but you're still on site, it's removed by itself.
+•  Clipboard: when selecting, each note has a diamond ◇ (empty or checked).\n•  Adding or editing in the clipboard opens a big multi-line box with a «✓ Save» button.
+•  Code mode </> (in ⋯): a keyboard for coding (Tab, ( ) [ ] { } : =), auto-indent, Python/JavaScript/Kotlin/Java/HTML/C++ words and AI: Explain, Write code, Fix error and Hint.
+•  Delete suggestions: press and hold a suggestion (for example a misspelled word it learned) and tap «Delete». It won't show up again in suggestions or autocorrect. In «See and edit my words» you can see the ones you deleted and bring them back with ↶.
+•  Driving mode: the big buttons' icons are centered with their text; the title icon sits next to the title, and Delete letter / Delete all icons are bigger and next to their text.
+•  Driving mode: the big buttons' text moves up a bit (no longer touches the bottom edge).
+•  Emojis and clipboard with images.
+•  Emojis: tapping a category at the bottom (🕐 Recent, 😀, 🐶…) now goes right to the start of that category.
+•  Endless top bar: it keeps going around. When it passes the start it slows a little (anchors), vibrates softly and a light line marks the end.\n•  The middle button's name now shows inside the bar, in a capsule next to the icon, and the neighbors move aside to make room (it no longer covers the keys).\n•  When you let go, the bar settles with the buttons in place.
+•  Every toolbar button can be moved.
+•  Eye 👁 to see the password while you type it in «My data».
+•  Faster AI: it asks the new and the old address at the same time and uses the first one that answers.\n•  «Finish sentence with AI» now really continues what you wrote («Hola como» → estás? / te fue hoy?) instead of making up another sentence, and with shorter instructions it answers sooner.
+•  Faster language switch: it now counts short words like «I», «hey», «the», «you», «dale», «oye». In almost every sentence it switches on the 2nd word (before, the 3rd or 4th), typing or tapping suggestions.\n•  Question mark: if the sentence is a question («can you send me…»), «?» shows on the left and goes right after the word.\n•  Comma before «but» and «pero»: «it works but» → ✨ «works, but».\n•  Smart capitals: acronyms you always capitalize (NVR, PoE…) get capitalized by themselves.\n•  More emojis for whole phrases: «on my way» → 🚗, «all done» → ✅, «good job» → 👍.\n•  New «Finish sentence with AI» button (in ⋯): type the start and get 3 ways to finish it. Your text is only sent when you tap it.
+•  Faster typing: suggestions take up to 40 times less when you type something that isn't a word, and 3 times less with 1 or 2 letters. No lag even when typing fast.\n•  Dictation: on Android 14 or newer it detects whether you speak Spanish or English in each sentence (mix freely) and adds punctuation by itself. If you say a question, it adds «?» by itself.\n•  Clipboard: each copied item shows when you copied it (Today 9:41, Yesterday, Nov 3). Use the magnifier to search everything you copied.\n•  My workday: new «Week summary» button inside the panel, and the summary's «Send» button opens WhatsApp, email or Messages with your hours ready.\n•  Review: fixed a crash that could happen if you turned off every My workday button, and other internal details.
+•  Fixed «Finish sentence with AI» (and «More formal», «AI replies»…): it gave error 404 or kept thinking because Google renamed its Gemini models. Now the keyboard asks Google which ones your key can use and uses the one that works. New keys starting with «AQ.» also work.\n•  «Finish sentence with AI» has its own icon (lines with an arrow), no longer the same as «More formal».
+•  Fixed: Style closed when picking another theme.
+•  Fixed: the app closed when changing the time with «🕐 Clock». Now a modern round clock shows up.\n•  The calendar (days, months and summary) is fully in the app's language.
+•  Fixed: «AI replies» (and other AI features) stayed thinking. The AI now answers in seconds (no long «thinking»), tries first the model that already worked, doesn't wait in line behind another question and, if it takes more than 45 seconds, tells you instead of staying stuck.
+•  Guesses the next word from day one, in English and Spanish: «thank you» → so much, «I will be there in» → a few minutes, «no te» → preocupes. Before, it only guessed what you had already typed.\n•  It now remembers the 2 previous words (not just 1): it learns your full phrases and completes them for you. What you type always counts more than the built-in ones.\n•  In tests with normal sentences: it guesses 1 in 3 words without typing a single letter, and you type 66% fewer letters.\n   (Example sentences from tatoeba.org, CC-BY 2.0 license.)
+•  Hold a letter for accents (á, é, ñ…) and the period for ¿ ? ¡ !\n•  ⇧ twice = ALL CAPS.\n•  Slide your finger over the letters to type a whole word.\n•  Hold the comma for emojis.\n•  ⋯ opens «More options»; the pencil ✎ lets you arrange every button.\n•  The hacker switches to a PC keyboard (Ctrl, Alt, Esc, Tab, F1–F12).\n•  </> Code mode: a keyboard for coding, and the AI explains, writes and fixes code.\n•  Hold the globe key to switch to another keyboard.
+•  In Style, the Hacker theme colors only show when you pick the Hacker theme, and they slide down into view.
+•  Keep the keyboard open: if you tap something to select it, the keyboard no longer goes down by itself; it goes down with the Hide button or the back arrow (turn it off in Settings).\n•  «Quick replies» (the AI one) is now called «AI replies», so it isn't confused with «Quick messages». While it thinks, the diamond shows with its light.
+•  Key and letter color in any theme (rainbow keys too 🌈).\n•  23 tap effects: Jelly, Shake, Spin, Wave, Flash, Neon, Rings, Stars, Confetti, Hearts, Fire, Snow, Flying letter and 🎲 Surprise.\n•  «My words»: see, change, delete and add your words.\n•  «Data»: edit what's saved and, when you select text, «Save to Data».
+•  Keyboard texts follow the 🌐 language.
+•  Much better English suggestions: the keyboard now looks at the language of the sentence you're writing. If you start «the camera…» with the keyboard in Spanish, from the second word it already suggests and corrects in English (before, «chec» became «chef»). And the other way: typing Spanish with the keyboard in English.\n•  Fewer movie names in suggestions (thomas, adam, todd…): they now go last.
+•  Much smarter suggestions:\n   –  A 3 times bigger dictionary: 140,000 Spanish words and 85,000 English words, with the verb forms that were missing.\n   –  If you type something that isn't a word, you get «did you mean…?» with the closest words: by one letter, by how it sounds, or because they start almost the same.\n   –  It no longer learns typos so easily: if you type something like «clmo» and «como» exists, you have to type it 4 times for it to learn it. Odd words it already learned that way hide by themselves.\n   –  What it learned from you is NOT erased when you update: your words, how often you use them and now also what you typed recently.
+•  My workday on the lock screen with the 🛻 Start button (no unlocking).\n•  My workday button in the phone's Quick Settings.\n•  The widget looks complete even when small.
+•  My workday your way: rename the buttons and hide the ones you don't use (for example «Started» if you don't ride a truck).
+•  My workday: choose how much lunch is deducted (15 min, 30 min, 45 min, 1 hour) or type another time with «✏️ Other time…».
+•  My workday: lunch always deducts 30 minutes, any day (even short ones or if you take more or less). The 🍔 and ↩️ buttons log how long you took.
+•  My workday: lunch now defaults to «Unpaid»: 30 minutes are subtracted from your hours (or the real time if you log 🍔 and ↩️).
+•  My workday: pick the icon (truck, clock, stopwatch, briefcase, calendar, hard hat or building).\n•  Clipboard like Gboard: press and hold to select several (the others wiggle), pin, delete or edit what you copied.\n•  ✏️ Pencil in the clipboard to add your own texts.\n•  ← Back button on every panel.
+•  My workday: when you tap «📍 Arrived on site» at a place you haven't saved, GPS finds the address and logs it («Arrived at 123 Main St»).\n•  Then it asks «Save this site?»: name it once and next time it's recognized automatically (today's entries switch to the new name too).
+•  New generic examples throughout the app (no real place names).
+•  New icons across the keyboard.
+•  New scroll bar in emojis, GIFs and stickers: a thin, soft flash of white light that fades by itself and doesn't get in the way.
+•  New scroll bars everywhere: a short light line just like the top bar's (white in the center and in your theme color).
+•  New settings screen: dark, minimal and futuristic.\n•  Uppercase the selection.\n•  Formal rewrite with the phone's AI.
+•  New sound: a short, soft tap (under 20 ms).\n•  «System» vibration (like Gboard) and a button to test the 3 types.\n•  In «More options»: Theme, Effect, Letters, Keys, Sound and Vibration change with a tap or a swipe.
+•  No emojis on any screen: settings, Style, Calendar, My sites, Data, the guide, the My workday notification and the widget. Cleaner and more modern. (The comma's ☺️ and the emojis you type stay.)\n•  «Finish sentence with AI»: if you switch language, the title and buttons switch too.
+•  No emojis on the keyboard: panels, buttons, notices and top bars now use small icons like the top bar ones (the comma emoji stays). New icons: keyboard, home, money, warning and sparkle.
+•  One camera: the scanner reads text and barcodes/QR codes at the same time.\n•  Tickets say «work» (no company name).
+•  PC keyboard (hacker): Esc, Tab, Ctrl, Alt, arrows and F1–F12.\n•  Spell check of just the selection.
+•  Quick guide up to date (26 steps): suggestions that know you, accents and punctuation, it learns from you, numbers and measures, free AI to finish sentences, bilingual dictation, statistics and how to move everything to another phone.\n•  Backup checked: it saves everything, including what the keyboard learned from you.
+•  Safer automatic departure: it waits a few minutes (5, 10, 15 or 20) before logging it; if you come back in, it isn't logged.\n•  Automatic arrival and departure alerts now have «🕐 Change time».\n•  In the Calendar, tap any time of a day to change it, or ✕ to delete it.
+•  Scan text with the camera.
+•  Search emojis and GIFs with a search bar (type «house», «happy», «dog»…).\n•  The GIF button is now inside the emoji panel.\n•  Emoji suggestions from what you type: house 🏠, haha 😂, love you ❤️.\n•  Thin scroll bar like a flash of light (it no longer gets in the way of edge emojis).\n•  Swipe the top bar to see the «More options» buttons.
+•  Search emojis, GIFs and stickers without leaving the panel: a small keyboard shows below and results appear as you type.
+•  Settings changes (theme, colors, shape, animation…) show instantly on the open keyboard.
+•  Settings in Spanish or English (from your phone, or choose it on top).\n•  The spell check button selects all the text by itself.\n•  Free «Fix grammar» (LanguageTool) and «More formal» with Google Gemini.
+•  Smoother top bar: while you swipe only the icons move; when it stops (or you hold your finger still), the middle button opens smoothly with its name and then closes by itself.\n•  The bar settles with a button right under the light.
+•  Spell check like Google Docs: all your text with mistakes in red.
+•  Suggestion of what you copy: «Paste: …» above the keyboard.\n•  Verification codes from your SMS: «Code: 123456», one tap pastes it.
+•  Suggestions also in Instagram and other apps that turned them off.
+•  Suggestions and autocorrect in Spanish and English.
+•  Swipe the space bar to change language.
+•  Swipe typing.
+•  Text editing, screenshot suggestion, 48-hour clipboard.
+•  The app now comes in 7 languages: Spanish, English, Portuguese, French, Italian, German and Chinese. Go to Start › Language › «Language of this screen» and pick yours.\n•  The first time you pick Portuguese, French, Italian, German or Chinese, the phone translates the whole app (needs internet once; takes less than a minute). After that it works instantly and offline.\n•  Settings, the guide, My data, the keyboard panels and the messages show in the language you pick.
+•  The incognito eye now animates: turning it on draws a line of light (the diamond's colors) across the eye; turning it off pulls the line back and the eye is uncovered.
+•  The keyboard goes down like before again («Keep the keyboard open» was removed).
+•  The keyboard's AI is now the same one Best Notes uses (free, no key) and it no longer uses Gemini at all. It works like in Best Notes: waits up to 45 seconds for each answer, retries by itself if the service is busy (up to 4 times) and sends one request at a time. Works for Finish sentence, More formal, AI replies, Notes → Ticket, Code mode and everything else.\n•  The Gemini key section was removed from settings: it's no longer needed.
+•  The top bar light line is now horizontal, under the buttons.\n•  Buttons move in an arc, like a wheel: the middle one rises and grows, the side ones drop and tilt.\n•  Screen recordings: if you record your screen, the keyboard suggests the video to paste, just like screenshots.
+•  The top bar scrolls more smoothly: when you lift your finger it keeps going a little and slows down gently.
+•  The «What will you use the keyboard for?» window looks nice now: a dark card with each option as a big button and the chosen one marked with the diamond's colors.\n•  The language picker has the same style.\n•  «Keyboard languages» (Spanish, English, Portuguese, French, Italian and German) is now in Start, right under the screen language, so it's easy to find.
+•  The ✕ on the «There was an error» card now closes it.
+•  Top bar: each button's full name is now shown.\n•  My workday counts lunch: «🍔 Lunch break» and «↩️ Back from lunch» buttons. If you don't log it, a fixed time is counted (30 min, 45 min or 1 hour). Choose paid or unpaid in ✏️ Edit buttons.
+•  Top bar: when the name shows in the capsule, the whole capsule belongs to that button (no more tapping the neighbor by accident).
+•  Top bar: when you swipe it, a line of light shows in the middle and the button passing over it grows, like picking a character in a video game.
+•  Top bar: when you swipe it, the name of the button in the light shows in a little bubble below.\n•  Settings → Style → Top bar: choose how much the wheel curves, how bright the light line is and whether to show the name.
+•  Updated quick guide: it now has 22 steps with everything new (automatic language switch, paste with the ✕, undo, AI replies, My sites, Driving mode, work tools, Data with fingerprint, word of the week, style and the sections panel), in Spanish and English.
+•  Voice typing and translation.
+•  When you switch language with 🌐 everything changes instantly: the info bar, open panels and search.\n•  The scroll bar light is now longer and thinner.
+•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows.
+•  Word of the week fully in English (word, meaning and example) when the keyboard is in English.\n•  The scanner and the code AI answers now use your language.
+•  Your background image or video now also shows in emojis, GIFs, clipboard and every panel.\n•  New modern window while the video is prepared, with a progress bar and a «Cancel» button.
+•  «AI replies» no longer stays thinking: it counts the seconds and, if it hasn't answered after 25 seconds, tells you what to check.
+•  «Dictate report» was removed from the top bar: it's already inside the microphone.
+•  «More options» (⋯) and «Resize».
+•  «More options» keeps only «Style» (everything else is inside).\n•  The Hacker theme in 12 colors, including rainbow 🌈 (in Style → Colors).
+•  «My data» (like Samsung Pass): saved and encrypted emails, passwords and shortcuts. Type 2–3 letters or the shortcut and the keyboard suggests them. Passwords ask for fingerprint or PIN.\n•  «More formal» tries several Gemini models and shows the exact error if it fails.
+•  «Style» screen with a sample keyboard that changes instantly.\n•  20 themes (Graphite, Coffee, Fire, Gold, Cyberpunk, Sky, Mint, Lavender, Peach…) and 16 accent colors.\n•  New shapes (Circle, Outline, No background) and effects (Zoom, Jump, Sparks, Bubble).\n•  New Hacker theme: green glass keys over falling code rain.
+•  «🕐 See and change my hours» button in the app (My workday).\n•  Tapping the My workday notification opens today's hours so you can change them.
+•  ↩️ Driving mode: after «Delete all», that same button becomes «Undo» for 8 seconds to get back what you deleted.
+•  ↩️ Undo is now a key on the keyboard (next to the period) and was removed from the top bar. When you delete something, the key lights up to remind you that you can get it back.
+•  ↶ The Undo key is now to the right of 0, and its arrow is a real arrow that goes around (with its tip).
+•  ⏰ Fixed: the 8-hours-on-site notice didn't arrive (it got mixed with the old notice and was lost when updating). It now also arrives with the phone asleep.
+•  ⏰ The «you've worked 8 hours» notice now counts only time on the job site (driving doesn't count).
+•  ☄️ The logo at the top now has a comet of light that runs along the diamond's edge and ends with a sparkle at the tip.\n•  💎 One icon only: the diamond over the keyboard with the name (the others were removed).
+•  ☄️ The logo light is now a line of light that traces the diamond's edge; when it finishes, the whole edge glows, the tip sparkles and it fades out slowly.
+•  ✅ To-dos: write down what you can't forget and pick when to be reminded (at a time or when you arrive at one of your sites).\n•  🧰 Pre-trip checklist: shows up when you tap «Started»; check off what you have.\n•  🧤 Glove mode: bigger keys with one tap.\n•  📏 Converter: feet ↔ meters, inches ↔ cm, °F ↔ °C, pounds ↔ kg, miles ↔ km and cable total (120 x 6 + 10%).
+•  ✕ The top suggestions (paste, screenshots, recordings) have a small ✕. They now stay even while you type, until you paste them or tap the ✕ (what you copied stays in your clipboard).
+•  ✨ 10 new animated themes: Power aura, Blue aura, Phoenix, Storm (with lightning), Fireworks, Spiral galaxy, Pond, Sci-fi hive, Neon pulse and Blizzard.\n•  Themes are now grouped: Classic, Space, Nature, Water, Fire and energy, Party and love, Tech and retro.\n•  Simpler Style: custom colors are tucked into «🎨 Change the theme colors (optional)», with a button to go back to the theme's.
+•  ✨ 19 new animated themes: Love (hearts), Autumn (leaves), Party (confetti), Waves, Lava lamp, Circuit, Synthwave, Clouds, Meteors, Lights, Glitter, Living rainbow, Christmas, Violet night, Neon rain, Volcano, Magic forest, Tropical and Night blossom. Now 27 animated and 55 themes in total.\n•  12 new tap effects: Flip, Heartbeat, Rubber, Shatter, Smoke, Spiral, Flower, Coin, Balloon, Butterfly, Glitch and Splash. Now 46.
+•  ✨ 8 themes with animated backgrounds: Galaxy (shooting stars), Winter (snow), Deep sea (bubbles), Fireflies, Rain, Embers, Northern lights and Sakura (petals).\n•  8 more new themes: Wine, Emerald, Slate, Retro (amber), Ice, Sand, Coral and Lilac. Now 36.\n•  11 new tap effects: Press, Swing, Lightning, Petals, Music notes, Surprise emoji, Ink, Pulse, Orbit, Rainbow and Pixels. Now 34.\n•  Lots of new colors for keys, letters, accent and the Hacker theme.
+•  ✨ Everything grey is now pretty: cards and buttons (like «Translate message») have a shine, a thin border in your theme color and, with your own background, they're glass.\n•  🔢 IP / MAC keypad: big numbers with dot, colon and A–F to type 192.168.1.20 or 00:1A:2B:3C:4D:5E. «ABC» goes back to letters.\n•  🏷️ Serial labels: type «PP1-01 to PP1-24» or «CAM-1 x 12» and it types the whole list.\n•  🧭 How many feet per line? (in Converter): give the path in feet, steps or ceiling tiles, and the ceiling height; it tells you the feet per line, the 1000 ft boxes and if it's over the 328 ft limit.\n•  📍 Remind on arrival: «when I get to this site, remind me to bring the ladder».\n•  ↩️ Undo: if you pasted something or the AI changed your text, it puts it back (tap again to redo).
+•  ✨ New app icon: «Light line». In Style → App icon you can also pick «Diamond».
+•  ✨ New default icon «Diamond on the keyboard»: the crystal diamond standing on the blue light line, with a glass keyboard in perspective and its reflection.
+•  ✨ New «Light diamond» icon: the crystal diamond crossed by the light line. It's the default; in Style → App icon you can also pick Light line or Diamond.
+•  ✨ Nicer «Customize» (the pencil ✎): no more dark strip, the top bar is glass with a border and light line, and the icons are colored.
+•  ✨ Nicer «More options»: the buttons now look like the keys, with a soft shine, a thin border in your theme color and colored icons. With your own photo or video background they're glass and you can see the background through them. They light up when tapped.
+•  ✨ The logo light everywhere:\n   ⏎ When you tap Enter, the light goes around the key and sparkles.\n   ⌨️ When the keyboard opens, the light crosses the top.\n   🤖 When the AI or a translation finishes, the light runs from the center to the sides.\n   ⏳ While you wait (translate, AI, backup, video compression) the diamond shows with its light spinning.\n   📍 In My workday, what you just logged lights up so you know it was saved.\n   💎 Every app screen has the diamond next to the title, with its light.
+•  ✨ The search bar (Google, emojis, GIFs, converter…) looks nicer: colored border, a light circling it, gradient background and light line.
+•  ✨ The top suggestions (paste, screenshots and recordings) look nicer: glass with shine, colored border and a colored ring on the thumbnail, and all have the light circling them.\n•  ⭐ The top light goes right again and ends in a small, complete star.
+•  ⭐ The star at the end of the top light is now bigger and centered on the line.\n•  ⇧ Caps lock: the light circles the Shift key while it's on.\n•  📋 When you copy something, the clipboard button sparkles.\n•  🌐 When you change language, the light crosses the space bar.\n•  🏁 When you finish your day, a celebration with the diamond and your summary.\n•  ⏰ When you reach 40 hours in the week, a special sparkle.\n•  ✨ New «Diamond» theme (💎 Best Keyboard category): sparks of light trace random keys.\n•  🔘 The big app buttons have a light reflection that crosses them now and then.
+•  ⭐ The star of the top light is a bit bigger.
+•  ⭐ The top light reaches the far right and a medium star appears there.
+•  🇺🇸 In English, typing «ill», «id», «well», «its»… first suggests «I'll», «I'd», «we'll», «it's»… (they're real words, so they're not underlined).
+•  🌐 The language now switches after 2 words in a row (was 3).\n•  🇺🇸 In English the keyboard is truly English: no ñ in its row (hold n to get it).
+•  🌙 «Forgot to log Home?» reminder: now you pick the time you want.
+•  🌸 Free backup AI (the same as Best Notes, no key): if Gemini doesn't answer or you have no key, AI replies, More formal, Notes → Ticket, Review, English dictation and Code mode ask this AI instead. It almost never goes unanswered now.
+•  🎨 Panels and buttons your way (Style → Panels and buttons): change the border and light color, the buttons and the icons, the border thickness and how clear the glass is. Live preview.
+•  🎨 The top bars (search, translate, check, code) are no longer grey: they have a gradient with your theme color and the light line. Pick their color in Style → Panels and buttons.
+•  🎯 More accurate suggestions: Spanish and English barely mix now; the keyboard remembers which language you use each word in.\n•  🧠 Learns faster: your new words are learned after typing them twice, and what you typed recently comes first.\n•  🌐 Automatic language switch: if you type 3 words in a row in the other language, the keyboard switches by itself (with the light on the space bar). Turn it off in Settings.\n•  ✅ The check button now goes straight to «Fix grammar».
+•  🏠 If you get picked up at home: when you leave home without having started the day, it asks «Did your day start?» and, if you say yes, it starts at the time you left.
+•  🏠 My workday widget and buttons on the lock screen.\n•  📍 My sites: when you tap «Arrived», GPS knows which site you're at.\n•  🧰 Materials: tap what you used and the Equipment List is built.\n•  💬 Quick AI replies (short, formal and in the other language).\n•  ⚡ Faster while typing.
+•  🏠 Save your home in My sites: when you get there, «Home» is logged with the real time (only on your phone; tickets and PDF just say «Home»).\n•  🕐 Type the time yourself (5:32pm, 532p or 17:32): in «Log with another time», when tapping a time in My workday and in the night reminder.\n•  🌙 The night reminder suggests the time you probably got home (your departure + your usual drive).
+•  🏠 Stops at home: when you get home with the day open, it waits a while (20 min) before closing it. If you just stopped and leave before, your day stays open.\n•  If you picked up the truck at the parking lot that day, at home it only asks «Did your day end?».
+•  💎 The app icon now shows the name «Best Keyboard» under the diamond, with the light line. If you prefer the old one, it's in Style → App icon.
+•  💎 The keyboard's Settings button is now the logo diamond, with its colors and the same line of light that traces it and sparkles now and then.
+•  💎 The main screen now shows the new logo: the diamond over the keyboard, «Best Keyboard» with its gradient and the light line below.
+•  💬 Quick phrases for work reports (Spanish and English) plus your own.\n•  Translate message: copy what you got and translate it instantly.\n•  One-hand mode, calculator and GIFs/stickers inside the keyboard.\n•  Password-protected backup (settings, words, Data and phrases).
+•  💬 While you type a word its suggestions show even if «Paste» or «Screenshot» is there (those come back when the word is done).\n•  🔴 Red-underlined words are checked in the keyboard's language (in English it no longer gives Spanish words).\n•  🔧 Tap inside a misspelled word: its corrections show nicely above the keyboard; tap one and the whole word changes.
+•  💵 Your pay: hourly pay driving and on site, sites that pay more, overtime at time and a half, and deductions for taxes %, 401(k) % and life insurance. My workday shows how much you've made this week.\n•  🌙 At 9 PM, if you didn't log «Home», you get a reminder to close the day.
+•  💵 Your paycheck in the Calendar: «See and change my hours» now shows, under the days, your approximate take-home pay for this week (and last week), with the breakdown of hours, overtime and deductions. If you haven't set your hourly pay yet, there's a button right there.
+•  💾 The backup now saves EVERYTHING: also the clipboard (texts and pinned images), your background image or video, recent emojis, My workday, your pay, to-dos and shortcuts.\n•  When restoring on a new phone, reminders and automatic arrival/departure are scheduled again, and it tells you which permissions to give again.\n•  Saving and restoring no longer freezes the screen.
+•  📄 PDF timesheet (My workday and Week summary): days, hours, sites, lunch and overtime, ready to send.\n•  📸 Ticket with photos (My tickets): pick that day's photos and send them with the ticket.\n•  🗣️ Type in English (mic): with your Gemini key, dictation comes out in professional technical English.\n•  ⚡ Text shortcuts: type /omw + space and it becomes your full phrase (Settings → Quick phrases).
+•  📅 Month calendar (My workday): hours for each day in colors; tap a day to see the details.\n•  🔍 Search your tickets, notebook and clipboard (My tickets and the clipboard magnifier).\n•  🌗 Day and night theme (Style): pick one for day and one for night, and it switches by itself.
+•  📊 Statistics (Sections › Typing): how many words you typed this week, how many it guessed before you typed a letter, how many letters you saved and how many mistakes it fixed.\n•  Each app remembers its language: if you write Spanish in WhatsApp and English in your work app, the keyboard opens that way in each (can be turned off in Space bar).\n•  Keys that adapt to your finger: the keyboard learns if you usually tap a bit below or to the side of each key and corrects it (after about 150 letters). Can be turned off in Suggestions.\n•  The backup (and the weekly automatic one) saves everything the keyboard learned from you: words, phrases, your fixes and the suggestions you deleted.
+•  📋 Notes → Ticket: your quick notes become a formal ticket in Spanish or English.\n•  🎤 Dictate report: speak in your own words and the AI writes it neatly and formally.\n•  ✨ More formal words: suggestions while you type (fixed → repaired) and AI options.\n•  ✅ Review before sending.\n•  Floating keyboard you can move around the screen.
+•  📋 The paste suggestion has the light circling it (like caps lock).\n•  🌐 When you change language, the light goes around the space bar and sparkles (like Enter).\n•  ⭐ The top light now runs along the edge, right to left, and ends in a big, bold star on the left.
+•  📏 Detection distance for places (in My sites): one for all and, by tapping a place, its own while seeing the circle on a map (like Samsung Routines).\n•  🎯 Sensitivity: High (1 minute inside and reacts right away), Normal (3 minutes) or Low (6 minutes, less battery).
+•  📖 Word of the week: 🔊 buttons to hear how it sounds in English and Spanish (and the example).
+•  📚 Word of the week: now there are 105 words (was 35), one every Monday for 2 years, all with meaning, example and English translation.
+•  📲 One-tap status messages (arrived, heading out…) with the time and site.\n•  📊 Week summary: hours per day, sites and tickets.\n•  📄 Export your hours to Excel / Google Sheets.\n•  🛻 Driving mode: asks if you drive and gives you big buttons and voice.\n•  💾 Automatic weekly backup.
+•  📷 Scan barcodes and QR codes (serial number, MAC).\n•  🕐 Time, date and place with one tap.\n•  📒 Day notebook: your notes become the day's ticket.\n•  🗂️ My tickets with a number that keeps counting, and work ticket format.\n•  ⏰ Daily reminder: ✅ TICKET REGISTERED / ❌ NO TICKET.\n•  📖 Word of the week.\n•  Press and hold a top-bar button to move it (the others wiggle).
+•  🔊 Listen to text: select a word or phrase (or copy it) and tap 🔊 on the top bar; the phone reads it in English or Spanish, slower too.
+•  🔎 Search Google (in ⋯ More options): type in the bar and Enter opens Google with your search. If you selected text, it searches it right away.
+•  🔐 Data on the keyboard asks for your fingerprint as soon as you open it; then you can freely open your accounts and items.
+•  🔐 Data on the keyboard asks for your fingerprint every time you tap the lock; inside, your emails, usernames and passwords are typed without asking again.
+•  🔐 Data on the keyboard now works like in settings: the account list with its arrow; tap one, use your fingerprint and tap the item to type it. Duplicates were removed.
+•  🔐 New Data, like Google's password manager: a list of accounts (website or app) with search. Tap one, use your fingerprint and see its username, email, password, security questions, security key and PIN, with an eye to see and a copy button (copies clear by themselves after a minute). You can create strong passwords. What you had saved was grouped into accounts automatically.
+•  🔒 «My data» button on the keyboard (in ⋯): asks for your fingerprint and shows your emails, passwords and texts.
+•  🕐 Recent is its own page: only the emojis you used show up, and the last one you used goes first.
+•  🖼️ Your own background (Style): put an image or video from your gallery behind the keys. The video is compressed, plays in full and loops forever.\n•  🔊 Video sound: on or muted (in Style or with the 🔊 keyboard button).\n•  With your own background the keys turn to glass so it shows through.
+•  🛠️ Fixed: the app closed when the logo sparkle started.
+•  🛻 Driving mode no longer turns off by itself: after dictating, logging your workday or closing the keyboard, it comes back to driving mode. It only turns off with «⌨️ Keyboard», the ← arrow or tapping its button again.
+•  🛻 Driving mode: new «⌫ Delete letter» (hold to keep deleting) and «🗑️ Delete all» buttons. «Status message» is now called «Quick messages».
+•  🛻 My workday: Started (truck), Arrived on site, Left the site and Home, with your hours for the day and week.\n•  🇺🇸 In the mic: speak Spanish and it's typed in English.\n•  🔎 Search in settings.\n•  📘 Quick guide.\n•  🐞 If something closes because of an error, it shows here so you can copy it and send it to me.
+•  🛻 Sending a status message keeps driving mode on.
+•  🛻 Truck parking (My sites): save where you pick up and drop off the truck. When you leave it your day starts by itself, and when you come back and stay, it ends by itself (with «Undo» and «Change time»).\n•  Tap a saved site to change its pay or turn it into the parking.
+•  🤖 Automatic arrival and departure (My sites): when you arrive at one of your sites and stay a few minutes, «Arrived» is logged with the time you got there; when you leave, «Left» is logged. Always with an «Undo» alert.\n•  ⏰ Overtime: alert when you pass your regular daily hours (8, 9 or 10 h) and overtime shown for the day and the week (over 40 h).
+↩️ Back from lunch
+↩️ Undo
+↩️ Undone (tap again to redo)
+↺ Back to the theme colors
+⌨  Insert where I was typing
+⌨️\nKeyboard
+⌫ Delete letter
+⏰ Overtime (over 40)
+⏰ Overtime: 
+⏰ When should I remind you?
+⏰ You reached 40 hours!
+⏹ Stop
+▶ Screen recording
+☀️ Day theme
+⚠️ A permission is missing (tap to give it)
+⚠️ Almost at the limit (328 ft). Try a shorter route.
+⚠️ There was an error
+⚡ Text shortcuts
+⚡ Text shortcuts: type /omw + space and it becomes «On my way, I'll be there in a few minutes.». Create your own.
+✅ All set! You're using Best Keyboard.
+✅ Done · on site 
+✅ Done, you checked all the text.
+✅ Everything was restored!
+✅ Good, within the limit.
+✅ Grammar looks good.
+✅ No mistakes in your selection.
+✅ No spelling mistakes found.
+✅ No spelling mistakes.
+✅ On. Last copy: 
+✅ Spelling done.
+✅ To-do
+✅ To-dos
+✅ Your message looks good. You can send it.
+✍️ Type list
+✍️ Type summary
+✏️ Edit buttons
+✏️ Edit buttons (names and which ones show)
+✏️ Other time…
+✓  Camera allowed
+✓  Microphone allowed
+✓  SMS codes allowed
+✓  Screenshots allowed
+✓ 1. Best Keyboard enabled
+✓ 2. Best Keyboard chosen
+✓ Create report
+✓ Other time: 
+✓ Save
+✓ Suggest my contacts' names (tap to turn off)
+✓ You have a background image.
+✓ You have a background video.
+✕ Remove background
+❌ Over 328 ft (100 m): the network may fail. Find a closer switch or rack.
+➕ Add
+➕ Add by address
+➕ Add note
+➕ Add the widget to the home screen
+➕ New material
+➕ New to-do
+➖ Other deductions (per week)
+⭐ Special-rate sites: 
+🌐 Switch language automatically
+🌗 Day and night theme
+🌙 Night theme
+🌙 Your workday is still open
+🍔 At lunch since 
+🍔 At lunch: 
+🍔 Lunch break
+🍔 Lunch: 
+🎤\nDictate
+🎨 Change the theme colors (optional)
+🎬 Done: your video is now the background.
+🎬 Pick video
+🎬 Preparing your video
+🎯 Sensitivity
+🎲 Surprise
+🏁 Your day is done!
+🏛️ Taxes
+🏠 At 
+🏠 Did your day end?
+🏠 Home
+🏠 Home saved ✓ (tap to remove)
+🏠 Home saved.
+🏠 Save my home (to log «Home» automatically)
+🏠 Save your home
+🏠 You got home
+🏠 Your home
+🐇 Normal
+🐢 Slower
+💬 AI replies
+💵 Hourly pay at this site
+💵 Last week (approx.)
+💵 Last week's paycheck (approx.)
+💵 Take-home approx.: 
+💵 This week (approx.)
+💵 This week's paycheck (approx.)
+💵 Week
+💵 Your weekly paycheck
+💾 Save and name it
+📄 Export my hours (Excel / Sheets)
+📄 PDF
+📄 Timesheet
+📄 Timesheet (PDF)
+📅 Calendar
+📊 Week summary
+📋   Paste
+📋 Create the day's ticket
+📋 Dictate report
+📋 New ticket
+📋 Report mode: ON
+📌   Pin to top
+📌   Unpin
+📍 Arrived on site
+📍 At 
+📍 Change to a normal work site
+📍 Hourly on site
+📍 My sites
+📍 New place
+📍 On site
+📍 On site: 
+📍 Remind on arrival
+📍 Save today's new place: 
+📍 Save where I am now
+📍 When I get where?
+📍 Where I am
+📍 when you arrive at 
+📏 Converter
+📏 Detection distance (all places)
+📏 Detection distance (on the map)
+📏 Distance saved.
+📒 Today's notebook
+📖 Word of the week
+📤 Send just the ticket
+📲\nQuick messages
+📲 Quick messages
+📸 Send with photos
+🔇 Video muted
+🔊 Example
+🔊 Listen
+🔊 Video sound
+🔊 Video sound on
+🔍 Search
+🔎  Search settings (vibration, ticket, GIF…)
+🕐 Change time
+🕐 Log with another time
+🕐 See and change my hours (Calendar)
+🕐 Time, date and place
+🕐 Type the time
+🕐 What do you want to log?
+🕘 Reminder time: 
+🖼  Image
+🖼️ Done: your image is now the background.
+🖼️ Pick image
+🗂️ My tickets
+🗑   Delete
+🗑️ Delete all
+🚪 Left the site
+🛡️ Life insurance (per week)
+🛻 Are you driving?
+🛻 Did your day start?
+🛻 Driving mode · use your voice
+🛻 Driving: 
+🛻 Hourly while driving (truck)
+🛻 Save the truck parking lot (I'm here)
+🛻 Started (truck)
+🛻 Use it as the truck parking (start and end of day)
+🛻 Your day ended
+🛻 Your day started
+🤖 Automatic arrival and departure: Off
+🤖 Automatic arrival and departure: ✓ On
+🧤 Glove mode: big keys
+🧭 How many feet per line?
+🧰 Got everything?
+🧰 Show my checklist when I tap «Started»
+🧰 Today's materials
+🧵 Cable total
