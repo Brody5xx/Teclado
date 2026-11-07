@@ -50,6 +50,7 @@ object Tools {
         Info(KeyboardView.TOOL_READ, Icons.READ, "Traducir mensaje", "Translate message", true),
         Info(KeyboardView.TOOL_ONEHAND, Icons.ONEHAND, "Una mano", "One hand", false),
         Info(KeyboardView.TOOL_CALC, Icons.CALC, "Calculadora", "Calculator", true),
+        Info(KeyboardView.TOOL_FX, Icons.MONEY, "Divisas", "Currency", true),
         Info(KeyboardView.TOOL_TICKET, Icons.TICKET, "Notas → Ticket", "Notes → Ticket", true),
         Info(KeyboardView.TOOL_FORMAL, Icons.FORMAL, "Más formal (palabra)", "Formal words", true),
         Info(KeyboardView.TOOL_REVIEW, Icons.REVIEW, "Revisar antes de enviar", "Review before sending", true),

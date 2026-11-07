@@ -213,6 +213,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // Frases (7), calculadora (8) y GIFs (9)
     private var phrasePanel: PhrasePanel? = null
     private var calcPanel: CalcPanel? = null
+    private var fxPanel: FxPanel? = null
     private var gifPanel: GifPanel? = null
     private var notebookPanel: ListPanel? = null
     private var ticketsPanel: ListPanel? = null
@@ -498,7 +499,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 when (tool) {
                     KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_VOICE,
                     KeyboardView.TOOL_EDIT, KeyboardView.TOOL_SCAN, KeyboardView.TOOL_PHRASES,
-                    KeyboardView.TOOL_CALC, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT, KeyboardView.TOOL_BARCODE,
+                    KeyboardView.TOOL_CALC, KeyboardView.TOOL_FX, KeyboardView.TOOL_GIF, KeyboardView.TOOL_REPORT, KeyboardView.TOOL_BARCODE,
                     KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS, KeyboardView.TOOL_WORKDAY,
                     KeyboardView.TOOL_MATERIALS, KeyboardView.TOOL_DRIVE, KeyboardView.TOOL_TODO, KeyboardView.TOOL_CHECK -> onToolbar(tool)
                     else -> { showMode(0); onToolbar(tool) }
@@ -542,6 +543,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         box.addView(calc, FrameLayout.LayoutParams(-1, -1))
         calcPanel = calc
+
+        // 💱 Divisas
+        val fx = FxPanel(this)
+        fx.visibility = View.GONE
+        fx.actions = object : FxPanel.Actions {
+            override fun onFxInsert(text: String) { showMode(0); insertText(text) }
+            override fun onFxBack() = showMode(0)
+            override fun onFxFeedback() = onKeyFeedback()
+        }
+        box.addView(fx, FrameLayout.LayoutParams(-1, -1))
+        fxPanel = fx
 
         // GIFs y stickers
         val gp = GifPanel(this)
@@ -747,7 +759,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         L.onChange {
             // Todo en vivo: la barra de información y el panel abierto se vuelven a pintar en el otro idioma
             if (infoBar?.visibility == View.VISIBLE) infoRegen?.let { r -> handler.post { r() } }
-            if (mode in 10..16) handler.post { showMode(mode) }
+            if (mode in 10..17) handler.post { showMode(mode) }
             searchBar?.let { if (it.visibility == View.VISIBLE) it.setText(it.text()) }
             clipPanel?.refresh()
             tBar?.applyLang()
@@ -833,6 +845,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         calcPanel?.let { cp ->
             cp.visibility = if (m == 8) View.VISIBLE else View.GONE
             if (m == 8) cp.open()
+        }
+        fxPanel?.let { fp ->
+            fp.visibility = if (m == 17) View.VISIBLE else View.GONE
+            if (m == 17) fp.open()
         }
         gifPanel?.let { gp ->
             val was = gp.visibility == View.VISIBLE
@@ -1912,6 +1928,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         morePanel?.applyPalette(pal)
         phrasePanel?.applyPalette(pal)
         calcPanel?.applyPalette(pal)
+        fxPanel?.applyPalette(pal)
         gifPanel?.applyPalette(pal)
         notebookPanel?.applyPalette(pal)
         ticketsPanel?.applyPalette(pal)
@@ -2890,6 +2907,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_LANG -> onKeyCode(Codes.LANG)
             KeyboardView.TOOL_PHRASES -> showMode(7)
             KeyboardView.TOOL_CALC -> showMode(8)
+            KeyboardView.TOOL_FX -> showMode(17)
             KeyboardView.TOOL_GIF -> showMode(9)
             KeyboardView.TOOL_READ -> readMessage()
             KeyboardView.TOOL_TICKET -> startTicket()

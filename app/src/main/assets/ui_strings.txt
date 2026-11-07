@@ -40,6 +40,7 @@ A lot
 A short tour of everything the keyboard has.
 A website or app with user and password.
 AI writing
+ALL (A–Z)
 Accents and punctuation
 Access control, cameras, cabling and fiber reports, in Spanish and English.
 Account
@@ -152,6 +153,8 @@ Confetti
 Confirm it's you
 Confirmed by you
 Continue
+Convert from…
+Convert to…
 Copied
 Copied text and codes
 Copied. It's also in your clipboard.
@@ -192,6 +195,7 @@ Counted only on your phone. The more you use it, the more it learns from you and
 Create
 Create a strong password
 Crimper
+Currency
 Customize
 Cut
 Daily ticket
@@ -297,6 +301,7 @@ GIFs come from GIPHY and need a FREE key (only once):\n1. Tap «Get a GIPHY key�
 Gallery
 German
 Get a GIPHY key
+Getting rates…
 Getting ready… (the first time it downloads the language, about 30 MB)
 Give it a name.
 Give the path from the rack to the device: in feet («120»), steps («80 steps»), ceiling tiles («40 tiles») or meters. Add the ceiling («ceiling 12») and how many lines («x 6»).
@@ -414,6 +419,7 @@ Low: only if you stay 6 minutes inside (just passing by doesn't count). Uses les
 Lunch
 Lunch deducted: 
 Lunch type
+MOST USED
 Made with Best Keyboard · 
 Made with care · Best Keyboard
 Make a copy now
@@ -466,6 +472,7 @@ No internet needed. Type «fixed» and get ✨ repaired; «works now» → ✨ i
 No internet or GIPHY didn't respond.
 No internet. Connect and try again.
 No internet. To dictate offline, download the language in the Google app (Voice → Offline speech recognition).
+No internet: connect once
 No learned words yet.
 No name
 No options found.
@@ -565,6 +572,7 @@ Quick guide
 Quick messages, emojis, GIFs and photos.
 Quick phrases
 Rainbow
+Rates from 
 Reading the text…
 Reading…
 Regular hours per day
@@ -607,6 +615,7 @@ Save the emails I type
 Save the places where you work and the keyboard marks Arrived and Left by itself. For each site you set the distance on the map and the sensitivity. With «Remind on arrival» it tells you something when you get to a site.
 Save to Data
 Save your emails, passwords and texts you use a lot. The keyboard suggests them after 2–3 letters. Passwords ask for your fingerprint. All encrypted and only on your phone.
+Saved rates
 Saved sites
 Saved, but I couldn't find the address on the map. Better use «Save where I am now» when you're there.
 Saved.
@@ -1002,6 +1011,7 @@ week
 •  Clearer My workday notification: the clock counts your worked hours (lunch already taken out).\n•  Automatic arrival and departure: if GPS jumps and logs a false «departure» but you're still on site, it's removed by itself.
 •  Clipboard: when selecting, each note has a diamond ◇ (empty or checked).\n•  Adding or editing in the clipboard opens a big multi-line box with a «✓ Save» button.
 •  Code mode </> (in ⋯): a keyboard for coding (Tab, ( ) [ ] { } : =), auto-indent, Python/JavaScript/Kotlin/Java/HTML/C++ words and AI: Explain, Write code, Fix error and Hint.
+•  Currency (like in Best Notes): tap ⋯ › Currency. See what every currency in the world is worth today and convert instantly.\n•  Tap a currency to change it: the most used on top and all of them A to Z below, with their names.\n•  In the amount you can do math (50+25×2, 15%) and ⇅ swaps the currencies. Below you see 1 = … both ways.\n•  «Type it» puts the result where you're typing: «100 USD = 5,890.00 DOP».\n•  Rates are from today (updated every 6 hours) and offline it uses the last saved ones.
 •  Delete suggestions: press and hold a suggestion (for example a misspelled word it learned) and tap «Delete». It won't show up again in suggestions or autocorrect. In «See and edit my words» you can see the ones you deleted and bring them back with ↶.
 •  Driving mode: the big buttons' icons are centered with their text; the title icon sits next to the title, and Delete letter / Delete all icons are bigger and next to their text.
 •  Driving mode: the big buttons' text moves up a bit (no longer touches the bottom edge).

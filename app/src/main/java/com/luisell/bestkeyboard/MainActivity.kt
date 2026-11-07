@@ -1364,6 +1364,16 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.4.0" to tr("•  Divisas (como en Best Notes): toca ⋯ › Divisas. Ves a cuánto está cada moneda del mundo hoy y la conversión al instante.\n" +
+            "•  Toca una moneda para cambiarla: arriba las más usadas y abajo todas de la A a la Z, con su nombre.\n" +
+            "•  En la cantidad puedes hacer cuentas (50+25×2, 15%) y ⇅ cambia las monedas de lugar. Debajo sale 1 = … en los dos sentidos.\n" +
+            "•  «Escribir» pone el resultado donde estás escribiendo: «100 USD = 5,890.00 DOP».\n" +
+            "•  Las tasas son del día (se actualizan cada 6 horas) y sin internet usa las últimas guardadas.",
+            "•  Currency (like in Best Notes): tap ⋯ › Currency. See what every currency in the world is worth today and convert instantly.\n" +
+            "•  Tap a currency to change it: the most used on top and all of them A to Z below, with their names.\n" +
+            "•  In the amount you can do math (50+25×2, 15%) and ⇅ swaps the currencies. Below you see 1 = … both ways.\n" +
+            "•  «Type it» puts the result where you're typing: «100 USD = 5,890.00 DOP».\n" +
+            "•  Rates are from today (updated every 6 hours) and offline it uses the last saved ones."),
         "13.3.1" to tr("•  Arreglado el chino: la fila de caracteres tapaba todo el teclado y no dejaba escribir la segunda letra. Ahora es una fila arriba, del alto de las sugerencias.\n" +
             "•  Con una sola letra (h) ya salen los caracteres más usados (好, 还, 会…).",
             "•  Chinese fixed: the character row covered the whole keyboard and didn't let you type the second letter. Now it's one row at the top, the height of the suggestions.\n" +
