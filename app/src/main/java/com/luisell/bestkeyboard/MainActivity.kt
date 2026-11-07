@@ -223,8 +223,30 @@ class MainActivity : UiActivity() {
         }
         val p1 = field(tr("Contraseña del respaldo", "Backup password"))
         val p2 = field(tr("Repite la contraseña", "Repeat the password"))
-        box.addView(p1, LinearLayout.LayoutParams(-1, -2))
-        if (export) box.addView(p2, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        // 👁 El ojito: tócalo para ver la contraseña y revisar que esté bien escrita
+        fun withEye(e: EditText): View {
+            val f = android.widget.FrameLayout(this)
+            e.setPadding(dp(14), dp(12), dp(48), dp(12))
+            f.addView(e, android.widget.FrameLayout.LayoutParams(-1, -2))
+            val eye = IconView(this, Icons.EYE, 7.5f)
+            eye.color = SUB
+            eye.bgColor = BG
+            var shown = false
+            eye.setOnClickListener {
+                shown = !shown
+                val pos = e.selectionEnd
+                e.inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                    (if (shown) android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD else android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD)
+                e.setSelection(pos.coerceIn(0, e.text.length))
+                eye.kind = if (shown) Icons.EYE_OFF else Icons.EYE
+                eye.color = if (shown) CYAN else SUB
+                eye.invalidate()
+            }
+            f.addView(eye, android.widget.FrameLayout.LayoutParams(dp(44), dp(44), Gravity.END or Gravity.CENTER_VERTICAL))
+            return f
+        }
+        box.addView(withEye(p1), LinearLayout.LayoutParams(-1, -2))
+        if (export) box.addView(withEye(p2), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
         val msg = TextView(this)
         msg.text = if (export) tr("Anótala: sin ella no se puede abrir el respaldo.", "Write it down: without it the backup can't be opened.")
         else tr("La contraseña que pusiste al guardarlo.", "The password you used when saving it.")
@@ -1215,6 +1237,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.33.2" to tr("•  Copia de seguridad: la contraseña tiene el ojito para verla y revisar que esté bien escrita (en los dos campos, y también al restaurar).",
+            "•  Backup: the password has an eye button to show it and check it's typed right (in both fields, and also when restoring)."),
         "12.33.1" to tr("•  Recordatorio de la copia de seguridad: si no tienes la copia automática prendida y hace más de un mes que no haces una, el teclado te lo recuerda una vez al mes, con un botón que te lleva directo a hacerla. En la sección Copia ahora sale la fecha de tu última copia.",
             "•  Backup reminder: if automatic backup is off and you haven't made one in over a month, the keyboard reminds you once a month, with a button that takes you straight there. The Backup section now shows the date of your last backup."),
         "12.33.0" to tr("•  Sin emojis en ninguna pantalla: ajustes, Estilo, Calendario, Mis sitios, Datos, la guía, la notificación de Mi jornada y el widget. Se ve más limpio y moderno. (El ☺️ de la coma y los emojis que tú escribes se quedan.)\n" +
