@@ -55,6 +55,9 @@ object Prefs {
     const val EASY_MODE = "easy_mode"
     /** ✌️ Teclado dividido: auto (acostado o tablet) / on / off. */
     const val SPLIT_KB = "split_kb"
+    /** 🌍 Tus 2 idiomas del teclado. */
+    const val KB_LANG1 = "kb_lang1"
+    const val KB_LANG2 = "kb_lang2"
     const val BACKUP_NAG = "backup_nag"
     const val APP_LANGS = "app_langs"
     const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)

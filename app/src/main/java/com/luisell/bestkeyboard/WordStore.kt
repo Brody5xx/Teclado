@@ -37,8 +37,10 @@ object WordStore {
         val file = File(app.filesDir, "aprendido.txt")
         userFile = file
         io.execute {
-            val es = app.assets.open("dict_es.txt").use { Dictionary.load("es", it) }
-            val en = app.assets.open("dict_en.txt").use { Dictionary.load("en", it) }
+            // 🌍 Los diccionarios de tus 2 idiomas
+            val (l1, l2) = Langs.pair(Prefs.get(app))
+            val es = app.assets.open("dict_$l1.txt").use { Dictionary.load(l1, it) }
+            val en = app.assets.open("dict_$l2.txt").use { Dictionary.load(l2, it) }
             val user = UserData()
             try { user.load(file) } catch (_: Exception) { }
             val e = WordEngine(listOf(es, en), user)
@@ -125,6 +127,17 @@ object WordStore {
                 }
             } catch (_: Exception) { }
             main.post { e.names = map }
+        }
+    }
+
+    /** Cambiaste de idiomas: se guardan tus palabras y se cargan los diccionarios nuevos. */
+    fun reload(ctx: Context, onReady: (() -> Unit)? = null) {
+        saveNow()
+        main.post {
+            engine = null
+            gesture = null
+            loading = false
+            load(ctx, onReady)
         }
     }
 

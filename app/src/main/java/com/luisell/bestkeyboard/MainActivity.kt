@@ -711,6 +711,36 @@ class MainActivity : UiActivity() {
             tr("Selecciona un texto y toca ⇧: pasa a MAYÚSCULAS. Otra vez: minúsculas. Otra: Tipo Título.",
                 "Select text and tap ⇧: it becomes UPPERCASE. Again: lowercase. Again: Title Case."))
 
+        // ---- 🌍 Idiomas del teclado
+        card(tr("Idiomas del teclado", "Keyboard languages"), Icons.GLOBE, keywords = "idiomas portugues frances italiano aleman languages portuguese french italian german")
+        text(tr("Elige tus 2 idiomas. El teclado cambia solo entre ellos mientras escribes, con su diccionario y sus sugerencias.",
+            "Pick your 2 languages. The keyboard switches between them by itself while you type, with their dictionary and suggestions."), 13f, faded = true)
+        val (kl1, kl2) = Langs.pair(prefs)
+        fun pickLang(key: String, current: String) {
+            val names = Langs.ALL.map { it.name }.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle(tr("Elige el idioma", "Pick the language"))
+                .setSingleChoiceItems(names, Langs.ALL.indexOfFirst { it.code == current }) { d, which ->
+                    val code = Langs.ALL[which].code
+                    val e = prefs.edit().putString(key, code)
+                    // Si eliges el mismo que el otro, se cambian de lugar
+                    val otherKey = if (key == Prefs.KB_LANG1) Prefs.KB_LANG2 else Prefs.KB_LANG1
+                    if (Langs.pair(prefs).let { if (key == Prefs.KB_LANG1) it.second else it.first } == code)
+                        e.putString(otherKey, current)
+                    e.putString(Prefs.LANG, if (key == Prefs.KB_LANG1) code else Langs.pair(prefs).first)
+                    e.apply()
+                    d.dismiss()
+                    val busyDlg = busy("Cargando el diccionario…", "Loading the dictionary…")
+                    WordStore.reload(this) { busyDlg.close(); recreate() }
+                }
+                .setNegativeButton(tr("Cancelar", "Cancel"), null)
+                .show()
+        }
+        button(tr("Idioma 1: ", "Language 1: ") + Langs.name(kl1)) { pickLang(Prefs.KB_LANG1, kl1) }
+        button(tr("Idioma 2: ", "Language 2: ") + Langs.name(kl2)) { pickLang(Prefs.KB_LANG2, kl2) }
+        text(tr("Todos usan el teclado QWERTY. Las letras con acento (é, ü, ç, ã, ß…) salen manteniendo la letra.",
+            "All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter."), 12f, faded = true)
+
         // ---- Barra espaciadora
         card(tr("Barra espaciadora", "Space bar"), Icons.GLOBE)
         switch(tr("🌐 Cambiar el idioma solo", "🌐 Switch language automatically"), Prefs.AUTO_LANG, true,
@@ -1303,6 +1333,24 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.0.0" to tr("Best Keyboard 13: para cualquier persona.\n" +
+            "•  Al instalarlo te pregunta para qué lo usas (chatear, estudiar, oficina o trabajo de campo) y prende solo lo que te sirve. Las herramientas del trabajo (tickets, Mi jornada, sitios…) son un paquete que se puede apagar (Secciones › Inicio).\n" +
+            "•  6 idiomas: español, inglés, portugués, francés, italiano y alemán. Eliges tus 2 y cambia solo entre ellos (Secciones › Escribir › Idiomas del teclado).\n" +
+            "•  Modo fácil: teclas grandes, alto contraste y vibración fuerte. Con TalkBack dice cada tecla al pasar el dedo.\n" +
+            "•  Modo incógnito (en ⋯ y en Datos): no aprende ni guarda nada; se prende solo en las pestañas privadas. La barra espaciadora dice «Incógnito».\n" +
+            "•  Mis datos y privacidad: qué guarda el teclado y un botón para borrar cada cosa.\n" +
+            "•  Calculadora y conversor: 25*4= → 100, «120 ft a m» → 36.58 m, «70 f a c» → 21.11 °C, «20 usd a pesos» con las tasas de hoy.\n" +
+            "•  Atajos con fecha y hora: /hoy, /hora, /ahora; y en tus atajos {fecha}, {hora} y [lo que se llena] seleccionado.\n" +
+            "•  Teclado dividido en dos mitades cuando el teléfono está acostado o en tablet (se puede cambiar).",
+            "Best Keyboard 13: for everyone.\n" +
+            "•  When installed it asks what you use it for (chat, study, office or field work) and turns on only what helps you. Work tools (tickets, My workday, sites…) are a pack you can turn off (Sections › Start).\n" +
+            "•  6 languages: Spanish, English, Portuguese, French, Italian and German. Pick your 2 and it switches between them by itself (Sections › Typing › Keyboard languages).\n" +
+            "•  Easy mode: big keys, high contrast and strong vibration. With TalkBack it says each key as you slide your finger.\n" +
+            "•  Incognito mode (in ⋯ and in Data): it doesn't learn or save anything; turns on by itself in private tabs. The space bar says «Incognito».\n" +
+            "•  My data and privacy: what the keyboard saves and a button to delete each thing.\n" +
+            "•  Calculator and converter: 25*4= → 100, «120 ft to m» → 36.58 m, «70 f to c» → 21.11 °C, «20 usd to eur» with today's rates.\n" +
+            "•  Shortcuts with date and time: /today, /time, /now; and in your shortcuts {date}, {time} and [what you fill in] selected.\n" +
+            "•  Split keyboard in two halves in landscape or on tablets (can be changed)."),
         "12.33.2" to tr("•  Copia de seguridad: la contraseña tiene el ojito para verla y revisar que esté bien escrita (en los dos campos, y también al restaurar).",
             "•  Backup: the password has an eye button to show it and check it's typed right (in both fields, and also when restoring)."),
         "12.33.1" to tr("•  Recordatorio de la copia de seguridad: si no tienes la copia automática prendida y hace más de un mes que no haces una, el teclado te lo recuerda una vez al mes, con un botón que te lleva directo a hacerla. En la sección Copia ahora sale la fecha de tu última copia.",

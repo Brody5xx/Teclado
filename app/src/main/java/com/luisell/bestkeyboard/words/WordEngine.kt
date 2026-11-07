@@ -23,6 +23,15 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
         touchWord = f; touchAlt = alt
     }
 
+    init {
+        // Idioma 1 → casilla "es", idioma 2 → casilla "en" (con español e inglés, igual que siempre)
+        val second = dicts.getOrNull(1)?.lang
+        user.slotOf = { l -> if (l == null) null else if (l == second) "en" else "es" }
+    }
+
+    private fun has(lang: String) = dicts.any { it.lang == lang }
+    private fun slotLang(slot: String): String? = if (slot == "en") dicts.getOrNull(1)?.lang else dicts.getOrNull(0)?.lang
+
     /** 📇 Nombres de tus contactos (en minúsculas → como se escribe: "luisell" → "Luisell"). */
     @Volatile var names: Map<String, String> = emptyMap()
 
@@ -38,27 +47,33 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
 
     /** ¿De qué idioma es esta palabra? "es", "en" o null si es de los dos (o de ninguno). */
     fun langOf(lower: String): String? {
-        if (lower.any { it in "ñáéíóúü¿¡" }) return "es"
+        if (lower.any { it in "ñ¿¡" } && has("es")) return "es"
+        if (lower.any { it in "áéíóú" } && has("es") && dicts.none { it.lang in setOf("pt", "fr", "it") }) return "es"
         // Palabras cortas que casi siempre dicen el idioma (aunque existan en los dos diccionarios)
-        if (lower in SURE_EN) return "en"
-        if (lower in SURE_ES) return "es"
-        val es = dicts.firstOrNull { it.lang == "es" }?.indexOf(lower) ?: -1
-        val en = dicts.firstOrNull { it.lang == "en" }?.indexOf(lower) ?: -1
-        val ue = user.entry(lower)
-        if (es >= 0 && en < 0) return "es"
-        if (en >= 0 && es < 0) return "en"
-        if (es >= 0 && en >= 0) {
-            // En los dos: gana el que sea mucho más común
-            val de = dicts.first { it.lang == "es" }.logFreq[es]
-            val dn = dicts.first { it.lang == "en" }.logFreq[en]
-            return if (de > dn + 2.5f) "es" else if (dn > de + 2.5f) "en" else null
+        if (lower in SURE_EN && has("en")) return "en"
+        if (lower in SURE_ES && has("es")) return "es"
+        var best: String? = null
+        var bestLf = Float.NEGATIVE_INFINITY
+        var second = Float.NEGATIVE_INFINITY
+        for (d in dicts) {
+            val i = d.indexOf(lower)
+            if (i < 0) continue
+            val lf = d.logFreq[i]
+            if (lf > bestLf) { second = bestLf; bestLf = lf; best = d.lang } else if (lf > second) second = lf
         }
+        if (best != null) {
+            // Solo en un idioma, o mucho más común en uno
+            if (second == Float.NEGATIVE_INFINITY || bestLf > second + 2.5f) return best
+            return null
+        }
+        val ue = user.entry(lower)
         if (ue != null && ue.en + ue.es >= 3) {
-            if (ue.en >= ue.es * 3) return "en"
-            if (ue.es >= ue.en * 3) return "es"
+            if (ue.en >= ue.es * 3) return slotLang("en")
+            if (ue.es >= ue.en * 3) return slotLang("es")
         }
         return null
     }
+
 
     /**
      * 🌐 El idioma de la frase que estás escribiendo (la última palabra clara pesa más).
@@ -78,15 +93,16 @@ class WordEngine(private val dicts: List<Dictionary>, val user: UserData) {
             while (i > start && TextUtil.isWordChar(text[i - 1])) i--
             if (e > i) ws.add(text.subSequence(i, e).toString().lowercase().trim('\'', '’'))
         }
-        var es = 0f
-        var en = 0f
+        val votes = HashMap<String, Float>()
         var w = 1f
         for (x in ws) {
-            val v = if (x == "i" || x == "i'm" || x == "i'll") "en" else if (x.length < 2) null else langOf(x)
-            if (v == "es") es += w else if (v == "en") en += w
+            val v = if ((x == "i" || x == "i'm" || x == "i'll") && has("en")) "en" else if (x.length < 2) null else langOf(x)
+            if (v != null) votes[v] = (votes[v] ?: 0f) + w
             w *= 0.55f
         }
-        return if (en > es) "en" else if (es > en) "es" else null
+        if (votes.isEmpty()) return null
+        val sorted = votes.entries.sortedByDescending { it.value }
+        return if (sorted.size > 1 && sorted[0].value == sorted[1].value) null else sorted[0].key
     }
 
     /**

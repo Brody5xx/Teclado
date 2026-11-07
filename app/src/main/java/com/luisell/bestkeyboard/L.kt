@@ -31,7 +31,8 @@ object L {
 
     /** Cambia el idioma de los textos y avisa a todos los paneles para que se actualicen. */
     fun set(lang: String) {
-        val en = lang == "en"
+        // Los textos del teclado van en español o inglés (francés y alemán → inglés; portugués e italiano → español)
+        val en = lang == "en" || lang == "fr" || lang == "de"
         if (en == english) return
         english = en
         for ((v, a, b) in bound) v.text = t(a, b)

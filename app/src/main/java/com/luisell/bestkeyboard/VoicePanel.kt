@@ -143,7 +143,7 @@ class VoicePanel(context: Context) : FrameLayout(context) {
         }
     }
 
-    fun setLang(lang: String) { langBtn.text = if (lang == "es") "🎤 Español" else "🎤 English" }
+    fun setLang(lang: String) { langBtn.text = Langs.name(lang) }
 
     fun applyPalette(p: Palette) {
         palette = p

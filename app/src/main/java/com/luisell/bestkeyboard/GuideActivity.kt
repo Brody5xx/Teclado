@@ -53,9 +53,18 @@ class GuideActivity : UiActivity() {
             Step(Icons.SETTINGS, tr("Aprende de ti", "It learns from you"), tr(
                 "Si borras una palabra mal escrita y la escribes bien, la próxima vez se corrige sola. Las teclas se acomodan a dónde sueles tocar, cada app recuerda su idioma y, si quieres, sugiere los nombres de tus contactos bien escritos.",
                 "If you delete a misspelled word and type it right, next time it fixes itself. Keys adapt to where you usually tap, each app remembers its language and, if you want, it suggests your contacts' names spelled right.")),
-            Step(Icons.CALC, tr("Números, horas y medidas", "Numbers, times and measures"), tr(
-                "Escribe 7pm y sale ✨ 7:00 PM. También 730am → 7:30 AM, 120ft → 120 ft, 24v → 24 V, cat6 → Cat 6, poe → PoE.",
-                "Type 7pm and get ✨ 7:00 PM. Also 730am → 7:30 AM, 120ft → 120 ft, 24v → 24 V, cat6 → Cat 6, poe → PoE.")),
+            Step(Icons.CALC, tr("Calculadora y conversor", "Calculator and converter"), tr(
+                "Escribe 25*4= y te sugiere 100. «120 ft a m» → 36.58 m, «70 f a c» → 21.11 °C, «20 usd a pesos» con las tasas de hoy. Y 7pm → 7:00 PM, cat6 → Cat 6.",
+                "Type 25*4= and it suggests 100. «120 ft to m» → 36.58 m, «70 f to c» → 21.11 °C, «20 usd to eur» with today's rates. And 7pm → 7:00 PM, cat6 → Cat 6.")),
+            Step(Icons.BUBBLE, tr("Atajos con fecha y hora", "Shortcuts with date and time"), tr(
+                "Escribe /hoy, /hora o /ahora y un espacio: sale la fecha o la hora de ahora. En tus atajos puedes poner {fecha} o {hora}, y lo que va entre [corchetes] queda seleccionado para cambiarlo.",
+                "Type /today, /time or /now and a space: you get today's date or the time. In your shortcuts you can use {date} or {time}, and whatever is in [brackets] gets selected so you can change it.")),
+            Step(Icons.GLOBE, tr("Para todos", "For everyone"), tr(
+                "Elige para qué lo usas y se prende solo lo que te sirve. Puedes escoger tus 2 idiomas (español, inglés, portugués, francés, italiano o alemán), usar el Modo fácil (teclas grandes y alto contraste) y, acostado o en tablet, el teclado se divide en dos.",
+                "Pick what you use it for and only what helps you turns on. Choose your 2 languages (Spanish, English, Portuguese, French, Italian or German), use Easy mode (big keys and high contrast) and, in landscape or on a tablet, the keyboard splits in two.")),
+            Step(Icons.EYE_OFF, tr("Tu privacidad", "Your privacy"), tr(
+                "Todo se queda en tu teléfono. En «Mis datos y privacidad» ves qué guarda y lo borras. Con el Modo incógnito (en ⋯) no aprende ni guarda nada, y se prende solo en las pestañas privadas.",
+                "Everything stays on your phone. In «My data and privacy» you see what it saves and delete it. With Incognito mode (in ⋯) it doesn't learn or save anything, and it turns on by itself in private tabs.")),
             Step(Icons.CLIP, tr("Pegar con un toque", "Paste with one tap"), tr(
                 "Lo que copias, los códigos de verificación y tus capturas salen arriba del teclado: un toque y se pega, o toca la ✕ para quitarlo. En el portapapeles cada cosa dice cuándo la copiaste (Hoy, Ayer, 3 nov).",
                 "What you copy, verification codes and your screenshots show above the keyboard: one tap pastes it, or tap the ✕ to remove it. In the clipboard each item says when you copied it (Today, Yesterday, Nov 3).")),

@@ -23,6 +23,11 @@ class UserData {
     }
 
     val words = HashMap<String, Entry>()
+    /**
+     * 🌍 Cada palabra cuenta cuántas veces la usas en tu idioma 1 (casilla "es") y en tu idioma 2 (casilla "en").
+     * Con español e inglés es igual que siempre; con otros idiomas, el motor dice cuál va en cada casilla.
+     */
+    @Volatile var slotOf: (String?) -> String? = { it }
     /** Cuándo la escribiste por última vez (solo mientras el teclado está abierto; para que lo reciente salga primero). */
     val recent = HashMap<String, Long>()
     val bigrams = HashMap<String, HashMap<String, Int>>()
@@ -75,15 +80,16 @@ class UserData {
     /** ¿Cuántas veces la escribiste en [lang]? ("es" o "en") */
     fun countIn(lower: String, lang: String): Int {
         val e = words[lower] ?: return 0
-        return if (lang == "en") e.en else e.es
+        return if (slotOf(lang) == "en") e.en else e.es
     }
 
     fun add(display: String, amount: Int = 1, lang: String? = null, typo: Boolean = false) {
         val key = display.lowercase()
         if (key in blocked) return
         val e = words[key]
-        val enAdd = if (lang == "en") amount else 0
-        val esAdd = if (lang == "es") amount else 0
+        val sl = slotOf(lang)
+        val enAdd = if (sl == "en") amount else 0
+        val esAdd = if (sl == "es") amount else 0
         if (e == null) {
             words[key] = Entry(display, amount, en = enAdd, es = esAdd, typo = typo, day = today())
         } else {

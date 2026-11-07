@@ -83,7 +83,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private val manualIncognito get() = prefs.getBoolean(Prefs.INCOGNITO, false)
 
     /** Lo que dice la barra espaciadora (con «Incógnito» si está prendido). */
-    private fun langLabel(): String = (if (incognito) L.t("Incógnito · ", "Incognito · ") else "") + (if (lang == "es") "Español" else "English")
+    private fun langLabel(): String = (if (incognito) L.t("Incógnito · ", "Incognito · ") else "") + Langs.name(lang)
 
     // Sugerencias
     private val slotWords = arrayOfNulls<String>(3)
@@ -367,7 +367,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         vp.actions = object : VoicePanel.Actions {
             override fun onMicTap() = if (listening) stopVoice(L.t("Toca el micrófono para hablar", "Tap the mic to speak")) else startVoice()
             override fun onVoiceLangTap() {
-                voiceLang = if (voiceLang == "es") "en" else "es"
+                voiceLang = Langs.other(prefs, voiceLang)
                 vp.setLang(voiceLang)
                 if (listening) { recognizer?.cancel(); startVoice() }
             }
@@ -1026,7 +1026,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (voiceLang == "es") "es-US" else "en-US")
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Langs.voice(voiceLang))
             .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
@@ -1036,9 +1036,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         if (android.os.Build.VERSION.SDK_INT >= 34 && !voiceEnglish && prefs.getBoolean(Prefs.AUTO_LANG, true)) {
             intent.putExtra(RecognizerIntent.EXTRA_ENABLE_LANGUAGE_DETECTION, true)
-                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_DETECTION_ALLOWED_LANGUAGES, arrayListOf("es-US", "en-US"))
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_DETECTION_ALLOWED_LANGUAGES, Langs.pair(prefs).let { arrayListOf(Langs.voice(it.first), Langs.voice(it.second)) })
                 .putExtra(RecognizerIntent.EXTRA_ENABLE_LANGUAGE_SWITCH, RecognizerIntent.LANGUAGE_SWITCH_BALANCED)
-                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_SWITCH_ALLOWED_LANGUAGES, arrayListOf("es-US", "en-US"))
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_SWITCH_ALLOWED_LANGUAGES, Langs.pair(prefs).let { arrayListOf(Langs.voice(it.first), Langs.voice(it.second)) })
         }
         listening = true
         vp.setListening(true)
@@ -1089,7 +1089,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             val t = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
             // ¿En qué idioma hablaste? (teléfonos nuevos): los signos y el «¿» van con ese idioma
             spokenLang = if (android.os.Build.VERSION.SDK_INT >= 34) try {
-                results?.getString(SpeechRecognizer.DETECTED_LANGUAGE)?.let { if (it.startsWith("en")) "en" else if (it.startsWith("es")) "es" else null }
+                results?.getString(SpeechRecognizer.DETECTED_LANGUAGE)?.let { d -> Langs.ALL.firstOrNull { d.startsWith(it.code) }?.code }
             } catch (_: Exception) { null } else null
             if (reportMode) {
                 // Modo reporte: se junta todo lo que dices y al final la IA lo escribe formal
@@ -1897,6 +1897,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         autoCap = prefs.getBoolean(Prefs.AUTOCAP, true)
         doubleSpace = prefs.getBoolean(Prefs.DOUBLE_SPACE, true)
         lang = prefs.getString(Prefs.LANG, "es") ?: "es"
+        // 🌍 Si cambiaste tus idiomas, el teclado empieza en el primero
+        Langs.pair(prefs).let { (a, b) -> if (lang != a && lang != b) { lang = a; prefs.edit().putString(Prefs.LANG, a).apply() } }
         L.set(lang)
         suggestOn = prefs.getBoolean(Prefs.SUGGEST, true)
         autocorrectOn = prefs.getBoolean(Prefs.AUTOCORRECT, true)
@@ -1945,7 +1947,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val rows = when (page) {
-            Page.LETTERS -> Layouts.letters(numberRow, commaMode, english = lang == "en")
+            Page.LETTERS -> Layouts.letters(numberRow, commaMode, english = lang != "es") // la ñ solo en español
             Page.SYM -> Layouts.symbols()
             Page.SYM2 -> Layouts.symbols2()
             Page.NUM -> Layouts.numpad(phone)
@@ -2630,7 +2632,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 rebuild()
                 updateAutoCaps()
             }
-            Codes.LANG -> setLang(if (lang == "es") "en" else "es")
+            Codes.LANG -> setLang(Langs.other(prefs, lang))
         }
     }
 
@@ -3842,7 +3844,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val v = WordStore.engine?.langOf(w) ?: return
         langVotes.addLast(v)
         while (langVotes.size > 4) langVotes.removeFirst()
-        val other = if (lang == "es") "en" else "es"
+        val other = Langs.other(prefs, lang)
         val last2 = langVotes.takeLast(2)
         if (last2.size == 2 && last2.all { it == other }) setLang(other)
     }
