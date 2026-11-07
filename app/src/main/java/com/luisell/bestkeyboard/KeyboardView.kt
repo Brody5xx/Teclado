@@ -985,6 +985,10 @@ class KeyboardView(context: Context) : View(context) {
         layoutKeys()
     }
 
+    /** ✌️ Teclado dividido en dos mitades (acostado o en tablet), con un hueco en el medio. */
+    var splitMode = false
+        set(v) { if (field != v) { field = v; if (width > 0) { layoutKeys(); invalidate() } } }
+
     private fun layoutKeys() {
         val w = width.toFloat() - handW
         val x0 = keysLeft
@@ -993,8 +997,18 @@ class KeyboardView(context: Context) : View(context) {
         for (row in rows) {
             val total = row.fold(0f) { a, k -> a + k.weight }
             var x = x0
+            val split = splitMode && row.size >= 3
+            val gap = if (split) w * 0.2f else 0f
+            var acc = 0f
+            var gapDone = !split
             for ((i, k) in row.withIndex()) {
-                val kw = w * k.weight / total
+                var kw = (w - gap) * k.weight / total
+                if (!gapDone) {
+                    val half = total / 2f
+                    if (acc >= half - 0.001f) { x += gap; gapDone = true }            // empieza la mitad derecha
+                    else if (acc + k.weight > half + 0.001f) { kw += gap; gapDone = true } // la barra espaciadora cruza el medio
+                }
+                acc += k.weight
                 val right = if (i == row.lastIndex) x0 + w else x + kw
                 k.cell.set(x, y, right, y + kh)
                 val unit = kw / k.weight
@@ -1096,7 +1110,10 @@ class KeyboardView(context: Context) : View(context) {
             val c = row[0].cell
             if (y < c.top || y >= c.bottom) continue
             for (k in row) if (x >= k.cell.left && x < k.cell.right) return k
-            return if (x < c.left) row.first() else row.last()
+            if (x < c.left) return row.first()
+            if (x >= row.last().cell.right) return row.last()
+            // En el hueco del teclado dividido: la tecla más cercana
+            return row.minByOrNull { minOf(kotlin.math.abs(x - it.cell.left), kotlin.math.abs(x - it.cell.right)) }
         }
         return null
     }

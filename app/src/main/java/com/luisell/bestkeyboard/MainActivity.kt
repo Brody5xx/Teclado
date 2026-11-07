@@ -937,6 +937,14 @@ class MainActivity : UiActivity() {
         switch(tr("Mostrarla en el teclado y sugerirla", "Show it on the keyboard and suggest it"), Prefs.WORD_WEEK, true)
 
         cardGroup = "type"
+        // ---- ✌️ Dividido
+        card(tr("Teclado dividido", "Split keyboard"), Icons.ONEHAND, keywords = "dividido tablet acostado horizontal pulgares split landscape thumbs")
+        segmented(tr("Dos mitades para escribir con los pulgares", "Two halves to type with your thumbs"), Prefs.SPLIT_KB, "auto", listOf(
+            "auto" to tr("Acostado o tablet", "Landscape or tablet"),
+            "on" to tr("Siempre", "Always"),
+            "off" to tr("Nunca", "Never"),
+        ))
+
         // ---- Una mano
         card(tr("Modo una mano", "One-hand mode"), Icons.ONEHAND)
         segmented(tr("Teclado más angosto", "Narrower keyboard"), Prefs.ONE_HAND, "off", listOf(

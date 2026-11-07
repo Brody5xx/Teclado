@@ -1809,6 +1809,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         v.palette = pal
         applyBackground(v)
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
+        // ✌️ Dividido: «auto» = acostado o en tablet
+        v.splitMode = when (prefs.getString(Prefs.SPLIT_KB, "auto")) {
+            "on" -> true
+            "off" -> false
+            else -> resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || resources.configuration.smallestScreenWidthDp >= 600
+        } && v.oneHand == 0
         v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f } *
             (if (prefs.getBoolean(Prefs.GLOVES, false)) 1.2f else 1f) * (if (easy) 1.3f else 1f)
         v.keyAnim = prefs.getString(Prefs.KEY_ANIM, "pop") ?: "pop"

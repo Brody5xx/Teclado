@@ -53,6 +53,8 @@ object Prefs {
     const val WORK_PACK = "work_pack"
     /** 👓 Modo fácil: teclas grandes, alto contraste y vibración fuerte. */
     const val EASY_MODE = "easy_mode"
+    /** ✌️ Teclado dividido: auto (acostado o tablet) / on / off. */
+    const val SPLIT_KB = "split_kb"
     const val BACKUP_NAG = "backup_nag"
     const val APP_LANGS = "app_langs"
     const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)
