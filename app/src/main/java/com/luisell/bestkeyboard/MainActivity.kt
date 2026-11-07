@@ -905,10 +905,10 @@ class MainActivity : UiActivity() {
         // ---- Copia de seguridad
         card(tr("Copia de seguridad", "Backup"), Icons.CLIP)
         text(tr(
-            "Guarda en un archivo TODO lo tuyo, protegido con una contraseña: ajustes, estilo, palabras aprendidas, Datos, frases, atajos, portapapeles, " +
+            "Guarda en un archivo TODO lo tuyo, protegido con una contraseña: ajustes, estilo, todo lo que el teclado aprendió de ti (palabras, frases, tus arreglos, las sugerencias que borraste), estadísticas, el idioma de cada app, Datos, frases rápidas, atajos, portapapeles, " +
                 "Mi jornada (horas, sitios, tu casa, tu pago), tickets, libreta, materiales, pendientes, checklist y tu fondo. " +
                 "Guárdalo en Google Drive o pásalo a tu teléfono nuevo y toca «Restaurar».",
-            "Save EVERYTHING of yours to one file, protected with a password: settings, style, learned words, Data, phrases, shortcuts, clipboard, " +
+            "Save EVERYTHING of yours to one file, protected with a password: settings, style, everything the keyboard learned from you (words, phrases, your fixes, deleted suggestions), statistics, each app's language, Data, quick phrases, shortcuts, clipboard, " +
                 "My workday (hours, sites, your home, your pay), tickets, notebook, materials, to-dos, checklist and your background. " +
                 "Keep it in Google Drive or move it to your new phone and tap «Restore».",
         ), 13f, faded = true)
@@ -1208,6 +1208,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.32.4" to tr("•  Guía rápida al día (26 pasos): sugerencias que te conocen, acentos y signos solos, aprende de ti, números y medidas, IA gratis para terminar la frase, dictado bilingüe, estadísticas y cómo pasar todo a otro teléfono.\n" +
+            "•  Revisada la copia de seguridad: guarda todo, incluido lo que el teclado aprendió de ti.",
+            "•  Quick guide up to date (26 steps): suggestions that know you, accents and punctuation, it learns from you, numbers and measures, free AI to finish sentences, bilingual dictation, statistics and how to move everything to another phone.\n" +
+            "•  Backup checked: it saves everything, including what the keyboard learned from you."),
         "12.32.3" to tr("•  IA: se regresó a pedir de uno en uno (como Best Notes). Preguntar a dos lugares a la vez hacía que el servicio gratis rechazara todo.\n" +
             "•  «Terminar la frase con IA» continúa lo que escribiste («Hola como» → estás? / te fue hoy?).",
             "•  AI: back to one request at a time (like Best Notes). Asking two places at once made the free service reject everything.\n" +

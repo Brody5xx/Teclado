@@ -44,21 +44,30 @@ class GuideActivity : UiActivity() {
             Step(Icons.GLOBE, tr("Español e inglés solos", "Spanish and English by itself"), tr(
                 "Si escribes 2 palabras seguidas en inglés, el teclado se cambia a inglés solo (y al revés). Verás la luz en la barra espaciadora. En inglés no sale la ñ: déjala presionando la n.",
                 "If you type 2 words in a row in the other language, the keyboard switches by itself. You'll see the light on the space bar. In English there's no ñ: hold the n to get it.")),
-            Step(Icons.SPELL, tr("Sugerencias y corrector", "Suggestions and spell check"), tr(
-                "El teclado aprende tus palabras y te las sugiere en el idioma correcto. Las palabras mal escritas se subrayan en rojo; toca la palabra para ver cómo corregirla.",
-                "The keyboard learns your words and suggests them in the right language. Misspelled words get a red underline; tap the word to see how to fix it.")),
+            Step(Icons.SPELL, tr("Sugerencias que te conocen", "Suggestions that know you"), tr(
+                "Adivina la palabra siguiente antes de que escribas («thank you» → so much) y, si la frase es obvia, te da la frase completa. Si escribes algo mal («actulizo»), te dice «¿quisiste decir…?». Mantén presionada una sugerencia para borrarla para siempre.",
+                "It guesses the next word before you type («thank you» → so much) and, if the sentence is obvious, gives you the whole phrase. If you misspell something, it shows «did you mean…?». Press and hold a suggestion to delete it forever.")),
+            Step(Icons.SPELL, tr("Acentos y signos solos", "Accents and punctuation"), tr(
+                "«tu puedes» → ✨ tú puedes, «ya esta» → ya está, «ya termine» → ya terminé. Después de ¿ pone el acento (¿cómo?). Si es pregunta sale «?», y antes de «pero» te sugiere la coma. En inglés: dont → don't, im → I'm.",
+                "Spanish accents by sentence: «tu puedes» → ✨ tú puedes, «ya esta» → ya está. If it's a question, «?» shows up, and it suggests the comma before «but». In English: dont → don't, im → I'm.")),
+            Step(Icons.SETTINGS, tr("Aprende de ti", "It learns from you"), tr(
+                "Si borras una palabra mal escrita y la escribes bien, la próxima vez se corrige sola. Las teclas se acomodan a dónde sueles tocar, cada app recuerda su idioma y, si quieres, sugiere los nombres de tus contactos bien escritos.",
+                "If you delete a misspelled word and type it right, next time it fixes itself. Keys adapt to where you usually tap, each app remembers its language and, if you want, it suggests your contacts' names spelled right.")),
+            Step(Icons.CALC, tr("Números, horas y medidas", "Numbers, times and measures"), tr(
+                "Escribe 7pm y sale ✨ 7:00 PM. También 730am → 7:30 AM, 120ft → 120 ft, 24v → 24 V, cat6 → Cat 6, poe → PoE.",
+                "Type 7pm and get ✨ 7:00 PM. Also 730am → 7:30 AM, 120ft → 120 ft, 24v → 24 V, cat6 → Cat 6, poe → PoE.")),
             Step(Icons.CLIP, tr("Pegar con un toque", "Paste with one tap"), tr(
-                "Lo que copias, los códigos de verificación y tus capturas salen arriba del teclado. Un toque y se pega. Si no lo quieres, toca la ✕ pequeña y desaparece.",
-                "What you copy, verification codes and your screenshots show above the keyboard. One tap pastes it. If you don't want it, tap the small ✕ and it goes away.")),
+                "Lo que copias, los códigos de verificación y tus capturas salen arriba del teclado: un toque y se pega, o toca la ✕ para quitarlo. En el portapapeles cada cosa dice cuándo la copiaste (Hoy, Ayer, 3 nov).",
+                "What you copy, verification codes and your screenshots show above the keyboard: one tap pastes it, or tap the ✕ to remove it. In the clipboard each item says when you copied it (Today, Yesterday, Nov 3).")),
             Step(Icons.UNDO, tr("Deshacer", "Undo"), tr(
                 "Al lado del 0 está la tecla de deshacer. Si borras algo sin querer, se ilumina: tócala y vuelve lo que borraste.",
                 "Next to the 0 is the undo key. If you delete something by mistake, it lights up: tap it and what you deleted comes back.")),
             Step(Icons.EMOJI, tr("Emojis, GIFs y stickers", "Emojis, GIFs and stickers"), tr(
                 "Toca el botón de emojis (o mantén la coma): arriba puedes buscar emojis y el botón GIF abre los GIFs y stickers. Mientras escribes también te sugiere emojis.",
                 "Tap the emoji button (or hold the comma): at the top you can search emojis and the GIF button opens GIFs and stickers. It also suggests emojis while you type.")),
-            Step(Icons.REPLY, tr("Respuestas con IA", "AI replies"), tr(
-                "Copia el mensaje que te llegó y toca «Respuestas con IA»: te da varias respuestas listas para enviar. Funciona gratis, sin clave.",
-                "Copy the message you got and tap «AI replies»: it gives you several replies ready to send. It's free, no key needed.")),
+            Step(Icons.REPLY, tr("IA gratis: respuestas y terminar la frase", "Free AI: replies and finish sentence"), tr(
+                "«Respuestas con IA»: copia el mensaje que te llegó y te da varias respuestas. «Terminar la frase con IA»: escribe el principio y te da 3 formas de terminarlo. Es la misma IA gratis de Best Notes, sin clave.",
+                "«AI replies»: copy the message you got and it gives you several replies. «Finish sentence with AI»: type the start and get 3 ways to finish it. Same free AI as Best Notes, no key needed.")),
             Step(Icons.FORMAL, tr("Escribir más formal", "Write more formally"), tr(
                 "Las sugerencias con estrellita cambian palabras sencillas por formales (arreglé → reparé). «Revisar antes de enviar» revisa todo el mensaje y «Corregir gramática» lo arregla.",
                 "Suggestions with a little star swap simple words for formal ones (fixed → repaired). «Review before sending» checks the whole message and «Fix grammar» fixes it.")),
@@ -69,8 +78,8 @@ class GuideActivity : UiActivity() {
                 "En la Libreta apuntas cosas durante el día y al final tocas «Crear ticket del día». Mis tickets guarda cada ticket con su número.",
                 "In the Notebook you jot things down during the day and at the end tap «Create the day's ticket». My tickets saves each ticket with its number.")),
             Step(Icons.CLOCK, tr("Mi jornada", "My workday"), tr(
-                "Comencé (en la camioneta), Llegué al sitio, Salí del sitio y Casa. Calcula tus horas, las pone en el ticket y te avisa cuando llevas 8 horas en el sitio de trabajo (sin contar el manejo). Al terminar el día y al llegar a 40 horas, ¡celebra contigo!",
-                "Started (in the truck), Arrived on site, Left the site and Home. It adds up your hours, puts them in the ticket and tells you when you reach 8 hours on site (not counting driving). At the end of the day and at 40 hours, it celebrates with you!")),
+                "Comencé (en la camioneta), Llegué al sitio, Salí del sitio y Casa. Calcula tus horas, te avisa a las 8 horas en el sitio y celebra contigo. Con «Resumen de la semana» → «Mandar» envías tus horas por WhatsApp o correo.",
+                "Started (in the truck), Arrived on site, Left the site and Home. It adds up your hours, tells you at 8 hours on site and celebrates with you. With «Week summary» → «Send» you send your hours by WhatsApp or email.")),
             Step(Icons.MAP_PIN, tr("Mis sitios", "My sites"), tr(
                 "Guarda los lugares donde trabajas y el teclado marca Llegué y Salí solo. A cada sitio le ajustas la distancia en el mapa y la sensibilidad. Con «Recordar al llegar» te avisa algo cuando llegues a un sitio.",
                 "Save the places where you work and the keyboard marks Arrived and Left by itself. For each site you set the distance on the map and the sensitivity. With «Remind on arrival» it tells you something when you get to a site.")),
@@ -83,9 +92,9 @@ class GuideActivity : UiActivity() {
             Step(Icons.BARCODE, tr("Escanear", "Scan"), tr(
                 "Con una sola foto, el escáner lee el texto y también los códigos de barras y QR: números de serie y MAC sin escribirlos.",
                 "With one photo, the scanner reads the text and also barcodes and QR codes: serial numbers and MACs without typing.")),
-            Step(Icons.TRANSLATE, tr("Traducir y buscar", "Translate and search"), tr(
-                "Escribe en español y sale en inglés, traduce un mensaje que te llegó, o dicta en español y que salga en inglés. Con «Buscar en Google» escribes y buscas sin salir del teclado.",
-                "Type in Spanish and get English, translate a message you got, or speak Spanish and get English. With «Search Google» you type and search without leaving the keyboard.")),
+            Step(Icons.TRANSLATE, tr("Traducir, dictar y buscar", "Translate, dictate and search"), tr(
+                "Traduce lo que escribes o lo que te llegó. Al dictar con el micrófono pone los signos solo (¿Cómo estás?) y, en teléfonos nuevos, entiende si hablas español o inglés en cada frase. «Buscar en Google» busca sin salir del teclado.",
+                "Translate what you type or what you got. When dictating it adds punctuation by itself and, on newer phones, understands whether you speak Spanish or English in each sentence. «Search Google» searches without leaving the keyboard.")),
             Step(Icons.LOCK, tr("Datos (tus contraseñas)", "Data (your passwords)"), tr(
                 "Como el administrador de Google: cada cuenta guarda usuario, correo, contraseña, preguntas, clave y PIN. En el teclado toca el candado, pon tu huella y elige lo que quieras pegar. Todo cifrado y solo en tu teléfono.",
                 "Like Google's password manager: each account keeps user, email, password, questions, key and PIN. On the keyboard tap the lock, use your fingerprint and pick what to paste. All encrypted and only on your phone.")),
@@ -98,9 +107,12 @@ class GuideActivity : UiActivity() {
             Step(Icons.FLOAT, tr("Flotante y una mano", "Floating and one hand"), tr(
                 "El teclado puede ser una ventanita que mueves por la pantalla, o hacerse angosto para usarlo con una mano.",
                 "The keyboard can be a small window you move around, or get narrower to use with one hand.")),
+            Step(Icons.STOPWATCH, tr("Estadísticas", "Statistics"), tr(
+                "En Ajustes › Escribir ves cuántas palabras te adivinó esta semana, cuántas letras te ahorraste y cuántos errores corrigió solo.",
+                "In Settings › Typing you see how many words it guessed this week, how many letters you saved and how many mistakes it fixed.")),
             Step(Icons.SEARCH, tr("¡Listo!", "All set!"), tr(
-                "En Ajustes toca «Secciones ›» o la rayita de luz del borde derecho y se abre el panel con todas las secciones. Con el buscador encuentras cualquier opción. Haz una copia de seguridad en «Copia» para no perder nada.",
-                "In Settings tap «Sections ›» or the light strip on the right edge and the panel opens with every section. With the search box you find any option. Make a backup in «Backup» so you never lose anything.")),
+                "En Ajustes toca «Secciones ›» o la rayita de luz del borde derecho para ver todas las secciones, o usa el buscador. Si cambias de teléfono, haz una copia en «Copia»: se lleva todo, hasta lo que el teclado aprendió de ti.",
+                "In Settings tap «Sections ›» or the light strip on the right edge to see every section, or use the search. If you change phones, make a backup in «Backup»: it takes everything, even what the keyboard learned from you.")),
         )
 
         val screen = FrameLayout(this)
