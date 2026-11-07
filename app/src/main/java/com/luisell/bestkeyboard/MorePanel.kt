@@ -110,6 +110,11 @@ object Tools {
     }
 
     /** (barra de arriba, más opciones), en el orden que elegiste. */
+    /** Las herramientas del «paquete de trabajo» (técnicos de campo). */
+    val WORK = setOf(KeyboardView.TOOL_TICKET, KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS, KeyboardView.TOOL_WORKDAY,
+        KeyboardView.TOOL_WEEK, KeyboardView.TOOL_CHECK, KeyboardView.TOOL_GLOVES, KeyboardView.TOOL_IPPAD, KeyboardView.TOOL_LABELS,
+        KeyboardView.TOOL_REMIND)
+
     fun load(ctx: Context, prefs: SharedPreferences): Pair<List<Int>, List<Int>> {
         val max = maxBar(ctx)
         val saved = prefs.getString(Prefs.BAR_TOOLS2, null)
@@ -128,6 +133,8 @@ object Tools {
         more.removeAll { it in bar }
         if (FIXED !in bar) { more.remove(FIXED); bar.add(FIXED) }
         for (t in ALL) if (t.tool !in bar && t.tool !in more) more.add(t.tool)
+        // 🧰 Sin el paquete de trabajo no salen las herramientas del trabajo de campo
+        if (!prefs.getBoolean(Prefs.WORK_PACK, true)) { bar.removeAll { it in WORK }; more.removeAll { it in WORK } }
         trim(bar, more, max)
         return bar to more
     }

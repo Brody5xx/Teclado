@@ -56,7 +56,11 @@ class ShortcutsActivity : UiActivity() {
         root.addView(head)
         text(tr("Escribe el atajo (por ejemplo /voy) y toca la barra espaciadora: se cambia solo por tu frase completa.",
             "Type the shortcut (for example /omw) and tap the space bar: it turns into your full phrase."), 13f, faded = true)
-        button(tr("➕ Atajo nuevo", "➕ New shortcut"), primary = true) { edit(null) }
+        text(tr("Ya vienen: /hoy (la fecha de hoy), /hora (la hora de ahora) y /ahora (las dos).\n" +
+            "En tus frases puedes poner {fecha}, {hora} o {dia} y se cambian solos. Lo que pongas entre corchetes queda seleccionado para cambiarlo: «Llego en [10] minutos».",
+            "Built in: /today (today's date), /time (the time now) and /now (both).\n" +
+            "In your phrases you can put {date}, {time} or {day} and they fill in by themselves. Whatever you put in brackets gets selected so you can change it: «I'll be there in [10] minutes»."), 12f, faded = true)
+        button(tr("+ Atajo nuevo", "+ New shortcut"), primary = true) { edit(null) }
         card(tr("Tus atajos", "Your shortcuts"), Icons.BUBBLE)
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         col.addView(list, LinearLayout.LayoutParams(-1, -2))

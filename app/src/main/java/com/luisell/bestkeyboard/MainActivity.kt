@@ -95,11 +95,43 @@ class MainActivity : UiActivity() {
             prefs.edit().putBoolean("asked_notif", true).apply()
             requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
         }
-        // La primera vez, la guía rápida
+        // La primera vez: ¿para qué lo usas? (y después la guía rápida)
+        if (!prefs.contains(Prefs.PROFILE)) {
+            // Quien ya lo usaba se queda con todo (como estaba)
+            if (prefs.getBoolean(Prefs.GUIDE_SEEN, false)) prefs.edit().putString(Prefs.PROFILE, "tech").putBoolean(Prefs.WORK_PACK, true).apply()
+            else if (savedInstanceState == null) { askProfile(first = true); return }
+        }
         if (savedInstanceState == null && !prefs.getBoolean(Prefs.GUIDE_SEEN, false)) {
             prefs.edit().putBoolean(Prefs.GUIDE_SEEN, true).apply()
             startActivity(Intent(this, GuideActivity::class.java))
         }
+    }
+
+    /** 👋 ¿Para qué usas el teclado? Así se prende solo lo que te sirve. */
+    private val profiles get() = listOf(
+        Triple("chat", tr("Chatear y redes sociales", "Chatting and social media"), tr("Mensajes rápidos, emojis, GIFs y fotos.", "Quick messages, emojis, GIFs and photos.")),
+        Triple("student", tr("Estudiar", "Studying"), tr("Escribir bien, traducir, corregir y calculadora.", "Writing well, translating, fixing and a calculator.")),
+        Triple("office", tr("Oficina", "Office"), tr("Correos formales, IA para escribir y atajos.", "Formal emails, AI writing and shortcuts.")),
+        Triple("tech", tr("Técnico o trabajo de campo", "Technician or field work"), tr("Todo lo anterior y además: tickets, horas de trabajo, sitios y herramientas.", "All of the above plus: tickets, work hours, sites and tools.")),
+    )
+
+    private fun askProfile(first: Boolean) {
+        val list = profiles
+        val labels = list.map { it.second + "\n" + it.third }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(tr("¿Para qué vas a usar el teclado?", "What will you use the keyboard for?"))
+            .setItems(labels) { _, which ->
+                val id = list[which].first
+                prefs.edit().putString(Prefs.PROFILE, id).putBoolean(Prefs.WORK_PACK, id == "tech")
+                    .putBoolean(Prefs.FORMAL_SUGGEST, id == "office" || id == "tech").apply()
+                if (first && !prefs.getBoolean(Prefs.GUIDE_SEEN, false)) {
+                    prefs.edit().putBoolean(Prefs.GUIDE_SEEN, true).apply()
+                    startActivity(Intent(this, GuideActivity::class.java))
+                }
+                recreate()
+            }
+            .setCancelable(!first)
+            .show()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -612,6 +644,16 @@ class MainActivity : UiActivity() {
         segmented(tr("Idioma de esta pantalla", "Language of this screen"), Prefs.APP_LANG, "auto",
             listOf("auto" to tr("Del teléfono", "Phone's"), "es" to "Español", "en" to "English")) { recreate() }
 
+        // ---- ¿Para qué lo usas?
+        card(tr("Para qué lo usas", "What you use it for"), Icons.BRIEFCASE, keywords = "perfil trabajo paquete tickets profile work pack")
+        val cur = profiles.firstOrNull { it.first == (prefs.getString(Prefs.PROFILE, "tech") ?: "tech") } ?: profiles.last()
+        text(cur.second, 16f, bold = true)
+        text(cur.third, 13f, faded = true)
+        button(tr("Cambiar", "Change")) { askProfile(first = false) }
+        switch(tr("Herramientas del trabajo de campo", "Field work tools"), Prefs.WORK_PACK, true,
+            tr("Tickets, Libreta, Mi jornada, Mis sitios, checklist, modo guantes, teclado IP/MAC y etiquetas. Apágalo si no las usas y el teclado se ve más simple.",
+                "Tickets, Notebook, My workday, My sites, checklist, glove mode, IP/MAC pad and labels. Turn it off if you don't use them and the keyboard looks simpler."))
+
         // ---- Configuración inicial (tarjeta con borde de color)
         card(tr("Configuración inicial", "Setup"), Icons.SETTINGS, glow = true)
         status = text("", 15f)
@@ -807,6 +849,7 @@ class MainActivity : UiActivity() {
             "⚡ Text shortcuts: type /omw + space and it becomes «On my way, I'll be there in a few minutes.». Create your own."), 13f, faded = true)
         button(tr("⚡ Atajos de texto", "⚡ Text shortcuts")) { startActivity(Intent(this, ShortcutsActivity::class.java)) }
 
+        cardGroup = "work"
         // ---- Tickets del trabajo
         card(tr("Tickets del trabajo", "Work tickets"), Icons.TICKETS)
         switch(tr("Usar el formato de mis tickets del trabajo", "Use my work ticket format"), Prefs.TICKET_FORMAT, true,
@@ -1062,11 +1105,12 @@ class MainActivity : UiActivity() {
     // ---------------------------------------------------------------- Panel Edge (como el de Samsung)
 
     private class Sec(val id: String, val es: String, val en: String, val icon: Int)
-    private val secs = listOf(
+    private val secs get() = allSecs.filter { it.id != "work" || prefs.getBoolean(Prefs.WORK_PACK, true) }
+    private val allSecs = listOf(
         Sec("start", "Inicio", "Start", Icons.SETTINGS),
         Sec("type", "Escribir", "Typing", Icons.SPELL),
-        Sec("ai", "IA y trabajo", "AI and work", Icons.HACKER),
-        Sec("work", "Mi jornada", "My workday", Icons.TRUCK),
+        Sec("ai", "IA para escribir", "AI writing", Icons.HACKER),
+        Sec("work", "Trabajo", "Work", Icons.TRUCK),
         Sec("data", "Datos y copiado", "Data and copy", Icons.LOCK),
         Sec("media", "Voz y GIFs", "Voice and GIFs", Icons.MIC),
         Sec("word", "Palabra", "Word", Icons.BOOK),

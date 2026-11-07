@@ -497,6 +497,7 @@ abstract class UiActivity : Activity() {
             val body = root.getChildAt(i + 1)
             val kw = cardKeywords[head] ?: ""
             val grp = cardGroups[head]
+            if (grp == "work" && !prefs.getBoolean(Prefs.WORK_PACK, true)) { head.visibility = View.GONE; body.visibility = View.GONE; i += 2; continue }
             val ok = if (words.isEmpty()) (grp == null || activeGroup == null || grp == activeGroup) else if (kw == "-") false else {
                 val sb = StringBuilder(kw)
                 allText(head, sb)

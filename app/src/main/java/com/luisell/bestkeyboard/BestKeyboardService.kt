@@ -2127,6 +2127,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val formalOn = prefs.getBoolean(Prefs.FORMAL_SUGGEST, true)
         val m = accentMatch(before)
             ?: (WordStore.engine?.let { e -> SmartFormat.match(before, sugLang(e, before, 0) == "es") })
+            ?: InlineCalc.calc(before)
+            ?: InlineCalc.units(before)
+            ?: (if (!isPassword) InlineCalc.money(this, before) else null)
             ?: SmartFormat.commaMatch(before)
             ?: (if (formalOn) FormalWords.match(before) else null)
             ?: (if (formalOn && prefs.getBoolean(Prefs.WORD_WEEK, true)) WeeklyWord.match(before) else null)
@@ -2547,12 +2550,21 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 val before = if (doubleSpace && !isPassword && lastWasSpace && !codeOn) ic.getTextBeforeCursor(2, 0) else null
                 val sc = if (!isPassword && !codeOn) Shortcuts.match(prefs, ic.getTextBeforeCursor(40, 0)) else null
                 if (sc != null) {
-                    // ⚡ Atajo: "/ok" + espacio → la frase completa
+                    // ⚡ Atajo: "/ok" + espacio → la frase completa (con la fecha/hora y lo que hay que llenar seleccionado)
+                    val (txt, sel) = Shortcuts.render(sc.second, lang == "en")
                     ic.beginBatchEdit()
                     ic.deleteSurroundingText(sc.first.length, 0)
-                    ic.commitText(sc.second + " ", 1)
+                    ic.commitText(txt + " ", 1)
+                    if (sel != null) {
+                        val ex = try { ic.getExtractedText(ExtractedTextRequest(), 0) } catch (_: Exception) { null }
+                        if (ex != null) {
+                            val end = ex.startOffset + ex.selectionEnd
+                            val start = end - (txt.length + 1)
+                            if (start >= 0) ic.setSelection(start + sel.first, start + sel.last + 1)
+                        }
+                    }
                     ic.endBatchEdit()
-                    lastWasSpace = true
+                    lastWasSpace = sel == null
                 } else if (before != null && before.length == 2 && before[1] == ' ' && before[0].isLetterOrDigit()) {
                     // Doble espacio = punto y espacio
                     ic.deleteSurroundingText(1, 0)

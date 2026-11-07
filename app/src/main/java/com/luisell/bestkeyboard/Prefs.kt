@@ -48,6 +48,9 @@ object Prefs {
     const val BACKUP_LAST = "backup_last"
     /** 🕶 Modo incógnito prendido a mano. */
     const val INCOGNITO = "incognito"
+    /** Para qué usa el teclado (chat, student, office, tech) y si salen las herramientas del trabajo. */
+    const val PROFILE = "profile"
+    const val WORK_PACK = "work_pack"
     const val BACKUP_NAG = "backup_nag"
     const val APP_LANGS = "app_langs"
     const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)

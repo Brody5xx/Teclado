@@ -46,7 +46,44 @@ object Shortcuts {
 
     fun remove(p: SharedPreferences, code: String) = save(p, all(p).filter { it.code != code })
 
-    fun find(p: SharedPreferences, code: String): String? = all(p).firstOrNull { it.code == code.lowercase() }?.text
+    fun find(p: SharedPreferences, code: String): String? =
+        all(p).firstOrNull { it.code == code.lowercase() }?.text ?: BUILT_IN[code.lowercase()]
+
+    /** 📅 Los que siempre están: la fecha y la hora de ahora. */
+    private val BUILT_IN = mapOf(
+        "/hoy" to "{fecha}", "/fecha" to "{fecha}", "/hora" to "{hora}", "/ahora" to "{fecha}, {hora}",
+        "/today" to "{fecha}", "/date" to "{fecha}", "/time" to "{hora}", "/now" to "{fecha}, {hora}",
+    )
+
+    /**
+     * Pone la fecha, la hora y el día ({fecha}, {hora}, {dia}) y quita los corchetes de lo que hay que llenar:
+     * «Llego en [10] minutos» → «Llego en 10 minutos», con el «10» seleccionado para cambiarlo.
+     * Devuelve (el texto, dónde empieza y termina lo que queda seleccionado o null).
+     */
+    fun render(text: String, english: Boolean): Pair<String, IntRange?> {
+        val loc = if (english) java.util.Locale.US else java.util.Locale("es")
+        val now = java.util.Date()
+        val fecha = java.text.DateFormat.getDateInstance(java.text.DateFormat.LONG, loc).format(now)
+        val hora = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT, loc).format(now)
+        val dia = java.text.SimpleDateFormat("EEEE", loc).format(now)
+        var t = text
+        for ((k, v) in listOf("{fecha}" to fecha, "{date}" to fecha, "{hora}" to hora, "{time}" to hora, "{dia}" to dia, "{día}" to dia, "{day}" to dia))
+            t = t.replace(k, v, ignoreCase = true)
+        var sel: IntRange? = null
+        val sb = StringBuilder()
+        var i = 0
+        while (i < t.length) {
+            val c = t[i]
+            val close = if (c == '[') t.indexOf(']', i + 1) else -1
+            if (close > i) {
+                val inner = t.substring(i + 1, close)
+                if (sel == null) sel = sb.length until sb.length + inner.length
+                sb.append(inner)
+                i = close + 1
+            } else { sb.append(c); i++ }
+        }
+        return sb.toString() to sel
+    }
 
     private val TAIL = Regex("(?:^|\\s)(/[\\p{L}\\p{N}_]+)$")
 
