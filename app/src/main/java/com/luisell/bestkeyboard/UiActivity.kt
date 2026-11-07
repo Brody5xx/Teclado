@@ -182,7 +182,7 @@ abstract class UiActivity : Activity() {
             val x1 = x0 + full * e
             pnt.strokeWidth = 3f * dd
             pnt.shader = android.graphics.LinearGradient(x0, 0f, x0 + full, 0f,
-                intArrayOf(0xFF22D3EE.toInt(), 0xFF8B5CF6.toInt(), 0x008B5CF6), floatArrayOf(0f, 0.7f, 1f), android.graphics.Shader.TileMode.CLAMP)
+                intArrayOf(0xFF22D3EE.toInt(), 0xFF8B5CF6.toInt(), 0xFFF0ABFC.toInt()), null, android.graphics.Shader.TileMode.CLAMP)
             c.drawLine(x0, y, x1, y, pnt)
             pnt.shader = null
             if (p < 1f) {
@@ -191,14 +191,16 @@ abstract class UiActivity : Activity() {
                 c.drawCircle(x1, y, 4f * dd, glow)
             } else {
                 // Un brillo blanco que la recorre cada 2.4 s
-                val k = ((t - 650f) % 2400f) / 1100f
+                // El brillo entra por la izquierda y sale completo por la derecha
+                val k = ((t - 650f) % 2400f) / 1300f
                 if (k < 1f) {
-                    val gx = x0 + full * 0.85f * k
-                    val w = 18f * dd
+                    val w = 22f * dd
+                    val gx = (x0 - w) + (full + 2f * w) * k
                     pnt.strokeWidth = 3f * dd
                     pnt.shader = android.graphics.LinearGradient(gx - w, 0f, gx + w, 0f,
-                        intArrayOf(0x00FFFFFF, 0xDDFFFFFF.toInt(), 0x00FFFFFF), null, android.graphics.Shader.TileMode.CLAMP)
-                    c.drawLine(maxOf(x0, gx - w), y, minOf(x0 + full * 0.85f, gx + w), y, pnt)
+                        intArrayOf(0x00FFFFFF, 0xEEFFFFFF.toInt(), 0x00FFFFFF), null, android.graphics.Shader.TileMode.CLAMP)
+                    val a = maxOf(x0, gx - w); val b = minOf(x0 + full, gx + w)
+                    if (b > a) c.drawLine(a, y, b, y, pnt)
                     pnt.shader = null
                 }
             }

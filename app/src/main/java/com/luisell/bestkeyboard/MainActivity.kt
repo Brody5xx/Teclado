@@ -1362,6 +1362,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.2.1" to tr("•  La rayita de luz debajo del título de las ventanas ahora tiene color hasta la punta y el brillo la recorre completa, de un extremo al otro.",
+            "•  The light line under the windows' title now has color all the way to the tip and the shine runs across all of it, end to end."),
         "13.2.0" to tr("•  La app ahora está en 7 idiomas: español, inglés, portugués, francés, italiano, alemán y chino. Ve a Inicio › Idioma › «Idioma de esta pantalla» y elige el tuyo.\n" +
             "•  La primera vez que eliges portugués, francés, italiano, alemán o chino, el teléfono traduce toda la app (necesita internet una vez; tarda menos de un minuto). Después funciona al instante y sin internet.\n" +
             "•  Los ajustes, la guía, Mis datos, los paneles del teclado y los mensajes salen en el idioma que elijas.",
