@@ -23,6 +23,8 @@ class TranslateBar(context: Context) : LinearLayout(context) {
     interface Actions {
         fun onTranslateClose()
         fun onTranslateSwap()
+        /** Tocaste el nombre de un idioma: pasa al siguiente (Inglés → Chino → …). */
+        fun onTranslatePick(source: Boolean)
         fun onTranslateSource(text: String)
         fun onTranslateCursor()
     }
@@ -59,8 +61,9 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         for (t in listOf(from, to)) {
             t.textSize = 15f
             t.gravity = Gravity.CENTER
-            t.setOnClickListener { actions?.onTranslateSwap() }
         }
+        from.setOnClickListener { actions?.onTranslatePick(true) }
+        to.setOnClickListener { actions?.onTranslatePick(false) }
         swap.setOnClickListener { actions?.onTranslateSwap() }
         row.addView(from, LayoutParams(0, d(36f), 1f).apply { leftMargin = d(8f) })
         row.addView(swap, LayoutParams(d(48f), d(36f)))
@@ -95,8 +98,8 @@ class TranslateBar(context: Context) : LinearLayout(context) {
     }
 
     fun setLangs(src: String, dst: String) {
-        from.text = if (src == "es") L.t("Español", "Spanish") else L.t("Inglés", "English")
-        to.text = if (dst == "es") L.t("Español", "Spanish") else L.t("Inglés", "English")
+        from.text = Translation.name(src)
+        to.text = Translation.name(dst)
         lastSrc = src
         lastDst = dst
     }

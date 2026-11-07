@@ -637,12 +637,13 @@ class MainActivity : UiActivity() {
 
         cardGroup = "start"
         // ---- Idioma de la app
-        card(tr("Idioma", "Language"), Icons.GLOBE)
+        card(tr("Idioma", "Language"), Icons.GLOBE, keywords = "idiomas teclado portugues frances italiano aleman chino traductor languages keyboard portuguese french italian german chinese translator")
         segmented(tr("Idioma de esta pantalla", "Language of this screen"), Prefs.APP_LANG, "auto",
             listOf("auto" to tr("Del teléfono", "Phone's"), "es" to "Español", "en" to "English")) { recreate() }
 
-        // ---- 🌍 Idiomas del teclado
-        card(tr("Idiomas del teclado", "Keyboard languages"), Icons.GLOBE, keywords = "idiomas portugues frances italiano aleman languages portuguese french italian german")
+        // ---- 🌍 Idiomas del teclado (en la misma tarjeta del idioma)
+        divider()
+        text(tr("Idiomas del teclado", "Keyboard languages"), 16f, bold = true)
         text(tr("Elige tus 2 idiomas. El teclado cambia solo entre ellos mientras escribes, con su diccionario y sus sugerencias.",
             "Pick your 2 languages. The keyboard switches between them by itself while you type, with their dictionary and suggestions."), 13f, faded = true)
         val (kl1, kl2) = Langs.pair(prefs)
@@ -665,6 +666,8 @@ class MainActivity : UiActivity() {
         button(tr("Idioma 2: ", "Language 2: ") + Langs.name(kl2)) { pickLang(Prefs.KB_LANG2, kl2) }
         text(tr("Todos usan el teclado QWERTY. Las letras con acento (é, ü, ç, ã, ß…) salen manteniendo la letra.",
             "All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter."), 12f, faded = true)
+        text(tr("El traductor también tiene chino: copia un mensaje en chino y toca «Traducir mensaje», o en la barra de traducir toca el nombre del idioma para cambiarlo (Inglés → Chino → …).",
+            "The translator also has Chinese: copy a message in Chinese and tap «Translate message», or in the translate bar tap the language name to change it (English → Chinese → …)."), 12f, faded = true)
 
         // ---- ¿Para qué lo usas?
         card(tr("Para qué lo usas", "What you use it for"), Icons.BRIEFCASE, keywords = "perfil trabajo paquete tickets profile work pack")
@@ -1325,6 +1328,16 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.1.0" to tr("•  Chino en el traductor: copia un mensaje en chino, toca «Traducir mensaje» y te sale en español. En la barra de traducir, toca el nombre de un idioma para cambiarlo (Español, Inglés, Chino, Portugués, Francés, Italiano o Alemán).\n" +
+            "•  «Idiomas del teclado» ahora está en la misma tarjeta de «Idioma», junto al idioma de la pantalla.\n" +
+            "•  La rayita de luz debajo del título de las ventanas se traza con una estrellita y después un brillo la recorre.\n" +
+            "•  Todas las ventanas para elegir (guardar en Mis datos, opciones de un sitio) tienen el estilo nuevo.\n" +
+            "•  La línea del ojito de incógnito ya no tiene el borde negro: es una línea de luz limpia.",
+            "•  Chinese in the translator: copy a message in Chinese, tap «Translate message» and you get it in your language. In the translate bar, tap a language name to change it (Spanish, English, Chinese, Portuguese, French, Italian or German).\n" +
+            "•  «Keyboard languages» is now in the same «Language» card, next to the screen language.\n" +
+            "•  The light line under the windows' title draws in with a little star, then a shine runs along it.\n" +
+            "•  All the pick-one windows (save in My data, site options) have the new style.\n" +
+            "•  The incognito eye's line no longer has the black outline: it's a clean line of light."),
         "13.0.2" to tr("•  La ventana «¿Para qué vas a usar el teclado?» ahora es bonita: tarjeta oscura con cada opción como un botón grande y la elegida marcada con los colores del diamante.\n" +
             "•  La ventana para elegir el idioma tiene el mismo estilo.\n" +
             "•  «Idiomas del teclado» (español, inglés, portugués, francés, italiano y alemán) ahora está en Inicio, justo debajo del idioma de la pantalla, para encontrarlo fácil.",

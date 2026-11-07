@@ -188,11 +188,11 @@ class DataActivity : UiActivity() {
         intent.getStringExtra(EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let { txt ->
             val isPass = intent.getBooleanExtra(EXTRA_PASSWORD, false)
             if (isPass) { openAccount(-1L, edit = true, prefill = txt.trim(), prefillPass = true); return@let }
-            AlertDialog.Builder(this)
-                .setTitle(tr("¿Dónde lo guardo?", "Where should I save it?"))
-                .setItems(arrayOf(tr("En una cuenta nueva (página o app)", "In a new account (website or app)"), tr("Como texto o correo suelto", "As a loose text or email"))) { _, w ->
+            choiceDialog(tr("¿Dónde lo guardo?", "Where should I save it?"),
+                listOf(tr("En una cuenta nueva", "In a new account") to tr("Una página o app con usuario y contraseña.", "A website or app with user and password."),
+                    tr("Como texto o correo suelto", "As a loose text or email") to null)) { w ->
                     if (w == 0) openAccount(-1L, edit = true, prefill = txt.trim()) else editDialog(null, txt.trim(), false)
-                }.setNegativeButton(tr("Cancelar", "Cancel"), null).show()
+                }
         }
     }
 

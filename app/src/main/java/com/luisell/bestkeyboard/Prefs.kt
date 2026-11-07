@@ -65,6 +65,7 @@ object Prefs {
     const val CLIP_HISTORY = "clip_history"
     const val CLIP_LAST_SIG = "clip_last_sig"
     const val TR_SRC = "translate_from"
+    const val TR_DST = "translate_to"
     const val SWIPE = "swipe"
     const val SPELL = "spell_check"
     const val SHOTS = "suggest_screenshots"

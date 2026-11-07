@@ -318,8 +318,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         try {
             contentResolver.registerContentObserver(android.net.Uri.parse("content://sms"), true, smsObserver)
         } catch (_: Exception) { }
-        tSrc = prefs.getString(Prefs.TR_SRC, "es") ?: "es"
-        tDst = if (tSrc == "es") "en" else "es"
+        tSrc = (prefs.getString(Prefs.TR_SRC, "es") ?: "es").takeIf { it in Translation.CODES } ?: "es"
+        tDst = (prefs.getString(Prefs.TR_DST, null) ?: if (tSrc == "es") "en" else "es").takeIf { it in Translation.CODES && it != tSrc }
+            ?: if (tSrc == "es") "en" else "es"
     }
 
     override fun onCreateInputView(): View {
@@ -602,6 +603,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         tb.actions = object : TranslateBar.Actions {
             override fun onTranslateClose() { onKeyFeedback(); stopTranslate() }
             override fun onTranslateSwap() { onKeyFeedback(); swapTranslate() }
+            override fun onTranslatePick(source: Boolean) {
+                onKeyFeedback()
+                if (source) tSrc = Translation.next(tSrc, tDst) else tDst = Translation.next(tDst, tSrc)
+                prefs.edit().putString(Prefs.TR_SRC, tSrc).putString(Prefs.TR_DST, tDst).apply()
+                tBar?.setLangs(tSrc, tDst)
+                lastTranslatedSrc = ""
+                prepareTranslator()
+            }
             override fun onTranslateCursor() {
                 onKeyFeedback()
                 lastCorrection = null
@@ -1440,7 +1449,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val a = tSrc
         tSrc = tDst
         tDst = a
-        prefs.edit().putString(Prefs.TR_SRC, tSrc).apply()
+        prefs.edit().putString(Prefs.TR_SRC, tSrc).putString(Prefs.TR_DST, tDst).apply()
         tBar?.setLangs(tSrc, tDst)
         lastTranslatedSrc = ""
         prepareTranslator()
@@ -3427,9 +3436,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 listOf(L.t("Entendido", "Got it") to { closeInfo() }))
             return
         }
-        val src = if (looksEnglish(text)) "en" else "es"
-        val dst = if (src == "es") "en" else "es"
-        val heading = if (src == "en") L.t("Inglés → Español", "English → Spanish") else L.t("Español → Inglés", "Spanish → English")
+        // Chino → tu idioma (el de las pantallas); si no, inglés ⇄ español como siempre
+        val zh = Translation.isChinese(text)
+        val src = if (zh) "zh" else if (looksEnglish(text)) "en" else "es"
+        val dst = if (zh) Langs.pair(prefs).first else if (src == "es") "en" else "es"
+        val heading = Translation.name(src) + " → " + Translation.name(dst)
         bar.show(heading, L.t("Traduciendo…", "Translating…"), emptyList())
         readTrans?.close()
         val t = Translation(src, dst)

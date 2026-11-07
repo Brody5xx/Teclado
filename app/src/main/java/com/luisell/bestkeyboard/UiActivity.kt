@@ -105,9 +105,7 @@ abstract class UiActivity : Activity() {
             setPadding(dp(4), 0, dp(4), dp(4))
         })
         // La rayita de luz debajo del título
-        box.addView(View(this).apply {
-            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET, 0x008B7CFF)).apply { cornerRadius = dpf(2f) }
-        }, LinearLayout.LayoutParams(dp(90), dp(3)).apply { topMargin = dp(8); bottomMargin = dp(12); leftMargin = dp(4) })
+        box.addView(LightLine(this), LinearLayout.LayoutParams(dp(120), dp(8)).apply { topMargin = dp(6); bottomMargin = dp(10); leftMargin = dp(4) })
         val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         items.forEachIndexed { i, (name, sub) ->
             val on = i == selected
@@ -155,6 +153,49 @@ abstract class UiActivity : Activity() {
         dlg.window?.setDimAmount(0.7f)
         try { dlg.show() } catch (_: Exception) { }
         return dlg
+    }
+
+    /**
+     * ✨ La rayita de luz debajo del título: al abrir se traza de izquierda a derecha
+     * (con una estrellita en la punta) y después un brillo la recorre una y otra vez.
+     */
+    private class LightLine(ctx: Context) : View(ctx) {
+        private val start = android.os.SystemClock.uptimeMillis()
+        private val pnt = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { strokeCap = android.graphics.Paint.Cap.ROUND; style = android.graphics.Paint.Style.STROKE }
+        private val glow = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        private val dd = ctx.resources.displayMetrics.density
+        override fun onDraw(c: android.graphics.Canvas) {
+            val t = (android.os.SystemClock.uptimeMillis() - start).toFloat()
+            val y = height / 2f
+            val x0 = 2f * dd; val full = width - 4f * dd
+            val p = (t / 650f).coerceIn(0f, 1f)
+            val e = 1f - (1f - p) * (1f - p) * (1f - p)
+            val x1 = x0 + full * e
+            pnt.strokeWidth = 3f * dd
+            pnt.shader = android.graphics.LinearGradient(x0, 0f, x0 + full, 0f,
+                intArrayOf(0xFF22D3EE.toInt(), 0xFF8B5CF6.toInt(), 0x008B5CF6), floatArrayOf(0f, 0.7f, 1f), android.graphics.Shader.TileMode.CLAMP)
+            c.drawLine(x0, y, x1, y, pnt)
+            pnt.shader = null
+            if (p < 1f) {
+                // La puntita brillante mientras se traza
+                glow.shader = android.graphics.RadialGradient(x1, y, 4f * dd, intArrayOf(0xFFFFFFFF.toInt(), 0x8822D3EE.toInt(), 0x0022D3EE), null, android.graphics.Shader.TileMode.CLAMP)
+                c.drawCircle(x1, y, 4f * dd, glow)
+            } else {
+                // Un brillo blanco que la recorre cada 2.4 s
+                val k = ((t - 650f) % 2400f) / 1100f
+                if (k < 1f) {
+                    val gx = x0 + full * 0.85f * k
+                    val w = 18f * dd
+                    pnt.strokeWidth = 3f * dd
+                    pnt.shader = android.graphics.LinearGradient(gx - w, 0f, gx + w, 0f,
+                        intArrayOf(0x00FFFFFF, 0xDDFFFFFF.toInt(), 0x00FFFFFF), null, android.graphics.Shader.TileMode.CLAMP)
+                    c.drawLine(maxOf(x0, gx - w), y, minOf(x0 + full * 0.85f, gx + w), y, pnt)
+                    pnt.shader = null
+                }
+            }
+            glow.shader = null
+            postInvalidateOnAnimation()
+        }
     }
 
     protected fun android.app.Dialog.close() { try { if (isShowing) dismiss() } catch (_: Exception) { } }

@@ -1018,11 +1018,7 @@ class KeyboardView(context: Context) : View(context) {
         if (prog > 0.01f) {
             val x0 = cx - s * 0.85f; val y0 = cy - s * 0.85f
             val x1 = x0 + (s * 1.7f) * prog; val y1 = y0 + (s * 1.7f) * prog
-            // Primero un corte del color del fondo (así la línea se separa del ojo), luego la luz
-            incogPaint.shader = null
-            incogPaint.color = bgc
-            incogPaint.strokeWidth = 4.6f * d
-            c.drawLine(x0, y0, x1, y1, incogPaint)
+            // Solo la línea de luz, limpia (sin borde alrededor)
             incogPaint.shader = android.graphics.LinearGradient(x0, y0, cx + s * 0.85f, cy + s * 0.85f,
                 intArrayOf(0xFF67E8F9.toInt(), 0xFFA78BFA.toInt(), 0xFFF0ABFC.toInt()), null, android.graphics.Shader.TileMode.CLAMP)
             incogPaint.strokeWidth = 2.2f * d

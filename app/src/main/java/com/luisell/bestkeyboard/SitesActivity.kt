@@ -272,17 +272,13 @@ class SitesActivity : UiActivity() {
             if (s.isStart) tr("📍 Cambiar a sitio de trabajo normal", "📍 Change to a normal work site")
             else tr("🛻 Usarlo como parqueo de la camioneta (comienzo y fin del día)", "🛻 Use it as the truck parking (start and end of day)"),
         )
-        AlertDialog.Builder(this)
-            .setTitle((if (s.isStart) "🛻 " else "📍 ") + s.name)
-            .setItems(opts) { _, w ->
+        choiceDialog(s.name, opts.map { Emo.stripUi(it).trim() to null }) { w ->
                 when (w) {
                     0 -> askRadius(s)
                     1 -> askRate(s)
                     else -> { SiteStore.setKind(prefs, s.name, if (s.isStart) "site" else "start"); refresh() }
                 }
             }
-            .setNegativeButton(tr("Cancelar", "Cancel"), null)
-            .show()
     }
 
     /** 📏 La distancia de un lugar, viendo el círculo en el mapa (como Samsung Rutinas). */
