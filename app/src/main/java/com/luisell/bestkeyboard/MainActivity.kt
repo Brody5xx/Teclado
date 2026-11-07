@@ -645,8 +645,8 @@ class MainActivity : UiActivity() {
             tr("Cada app empieza en el idioma que usaste ahí la última vez: si en WhatsApp escribes en español y en la app del trabajo en inglés, el teclado ya abre así.",
                 "Each app starts in the language you last used there: if you write Spanish in WhatsApp and English in your work app, the keyboard opens that way."))
         switch(tr("Deslizar la barra cambia el idioma", "Swipe the space bar to change language"), Prefs.SPACE_LANG, false,
-            tr("Se quita el botón 🌐. Desliza rápido para cambiar de idioma; mantén presionado y desliza para mover el cursor.",
-                "The 🌐 key goes away. Swipe fast to change language; press, hold and slide to move the cursor."))
+            tr("Se quita el botón del globo (idioma). Desliza rápido para cambiar de idioma; mantén presionado y desliza para mover el cursor.",
+                "The globe (language) key goes away. Swipe fast to change language; press, hold and slide to move the cursor."))
 
         // ---- Sugerencias
         card(tr("Sugerencias y autocorrector", "Suggestions and autocorrect"), Icons.TRANSLATE)
@@ -759,8 +759,8 @@ class MainActivity : UiActivity() {
         // ---- Emojis
         card(tr("Emojis", "Emojis"), Icons.EMOJI)
         switch(tr("Sugerir emojis mientras escribo", "Suggest emojis while I type"), Prefs.EMOJI_SUGGEST, true,
-            tr("Escribe «casa» y sale 🏠, «jajaja» 😂, «te quiero» ❤️, «estoy cansado» 😴. Tócalo y se pone después de la palabra.",
-                "Type «house» and get 🏠, «haha» 😂, «love you» ❤️, «so tired» 😴. Tap it and it goes after the word."))
+            tr("Escribe «casa», «jajaja», «te quiero» o «estoy cansado» y arriba te sugiere el emoji que va. Tócalo y se pone después de la palabra.",
+                "Type «house», «haha», «love you» or «so tired» and it suggests the matching emoji above. Tap it and it goes after the word."))
 
         cardGroup = "ai"
         // ---- Frases rápidas
@@ -823,8 +823,8 @@ class MainActivity : UiActivity() {
                 "While you're working, a notification shows the running time and the Arrived / Left / Home buttons, which you can tap without unlocking."))
         switch(tr("Dejarla siempre (con 🛻 Comencé antes de empezar)", "Keep it always (with 🛻 Start before you begin)"), Prefs.WORKDAY_ALWAYS, true,
             tr("Así puedes tocar 🛻 Comencé desde la pantalla de bloqueo, sin desbloquear.", "So you can tap 🛻 Start from the lock screen, without unlocking."))
-        text(tr("También hay un botón en los ajustes rápidos: desliza la barra de arriba del teléfono hacia abajo, toca el lápiz ✏️ y arrastra «Comencé / Mi jornada».",
-            "There's also a Quick Settings button: swipe down from the top of the phone, tap the pencil ✏️ and drag «Start / My workday»."), 12f, faded = true)
+        text(tr("También hay un botón en los ajustes rápidos: desliza la barra de arriba del teléfono hacia abajo, toca el lápiz y arrastra «Comencé / Mi jornada».",
+            "There's also a Quick Settings button: swipe down from the top of the phone, tap the pencil and drag «Start / My workday»."), 12f, faded = true)
         button(tr("✏️ Editar botones (nombres y cuáles se ven)", "✏️ Edit buttons (names and which ones show)")) {
             startActivity(Intent(this, WorkdayButtonsActivity::class.java))
         }
@@ -896,7 +896,7 @@ class MainActivity : UiActivity() {
         col.addView(gifBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
         button(tr("Guardar llave", "Save key")) {
             prefs.edit().putString(Prefs.GIPHY_KEY, gifBox.text.toString().trim()).apply()
-            toast("Llave guardada. Toca 😀 y luego GIF en el teclado.", "Key saved. Tap 😀 and then GIF on the keyboard.")
+            toast("Llave guardada. Toca el botón de emojis y luego GIF en el teclado.", "Key saved. Tap the emoji button and then GIF on the keyboard.")
         }
         text(tr("Si la app no acepta GIFs desde el teclado, el GIF queda copiado para que lo pegues.",
             "If the app doesn't accept GIFs from the keyboard, the GIF is copied so you can paste it."), 12f, faded = true)
@@ -973,7 +973,7 @@ class MainActivity : UiActivity() {
                 "•  ⋯ abre «Más opciones»; con el lápiz ✎ acomodas todos los botones.\n" +
                 "•  El hacker cambia a teclado de computadora (Ctrl, Alt, Esc, Tab, F1–F12).\n" +
                 "•  </> Modo código: teclado para programar y la IA te explica, escribe y arregla código.\n" +
-                "•  Mantén 🌐 para cambiar a otro teclado.",
+                "•  Mantén el botón del globo para cambiar a otro teclado.",
             "•  Hold a letter for accents (á, é, ñ…) and the period for ¿ ? ¡ !\n" +
                 "•  ⇧ twice = ALL CAPS.\n" +
                 "•  Slide your finger over the letters to type a whole word.\n" +
@@ -981,7 +981,7 @@ class MainActivity : UiActivity() {
                 "•  ⋯ opens «More options»; the pencil ✎ lets you arrange every button.\n" +
                 "•  The hacker switches to a PC keyboard (Ctrl, Alt, Esc, Tab, F1–F12).\n" +
                 "•  </> Code mode: a keyboard for coding, and the AI explains, writes and fixes code.\n" +
-                "•  Hold 🌐 to switch to another keyboard.",
+                "•  Hold the globe key to switch to another keyboard.",
         ), 13f)
 
         // ---- Novedades (lo más nuevo visible, lo demás escondido)
@@ -1015,7 +1015,7 @@ class MainActivity : UiActivity() {
         root.addView(diag, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(20) })
 
         val foot = TextView(this)
-        foot.text = tr("Hecho con ❤ · Best Keyboard", "Made with ❤ · Best Keyboard")
+        foot.text = tr("Hecho con cariño · Best Keyboard", "Made with care · Best Keyboard")
         foot.textSize = 12f
         foot.setTextColor(SUB)
         foot.gravity = Gravity.CENTER
@@ -1208,6 +1208,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.33.0" to tr("•  Sin emojis en ninguna pantalla: ajustes, Estilo, Calendario, Mis sitios, Datos, la guía, la notificación de Mi jornada y el widget. Se ve más limpio y moderno. (El ☺️ de la coma y los emojis que tú escribes se quedan.)\n" +
+            "•  «Terminar la frase con IA»: si cambias de idioma, el título y los botones se cambian también.",
+            "•  No emojis on any screen: settings, Style, Calendar, My sites, Data, the guide, the My workday notification and the widget. Cleaner and more modern. (The comma's ☺️ and the emojis you type stay.)\n" +
+            "•  «Finish sentence with AI»: if you switch language, the title and buttons switch too."),
         "12.32.5" to tr("•  💵 Tu cheque en el Calendario: en «Ver y cambiar mis horas» ahora sale debajo de los días cuánto te queda aprox. en el cheque de esta semana (y la pasada), con el desglose de horas, extras y descuentos. Si todavía no pusiste tu pago por hora, ahí mismo hay un botón para ponerlo.",
             "•  💵 Your paycheck in the Calendar: «See and change my hours» now shows, under the days, your approximate take-home pay for this week (and last week), with the breakdown of hours, overtime and deductions. If you haven't set your hourly pay yet, there's a button right there."),
         "12.32.4" to tr("•  Guía rápida al día (26 pasos): sugerencias que te conocen, acentos y signos solos, aprende de ti, números y medidas, IA gratis para terminar la frase, dictado bilingüe, estadísticas y cómo pasar todo a otro teléfono.\n" +

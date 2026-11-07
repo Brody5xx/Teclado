@@ -47,6 +47,39 @@ object Emo {
     }
 
     /** Quita todos los emojis de un texto (para avisos y títulos). Deja letras, números y signos normales. */
+    /** Solo los emojis de verdad (deja → ✓ ✕ ⌫ ⇧ ✎ y los signos normales). */
+    private fun isRealEmoji(cp: Int): Boolean =
+        cp >= 0x1F000 || cp in 0x2600..0x26FF || (cp in 0x2700..0x27BF && cp != 0x2713 && cp != 0x2715 && cp != 0x2716 && cp != 0x270E) ||
+            cp in 0x23E9..0x23FA || cp == 0x231A || cp == 0x231B || cp == 0x2B50 || cp == 0x2B55 || cp == 0xFE0F || cp == 0x200D || cp == 0x20E3 ||
+            cp == 0x21A9 || cp == 0x21AA || cp == 0x2934 || cp == 0x2935
+
+    fun hasRealEmoji(text: CharSequence): Boolean {
+        var i = 0
+        val t = text.toString()
+        while (i < t.length) { val cp = t.codePointAt(i); if (isRealEmoji(cp)) return true; i += Character.charCount(cp) }
+        return false
+    }
+
+    /** 🚫 Para las pantallas de la app: quita los emojis (se ven anticuados) y arregla los espacios que quedan. */
+    fun stripUi(text: CharSequence): String {
+        val sb = StringBuilder()
+        var i = 0
+        val t = text.toString()
+        while (i < t.length) {
+            val cp = t.codePointAt(i)
+            if (!isRealEmoji(cp)) sb.appendCodePoint(cp)
+            i += Character.charCount(cp)
+        }
+        return sb.toString()
+            .replace(Regex("[ \\t]{2,}"), " ")
+            .replace(Regex(" +([,.;:!?»)])"), "$1")
+            .replace(Regex("([«(]) +"), "$1")
+            .replace(Regex("(?m)^ +"), "")
+            .replace(Regex("(?m)^([•·]) *$"), "")
+            .replace(Regex(" · ·"), " ·")
+            .trim()
+    }
+
     fun strip(text: CharSequence): String {
         val sb = StringBuilder()
         var i = 0

@@ -118,8 +118,8 @@ class WorkdayButtonsActivity : UiActivity() {
 
         // ---- Almuerzo
         card(tr("Almuerzo", "Lunch"), Icons.CLOCK)
-        text(tr("Mientras trabajas sale el botón «🍔 Salí a almorzar» y después «↩️ Regresé», para anotar cuánto tomaste.",
-            "While you work you'll see «🍔 Lunch break» and then «↩️ Back from lunch», to log how long you took."), 12f, faded = true)
+        text(tr("Mientras trabajas sale el botón «Salí a almorzar» y después «Regresé», para anotar cuánto tomaste.",
+            "While you work you'll see «Lunch break» and then «Back from lunch», to log how long you took."), 12f, faded = true)
         segmented(tr("Tiempo que te descuentan", "Time deducted"), Prefs.LUNCH_AUTO, "30",
             listOf("15" to "15 min", "30" to "30 min", "45" to "45 min", "60" to tr("1 hora", "1 hour"))) { WorkDay.config(prefs); WorkdayCenter.refresh(this); recreate() }
         // Cualquier otro tiempo (20 min, 1 h 30…), escrito por ti
@@ -135,9 +135,9 @@ class WorkdayButtonsActivity : UiActivity() {
         segmented(tr("Cómo te descuentan", "How it's deducted"), Prefs.LUNCH_RULE, "always",
             listOf("always" to tr("Siempre el fijo", "Always fixed"), "real" to tr("Lo que marque", "What I log"))) { WorkDay.config(prefs); WorkdayCenter.refresh(this) }
         text(tr("Siempre el fijo: cada día que trabajas se descuenta el tiempo fijo, aunque sea un día corto o tomes más o menos.\n" +
-            "Lo que marque: se descuenta lo que marcaste con 🍔 y ↩️ (si no marcas, el tiempo fijo en días de 5 horas o más).\nPagado: no se descuenta nada, solo se anota.",
+            "Lo que marque: se descuenta lo que marcaste con «Salí a almorzar» y «Regresé» (si no marcas, el tiempo fijo en días de 5 horas o más).\nPagado: no se descuenta nada, solo se anota.",
             "Always fixed: every day you work the fixed time is deducted, even on short days or if you take more or less.\n" +
-            "What I log: what you logged with 🍔 and ↩️ is deducted (if you don't, the fixed time on 5+ hour days).\nPaid: nothing is deducted, it's just logged."), 12f, faded = true)
+            "What I log: what you logged with «Lunch break» and «Back from lunch» is deducted (if you don't, the fixed time on 5+ hour days).\nPaid: nothing is deducted, it's just logged."), 12f, faded = true)
 
         card(tr("Tus botones", "Your buttons"), Icons.TRUCK)
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }

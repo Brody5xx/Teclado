@@ -4461,26 +4461,29 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun startFinish() {
         if (isPassword) return
         showMode(0)
-        val title = L.t("Terminar la frase con IA", "Finish sentence with AI")
+        // El título y los botones se piden en el idioma de AHORA (si cambias de idioma, se vuelven a dibujar)
+        fun title() = L.t("Terminar la frase con IA", "Finish sentence with AI")
         val bar = infoBar ?: return
         val ic = currentInputConnection
         val text = try { ic?.getTextBeforeCursor(400, 0)?.toString() } catch (_: Exception) { null }?.trimEnd()
         if (text.isNullOrBlank() || text.split(Regex("\\s+")).size < 2) {
-            bar.show(title, L.t("Escribe el principio de tu mensaje (2 palabras o más) y toca este botón: la IA te da 3 formas de terminarlo.",
+            infoRegen = { startFinish() }
+            bar.show(title(), L.t("Escribe el principio de tu mensaje (2 palabras o más) y toca este botón: la IA te da 3 formas de terminarlo.",
                 "Type the start of your message (2 words or more) and tap this button: the AI gives you 3 ways to finish it."),
                 listOf(L.t("Entendido", "Got it") to { closeInfo() }))
             return
         }
-        val key = aiKey(title) ?: return
+        val key = aiKey(title()) ?: return
         val my = ++aiSeq
         val startT = SystemClock.uptimeMillis()
         var waiting = true
-        bar.show(title, L.t("Pensando…", "Thinking…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+        infoRegen = null // el contador lo redibuja cada segundo (ya en el idioma nuevo)
+        bar.show(title(), L.t("Pensando…", "Thinking…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
         val tick = object : Runnable {
             override fun run() {
                 if (!waiting || my != aiSeq || infoBar?.visibility != View.VISIBLE) return
                 val sec = (SystemClock.uptimeMillis() - startT) / 1000
-                bar.show(title, L.t("Pensando ($sec s)…", "Thinking ($sec s)…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
+                bar.show(title(), L.t("Pensando ($sec s)…", "Thinking ($sec s)…"), listOf(L.t("Cancelar", "Cancel") to { aiSeq++; closeInfo() }))
                 handler.postDelayed(this, 1000)
             }
         }
@@ -4496,22 +4499,33 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (my != aiSeq) return@ask
             val raw = list?.firstOrNull()?.replace("**", "")?.trim()
             if (raw.isNullOrEmpty()) {
-                bar.show(title, err ?: L.t("No se pudo.", "Couldn't do it."), listOf(L.t("Reintentar", "Retry") to { startFinish() }, L.t("Cerrar", "Close") to { closeInfo() }))
+                fun showErr() = bar.show(title(), err ?: L.t("No se pudo.", "Couldn't do it."), listOf(L.t("Reintentar", "Retry") to { startFinish() }, L.t("Cerrar", "Close") to { closeInfo() }))
+                infoRegen = { showErr() }
+                showErr()
                 return@ask
             }
             val opts = raw.lines().map { it.trim() }.mapNotNull { l ->
                 Regex("^[1-3][:.)]\\s*(.+)$").find(l)?.groupValues?.get(1)?.trim()?.trim('"', '“', '”')
             }.filter { it.isNotEmpty() }.take(3)
-            if (opts.isEmpty()) { bar.show(title, raw, listOf(L.t("Cerrar", "Close") to { closeInfo() })); return@ask }
-            val buttons = ArrayList<Pair<String, () -> Unit>>()
-            for (o in opts) buttons.add(o to {
-                val b = try { currentInputConnection?.getTextBeforeCursor(1, 0)?.toString() } catch (_: Exception) { null } ?: ""
-                val glue = if (b.isEmpty() || b.endsWith(" ") || o.firstOrNull()?.let { it in ".,!?;:" } == true) "" else " "
-                insertText(glue + o)
-                closeInfo()
-            })
-            buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
-            bar.show(title, L.t("Toca la que quieras:", "Tap the one you want:"), buttons)
+            if (opts.isEmpty()) {
+                fun showRaw() = bar.show(title(), raw, listOf(L.t("Cerrar", "Close") to { closeInfo() }))
+                infoRegen = { showRaw() }
+                showRaw()
+                return@ask
+            }
+            fun showOpts() {
+                val buttons = ArrayList<Pair<String, () -> Unit>>()
+                for (o in opts) buttons.add(o to {
+                    val b = try { currentInputConnection?.getTextBeforeCursor(1, 0)?.toString() } catch (_: Exception) { null } ?: ""
+                    val glue = if (b.isEmpty() || b.endsWith(" ") || o.firstOrNull()?.let { it in ".,!?;:" } == true) "" else " "
+                    insertText(glue + o)
+                    closeInfo()
+                })
+                buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
+                bar.show(title(), L.t("Toca la que quieras:", "Tap the one you want:"), buttons)
+            }
+            infoRegen = { showOpts() }
+            showOpts()
         }
     }
 

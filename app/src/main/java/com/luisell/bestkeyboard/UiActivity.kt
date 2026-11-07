@@ -31,6 +31,31 @@ import java.util.Locale
  * opciones en píldora y la galería de temas. Todo en español o inglés.
  */
 abstract class UiActivity : Activity() {
+
+    // 🚫 Sin emojis en ninguna pantalla de la app: se quitan solos de todo lo que se ve
+    private val noEmoji = android.view.ViewTreeObserver.OnGlobalLayoutListener { stripEmojis(window?.decorView) }
+
+    private fun stripEmojis(v: View?) {
+        when (v) {
+            null -> return
+            is android.widget.EditText -> { v.hint?.let { h -> if (Emo.hasRealEmoji(h)) v.hint = Emo.stripUi(h) } }
+            is android.widget.TextView -> {
+                val t = v.text
+                if (t != null && t !is android.text.Spanned && Emo.hasRealEmoji(t)) v.text = Emo.stripUi(t)
+                else if (t is android.text.Spanned && Emo.hasRealEmoji(t)) v.text = Emo.stripUi(t.toString())
+                v.hint?.let { h -> if (Emo.hasRealEmoji(h)) v.hint = Emo.stripUi(h) }
+            }
+            is android.view.ViewGroup -> for (i in 0 until v.childCount) stripEmojis(v.getChildAt(i))
+        }
+    }
+
+    override fun onContentChanged() {
+        super.onContentChanged()
+        try {
+            window?.decorView?.viewTreeObserver?.removeOnGlobalLayoutListener(noEmoji)
+            window?.decorView?.viewTreeObserver?.addOnGlobalLayoutListener(noEmoji)
+        } catch (_: Exception) { }
+    }
     protected lateinit var prefs: SharedPreferences
     /** La columna principal y [col] = la tarjeta donde se agregan las opciones. */
     protected lateinit var root: LinearLayout
@@ -115,7 +140,7 @@ abstract class UiActivity : Activity() {
             val row = LinearLayout(this)
             row.orientation = LinearLayout.HORIZONTAL
             for ((id, names, pal) in themes) {
-                val c = ThemeCard(this, pal, tr(names.first, names.second))
+                val c = ThemeCard(this, pal, Emo.stripUi(tr(names.first, names.second)))
                 c.chosen = id == current
                 c.setOnClickListener {
                     prefs.edit().putString(key, id).apply()

@@ -425,7 +425,7 @@ object AutoSites {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         for (a in actions.take(3)) {
             @Suppress("DEPRECATION")
-            b.addAction(Notification.Action.Builder(null, a.first, a.second).build())
+            b.addAction(Notification.Action.Builder(null, Emo.stripUi(a.first), a.second).build())
         }
         try { nm.notify(id, b.build()) } catch (_: SecurityException) { }
     }

@@ -107,8 +107,8 @@ class ScanActivity : Activity() {
 
         val row = LinearLayout(this)
         row.orientation = LinearLayout.HORIZONTAL
-        row.addView(smallButton(L.t("📷  Tomar foto", "📷  Take photo")) { openCamera() }, LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(smallButton(L.t("🖼  Galería", "🖼  Gallery")) { openGallery() }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
+        row.addView(smallButton(L.t("Tomar foto", "Take photo")) { openCamera() }, LinearLayout.LayoutParams(0, -2, 1f))
+        row.addView(smallButton(L.t("Galería", "Gallery")) { openGallery() }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
         col.addView(row, LinearLayout.LayoutParams(-1, -2))
 
         photo = ImageView(this)
@@ -133,7 +133,7 @@ class ScanActivity : Activity() {
         insertBtn = smallButton(L.t("⌨  Insertar donde estaba escribiendo", "⌨  Insert where I was typing")) { insert() }
         insertBtn.setTypeface(insertBtn.typeface, Typeface.BOLD)
         col.addView(insertBtn, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
-        copyBtn = smallButton(L.t("📋  Copiar el texto", "📋  Copy the text")) { copy() }
+        copyBtn = smallButton(L.t("Copiar el texto", "Copy the text")) { copy() }
         col.addView(copyBtn, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
 
         val tip = TextView(this)
@@ -239,7 +239,7 @@ class ScanActivity : Activity() {
                 } else {
                     edit.setText(text)
                     edit.setSelection(text.length)
-                    status.text = L.t("✅ Listo. Revisa el texto (puedes corregirlo o borrar lo que no quieras) y toca Insertar.", "✅ Done. Check the text (you can fix it or delete what you don't want) and tap Insert.")
+                    status.text = L.t("Listo. Revisa el texto (puedes corregirlo o borrar lo que no quieras) y toca Insertar.", "Done. Check the text (you can fix it or delete what you don't want) and tap Insert.")
                     setButtonsEnabled(true)
                 }
             }
@@ -323,6 +323,6 @@ class ScanActivity : Activity() {
         if (t.isEmpty()) return
         (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
             .setPrimaryClip(ClipData.newPlainText("Texto escaneado", t))
-        Toast.makeText(this, L.t("Copiado. También queda en tu portapapeles 📋.", "Copied. It's also in your clipboard 📋."), Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, L.t("Copiado. También queda en tu portapapeles.", "Copied. It's also in your clipboard."), Toast.LENGTH_SHORT).show()
     }
 }

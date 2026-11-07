@@ -252,8 +252,8 @@ object WorkdayCenter {
         val b = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(ctx, CHANNEL) else Notification.Builder(ctx)
         b.setSmallIcon(WorkDay.iconRes())
             // En curso: el reloj de arriba ya va contando; el título no se queda con una hora vieja
-            .setContentTitle(if (running) WorkDay.title() + L.t(" · trabajando", " · working") else title)
-            .setContentText(text)
+            .setContentTitle(Emo.stripUi(if (running) WorkDay.title() + L.t(" · trabajando", " · working") else title))
+            .setContentText(Emo.stripUi(text))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -270,7 +270,7 @@ object WorkdayCenter {
             else listOf(WorkDay.nextKind(ev), WorkDay.LUNCH, WorkDay.finalKind()).distinct()
         for ((i, k) in next.withIndex()) {
             @Suppress("DEPRECATION")
-            b.addAction(Notification.Action.Builder(null, WorkDay.label(k), intentFor(ctx, k, 200 + i)).build())
+            b.addAction(Notification.Action.Builder(null, Emo.stripUi(WorkDay.label(k)), intentFor(ctx, k, 200 + i)).build())
         }
         try { nm.notify(NOTIF_ID, b.build()) } catch (_: SecurityException) { }
     }
@@ -291,8 +291,8 @@ object WorkdayCenter {
         val p = Prefs.get(ctx)
         val ev = WorkDay.day(p)
         val (title, text) = status(ctx)
-        v.setTextViewText(R.id.w_title, if (ev.isEmpty()) title else WorkDay.title())
-        v.setTextViewText(R.id.w_status, text)
+        v.setTextViewText(R.id.w_title, Emo.stripUi(if (ev.isEmpty()) title else WorkDay.title()))
+        v.setTextViewText(R.id.w_status, Emo.stripUi(text))
         val running = WorkDay.isRunning(ev)
         if (ev.isNotEmpty()) {
             val elapsed = WorkDay.summary(ev).total
@@ -302,17 +302,17 @@ object WorkdayCenter {
         val next = WorkDay.nextKind(ev)
         val ids = listOf(R.id.w_start to WorkDay.START, R.id.w_arrive to WorkDay.ARRIVE, R.id.w_leave to WorkDay.LEAVE, R.id.w_home to WorkDay.HOME)
         val short = mapOf(
-            WorkDay.START to L.t("🛻\nComencé", "🛻\nStart"),
-            WorkDay.ARRIVE to L.t("📍\nLlegué", "📍\nArrived"),
-            WorkDay.LEAVE to L.t("🚪\nSalí", "🚪\nLeft"),
-            WorkDay.HOME to L.t("🏠\nCasa", "🏠\nHome"),
+            WorkDay.START to L.t("Comencé", "Start"),
+            WorkDay.ARRIVE to L.t("Llegué", "Arrived"),
+            WorkDay.LEAVE to L.t("Salí", "Left"),
+            WorkDay.HOME to L.t("Casa", "Home"),
         )
         for ((i, pair) in ids.withIndex()) {
             val (id, k) = pair
             // Los botones que quitaste no salen; los que renombraste salen con tu nombre
             v.setViewVisibility(id, if (WorkDay.isOn(k)) View.VISIBLE else View.GONE)
             val custom = WorkDay.customName(k)
-            v.setTextViewText(id, if (custom.isEmpty()) short[k] else custom.replaceFirst(" ", "\n"))
+            v.setTextViewText(id, if (custom.isEmpty()) short[k] else Emo.stripUi(custom))
             v.setInt(id, "setBackgroundResource", if (k == next) R.drawable.widget_btn_next else R.drawable.widget_btn)
             v.setTextColor(id, if (k == next) 0xFF0B1020.toInt() else 0xFFFFFFFF.toInt())
             v.setOnClickPendingIntent(id, intentFor(ctx, k, 100 + i))

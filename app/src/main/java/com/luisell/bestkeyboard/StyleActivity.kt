@@ -336,7 +336,7 @@ class StyleActivity : UiActivity() {
         button(tr("🖼️ Elegir imagen", "🖼️ Pick image"), primary = true) { pickBg("image/*", 71) }
         button(tr("🎬 Elegir video", "🎬 Pick video")) { pickBg("video/*", 72) }
         switch(tr("🔊 Sonido del video", "🔊 Video sound"), Prefs.BG_SOUND, false,
-            tr("Apagado = en silencio. También lo cambias rápido con el botón 🔊 del teclado.", "Off = muted. You can also switch it quickly with the 🔊 keyboard button."))
+            tr("Apagado = en silencio. También lo cambias rápido con el botón de sonido del teclado.", "Off = muted. You can also switch it quickly with the sound button on the keyboard."))
         segmented(tr("Oscurecer el fondo (para leer bien las letras)", "Darken the background (to read the letters)"), Prefs.BG_DIM, "0.45",
             listOf("0.25" to tr("Poco", "Little"), "0.45" to tr("Medio", "Medium"), "0.65" to tr("Mucho", "A lot")))
         button(tr("✕ Quitar el fondo", "✕ Remove background")) {
@@ -344,7 +344,7 @@ class StyleActivity : UiActivity() {
             prefs.edit().putLong(Prefs.BG_STAMP, System.currentTimeMillis()).apply()
             paintBg()
         }
-        text(tr("Si tu tema es animado (✨), sus animaciones salen encima de tu fondo.", "If your theme is animated (✨), its animations show on top of your background."), 12f, faded = true)
+        text(tr("Si tu tema es animado, sus animaciones salen encima de tu fondo.", "If your theme is animated, its animations show on top of your background."), 12f, faded = true)
         paintBg()
 
         // ---- 🌗 Un tema de día y otro de noche (cambia solo según la hora)

@@ -93,7 +93,7 @@ class TimeSetActivity : Activity() {
             .setMessage(L.t("¿A qué hora? Escríbela como quieras: 5:32pm, 532p o 17:32.", "What time? Type it any way: 5:32pm, 532p or 17:32."))
             .setView(wrap)
             .setPositiveButton(L.t("Guardar", "Save"), null)
-            .setNeutralButton(L.t("🕐 Reloj", "🕐 Clock"), null)
+            .setNeutralButton(L.t("Reloj", "Clock"), null)
             .setNegativeButton(L.t("Cancelar", "Cancel")) { _, _ -> finish() }
             .setOnCancelListener { finish() }
             .create()

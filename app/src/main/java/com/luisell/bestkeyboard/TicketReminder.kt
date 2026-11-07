@@ -54,9 +54,9 @@ object TicketReminder {
         val title = if (done) "✅ TICKET REGISTERED" else "❌ NO TICKET"
         val text = when {
             done -> date
-            notes > 0 -> "$date\n" + L.t("Tienes $notes apuntes en la libreta: abre el teclado, toca 📒 y «Crear ticket del día».",
-                "You have $notes notes in the notebook: open the keyboard, tap 📒 and «Create the day's ticket».")
-            else -> "$date\n" + L.t("Abre el teclado y toca 📋 Notas → Ticket para escribirlo.", "Open the keyboard and tap 📋 Notes → Ticket to write it.")
+            notes > 0 -> "$date\n" + L.t("Tienes $notes apuntes en la libreta: abre el teclado, toca Libreta y «Crear ticket del día».",
+                "You have $notes notes in the notebook: open the keyboard, tap Notebook and «Create the day's ticket».")
+            else -> "$date\n" + L.t("Abre el teclado y toca Notas → Ticket para escribirlo.", "Open the keyboard and tap Notes → Ticket to write it.")
         }
         val open = PendingIntent.getActivity(ctx, 0, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
