@@ -1208,6 +1208,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "12.32.5" to tr("•  💵 Tu cheque en el Calendario: en «Ver y cambiar mis horas» ahora sale debajo de los días cuánto te queda aprox. en el cheque de esta semana (y la pasada), con el desglose de horas, extras y descuentos. Si todavía no pusiste tu pago por hora, ahí mismo hay un botón para ponerlo.",
+            "•  💵 Your paycheck in the Calendar: «See and change my hours» now shows, under the days, your approximate take-home pay for this week (and last week), with the breakdown of hours, overtime and deductions. If you haven't set your hourly pay yet, there's a button right there."),
         "12.32.4" to tr("•  Guía rápida al día (26 pasos): sugerencias que te conocen, acentos y signos solos, aprende de ti, números y medidas, IA gratis para terminar la frase, dictado bilingüe, estadísticas y cómo pasar todo a otro teléfono.\n" +
             "•  Revisada la copia de seguridad: guarda todo, incluido lo que el teclado aprendió de ti.",
             "•  Quick guide up to date (26 steps): suggestions that know you, accents and punctuation, it learns from you, numbers and measures, free AI to finish sentences, bilingual dictation, statistics and how to move everything to another phone.\n" +

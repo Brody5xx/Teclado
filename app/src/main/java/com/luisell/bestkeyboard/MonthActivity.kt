@@ -25,6 +25,9 @@ class MonthActivity : UiActivity() {
     private lateinit var totals: TextView
     private lateinit var grid: GridLayout
     private lateinit var detail: LinearLayout
+    /** 💵 Tu cheque de la semana (aprox.), debajo del calendario. */
+    private lateinit var payBox: LinearLayout
+    private var payWeeksAgo = 0
     /** El día que estás viendo (hoy, al abrir). */
     private var chosen = Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -79,6 +82,12 @@ class MonthActivity : UiActivity() {
         root.addView(names, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(10) })
         grid = GridLayout(this).apply { columnCount = 7 }
         root.addView(grid)
+        payBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(14))
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(22f); setStroke(dp(1), 0x804FD1FF.toInt()) }
+        }
+        root.addView(payBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
         detail = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(detail, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
         setContentView(sv)
@@ -91,7 +100,36 @@ class MonthActivity : UiActivity() {
         if (::grid.isInitialized) paint()
     }
 
+    private fun paintPay() {
+        payBox.removeAllViews()
+        val keep = col
+        col = payBox
+        val cfg = Pay.config(prefs)
+        if (!cfg.isSet) {
+            text(tr("💵 Tu cheque de la semana", "💵 Your weekly paycheck"), 16f, bold = true)
+            text(tr("Pon cuánto ganas por hora (manejando y en el sitio) y aquí te calcula cuánto te queda en el cheque.",
+                "Enter how much you make per hour (driving and on site) and it works out your take-home pay here."), 13f, faded = true)
+            button(tr("Poner mi pago por hora", "Set my hourly pay"), primary = true) {
+                startActivity(android.content.Intent(this, WorkdayButtonsActivity::class.java))
+            }
+        } else {
+            val r = Pay.week(prefs, WorkDay.weekStart(payWeeksAgo))
+            text((if (payWeeksAgo == 0) tr("💵 Tu cheque de esta semana (aprox.)", "💵 This week's paycheck (approx.)")
+                else tr("💵 Tu cheque de la semana pasada (aprox.)", "💵 Last week's paycheck (approx.)")), 16f, bold = true)
+            text(tr("Te quedan aprox. ", "Take-home approx. ") + Pay.money(r.net), 22f, bold = true)
+            text(Pay.text(r, cfg), 13f, faded = true)
+            button(if (payWeeksAgo == 0) tr("Ver la semana pasada", "See last week") else tr("Ver esta semana", "See this week")) {
+                payWeeksAgo = if (payWeeksAgo == 0) 1 else 0; paintPay()
+            }
+            button(tr("Cambiar mi pago o descuentos", "Change my pay or deductions")) {
+                startActivity(android.content.Intent(this, WorkdayButtonsActivity::class.java))
+            }
+        }
+        col = keep
+    }
+
     private fun paint() {
+        try { paintPay() } catch (_: Exception) { }
         title.text = SimpleDateFormat("MMMM yyyy", if (en) Locale.US else Locale("es")).format(month.time).replaceFirstChar { it.uppercase() }
         grid.removeAllViews()
         val cell = (resources.displayMetrics.widthPixels - dp(28)) / 7
