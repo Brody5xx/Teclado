@@ -1364,6 +1364,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.4.2" to tr("•  Divisas: el botón ↑↓ ahora es redondo y más pequeño, con los colores del diamante. Al tocarlo da un destello: un aro de luz, un brillo que lo cruza, una estrellita y las flechas dan media vuelta.",
+            "•  Currency: the ↑↓ button is now round and smaller, in the diamond's colors. Tapping it sparkles: a ring of light, a shine across it, a little star and the arrows spin half a turn."),
         "13.4.1" to tr("•  Divisas: nuevo botón ↑↓ al lado de las monedas para cambiarlas de lugar (da la vuelta al tocarlo).\n" +
             "•  Las teclas de Divisas son más grandes y los números quedan bien centrados (4 filas en vez de 5).",
             "•  Currency: new ↑↓ button next to the currencies to swap them (it spins when you tap it).\n" +

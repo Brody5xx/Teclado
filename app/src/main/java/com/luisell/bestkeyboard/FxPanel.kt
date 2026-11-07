@@ -45,7 +45,7 @@ class FxPanel(context: Context) : FrameLayout(context) {
     private val fromBadge = TextView(context); private val fromName = TextView(context); private val fromAmt = TextView(context)
     private val toBadge = TextView(context); private val toName = TextView(context); private val toAmt = TextView(context)
     private val rateLine = TextView(context)
-    private val swapBtn = TextView(context)
+    private val swapBtn = SwapButton(context)
     private val keys = ArrayList<Pair<TextView, Int>>()
 
     // La lista para elegir moneda (tapa el panel)
@@ -104,18 +104,14 @@ class FxPanel(context: Context) : FrameLayout(context) {
         rows.addView(fromRow, LinearLayout.LayoutParams(-1, d(40f)))
         rows.addView(toRow, LinearLayout.LayoutParams(-1, d(40f)).apply { topMargin = d(4f) })
         pair.addView(rows, LinearLayout.LayoutParams(0, -2, 1f))
-        swapBtn.text = "↑↓"
-        swapBtn.textSize = 19f
-        swapBtn.gravity = Gravity.CENTER
-        swapBtn.includeFontPadding = false
-        swapBtn.setTypeface(Typeface.DEFAULT_BOLD)
         swapBtn.setOnClickListener {
             actions?.onFxFeedback()
             val x = from; from = to; to = x
-            swapBtn.animate().rotationBy(180f).setDuration(260).start()
+            swapBtn.flash() // ✨ destello
             save(); refresh()
         }
-        pair.addView(swapBtn, LinearLayout.LayoutParams(d(46f), d(84f)).apply { leftMargin = d(5f) })
+        pair.gravity = Gravity.CENTER_VERTICAL
+        pair.addView(swapBtn, LinearLayout.LayoutParams(d(46f), d(46f)).apply { leftMargin = d(2f) })
         body.addView(pair, LinearLayout.LayoutParams(-1, -2).apply { topMargin = d(3f) })
         rateLine.textSize = 11.5f
         rateLine.gravity = Gravity.CENTER
@@ -296,8 +292,7 @@ class FxPanel(context: Context) : FrameLayout(context) {
             row.background = PanelUi.pressable(p.key, p.keyPressed, d(14f).toFloat())
         }
         badgeStyle(fromBadge, false); badgeStyle(toBadge, true)
-        swapBtn.setTextColor(p.onAccent)
-        swapBtn.background = PanelUi.pressable(p.accent, p.accentPressed, d(16f).toFloat())
+        swapBtn.ink = p.onAccent
         fromName.setTextColor(p.hint); toName.setTextColor(p.hint)
         fromAmt.setTextColor(p.text); toAmt.setTextColor(p.accent)
         val r = d(12f).toFloat()
@@ -441,4 +436,78 @@ object Calc {
         if (start == pos) throw IllegalStateException()
         return src.substring(start, pos).toDouble()
     }
+}
+
+
+/** El botón ↑↓ redondo con los colores del diamante; al tocarlo da un destello de luz. */
+class SwapButton(context: Context) : View(context) {
+    var ink = 0xFF0B0D12.toInt()
+        set(v) { field = v; invalidate() }
+    private val dd = context.resources.displayMetrics.density
+    private val fill = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    private val line = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        style = android.graphics.Paint.Style.STROKE; strokeCap = android.graphics.Paint.Cap.ROUND; strokeJoin = android.graphics.Paint.Join.ROUND
+    }
+    private val glow = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    private val clip = android.graphics.Path()
+    private var start = 0L
+    private val MS = 650f
+
+    init { isClickable = true; contentDescription = "Swap" }
+
+    fun flash() { start = android.os.SystemClock.uptimeMillis(); postInvalidateOnAnimation() }
+
+    override fun onDraw(c: android.graphics.Canvas) {
+        val w = width.toFloat(); val h = height.toFloat()
+        val cx = w / 2f; val cy = h / 2f; val r = minOf(w, h) / 2f * 0.72f
+        val t = if (start == 0L) 1f else ((android.os.SystemClock.uptimeMillis() - start) / MS).coerceIn(0f, 1f)
+        val on = t < 1f
+        val press = if (isPressed) 0.92f else if (on) 1f - 0.08f * kotlin.math.sin(t * Math.PI).toFloat() else 1f
+        c.save()
+        c.scale(press, press, cx, cy)
+        // Aro de luz que se abre
+        if (on) {
+            val rr = r * (1f + 0.36f * t)
+            glow.shader = android.graphics.RadialGradient(cx, cy, rr, intArrayOf(0x0022D3EE, ((1f - t) * 140).toInt() shl 24 or 0x8B5CF6, 0x008B5CF6), floatArrayOf(0.6f, 0.85f, 1f), android.graphics.Shader.TileMode.CLAMP)
+            c.drawCircle(cx, cy, rr, glow)
+        }
+        fill.shader = android.graphics.LinearGradient(cx - r, cy - r, cx + r, cy + r, 0xFF22D3EE.toInt(), 0xFF8B5CF6.toInt(), android.graphics.Shader.TileMode.CLAMP)
+        c.drawCircle(cx, cy, r, fill)
+        // El brillo blanco que lo cruza en diagonal
+        if (on) {
+            clip.reset(); clip.addCircle(cx, cy, r, android.graphics.Path.Direction.CW)
+            c.save(); c.clipPath(clip)
+            val x = -r * 1.5f + (w + r * 3f) * t
+            glow.shader = android.graphics.LinearGradient(x - r * 0.6f, 0f, x + r * 0.6f, h, intArrayOf(0x00FFFFFF, 0xCCFFFFFF.toInt(), 0x00FFFFFF), null, android.graphics.Shader.TileMode.CLAMP)
+            c.drawRect(0f, 0f, w, h, glow)
+            c.restore()
+        }
+        // Las flechitas ↑↓ (giran media vuelta con el destello)
+        val e = if (on) 1f - (1f - t) * (1f - t) else 1f
+        c.rotate(if (on) 180f * e else 0f, cx, cy)
+        line.color = ink
+        line.strokeWidth = 2f * dd
+        val a = r * 0.42f; val gap = r * 0.22f; val head = r * 0.2f
+        c.drawLine(cx - gap, cy + a, cx - gap, cy - a, line)
+        c.drawLine(cx - gap - head, cy - a + head, cx - gap, cy - a, line)
+        c.drawLine(cx - gap + head, cy - a + head, cx - gap, cy - a, line)
+        c.drawLine(cx + gap, cy - a, cx + gap, cy + a, line)
+        c.drawLine(cx + gap - head, cy + a - head, cx + gap, cy + a, line)
+        c.drawLine(cx + gap + head, cy + a - head, cx + gap, cy + a, line)
+        c.restore()
+        // Estrellita de luz arriba a la derecha
+        if (on) {
+            val k = kotlin.math.sin(t * Math.PI).toFloat()
+            val sx = cx + r * 0.62f; val sy = cy - r * 0.62f; val sr = 6f * dd * k
+            glow.shader = android.graphics.RadialGradient(sx, sy, sr.coerceAtLeast(0.1f), intArrayOf(0xFFFFFFFF.toInt(), 0x00FFFFFF), null, android.graphics.Shader.TileMode.CLAMP)
+            c.drawCircle(sx, sy, sr, glow)
+            line.color = 0xFFFFFFFF.toInt(); line.strokeWidth = 1.2f * dd
+            c.drawLine(sx - sr * 1.6f, sy, sx + sr * 1.6f, sy, line)
+            c.drawLine(sx, sy - sr * 1.6f, sx, sy + sr * 1.6f, line)
+            postInvalidateOnAnimation()
+        } else start = 0L
+        glow.shader = null
+    }
+
+    override fun drawableStateChanged() { super.drawableStateChanged(); invalidate() }
 }
