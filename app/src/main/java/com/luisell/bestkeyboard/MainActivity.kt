@@ -1364,6 +1364,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.3.1" to tr("•  Arreglado el chino: la fila de caracteres tapaba todo el teclado y no dejaba escribir la segunda letra. Ahora es una fila arriba, del alto de las sugerencias.\n" +
+            "•  Con una sola letra (h) ya salen los caracteres más usados (好, 还, 会…).",
+            "•  Chinese fixed: the character row covered the whole keyboard and didn't let you type the second letter. Now it's one row at the top, the height of the suggestions.\n" +
+            "•  With just one letter (h) the most used characters show up (好, 还, 会…)."),
         "13.3.0" to tr("•  Chino en el teclado: en Idiomas del teclado elige 中文. Escribe el pinyin sin tonos (nihao, xiexie, woaini) y arriba salen los caracteres para tocar (你好, 谢谢, 我爱你). La barra espaciadora pone el primero, Enter deja las letras y borrar quita una letra del pinyin.\n" +
             "•  Escribe frases completas seguidas (nihaoma) y te arma la frase; si eliges solo una parte, sigue con el resto.\n" +
             "•  Lo que más eliges sube al primer lugar. Los signos salen en chino: ，。？！\n" +

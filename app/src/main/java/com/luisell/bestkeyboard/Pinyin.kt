@@ -103,6 +103,17 @@ object Pinyin {
         // Frase completa armada por partes (wo ai ni → 我爱你) cuando no hay una palabra exacta
         if (full.isEmpty()) sentence(buf)?.let { add(it, buf.length) }
         full.forEach { add(it.first, buf.length) }
+        // Una sola letra (h): los caracteres más usados que empiezan así (好, 还, 会…)
+        if (buf.length == 1) {
+            var i = find(buf).let { if (it < 0) -(it + 1) else it + 1 }
+            val more = ArrayList<Pair<String, Int>>()
+            var n = 0
+            while (i < keys.size && keys[i].startsWith(buf) && n < 4000) {
+                if (keys[i].length <= 6) entries(i).firstOrNull { it.first.length == 1 }?.let { more.add(it) }
+                i++; n++
+            }
+            more.sortedByDescending { score(it.first, it.second) }.take(24).forEach { add(it.first, 1) }
+        }
         // Palabras que empiezan así (nih → 你好)
         if (buf.length >= 2) {
             var i = find(buf).let { if (it < 0) -(it + 1) else it + 1 }
@@ -194,6 +205,7 @@ class PinyinBar(context: Context) : HorizontalScrollView(context) {
 
     fun applyPalette(p: Palette) {
         pal = p
-        setBackgroundColor(p.bg or 0xFF000000.toInt())
+        // Fondo sólido (no se ven las sugerencias de atrás)
+        background = PanelUi.barBackground(context, p, lightLine = false)
     }
 }

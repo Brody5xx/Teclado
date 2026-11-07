@@ -282,7 +282,10 @@ class PanelBox(context: Context, private val keys: View) : android.widget.FrameL
         val exactH = MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY)
         for (i in 0 until childCount) {
             val c = getChildAt(i)
-            if (c !== keys) c.measure(exactW, exactH)
+            if (c === keys) continue
+            // Una barra con alto fijo (la fila de caracteres chinos) se queda de ese alto, arriba
+            val lh = c.layoutParams?.height ?: -1
+            c.measure(exactW, if (lh > 0) MeasureSpec.makeMeasureSpec(lh, MeasureSpec.EXACTLY) else exactH)
         }
         setMeasuredDimension(w, h)
     }
