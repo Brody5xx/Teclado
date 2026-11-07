@@ -28,9 +28,11 @@ class PrivacyActivity : UiActivity() {
         paint()
     }
 
+    private var painted = false
+
     override fun onResume() {
         super.onResume()
-        if (::root.isInitialized) paint()
+        if (painted) paint()
     }
 
     private fun ask(es: String, en: String, action: () -> Unit) {
@@ -158,5 +160,6 @@ class PrivacyActivity : UiActivity() {
                 "In incognito mode (in ⋯) the keyboard doesn't learn or save what you type or copy."), 13f, faded = true)
 
         setContentView(sv)
+        painted = true
     }
 }
