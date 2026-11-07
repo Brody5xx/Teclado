@@ -13,6 +13,7 @@ object Langs {
         Lang("fr", "Français", "fr-FR"),
         Lang("it", "Italiano", "it-IT"),
         Lang("de", "Deutsch", "de-DE"),
+        Lang("zh", "中文", "zh-CN"), // con pinyin: escribes «nihao» y eliges 你好
     )
 
     fun of(code: String?): Lang = ALL.firstOrNull { it.code == code } ?: ALL[0]

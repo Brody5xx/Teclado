@@ -211,6 +211,8 @@ class KeyboardView(context: Context) : View(context) {
 
     private var rows: List<List<Key>> = emptyList()
     private val stripH = 46f * d
+    /** Alto de la barra de sugerencias (para tapar con la fila de caracteres chinos). */
+    val stripHeight: Int get() = stripH.toInt()
     private val bottomPad = 6f * d
     /** Modo código encendido (para iluminar su botón). */
     var codeOn = false

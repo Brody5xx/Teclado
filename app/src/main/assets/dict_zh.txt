@@ -1,0 +1,5 @@
+ok	100
+wifi	60
+email	50
+app	40
+hello	30

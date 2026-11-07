@@ -700,6 +700,8 @@ class MainActivity : UiActivity() {
         button(tr("Idioma 2: ", "Language 2: ") + Langs.name(kl2)) { pickLang(Prefs.KB_LANG2, kl2) }
         text(tr("Todos usan el teclado QWERTY. Las letras con acento (é, ü, ç, ã, ß…) salen manteniendo la letra.",
             "All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter."), 12f, faded = true)
+        text(tr("Chino (中文): escribe el pinyin sin tonos (nihao) y toca los caracteres en la fila de arriba (你好). La barra espaciadora pone el primero; Enter deja las letras.",
+            "Chinese (中文): type the pinyin without tones (nihao) and tap the characters in the row above (你好). Space puts the first one; Enter keeps the letters."), 12f, faded = true)
         text(tr("El traductor también tiene chino: copia un mensaje en chino y toca «Traducir mensaje», o en la barra de traducir toca el nombre del idioma para cambiarlo (Inglés → Chino → …).",
             "The translator also has Chinese: copy a message in Chinese and tap «Translate message», or in the translate bar tap the language name to change it (English → Chinese → …)."), 12f, faded = true)
 
@@ -1362,6 +1364,14 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.3.0" to tr("•  Chino en el teclado: en Idiomas del teclado elige 中文. Escribe el pinyin sin tonos (nihao, xiexie, woaini) y arriba salen los caracteres para tocar (你好, 谢谢, 我爱你). La barra espaciadora pone el primero, Enter deja las letras y borrar quita una letra del pinyin.\n" +
+            "•  Escribe frases completas seguidas (nihaoma) y te arma la frase; si eliges solo una parte, sigue con el resto.\n" +
+            "•  Lo que más eliges sube al primer lugar. Los signos salen en chino: ，。？！\n" +
+            "•  El dictado por voz también funciona en chino.",
+            "•  Chinese on the keyboard: in Keyboard languages pick 中文. Type the pinyin without tones (nihao, xiexie, woaini) and the characters show up above to tap (你好, 谢谢, 我爱你). Space puts the first one, Enter keeps the letters and delete removes one pinyin letter.\n" +
+            "•  Type whole phrases in a row (nihaoma) and it builds the phrase; if you pick just a part, it keeps going with the rest.\n" +
+            "•  What you pick most moves to first place. Punctuation comes out in Chinese: ，。？！\n" +
+            "•  Voice typing also works in Chinese."),
         "13.2.1" to tr("•  La rayita de luz debajo del título de las ventanas ahora tiene color hasta la punta y el brillo la recorre completa, de un extremo al otro.",
             "•  The light line under the windows' title now has color all the way to the tip and the shine runs across all of it, end to end."),
         "13.2.0" to tr("•  La app ahora está en 7 idiomas: español, inglés, portugués, francés, italiano, alemán y chino. Ve a Inicio › Idioma › «Idioma de esta pantalla» y elige el tuyo.\n" +

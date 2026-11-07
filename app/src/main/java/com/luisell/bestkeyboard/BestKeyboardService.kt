@@ -67,6 +67,50 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var doubleSpace = true
     private var numberRow = true
     private var lang = "es"
+
+    // ---------------------------------------------------------------- 🇨🇳 Chino con pinyin
+    private val pyBuf = StringBuilder()
+    private var pyCands: List<Pinyin.Cand> = emptyList()
+    private var pyBar: PinyinBar? = null
+
+    /** ¿Las letras van al pinyin? (teclado en chino, en una caja normal) */
+    private fun zhOn() = lang == "zh" && !translating && !isPassword && !codeOn && !hackerActive && mode == 0 && page == Page.LETTERS
+
+    private fun pyRefresh() {
+        val ic = target()
+        if (pyBuf.isEmpty()) {
+            pyCands = emptyList()
+            pyBar?.hide()
+            return
+        }
+        ic?.setComposingText(pyBuf.toString(), 1)
+        pyCands = Pinyin.candidates(pyBuf.toString())
+        val bar = pyBar ?: return
+        kv?.let { (bar.layoutParams as? FrameLayout.LayoutParams)?.let { lp -> if (lp.height != it.stripHeight) { lp.height = it.stripHeight; bar.layoutParams = lp } } }
+        bar.show(pyBuf.toString(), pyCands)
+    }
+
+    /** Elegiste un caracter (o la barra espaciadora pone el primero). */
+    private fun pyPick(i: Int) {
+        val ic = target() ?: return
+        val c = pyCands.getOrNull(i)
+        if (c == null) { ic.commitText(pyBuf.toString(), 1); pyBuf.clear(); pyRefresh(); return }
+        ic.beginBatchEdit()
+        ic.commitText(c.word, 1)
+        pyBuf.delete(0, minOf(c.consumed, pyBuf.length))
+        if (pyBuf.isNotEmpty()) ic.setComposingText(pyBuf.toString(), 1)
+        ic.endBatchEdit()
+        Pinyin.learn(prefs, c.word)
+        pyRefresh()
+    }
+
+    /** Se olvida lo que estabas escribiendo en pinyin (cambiaste de caja o de idioma). */
+    private fun pyReset(commit: Boolean = false) {
+        if (pyBuf.isEmpty()) { pyBar?.hide(); return }
+        if (commit) try { target()?.finishComposingText() } catch (_: Exception) { }
+        pyBuf.clear()
+        pyRefresh()
+    }
     private var suggestOn = true
     private var autocorrectOn = true
     private var learnOn = true
@@ -334,6 +378,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         kv = v
         // Las teclas mandan la altura; emojis y portapapeles usan la misma
         val box = PanelBox(this, v)
+        if (Langs.pair(prefs).let { it.first == "zh" || it.second == "zh" }) Pinyin.load(this)
         // 🖼️ El video de fondo va detrás de las teclas
         val bgv = BgVideoView(this)
         bgv.visibility = View.GONE
@@ -691,6 +736,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         codeBar = cb
         root.addView(cb, LinearLayout.LayoutParams(-1, -2))
         root.addView(box, LinearLayout.LayoutParams(-1, -2))
+        val pb = PinyinBar(this)
+        pb.visibility = View.GONE
+        pb.onPick = { i -> pyPick(i) }
+        pb.onFeedback = { onKeyFeedback() }
+        box.addView(pb, FrameLayout.LayoutParams(-1, PanelUi.dp(this, 46f), android.view.Gravity.TOP))
+        pyBar = pb
 
         mode = 0
         L.onChange {
@@ -1595,6 +1646,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         if (!restarting) { undoSnap = null; kv?.playIntro() } // ⌨️ la luz de bienvenida
+        pyBuf.clear(); pyBar?.hide()
         if (driveSticky() && !isPassword && mode != 14) handler.post { if (driveSticky()) showMode(14) } // 🛻 sigue en modo manejando
         applySettings()
         // 🌐 Cada app empieza en el idioma que usaste ahí la última vez (WhatsApp en español, la del trabajo en inglés…)
@@ -1685,6 +1737,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        pyReset(commit = true)
         bgVideoView?.pause()
         learnTypedEmail()
         codeBar?.let { if (it.asking) it.hideAsk() }
@@ -1744,6 +1797,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
         selStart = newSelStart
         selEnd = newSelEnd
+        // Tocaste en otro lado mientras escribías pinyin: se queda lo que había
+        if (pyBuf.isNotEmpty() && candidatesStart < 0) { pyBuf.clear(); pyRefresh() }
         updateAutoCaps()
         if (newSelStart != newSelEnd) {
             clearSlots()
@@ -1845,6 +1900,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         clipPanel?.let { it.historyOn = clipHistoryOn; it.applyPalette(pal) }
         voicePanel?.applyPalette(pal)
         tBar?.applyPalette(pal)
+        pyBar?.applyPalette(pal)
         sBar?.applyPalette(pal)
         codeBar?.applyPalette(pal)
         codeOn = prefs.getBoolean(Prefs.CODE_MODE, false)
@@ -2114,6 +2170,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun updateSuggestions() {
+        if (lang == "zh") { clearSlots(); return } // en chino salen los caracteres en su propia fila
         updateWordSuggestions()
         // Se lee el texto una sola vez para las dos sugerencias (más rápido al escribir)
         sugBefore = try { target()?.getTextBeforeCursor(80, 0) } catch (_: Exception) { null }
@@ -2511,6 +2568,18 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (spellOn) stopSpell()
         if (hackerActive) { hackerText(text); return }
         if (codeOn && !codeAsking) { codeText(text); return }
+        if (zhOn() && text.length == 1) {
+            val ch = text[0]
+            if (ch in 'a'..'z' && shift == 0 || (ch in 'a'..'z' || ch in 'A'..'Z') && pyBuf.isNotEmpty()) {
+                // 🇨🇳 La letra va al pinyin y salen los caracteres para elegir
+                pyBuf.append(ch.lowercaseChar())
+                pyRefresh()
+                return
+            }
+            if (pyBuf.isNotEmpty()) pyPick(0)
+            val cn = Pinyin.punct(text)
+            if (cn != text) { target()?.commitText(cn, 1); lastWasSpace = false; return }
+        }
         // Las sugerencias (pegar, capturas) se quedan hasta que las uses o toques su ✕
         if (quick?.save == true) clearQuick(false)
         val ic = target() ?: return
@@ -2563,6 +2632,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (changeSelectionCase()) return
         }
         val ic = target()
+        if (pyBuf.isNotEmpty() && ic != null) {
+            if (code == Codes.SPACE) { pyPick(0); return }
+            if (code == Codes.ENTER) { ic.commitText(pyBuf.toString(), 1); pyBuf.clear(); pyRefresh(); return }
+            if (code != Codes.SHIFT) pyReset(commit = true)
+        }
         if (code != Codes.SHIFT) {
             lastCorrection = null
             phantomSpace = false
@@ -2716,6 +2790,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (hackerActive) { sendKey(KeyEvent.KEYCODE_DEL, hMeta()); hConsume(); return }
         if (codeOn && !codeAsking && codeDeleteIndent()) return
         val ic = target() ?: return
+        if (pyBuf.isNotEmpty()) {
+            pyBuf.setLength(pyBuf.length - 1)
+            if (pyBuf.isEmpty()) ic.commitText("", 1)
+            pyRefresh()
+            return
+        }
         autoSpace = false
         lastWasSpace = false
         phantomSpace = false
@@ -3836,7 +3916,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun setLang(l: String) {
         if (l == lang) return
+        pyReset(commit = true)
         lang = l
+        if (l == "zh") Pinyin.load(this)
         prefs.edit().putString(Prefs.LANG, lang).apply()
         rememberAppLang()
         L.set(lang)
@@ -3855,7 +3937,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
      * (2 seguidas), el teclado se cambia solo.
      */
     private fun autoLang(word: String) {
-        if (!prefs.getBoolean(Prefs.AUTO_LANG, true) || isPassword || codeOn || hackerActive) return
+        if (!prefs.getBoolean(Prefs.AUTO_LANG, true) || isPassword || codeOn || hackerActive || lang == "zh" || Langs.other(prefs, lang) == "zh") return
         val w = word.lowercase().trim('\'', '’')
         if (w.length < 2 && w != "i") return
         val v = WordStore.engine?.langOf(w) ?: return
@@ -5038,6 +5120,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) {
+        if (lang == "zh") return
         val v = kv ?: return
         val ic = target() ?: return
         val dec = WordStore.gesture ?: return
