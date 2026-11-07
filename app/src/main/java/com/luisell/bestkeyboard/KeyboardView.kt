@@ -1312,6 +1312,62 @@ class KeyboardView(context: Context) : View(context) {
     // ---------------------------------------------------------------- Toques
 
     @SuppressLint("ClickableViewAccessibility")
+    // ---------------------------------------------------------------- ♿ TalkBack (lector de pantalla)
+    private var a11yKey: Key? = null
+
+    private fun a11yOn(): Boolean = try {
+        (context.getSystemService(Context.ACCESSIBILITY_SERVICE) as android.view.accessibility.AccessibilityManager).isTouchExplorationEnabled
+    } catch (_: Exception) { false }
+
+    /** Cómo se dice una tecla en voz alta. */
+    private fun spoken(k: Key): String = when (k.code) {
+        Codes.SPACE -> L.t("espacio", "space")
+        Codes.DELETE -> L.t("borrar", "delete")
+        Codes.SHIFT -> L.t("mayúsculas", "shift")
+        Codes.ENTER -> L.t("intro", "enter")
+        Codes.LANG -> L.t("cambiar idioma", "change language")
+        Codes.MODE_SYM, Codes.MODE_SYM2 -> L.t("símbolos", "symbols")
+        Codes.MODE_LETTERS -> L.t("letras", "letters")
+        Codes.UNDO -> L.t("deshacer", "undo")
+        else -> (k.text ?: k.label).let { t -> if (shift > 0 && t.length == 1) t.uppercase() else t }
+    }
+
+    /**
+     * Con TalkBack: al pasar el dedo se dice la tecla en voz alta; al levantarlo se escribe
+     * (como en Gboard). Sin TalkBack no hace nada.
+     */
+    override fun onHoverEvent(e: MotionEvent): Boolean {
+        if (!a11yOn()) return super.onHoverEvent(e)
+        val y = e.y
+        if (y < stripH) return super.onHoverEvent(e)
+        when (e.actionMasked) {
+            MotionEvent.ACTION_HOVER_ENTER, MotionEvent.ACTION_HOVER_MOVE -> {
+                val k = findKey(e.x, y)
+                if (k != null && k !== a11yKey) {
+                    a11yKey = k
+                    activeKey = k
+                    invalidate()
+                    announceForAccessibility(spoken(k))
+                }
+            }
+            MotionEvent.ACTION_HOVER_EXIT -> {
+                val k = a11yKey
+                a11yKey = null
+                activeKey = null
+                invalidate()
+                if (k != null) {
+                    listener?.onKeyFeedback()
+                    when (k.code) {
+                        0 -> k.text?.let { listener?.onKeyText(it) }
+                        Codes.DELETE -> listener?.onDeletePress()
+                        else -> listener?.onKeyCode(k.code)
+                    }
+                }
+            }
+        }
+        return true
+    }
+
     override fun onTouchEvent(e: MotionEvent): Boolean {
         if (resizing) { resizeTouch(e); return true }
         // Mide la velocidad del dedo (para que la barra de arriba siga deslizando al soltar)

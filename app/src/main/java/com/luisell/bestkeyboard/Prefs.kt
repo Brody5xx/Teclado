@@ -51,6 +51,8 @@ object Prefs {
     /** Para qué usa el teclado (chat, student, office, tech) y si salen las herramientas del trabajo. */
     const val PROFILE = "profile"
     const val WORK_PACK = "work_pack"
+    /** 👓 Modo fácil: teclas grandes, alto contraste y vibración fuerte. */
+    const val EASY_MODE = "easy_mode"
     const val BACKUP_NAG = "backup_nag"
     const val APP_LANGS = "app_langs"
     const val KEEP_OPEN = "keep_open"     // ⌨️ no bajar el teclado solo (solo con Bajar o la flecha atrás)
@@ -280,6 +282,21 @@ class Palette(
     }
 
     companion object {
+        /** 👓 Modo fácil: negro con letras blancas y amarillo (máximo contraste, se lee sin esfuerzo). */
+        val HIGH_CONTRAST = Palette(
+            isDark = true,
+            bg = 0xFF000000.toInt(),
+            key = 0xFF1A1A1A.toInt(),
+            keyPressed = 0xFF4D4D4D.toInt(),
+            special = 0xFF333333.toInt(),
+            accent = 0xFFFFD60A.toInt(),
+            accentPressed = 0xFFFFE566.toInt(),
+            onAccent = 0xFF000000.toInt(),
+            text = 0xFFFFFFFF.toInt(),
+            hint = 0xFFFFFFFF.toInt(),
+            popup = 0xFF262626.toInt(),
+            shadow = 0x00000000,
+        )
         val DARK = Palette(
             isDark = true,
             bg = 0xFF17181C.toInt(),

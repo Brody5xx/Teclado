@@ -654,6 +654,14 @@ class MainActivity : UiActivity() {
             tr("Tickets, Libreta, Mi jornada, Mis sitios, checklist, modo guantes, teclado IP/MAC y etiquetas. Apágalo si no las usas y el teclado se ve más simple.",
                 "Tickets, Notebook, My workday, My sites, checklist, glove mode, IP/MAC pad and labels. Turn it off if you don't use them and the keyboard looks simpler."))
 
+        // ---- 👓 Modo fácil (accesibilidad)
+        card(tr("Modo fácil", "Easy mode"), Icons.EYE, keywords = "accesibilidad grande contraste vista mayores talkback accessibility big contrast")
+        switch(tr("Teclas grandes y fáciles de ver", "Big, easy-to-see keys"), Prefs.EASY_MODE, false,
+            tr("Letras más grandes, teclas más altas, negro con blanco y amarillo (máximo contraste) y vibración fuerte. Ideal para personas mayores o con poca vista.",
+                "Bigger letters, taller keys, black with white and yellow (maximum contrast) and strong vibration. Great for older people or low vision."))
+        text(tr("Con TalkBack (el lector de pantalla de Android) el teclado dice cada tecla al pasar el dedo y la escribe al levantarlo.",
+            "With TalkBack (Android's screen reader) the keyboard says each key as you slide your finger and types it when you lift."), 12f, faded = true)
+
         // ---- Configuración inicial (tarjeta con borde de color)
         card(tr("Configuración inicial", "Setup"), Icons.SETTINGS, glow = true)
         status = text("", 15f)

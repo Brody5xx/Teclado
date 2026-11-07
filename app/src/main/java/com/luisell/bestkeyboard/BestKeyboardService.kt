@@ -1799,6 +1799,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         var pal = Palette.forTheme(theme, systemDark, prefs.getString(Prefs.HACKER_COLOR, ""))
         // Color de acento elegido (si no, el del tema)
         pal = withCustomColors(pal)
+        val easy = prefs.getBoolean(Prefs.EASY_MODE, false)
+        if (easy) pal = Palette.HIGH_CONTRAST // 👓 Modo fácil: máximo contraste
         PanelUi.glowAccent = pal.accent
         PanelUi.glass = BgMedia.kind(this).isNotEmpty()
         PanelUi.pal = pal
@@ -1808,7 +1810,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         applyBackground(v)
         v.keyShape = prefs.getString(Prefs.KEY_SHAPE, "normal") ?: "normal"
         v.labelScale = when (prefs.getString(Prefs.LABEL_SIZE, "normal")) { "small" -> 0.86f; "big" -> 1.16f; else -> 1f } *
-            (if (prefs.getBoolean(Prefs.GLOVES, false)) 1.2f else 1f)
+            (if (prefs.getBoolean(Prefs.GLOVES, false)) 1.2f else 1f) * (if (easy) 1.3f else 1f)
         v.keyAnim = prefs.getString(Prefs.KEY_ANIM, "pop") ?: "pop"
         v.stripArc = when (prefs.getString(Prefs.STRIP_ARC, "normal")) { "none" -> 0f; "soft" -> 0.45f; "strong" -> 1.8f; else -> 1f }
         v.stripNames = prefs.getBoolean(Prefs.STRIP_NAMES, true)
@@ -1876,11 +1878,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val gloves = prefs.getBoolean(Prefs.GLOVES, false)
         v.glovesOn = gloves
         v.keyHeightDp = (if (landscape) base * 0.78f else base) * hk * (if (gloves) 1.28f else 1f)
-        if (!v.resizing) v.heightScale = prefs.getFloat(Prefs.SIZE, 1f)
+        if (!v.resizing) v.heightScale = prefs.getFloat(Prefs.SIZE, 1f) * (if (prefs.getBoolean(Prefs.EASY_MODE, false)) 1.15f else 1f)
         v.showPreview = prefs.getBoolean(Prefs.PREVIEW, true)
 
         vibrateOn = prefs.getBoolean(Prefs.VIBRATE, true)
-        when (prefs.getString(Prefs.VIB_STRENGTH, "medium")) {
+        when (if (prefs.getBoolean(Prefs.EASY_MODE, false)) "strong" else prefs.getString(Prefs.VIB_STRENGTH, "medium")) {
             "soft" -> { vibMs = 8L; vibAmp = 60 }
             "strong" -> { vibMs = 25L; vibAmp = 255 }
             else -> { vibMs = 15L; vibAmp = 140 }
