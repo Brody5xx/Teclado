@@ -2439,6 +2439,26 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onZhPick(index: Int) = pyPick(index)
 
+    /** 🇨🇳 Elegir el teclado chino desde la barra de arriba. */
+    private fun pickZhLayout() {
+        val bar = infoBar ?: return
+        val cur = Prefs.zhLayout(prefs)
+        fun use(z: String) {
+            pyReset(commit = false)
+            target()?.commitText("", 1)
+            prefs.edit().putString(Prefs.ZH_LAYOUT, z).putBoolean(Prefs.ZH_STROKE, z == "stroke").apply()
+            if (z == "stroke") Stroke.load(this)
+            closeInfo()
+            rebuild()
+        }
+        fun mark(z: String, label: String) = (if (z == cur) "✓ " else "") + label
+        bar.show(L.t("Teclado chino", "Chinese keyboard"), L.t("Elige cómo escribir en chino:", "Pick how to type in Chinese:"), listOf(
+            mark("qwerty", "拼音 · 26") to { use("qwerty") },
+            mark("t9", "九键 · 9") to { use("t9") },
+            mark("stroke", "笔画") to { use("stroke") },
+        ))
+    }
+
     override fun onSuggestion(slot: Int) {
         if (codeActive) { useCodeSnippet(slot); return }
         if (slot == formalSlot && !vaultActive) { useFormalSuggestion(); return }
@@ -2949,6 +2969,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_PHRASES -> showMode(7)
             KeyboardView.TOOL_CALC -> showMode(8)
             KeyboardView.TOOL_FX -> showMode(17)
+            KeyboardView.TOOL_ZHLAYOUT -> pickZhLayout()
             KeyboardView.TOOL_GIF -> showMode(9)
             KeyboardView.TOOL_READ -> readMessage()
             KeyboardView.TOOL_TICKET -> startTicket()
@@ -3979,6 +4000,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         lang = l
         Layouts.chineseUi = l == "zh"
         if (l == "zh") { Pinyin.load(this); Stroke.load(this) }
+        // 🇨🇳 El botón «Teclado chino» aparece o se va de la barra de arriba
+        prefs.edit().putString(Prefs.LANG, l).apply()
+        Tools.load(this, prefs).let { (b, m) -> kv?.setBarTools(b, m); morePanel?.setTools(b, m, Tools.maxBar(this)) }
         prefs.edit().putString(Prefs.LANG, lang).apply()
         rememberAppLang()
         L.set(lang)

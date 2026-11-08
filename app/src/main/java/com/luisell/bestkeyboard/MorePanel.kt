@@ -51,6 +51,7 @@ object Tools {
         Info(KeyboardView.TOOL_ONEHAND, Icons.ONEHAND, "Una mano", "One hand", false),
         Info(KeyboardView.TOOL_CALC, Icons.CALC, "Calculadora", "Calculator", true),
         Info(KeyboardView.TOOL_FX, Icons.MONEY, "Divisas", "Currency", true),
+        Info(KeyboardView.TOOL_ZHLAYOUT, Icons.KEYBOARD, "Teclado chino", "Chinese keyboard", false),
         Info(KeyboardView.TOOL_TICKET, Icons.TICKET, "Notas → Ticket", "Notes → Ticket", true),
         Info(KeyboardView.TOOL_FORMAL, Icons.FORMAL, "Más formal (palabra)", "Formal words", true),
         Info(KeyboardView.TOOL_REVIEW, Icons.REVIEW, "Revisar antes de enviar", "Review before sending", true),
@@ -136,6 +137,9 @@ object Tools {
         for (t in ALL) if (t.tool !in bar && t.tool !in more) more.add(t.tool)
         // 🧰 Sin el paquete de trabajo no salen las herramientas del trabajo de campo
         if (!prefs.getBoolean(Prefs.WORK_PACK, true)) { bar.removeAll { it in WORK }; more.removeAll { it in WORK } }
+        // 🇨🇳 El botón del teclado chino: solo con el teclado en chino, y siempre el primero de la barra
+        bar.remove(KeyboardView.TOOL_ZHLAYOUT); more.remove(KeyboardView.TOOL_ZHLAYOUT)
+        if (prefs.getString(Prefs.LANG, "es") == "zh") bar.add(0, KeyboardView.TOOL_ZHLAYOUT)
         trim(bar, more, max)
         return bar to more
     }

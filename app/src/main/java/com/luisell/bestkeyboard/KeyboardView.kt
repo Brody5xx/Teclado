@@ -114,6 +114,8 @@ class KeyboardView(context: Context) : View(context) {
         /** 🕶 Modo incógnito. */
         const val TOOL_INCOGNITO = 70
         const val TOOL_FX = 71
+        /** 🇨🇳 Elegir el teclado chino (拼音 / 九键 / 笔画). Solo sale con el teclado en chino. */
+        const val TOOL_ZHLAYOUT = 72
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -3032,6 +3034,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_FINISH -> Icons.TEXT_GO
         TOOL_INCOGNITO -> Icons.EYE_OFF
         TOOL_FX -> Icons.MONEY
+        TOOL_ZHLAYOUT -> Icons.KEYBOARD
         else -> -1
     }
 

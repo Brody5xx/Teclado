@@ -582,6 +582,7 @@ Phrases
 Pick a password and a folder (for example, in Google Drive). Every week a new copy is saved by itself, keeping the 4 most recent.
 Pick a photo
 Pick a photo…
+Pick how to type in Chinese:
 Pick one and then type the time it happened (e.g. 5:32pm).
 Pick one. Your fingerprint or PIN is asked before typing it.
 Pick the color of the panel buttons and cards (More options, Translate message, My workday…). The first (multicolor) circle keeps the theme's.
@@ -1114,6 +1115,7 @@ week
 •  My workday: lunch now defaults to «Unpaid»: 30 minutes are subtracted from your hours (or the real time if you log 🍔 and ↩️).
 •  My workday: pick the icon (truck, clock, stopwatch, briefcase, calendar, hard hat or building).\n•  Clipboard like Gboard: press and hold to select several (the others wiggle), pin, delete or edit what you copied.\n•  ✏️ Pencil in the clipboard to add your own texts.\n•  ← Back button on every panel.
 •  My workday: when you tap «📍 Arrived on site» at a place you haven't saved, GPS finds the address and logs it («Arrived at 123 Main St»).\n•  Then it asks «Save this site?»: name it once and next time it's recognized automatically (today's entries switch to the new name too).
+•  New button in the top bar (the keyboard icon) to pick the Chinese keyboard: 拼音 (26 letters), 九键 (9 keys) or 笔画 (strokes). It only shows when the keyboard is in Chinese, always first in the bar.
 •  New generic examples throughout the app (no real place names).
 •  New icons across the keyboard.
 •  New scroll bar in emojis, GIFs and stickers: a thin, soft flash of white light that fades by itself and doesn't get in the way.

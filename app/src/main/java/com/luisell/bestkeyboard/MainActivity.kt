@@ -1456,6 +1456,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.8.1" to tr("•  Nuevo botón en la barra de arriba (el teclado) para elegir el teclado chino: 拼音 (26 letras), 九键 (9 teclas) o 笔画 (trazos). Solo aparece cuando el teclado está en chino, y siempre es el primero de la barra.",
+            "•  New button in the top bar (the keyboard icon) to pick the Chinese keyboard: 拼音 (26 letters), 九键 (9 keys) or 笔画 (strokes). It only shows when the keyboard is in Chinese, always first in the bar."),
         "13.8.0" to tr("•  Teclado chino de 9 teclas (九宫格), como en los teléfonos chinos: ABC, DEF, GHI… Tocas una vez cada tecla (64426 = nihao → 你好) y arriba salen los caracteres; también con iniciales (64 → 你好). Tiene 重输 (borrar todo) y la puntuación china a un lado.\n" +
             "•  Solo aparece cuando el teclado está en chino: la tecla de abajo cambia entre 九键 (9 teclas), 笔画 (trazos) y 拼音 (26 letras). En Inicio › Idioma › «Teclado chino» también lo eliges (solo si tienes el chino).",
             "•  Chinese 9-key keyboard (九宫格), like on Chinese phones: ABC, DEF, GHI… Tap each key once (64426 = nihao → 你好) and the characters show up above; also with initials (64 → 你好). It has 重输 (clear all) and Chinese punctuation on the side.\n" +
