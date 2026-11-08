@@ -66,6 +66,8 @@ object Prefs {
     const val CLIP_LAST_SIG = "clip_last_sig"
     const val TR_SRC = "translate_from"
     const val TR_DST = "translate_to"
+    const val SCR_SRC = "screen_tr_from"
+    const val SCR_DST = "screen_tr_to"
     /** 🇨🇳 Chino con trazos (一丨丿丶乛) en vez de pinyin. */
     const val ZH_STROKE = "zh_stroke"
     /** 🇨🇳 Qué teclado chino: "qwerty" (pinyin de 26 teclas), "t9" (9 teclas) o "stroke" (trazos). */

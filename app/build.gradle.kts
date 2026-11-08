@@ -15,7 +15,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = buildNumber
-        versionName = "14.0.1 (build $buildNumber)"
+        versionName = "14.1.0 (build $buildNumber)"
         // Solo los procesadores de teléfonos reales: la app pesa menos
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
@@ -56,6 +56,7 @@ android {
 dependencies {
     // Traducción dentro del teléfono (Google ML Kit, gratis)
     implementation("com.google.mlkit:translate:17.0.3")
+    implementation("com.google.mlkit:language-id:17.0.6")
     // Reescribir formal con la IA de Google dentro del teléfono (Gemini Nano, sin internet)
     implementation("com.google.mlkit:genai-rewriting:1.0.0-beta1")
     implementation("com.google.guava:listenablefuture:1.0")

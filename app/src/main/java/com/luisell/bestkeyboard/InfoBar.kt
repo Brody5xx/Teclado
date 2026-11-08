@@ -27,6 +27,8 @@ class InfoBar(context: Context) : LinearLayout(context) {
         }
     }
     private val chips = LinearLayout(context)
+    /** Los dos idiomas que se pueden tocar para cambiarlos (Traducir captura). */
+    private val langRow = LinearLayout(context)
     /** 💎 El diamante con la luz dando vueltas mientras espera (traduciendo, la IA pensando…). */
     private val loader = DiamondView(context, loader = true)
     /** 🏁 El diamante grande de las celebraciones (terminaste tu día, llegaste a 40 horas). */
@@ -45,6 +47,11 @@ class InfoBar(context: Context) : LinearLayout(context) {
         title.setTypeface(title.typeface, Typeface.BOLD)
         title.setPadding(d(10f), 0, d(8f), 0)
         row.addView(title, LayoutParams(0, -2, 1f))
+        langRow.orientation = HORIZONTAL
+        langRow.gravity = Gravity.CENTER_VERTICAL
+        langRow.visibility = GONE
+        langRow.setPadding(d(8f), 0, 0, 0)
+        row.addView(langRow, LayoutParams(0, -2, 1f))
         loader.visibility = GONE
         row.addView(loader, LayoutParams(d(30f), d(30f)).apply { rightMargin = d(8f) })
         addView(row, LayoutParams(-1, -2))
@@ -75,6 +82,8 @@ class InfoBar(context: Context) : LinearLayout(context) {
 
     fun show(heading: String, text: String, buttons: List<Pair<String, () -> Unit>>) {
         party.visibility = GONE
+        langRow.visibility = GONE
+        title.visibility = VISIBLE
         Emo.apply(title, heading, PanelUi.icon(palette), 17f) // sin emojis: ícono pequeño
         // Los emojis al principio de cada renglón (los nuestros) se quitan; lo demás queda igual
         body.text = if (keepEmojis) text else text.lines().joinToString("\n") { ln -> Emo.split(ln).second.let { r -> if (r.isEmpty()) ln else r } }
@@ -102,6 +111,41 @@ class InfoBar(context: Context) : LinearLayout(context) {
             chips.addView(c, LayoutParams(-2, -2).apply { rightMargin = d(8f) })
         }
         visibility = VISIBLE
+    }
+
+    /**
+     * En vez del título, dos idiomas que se tocan para cambiarlos: [Chino ▾] ⇄ [Español ▾].
+     * Se llama después de [show].
+     */
+    fun showLangs(from: String, to: String, onFrom: () -> Unit, onTo: () -> Unit, onSwap: (() -> Unit)?) {
+        langRow.removeAllViews()
+        fun pill(label: String, act: () -> Unit) = TextView(context).apply {
+            text = label + "  ▾"
+            textSize = 14f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(palette.text)
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            gravity = Gravity.CENTER
+            setPadding(d(12f), d(7f), d(10f), d(7f))
+            background = PanelUi.pressable(palette.key, palette.keyPressed, d(16f).toFloat())
+            setOnClickListener { onFeedback?.invoke(); act() }
+        }
+        langRow.addView(pill(from, onFrom), LayoutParams(0, -2, 1f))
+        val sw = TextView(context).apply {
+            text = "⇄"
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(if (onSwap != null) palette.text else PanelUi.icon(palette))
+            if (onSwap != null) {
+                background = PanelUi.pressable(palette.special, palette.keyPressed, d(16f).toFloat())
+                setOnClickListener { onFeedback?.invoke(); onSwap() }
+            }
+        }
+        langRow.addView(sw, LayoutParams(d(36f), d(32f)).apply { leftMargin = d(6f); rightMargin = d(6f) })
+        langRow.addView(pill(to, onTo), LayoutParams(0, -2, 1f))
+        title.visibility = GONE
+        langRow.visibility = VISIBLE
     }
 
     /** Lo que muestran como resultado (traducciones, lo copiado…): eso no se toca, puede tener tus emojis. */

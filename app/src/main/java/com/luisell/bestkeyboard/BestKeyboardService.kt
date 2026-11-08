@@ -2615,33 +2615,96 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions.Builder().build())
                     .process(img)
                     .addOnSuccessListener { res ->
-                        val text = res.textBlocks.joinToString("\n") { it.text }.trim()
+                        val text = cleanOcr(res.textBlocks.joinToString("\n") { it.text })
                         if (text.isEmpty()) {
                             bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No encontré texto en la captura.", "I didn't find text in the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() }))
                             return@addOnSuccessListener
                         }
-                        val zh = ZhExtras.hasChinese(text)
-                        val mine = Langs.pair(prefs).first.let { if (it == "zh") "es" else it }
-                        val src = if (zh) "zh" else if (looksEnglish(text)) "en" else "es"
-                        val dst = if (src == mine) (if (mine == "en") "es" else "en") else mine
-                        val head = Translation.name(src) + " → " + Translation.name(dst)
-                        bar.show(head, L.t("Traduciendo…", "Translating…"), emptyList())
-                        val t = Translation(src, dst)
-                        readTrans?.close(); readTrans = t
-                        val fail: (String) -> Unit = { handler.post { bar.show(head, L.t("No se pudo traducir. La primera vez necesita internet.", "Couldn't translate. The first time it needs internet."), listOf(L.t("Cerrar", "Close") to { closeInfo() })) } }
-                        t.prepare({ t.translate(text.take(3000), { out -> handler.post {
-                            kv?.flashAi()
-                            bar.show(head, out, listOf(
-                                L.t("Copiar", "Copy") to { copyText(out) },
-                                L.t("Escribir", "Type it") to { insertText(out); closeInfo() },
-                                L.t("Ver original", "See original") to { bar.show(head, text, listOf(L.t("Copiar", "Copy") to { copyText(text) }, L.t("Cerrar", "Close") to { closeInfo() })) },
-                                L.t("Cerrar", "Close") to { closeInfo() },
-                            ))
-                        } }, fail) }, fail)
+                        screenText = text
+                        detectLang(text) { found -> screenFound = found; runScreenTr() }
                     }
                     .addOnFailureListener { bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No se pudo leer la captura.", "Couldn't read the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() })) }
             }
         }.start()
+    }
+
+    /** El texto leído de la captura y el idioma que se detectó en él. */
+    private var screenText = ""
+    private var screenFound = "en"
+
+    /** Traduce [screenText] con los idiomas elegidos (o detectados); los idiomas se tocan para cambiarlos. */
+    private fun runScreenTr() {
+        val bar = infoBar ?: return
+        val text = screenText
+        val pickedSrc = prefs.getString(Prefs.SCR_SRC, "auto") ?: "auto"
+        val src = if (pickedSrc == "auto") screenFound else pickedSrc
+        val mine = Langs.pair(prefs).first
+        var dst = prefs.getString(Prefs.SCR_DST, null) ?: mine
+        if (dst == src) dst = if (pickedSrc == "auto") (if (mine != src) mine else if (src == "es") "en" else "es") else dst
+        val srcLabel = if (pickedSrc == "auto") Translation.name(src) + " (" + L.t("auto", "auto") + ")" else Translation.name(src)
+        val head = Translation.name(src) + " → " + Translation.name(dst)
+        fun langs() = bar.showLangs(srcLabel, Translation.name(dst), { pickScreenLang(true) }, { pickScreenLang(false) },
+            if (src != dst) ({
+                // ⇄ Voltea los idiomas
+                prefs.edit().putString(Prefs.SCR_SRC, dst).putString(Prefs.SCR_DST, src).apply(); runScreenTr()
+            }) else null)
+        if (src == dst) {
+            bar.show(head, text, listOf(L.t("Copiar", "Copy") to { copyText(text) }, L.t("Cerrar", "Close") to { closeInfo() }))
+            langs(); return
+        }
+        bar.show(head, L.t("Traduciendo…", "Translating…"), emptyList()); langs()
+        val t = Translation(src, dst)
+        readTrans?.close(); readTrans = t
+        val fail: (String) -> Unit = { handler.post {
+            bar.show(head, L.t("No se pudo traducir. La primera vez de cada idioma necesita internet.", "Couldn't translate. The first time for each language it needs internet."),
+                listOf(L.t("Reintentar", "Retry") to { runScreenTr() }, L.t("Cerrar", "Close") to { closeInfo() })); langs()
+        } }
+        t.prepare({ t.translate(text.take(3000), { out -> handler.post {
+            if (readTrans !== t) return@post
+            kv?.flashAi()
+            bar.show(head, out, listOf(
+                L.t("Copiar", "Copy") to { copyText(out) },
+                L.t("Escribir", "Type it") to { insertText(out); closeInfo() },
+                L.t("Ver original", "See original") to { bar.show(head, text, listOf(L.t("Copiar", "Copy") to { copyText(text) }, L.t("Volver", "Back") to { runScreenTr() }, L.t("Cerrar", "Close") to { closeInfo() })); langs() },
+                L.t("Cerrar", "Close") to { closeInfo() },
+            ))
+            langs()
+        } }, fail) }, fail)
+    }
+
+    /** Lista para elegir el idioma de la captura ([from]) o al que se traduce. */
+    private fun pickScreenLang(from: Boolean) {
+        val bar = infoBar ?: return
+        readTrans?.close(); readTrans = null
+        val items = ArrayList<Pair<String, () -> Unit>>()
+        if (from) items.add(L.t("Detectar solo", "Detect") to { prefs.edit().putString(Prefs.SCR_SRC, "auto").apply(); runScreenTr() })
+        for (c in Translation.CODES) items.add(Translation.name(c) to {
+            prefs.edit().putString(if (from) Prefs.SCR_SRC else Prefs.SCR_DST, c).apply(); runScreenTr()
+        })
+        bar.show(if (from) L.t("¿En qué idioma está la captura?", "What language is the screenshot in?") else L.t("¿A qué idioma traduzco?", "Translate into which language?"),
+            L.t("Desliza los botones para ver todos los idiomas.", "Swipe the buttons to see all languages."), items)
+    }
+
+    /** Quita la basura que lee en íconos y fotos («O O O O», «| |», letras sueltas). */
+    private fun cleanOcr(raw: String): String = raw.lines().map { ln ->
+        // Las rachas de letras o símbolos sueltos («O O O O O»)
+        ln.replace(Regex("""(?:(?<=^|\s)\S(?=\s|$)\s*){3,}"""), " ").replace(Regex("""\s{2,}"""), " ").trim()
+    }.filter { ln ->
+        val good = ln.count { it.isLetter() }
+        good >= 2 || ZhExtras.hasChinese(ln)
+    }.joinToString("\n").trim()
+
+    /** Adivina el idioma (ML Kit en el teléfono; si no, por las letras y palabras). */
+    private fun detectLang(text: String, done: (String) -> Unit) {
+        val han = text.count { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.HAN }
+        val letters = text.count { it.isLetter() }.coerceAtLeast(1)
+        val guess = if (han * 3 >= letters) "zh" else if (looksEnglish(text)) "en" else "es"
+        if (guess == "zh") { done("zh"); return }
+        try {
+            com.google.mlkit.nl.languageid.LanguageIdentification.getClient().identifyLanguage(text.take(1000))
+                .addOnSuccessListener { code -> val c = code.substringBefore('-'); done(if (c in Translation.CODES) c else guess) }
+                .addOnFailureListener { done(guess) }
+        } catch (_: Throwable) { done(guess) }
     }
 
     /** 📅 Agrega al calendario lo que escribiste, seleccionaste o copiaste («mañana a las 3 reunión»). */
