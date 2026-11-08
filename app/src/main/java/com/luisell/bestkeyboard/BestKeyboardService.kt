@@ -1721,8 +1721,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
      * aunque el teléfono crea que hay un teclado de PC conectado (terminales, apps de escritorio…).
      */
     override fun onEvaluateInputViewShown(): Boolean {
-        if (Anywhere.isOn(this)) return true
-        return super.onEvaluateInputViewShown()
+        val normal = super.onEvaluateInputViewShown()
+        if (normal) return true
+        // Solo cuando Android lo esconde por creer que hay un teclado de PC (y está prendido «Teclado en todas partes»).
+        // Así no se abre solo en otros momentos (por ejemplo, al cerrar «Compartir» en otra app).
+        val c = resources.configuration
+        val hardKb = c.keyboard != Configuration.KEYBOARD_NOKEYS && c.hardKeyboardHidden != Configuration.HARDKEYBOARDHIDDEN_YES
+        return Anywhere.isOn(this) && hardKb
     }
 
     /** Lo intenta varias veces mientras se cierra la cortina y la app recupera el foco. */
@@ -4878,7 +4883,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         super.onStartInput(attribute, restarting)
         inputActive = true
         // ⌨️ La app volvió (se cerró la cortina): si acabas de tocar «Abrir teclado», que salga otra vez
-        if (android.os.SystemClock.uptimeMillis() < Anywhere.showUntil) forceShowSoon()
+        if (restarting && android.os.SystemClock.uptimeMillis() < Anywhere.showUntil) forceShowSoon()
     }
 
     override fun onFinishInput() {

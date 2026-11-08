@@ -1456,6 +1456,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "14.0.1" to tr("•  Arreglado: con «Teclado en todas partes» prendido, el teclado se abría solo en algunas apps (por ejemplo, al cerrar «Compartir»). Ahora solo se fuerza cuando Android lo esconde por creer que hay un teclado de PC, o cuando tocas «Abrir teclado».",
+            "•  Fixed: with «Keyboard anywhere» on, the keyboard opened by itself in some apps (for example, after closing «Share»). Now it's only forced when Android hides it thinking there's a PC keyboard, or when you tap «Open keyboard»."),
         "14.0.0" to tr("•  Chino 联想: después de elegir un carácter, arriba salen solos los que suelen seguir (你 → 好, 们…). Toca y sigue escribiendo frases casi sin teclear.\n" +
             "•  Chino a mano (手写): escribe el carácter con el dedo y elige arriba. Si sigues escribiendo después de una pausa, se pone el primero solo. Lo eliges con el botón del teclado chino o con la tecla de abajo (九键 → 笔画 → 手写 → 拼音). La primera vez baja el reconocimiento (~20 MB).\n" +
             "•  Ver pinyin (en ⋯): selecciona o copia un texto chino y te muestra cómo se lee con tonos (你好 → nǐ hǎo) y qué quiere decir.\n" +

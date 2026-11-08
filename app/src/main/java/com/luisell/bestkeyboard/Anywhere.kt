@@ -27,7 +27,7 @@ object Anywhere {
 
     /** Pide que salga el teclado: lo intenta varias veces mientras la cortina se cierra y la app vuelve. */
     fun requestShow(ctx: Context) {
-        showUntil = android.os.SystemClock.uptimeMillis() + 6000L
+        showUntil = android.os.SystemClock.uptimeMillis() + 4000L
         val svc = BestKeyboardService.instance
         if (svc != null) svc.forceShowSoon()
         else try {
