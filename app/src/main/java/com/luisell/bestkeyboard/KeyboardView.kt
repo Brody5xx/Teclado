@@ -116,6 +116,8 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_FX = 71
         /** 🇨🇳 Elegir el teclado chino (拼音 / 九键 / 笔画). Solo sale con el teclado en chino. */
         const val TOOL_ZHLAYOUT = 72
+        /** ⌨️ Teclado en todas partes (notificación para abrirlo en cualquier app). */
+        const val TOOL_ANYWHERE = 73
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -248,6 +250,9 @@ class KeyboardView(context: Context) : View(context) {
     var glovesOn = false
     /** 🔊 El video de fondo suena (se pinta el botón). */
     var bgSoundOn = false
+    /** ⌨️ «Teclado en todas partes» prendido: su botón se ilumina. */
+    var anywhereOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
         set(v) { if (field != v) { field = v; invalidate() } }
     private var modsOnce: Set<Int> = emptySet()
     private var modsLocked: Set<Int> = emptySet()
@@ -3035,6 +3040,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_INCOGNITO -> Icons.EYE_OFF
         TOOL_FX -> Icons.MONEY
         TOOL_ZHLAYOUT -> Icons.KEYBOARD
+        TOOL_ANYWHERE -> Icons.KEY
         else -> -1
     }
 
@@ -3311,7 +3317,7 @@ class KeyboardView(context: Context) : View(context) {
             }
             val kind = toolIcon(i)
             if (kind < 0) continue
-            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn) || (i == TOOL_GLOVES && glovesOn) || (i == TOOL_BGSOUND && bgSoundOn)
+            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn) || (i == TOOL_GLOVES && glovesOn) || (i == TOOL_BGSOUND && bgSoundOn) || (i == TOOL_ANYWHERE && anywhereOn)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             // Modo acomodar: los demás tiemblan un poquito
             val ang = if (editing) (7.0 * kotlin.math.sin(now * 2 * Math.PI * 4.5 + i * 1.7)).toFloat() else 0f

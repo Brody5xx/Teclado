@@ -70,6 +70,8 @@ object Prefs {
     const val ZH_STROKE = "zh_stroke"
     /** 🇨🇳 Qué teclado chino: "qwerty" (pinyin de 26 teclas), "t9" (9 teclas) o "stroke" (trazos). */
     const val ZH_LAYOUT = "zh_layout"
+    /** ⌨️ Notificación para abrir el teclado en cualquier app. */
+    const val KB_ANYWHERE = "kb_anywhere"
     fun zhLayout(p: android.content.SharedPreferences): String =
         p.getString(ZH_LAYOUT, null) ?: if (p.getBoolean(ZH_STROKE, false)) "stroke" else "qwerty"
     const val SWIPE = "swipe"

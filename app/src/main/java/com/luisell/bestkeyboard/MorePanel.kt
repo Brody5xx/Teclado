@@ -52,6 +52,7 @@ object Tools {
         Info(KeyboardView.TOOL_CALC, Icons.CALC, "Calculadora", "Calculator", true),
         Info(KeyboardView.TOOL_FX, Icons.MONEY, "Divisas", "Currency", true),
         Info(KeyboardView.TOOL_ZHLAYOUT, Icons.KEYBOARD, "Teclado chino", "Chinese keyboard", false),
+        Info(KeyboardView.TOOL_ANYWHERE, Icons.KEY, "Teclado en todas partes", "Keyboard anywhere", false),
         Info(KeyboardView.TOOL_TICKET, Icons.TICKET, "Notas → Ticket", "Notes → Ticket", true),
         Info(KeyboardView.TOOL_FORMAL, Icons.FORMAL, "Más formal (palabra)", "Formal words", true),
         Info(KeyboardView.TOOL_REVIEW, Icons.REVIEW, "Revisar antes de enviar", "Review before sending", true),
@@ -135,6 +136,14 @@ object Tools {
         more.removeAll { it in bar }
         if (FIXED !in bar) { more.remove(FIXED); bar.add(FIXED) }
         for (t in ALL) if (t.tool !in bar && t.tool !in more) more.add(t.tool)
+        // ⌨️ «Teclado en todas partes» va a la barra de arriba la primera vez (después lo acomodas como quieras)
+        if (!prefs.getBoolean("tool_anywhere_added", false)) {
+            more.remove(KeyboardView.TOOL_ANYWHERE)
+            if (KeyboardView.TOOL_ANYWHERE !in bar) bar.add(0, KeyboardView.TOOL_ANYWHERE)
+            prefs.edit().putBoolean("tool_anywhere_added", true)
+                .putString(Prefs.BAR_TOOLS2, bar.filter { it != KeyboardView.TOOL_ZHLAYOUT }.joinToString(","))
+                .putString(Prefs.MORE_TOOLS2, more.filter { it != KeyboardView.TOOL_ZHLAYOUT }.joinToString(",")).apply()
+        }
         // 🧰 Sin el paquete de trabajo no salen las herramientas del trabajo de campo
         if (!prefs.getBoolean(Prefs.WORK_PACK, true)) { bar.removeAll { it in WORK }; more.removeAll { it in WORK } }
         // 🇨🇳 El botón del teclado chino: solo con el teclado en chino, y siempre el primero de la barra

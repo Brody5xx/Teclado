@@ -105,6 +105,16 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- ⌨️ Teclado en todas partes: los botones de su notificación -->
+        <receiver
+            android:name=".AnywhereReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Aviso del ticket del día (y volver a programarlo al prender el teléfono) -->
         <receiver
             android:name=".TicketReminderReceiver"

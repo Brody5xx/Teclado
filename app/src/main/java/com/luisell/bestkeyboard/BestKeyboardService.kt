@@ -38,6 +38,11 @@ import com.luisell.bestkeyboard.words.VoiceText
 /** El servicio del teclado: recibe las teclas y las escribe en la app que estés usando. */
 class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
+    companion object {
+        /** El teclado que está funcionando (para que la notificación «Teclado en todas partes» lo abra). */
+        @Volatile var instance: BestKeyboardService? = null
+    }
+
     private enum class Page { LETTERS, SYM, SYM2, NUM, IP }
     /** Teclado de números o el de IP/MAC (sin sugerencias ni teclado de PC). */
     private val numLike: Boolean get() = page == Page.NUM || page == Page.IP
@@ -351,6 +356,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs.get(this)
+        instance = this
+        try { Anywhere.refresh(this) } catch (_: Exception) { }
         CloudText.onSuccess = { kv?.flashAi() } // ✨ la IA terminó: destello de luz
         TicketReminder.schedule(this)
         @Suppress("DEPRECATION")
@@ -1668,6 +1675,44 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // Sin pantalla completa en horizontal: el teclado se ve igual que en vertical
     override fun onEvaluateFullscreenMode(): Boolean = false
 
+    // ---------------------------------------------------------------- ⌨️ Teclado en todas partes
+
+    /**
+     * Con «Teclado en todas partes» prendido, el teclado de la pantalla sale SIEMPRE,
+     * aunque el teléfono crea que hay un teclado de PC conectado (terminales, apps de escritorio…).
+     */
+    override fun onEvaluateInputViewShown(): Boolean {
+        if (Anywhere.isOn(this)) return true
+        return super.onEvaluateInputViewShown()
+    }
+
+    /** Tocaste la notificación: que salga el teclado en la app donde estás. */
+    fun forceShow() {
+        handler.post {
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= 28) requestShowSelf(InputMethodManager.SHOW_FORCED)
+                else {
+                    @Suppress("DEPRECATION")
+                    window?.window?.attributes?.token?.let { (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInputFromInputMethod(it, InputMethodManager.SHOW_FORCED) }
+                }
+                updateInputViewShown()
+            } catch (_: Exception) { }
+        }
+    }
+
+    private fun toggleAnywhere() {
+        val on = !Anywhere.isOn(this)
+        Anywhere.set(this, on)
+        kv?.anywhereOn = on
+        if (on && android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, Emo.strip(L.t("Para ver la notificación, permite las notificaciones de Best Keyboard en los ajustes del teléfono.",
+                "To see the notification, allow Best Keyboard notifications in the phone settings.")), Toast.LENGTH_LONG).show()
+        } else Toast.makeText(this, Emo.strip(if (on) L.t("Teclado en todas partes: prendido. Toca la notificación para abrir el teclado en cualquier app.",
+            "Keyboard anywhere: on. Tap the notification to open the keyboard in any app.")
+            else L.t("Teclado en todas partes: apagado.", "Keyboard anywhere: off.")), Toast.LENGTH_SHORT).show()
+    }
+
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         if (!restarting) { undoSnap = null; kv?.playIntro() } // ⌨️ la luz de bienvenida
@@ -1802,6 +1847,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDestroy() {
+        if (instance === this) instance = null
         bgVideoView?.release()
         prefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
         clipboard?.removePrimaryClipChangedListener(clipListener)
@@ -1849,6 +1895,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         v.bgDim = BgMedia.dim(this)
         val sound = prefs.getBoolean(Prefs.BG_SOUND, false)
         v.bgSoundOn = kind == "video" && sound
+        v.anywhereOn = Anywhere.isOn(this)
         val stamp = kind + ":" + prefs.getLong(Prefs.BG_STAMP, 0L)
         val bgv = bgVideoView
         when (kind) {
@@ -2970,6 +3017,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_CALC -> showMode(8)
             KeyboardView.TOOL_FX -> showMode(17)
             KeyboardView.TOOL_ZHLAYOUT -> pickZhLayout()
+            KeyboardView.TOOL_ANYWHERE -> toggleAnywhere()
             KeyboardView.TOOL_GIF -> showMode(9)
             KeyboardView.TOOL_READ -> readMessage()
             KeyboardView.TOOL_TICKET -> startTicket()
