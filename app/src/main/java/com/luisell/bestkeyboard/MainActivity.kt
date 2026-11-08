@@ -1451,6 +1451,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.7.4" to tr("•  Chino: los caracteres ahora van DENTRO de la misma barra de sugerencias del teclado (ya no es una barra aparte encima). Se ve igual que en español e inglés: transparente, con tu fondo y el destello. Desliza para ver más.",
+            "•  Chinese: the characters now go INSIDE the keyboard's own suggestion bar (no longer a separate bar on top). It looks just like Spanish and English: transparent, with your background and the sparkle. Swipe to see more."),
         "13.7.3" to tr("•  Chino con iniciales (简拼), como Sogou y Gboard: nh → 你好, xx → 谢谢, wm → 我们, hd → 好的, zm → 怎么, dbq → 对不起. Ya no hace falta escribir el pinyin entero.\n" +
             "•  La fila de caracteres nunca se queda vacía: si las letras no forman pinyin, salen los caracteres más usados que empiezan con esa letra.\n" +
             "•  Frases de chat comunes: 好的, 没事, 没问题, 不客气, 晚安, 在吗, 多少钱…",

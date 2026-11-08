@@ -35,6 +35,8 @@ class KeyboardView(context: Context) : View(context) {
         fun onLongPressGlobe()
         fun onKeyFeedback()
         fun onSuggestion(slot: Int)
+        /** 🇨🇳 Tocaste un carácter chino de la barra de sugerencias. */
+        fun onZhPick(index: Int) {}
         /** Mantener presionada una sugerencia (para borrarla). */
         fun onSuggestionLong(slot: Int) {}
         /** Terminaste un trazo de "deslizar para escribir" (puntos en píxeles). */
@@ -1476,6 +1478,13 @@ class KeyboardView(context: Context) : View(context) {
         altKeys = null
         stripDown = false
         stripDragging = false
+        if (y < stripH && (zhCands.isNotEmpty() || zhPinyin.isNotEmpty())) {
+            zhDown = true; zhDrag = false; zhDownX = x; zhStartScroll = zhScroll
+            zhPressed = zhHit(x)
+            if (zhPressed >= 0) listener?.onKeyFeedback()
+            invalidate()
+            return
+        }
         if (y < stripH && stripBlank) return
         if (y < stripH) {
             stripDown = true
@@ -1552,6 +1561,16 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun movePointer(x: Float, y: Float) {
+        if (zhDown) {
+            // Deslizar para ver más caracteres
+            if (zhDrag || abs(x - zhDownX) > 10f * d) {
+                zhDrag = true
+                zhPressed = -1
+                zhScroll = (zhStartScroll - (x - zhDownX)).coerceIn(0f, zhMax())
+                invalidate(0, 0, width, stripH.toInt() + 1)
+            }
+            return
+        }
         if (stripDown && editing) {
             editX = x
             editMove()
@@ -1647,6 +1666,15 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun releasePointer(commit: Boolean) {
+        if (zhDown) {
+            zhDown = false
+            activeId = -1
+            val i = zhPressed
+            zhPressed = -1
+            invalidate(0, 0, width, stripH.toInt() + 1)
+            if (commit && !zhDrag && i >= 0) listener?.onZhPick(i)
+            return
+        }
         handler.removeCallbacks(longPressRunnable)
         handler.removeCallbacks(repeatRunnable)
         handler.removeCallbacks(spaceHoldRunnable)
@@ -3007,11 +3035,93 @@ class KeyboardView(context: Context) : View(context) {
         else -> -1
     }
 
+    // ---------------------------------------------------------------- 🇨🇳 Caracteres chinos EN la barra de sugerencias
+
+    /** Los caracteres para elegir: se dibujan aquí mismo, igual que las sugerencias de los otros idiomas. */
+    private var zhCands: List<String> = emptyList()
+    private var zhPinyin = ""
+    private var zhScroll = 0f
+    private var zhDown = false
+    private var zhDrag = false
+    private var zhDownX = 0f
+    private var zhStartScroll = 0f
+    private var zhPressed = -1
+    private var zhX = FloatArray(0)
+    private var zhW = FloatArray(0)
+    private var zhLaidW = -1
+
+    fun setZh(pinyin: String, cands: List<String>) {
+        if (cands != zhCands) { zhScroll = 0f; zhLaidW = -1 }
+        zhPinyin = pinyin
+        zhCands = cands
+        invalidate(0, 0, width, stripH.toInt() + 1)
+    }
+
+    private fun zhLayout() {
+        if (zhLaidW == width && zhX.size == zhCands.size) return
+        val cellW = (width - menuW) / 3f
+        text.textSize = stripH * 0.37f
+        text.typeface = Typeface.DEFAULT_BOLD
+        zhX = FloatArray(zhCands.size); zhW = FloatArray(zhCands.size)
+        var x = 0f
+        for (i in zhCands.indices) {
+            zhX[i] = x
+            zhW[i] = maxOf(cellW, text.measureText(zhCands[i]) + 20f * d)
+            x += zhW[i]
+        }
+        text.typeface = Typeface.DEFAULT
+        zhLaidW = width
+    }
+
+    private fun zhMax(): Float { zhLayout(); val n = zhCands.size; return if (n == 0) 0f else maxOf(0f, zhX[n - 1] + zhW[n - 1] - (width - menuW)) }
+
+    private fun zhHit(x: Float): Int {
+        zhLayout()
+        if (x < menuW) return -1
+        val rx = x - menuW + zhScroll
+        for (i in zhCands.indices) if (rx >= zhX[i] && rx < zhX[i] + zhW[i]) return i
+        return -1
+    }
+
+    private fun drawZh(c: Canvas, p: Palette) {
+        zhLayout()
+        val cy = stripH / 2f
+        // El pinyin que llevas, chiquito, donde va el botón de herramientas
+        text.typeface = Typeface.DEFAULT
+        var lab = zhPinyin
+        val ps = stripH * 0.27f
+        text.textSize = ps
+        while (lab.length > 1 && text.measureText(lab) > menuW - 6f * d) lab = lab.substring(1)
+        drawLabel(c, lab, menuW / 2f + 2f * d, cy, ps, p.hint)
+        c.save()
+        c.clipRect(menuW, 0f, width.toFloat(), stripH)
+        for (i in zhCands.indices) {
+            val left = menuW + zhX[i] - zhScroll
+            val w = zhW[i]
+            if (left > width || left + w < menuW) continue
+            if (zhPressed == i) {
+                fill.color = p.keyPressed
+                tmp.set(left + 4f * d, 4f * d, left + w - 4f * d, stripH - 4f * d)
+                c.drawRoundRect(tmp, radius, radius, fill)
+            }
+            // La rayita gris (igual que entre las sugerencias)
+            fill.color = p.hint
+            fill.alpha = 70
+            c.drawRect(left - 0.5f * d, stripH * 0.3f, left + 0.5f * d, stripH * 0.7f, fill)
+            fill.alpha = 255
+            text.typeface = if (i == 0) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+            drawLabel(c, zhCands[i], left + w / 2f, cy, stripH * 0.37f, p.text)
+            text.typeface = Typeface.DEFAULT
+        }
+        c.restore()
+    }
+
     /** 🇨🇳 Mientras escribes pinyin la barra de arriba queda vacía (encima va la fila de caracteres). */
     var stripBlank = false
         set(v) { if (field != v) { field = v; invalidate(0, 0, width, stripH.toInt() + 1) } }
 
     private fun drawStrip(c: Canvas, p: Palette) {
+        if (zhCands.isNotEmpty() || zhPinyin.isNotEmpty()) { drawZh(c, p); return }
         if (stripBlank) return
         if (showingSuggestions) { drawSuggestions(c, p); return }
         if (showingShot) { drawShot(c, p); return }

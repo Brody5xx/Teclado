@@ -77,20 +77,18 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun zhOn() = lang == "zh" && !translating && !isPassword && !codeOn && !hackerActive && mode == 0 && page == Page.LETTERS
 
     private fun pyRefresh() {
-        kv?.stripBlank = pyBuf.isNotEmpty()
         val ic = target()
+        pyBar?.hide() // ya no se usa: los caracteres van en la misma barra de sugerencias del teclado
         if (pyBuf.isEmpty()) {
             pyCands = emptyList()
-            pyBar?.hide()
+            kv?.setZh("", emptyList())
             return
         }
         val stroke = prefs.getBoolean(Prefs.ZH_STROKE, false)
         val shown = if (stroke) pyBuf.map { Layouts.STROKE_SHOW[it] ?: "" }.joinToString("") else pyBuf.toString()
         ic?.setComposingText(shown, 1)
         pyCands = if (stroke) Stroke.candidates(pyBuf.toString()) else Pinyin.candidates(pyBuf.toString())
-        val bar = pyBar ?: return
-        kv?.let { (bar.layoutParams as? FrameLayout.LayoutParams)?.let { lp -> if (lp.height != it.stripHeight) { lp.height = it.stripHeight; bar.layoutParams = lp } } }
-        bar.show(shown, pyCands)
+        kv?.setZh(shown, pyCands.map { it.word })
     }
 
     /** Elegiste un caracter (o la barra espaciadora pone el primero). */
@@ -109,7 +107,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     /** Se olvida lo que estabas escribiendo en pinyin (cambiaste de caja o de idioma). */
     private fun pyReset(commit: Boolean = false) {
-        if (pyBuf.isEmpty()) { pyBar?.hide(); return }
+        if (pyBuf.isEmpty()) { pyBar?.hide(); kv?.setZh("", emptyList()); return }
         if (commit) try { target()?.finishComposingText() } catch (_: Exception) { }
         pyBuf.clear()
         pyRefresh()
@@ -1665,7 +1663,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         if (!restarting) { undoSnap = null; kv?.playIntro() } // ⌨️ la luz de bienvenida
-        pyBuf.clear(); pyBar?.hide()
+        pyBuf.clear(); pyBar?.hide(); kv?.setZh("", emptyList())
         if (driveSticky() && !isPassword && mode != 14) handler.post { if (driveSticky()) showMode(14) } // 🛻 sigue en modo manejando
         applySettings()
         // 🌐 Cada app empieza en el idioma que usaste ahí la última vez (WhatsApp en español, la del trabajo en inglés…)
@@ -2429,6 +2427,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 L.t("Cancelar", "Cancel") to { closeInfo() },
             ))
     }
+
+    override fun onZhPick(index: Int) = pyPick(index)
 
     override fun onSuggestion(slot: Int) {
         if (codeActive) { useCodeSnippet(slot); return }
