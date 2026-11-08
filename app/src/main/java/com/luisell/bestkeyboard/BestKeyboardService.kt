@@ -77,6 +77,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun zhOn() = lang == "zh" && !translating && !isPassword && !codeOn && !hackerActive && mode == 0 && page == Page.LETTERS
 
     private fun pyRefresh() {
+        kv?.stripBlank = pyBuf.isNotEmpty()
         val ic = target()
         if (pyBuf.isEmpty()) {
             pyCands = emptyList()

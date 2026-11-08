@@ -1476,6 +1476,7 @@ class KeyboardView(context: Context) : View(context) {
         altKeys = null
         stripDown = false
         stripDragging = false
+        if (y < stripH && stripBlank) return
         if (y < stripH) {
             stripDown = true
             // Si la barra todavía iba deslizando, el toque solo la frena (no aprieta un botón)
@@ -3006,7 +3007,12 @@ class KeyboardView(context: Context) : View(context) {
         else -> -1
     }
 
+    /** 🇨🇳 Mientras escribes pinyin la barra de arriba queda vacía (encima va la fila de caracteres). */
+    var stripBlank = false
+        set(v) { if (field != v) { field = v; invalidate(0, 0, width, stripH.toInt() + 1) } }
+
     private fun drawStrip(c: Canvas, p: Palette) {
+        if (stripBlank) return
         if (showingSuggestions) { drawSuggestions(c, p); return }
         if (showingShot) { drawShot(c, p); return }
         val cy = stripH / 2f

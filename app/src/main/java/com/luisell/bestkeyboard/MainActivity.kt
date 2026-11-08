@@ -1448,6 +1448,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.6.3" to tr("•  Chino: mientras escribes pinyin, los botones de la barra de arriba se esconden por completo y solo queda la fila de caracteres, limpia.",
+            "•  Chinese: while you type pinyin, the top bar buttons hide completely and only the clean character row stays."),
         "13.6.2" to tr("•  Chino arreglado: la fila de caracteres ahora tiene fondo sólido (ya no se ven los botones de atrás encima de los caracteres).\n" +
             "•  En chino ya no se pone la mayúscula sola al empezar: la primera letra también va al pinyin.\n" +
             "•  En chino la coma y el punto del teclado son los chinos: ， y 。 (manteniendo el punto salen ？！：；、).\n" +
