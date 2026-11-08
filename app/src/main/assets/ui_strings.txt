@@ -297,7 +297,6 @@ Formal emails, AI writing and shortcuts.
 Formal version
 Free AI: replies and finish sentence
 French
-Friday
 From now on, what you work this week counts as overtime. ✨
 Full address
 GIFs
@@ -435,9 +434,6 @@ Mic permission is missing (open settings ⚙).
 Microphone
 Minutes (e.g. 20)
 Modern
-Mon – Fri
-Mon – Sat
-Monday
 More formal
 More formal words
 More options
@@ -614,7 +610,6 @@ SECTIONS
 SMS are read only on your phone, just to find the code. Nothing is sent.
 Safety glasses
 Same language as your phone
-Saturday
 Save
 Save EVERYTHING of yours to one file, protected with a password: settings, style, everything the keyboard learned from you (words, phrases, your fixes, deleted suggestions), statistics, each app's language, Data, quick phrases, shortcuts, clipboard, My workday (hours, sites, your home, your pay), tickets, notebook, materials, to-dos, checklist and your background. Keep it in Google Drive or move it to your new phone and tap «Restore».
 Save backup
@@ -728,7 +723,6 @@ Suggestions and autocorrect
 Suggestions in every app
 Suggestions that know you
 Suggestions with a little star swap simple words for formal ones (fixed → repaired). «Review before sending» checks the whole message and «Fix grammar» fixes it.
-Sunday
 Surprise emoji
 Swing
 Swipe the bar sideways to see all buttons. Press and hold one and drag it to rearrange. The three dots (⋯) open «More options», and the pencil lets you arrange everything.
@@ -820,7 +814,6 @@ This is a quick tour of Best Keyboard. Swipe sideways or tap «Next».
 This month: 
 This place has no GPS. Save it while you're there.
 This week
-Thursday
 Ticket 
 Ticket in English
 Ticket in Spanish
@@ -859,7 +852,6 @@ Translating…
 Translation doesn't work in password fields.
 Truck
 Truck parking
-Tuesday
 Turn off automatic backup
 Turn on automatic backup
 Turn on only the buttons you use and rename them however you like (you can put an emoji first). They change on the keyboard, the widget, the lock screen and Quick Settings.
@@ -921,7 +913,6 @@ Volume
 Wait before logging the departure
 Wave
 Website or app *
-Wednesday
 Week of 
 Week total: 
 Welcome!
@@ -1034,6 +1025,7 @@ week
 •  Currency: the ↑↓ button is now round and smaller, in the diamond's colors. Tapping it sparkles: a ring of light, a shine across it, a little star and the arrows spin half a turn.
 •  Days you work (Sections › Work › My workday): tap each day (M T W T F S S) to turn it on or off, or use «Monday to Friday», «Monday to Saturday» or «Every day». Change it whenever you want.\n•  On days off there's no My workday notification, no ticket reminder and nothing gets logged by GPS.\n•  If you work on a day off, tap Start (in the keyboard or the widget) and everything turns on that day.
 •  Days you work: the day circles fit completely on any screen and the quick buttons stay on one line (Mon – Fri, Mon – Sat, Every day).
+•  Days you work: the days show in the screen language (in Chinese 一 二 三 四 五 六 日), and so do «Mon – Fri» and the list of days.
 •  Delete suggestions: press and hold a suggestion (for example a misspelled word it learned) and tap «Delete». It won't show up again in suggestions or autocorrect. In «See and edit my words» you can see the ones you deleted and bring them back with ↶.
 •  Driving mode: the big buttons' icons are centered with their text; the title icon sits next to the title, and Delete letter / Delete all icons are bigger and next to their text.
 •  Driving mode: the big buttons' text moves up a bit (no longer touches the bottom edge).

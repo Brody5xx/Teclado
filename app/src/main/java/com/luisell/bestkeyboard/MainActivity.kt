@@ -116,9 +116,14 @@ class MainActivity : UiActivity() {
             "On days that are off there's no My workday notification, no ticket reminder and nothing gets logged by GPS. If you work on a day off, everything turns on that day when you tap Start."), 12f, faded = true)
         // Lunes primero (Calendar: 2 = lunes … 7 = sábado, 1 = domingo)
         val order = listOf(2, 3, 4, 5, 6, 7, 1)
-        val short = if (en) listOf("M", "T", "W", "T", "F", "S", "S") else listOf("L", "M", "M", "J", "V", "S", "D")
-        val long = listOf(tr("lunes", "Monday"), tr("martes", "Tuesday"), tr("miércoles", "Wednesday"), tr("jueves", "Thursday"),
-            tr("viernes", "Friday"), tr("sábado", "Saturday"), tr("domingo", "Sunday"))
+        // Los nombres de los días en el idioma de la pantalla (chino: 一 二 三…, inglés: M T W…), del propio Android
+        val loc = java.util.Locale(uiCode)
+        val sym = android.icu.text.DateFormatSymbols(loc)
+        val narrow = sym.getWeekdays(android.icu.text.DateFormatSymbols.FORMAT, android.icu.text.DateFormatSymbols.NARROW)
+        val abbr = sym.getWeekdays(android.icu.text.DateFormatSymbols.FORMAT, android.icu.text.DateFormatSymbols.ABBREVIATED)
+        val wide = sym.getWeekdays(android.icu.text.DateFormatSymbols.FORMAT, android.icu.text.DateFormatSymbols.WIDE)
+        val short = if (uiCode == "es") listOf("L", "M", "M", "J", "V", "S", "D") else order.map { narrow[it] }
+        val long = order.map { wide[it] }
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
         val dots = ArrayList<TextView>()
         val summary = text("", 13f, faded = true)
@@ -166,8 +171,9 @@ class MainActivity : UiActivity() {
         }
         col.addView(row, col.childCount - 1, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(2) })
         val presets = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for ((label, set) in listOf(tr("Lun – Vie", "Mon – Fri") to setOf(2, 3, 4, 5, 6),
-                tr("Lun – Sáb", "Mon – Sat") to setOf(2, 3, 4, 5, 6, 7),
+        fun range(a: Int, b: Int) = abbr[a].trimEnd('.').replaceFirstChar { it.uppercase() } + " – " + abbr[b].trimEnd('.').replaceFirstChar { it.uppercase() }
+        for ((label, set) in listOf(range(2, 6) to setOf(2, 3, 4, 5, 6),
+                range(2, 7) to setOf(2, 3, 4, 5, 6, 7),
                 tr("Todos", "Every day") to setOf(1, 2, 3, 4, 5, 6, 7))) {
             presets.addView(TextView(this).apply {
                 text = label; textSize = 13f; gravity = Gravity.CENTER; setTextColor(CYAN)
@@ -1438,6 +1444,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.5.2" to tr("•  Días que trabajas: los días salen en el idioma de la pantalla (en chino 一 二 三 四 五 六 日), igual que «Lun – Vie» y la lista de días.",
+            "•  Days you work: the days show in the screen language (in Chinese 一 二 三 四 五 六 日), and so do «Mon – Fri» and the list of days."),
         "13.5.1" to tr("•  Días que trabajas: los círculos de los días caben completos en cualquier pantalla y los botones rápidos quedan en una línea (Lun – Vie, Lun – Sáb, Todos).",
             "•  Days you work: the day circles fit completely on any screen and the quick buttons stay on one line (Mon – Fri, Mon – Sat, Every day)."),
         "13.5.0" to tr("•  Días que trabajas (Secciones › Trabajo › Mi jornada): toca cada día (L M M J V S D) para prenderlo o apagarlo, o usa «Lunes a viernes», «Lunes a sábado» o «Todos». Lo cambias cuando quieras.\n" +
