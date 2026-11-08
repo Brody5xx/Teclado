@@ -250,9 +250,9 @@ class KeyboardView(context: Context) : View(context) {
     var glovesOn = false
     /** 🔊 El video de fondo suena (se pinta el botón). */
     var bgSoundOn = false
+        set(v) { if (field != v) { field = v; invalidate() } }
     /** ⌨️ «Teclado en todas partes» prendido: su botón se ilumina. */
     var anywhereOn = false
-        set(v) { if (field != v) { field = v; invalidate() } }
         set(v) { if (field != v) { field = v; invalidate() } }
     private var modsOnce: Set<Int> = emptySet()
     private var modsLocked: Set<Int> = emptySet()
