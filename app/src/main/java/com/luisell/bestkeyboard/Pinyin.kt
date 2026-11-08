@@ -213,30 +213,53 @@ class PinyinBar(context: Context) : HorizontalScrollView(context) {
 
     init {
         isHorizontalScrollBarEnabled = false
+        isHorizontalFadingEdgeEnabled = false
+        overScrollMode = OVER_SCROLL_NEVER
         isFillViewport = true
         row.orientation = LinearLayout.HORIZONTAL
         row.gravity = Gravity.CENTER_VERTICAL
         addView(row, LayoutParams(-2, -1))
     }
 
+    /**
+     * Se ve IGUAL que la barra de sugerencias de los otros idiomas: el mismo tamaño de letra, 3 casillas
+     * por pantalla con la rayita gris entre ellas, el primero en negrita y nada de fondo.
+     * A la izquierda (donde va el botón de herramientas) va el pinyin que llevas; desliza para ver más.
+     */
     fun show(buf: String, list: List<Pinyin.Cand>) {
         row.removeAllViews()
+        val h = (layoutParams?.height ?: 0).takeIf { it > 0 } ?: d(46f)
+        val menuW = d(48f)
+        val w = (if (width > 0) width else resources.displayMetrics.widthPixels)
+        val cellW = (w - menuW) / 3
+        val textPx = h * 0.37f
         pinyin.text = buf
-        pinyin.textSize = 13f
+        pinyin.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, h * 0.27f)
         pinyin.setTextColor(pal.hint)
-        pinyin.setPadding(d(12f), 0, d(8f), 0)
-        pinyin.gravity = Gravity.CENTER_VERTICAL
-        row.addView(pinyin, LinearLayout.LayoutParams(-2, -1))
+        pinyin.gravity = Gravity.CENTER
+        pinyin.maxLines = 1
+        pinyin.ellipsize = android.text.TextUtils.TruncateAt.START
+        pinyin.setPadding(d(4f), 0, d(4f), 0)
+        row.addView(pinyin, LinearLayout.LayoutParams(menuW, -1))
+        row.showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
+        row.dividerDrawable = android.graphics.drawable.GradientDrawable().apply {
+            setColor((pal.hint and 0x00FFFFFF) or (70 shl 24)); setSize(maxOf(1, d(1f)), (h * 0.4f).toInt())
+        }
+        row.dividerPadding = (h * 0.3f).toInt()
         list.forEachIndexed { i, c ->
             val t = TextView(context)
             t.text = c.word
-            t.textSize = if (i == 0) 20f else 19f
-            t.setTextColor(if (i == 0) pal.accent else pal.text)
+            t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, textPx)
+            t.typeface = if (i == 0) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
+            t.setTextColor(pal.text)
             t.gravity = Gravity.CENTER
-            t.setPadding(d(12f), 0, d(12f), 0)
-            t.background = PanelUi.pressable(0x00000000, pal.keyPressed, d(14f).toFloat())
+            t.maxLines = 1
+            t.includeFontPadding = false
+            t.background = PanelUi.pressable(0x00000000, pal.keyPressed, d(10f).toFloat())
             t.setOnClickListener { onFeedback?.invoke(); onPick?.invoke(i) }
-            row.addView(t, LinearLayout.LayoutParams(-2, -1))
+            // Las palabras largas (frases) ocupan lo que necesiten; las demás, una casilla como las sugerencias
+            t.measure(0, 0)
+            row.addView(t, LinearLayout.LayoutParams(maxOf(cellW, t.measuredWidth + d(16f)), -1))
         }
         scrollTo(0, 0)
         visibility = VISIBLE

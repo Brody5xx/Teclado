@@ -1451,6 +1451,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.7.2" to tr("•  Chino: los caracteres de arriba se ven exactamente como las sugerencias en español e inglés: mismo tamaño de letra, 3 por pantalla con la rayita gris entre ellos, el primero en negrita y sin barra encima. Desliza para ver más.",
+            "•  Chinese: the characters on top look exactly like the Spanish and English suggestions: same text size, 3 per screen with the grey line between them, the first in bold and no bar on top. Swipe to see more."),
         "13.7.1" to tr("•  Chino: la fila de caracteres ahora se ve igual que las sugerencias de los otros idiomas: transparente, con tu fondo y el destello del teclado detrás (ya no es una barra gris encima).\n" +
             "•  Chino: la primera letra ya no se queda en mayúscula suelta (Je → todo va al pinyin). Solo si pones la mayúscula tú, sale la letra.",
             "•  Chinese: the character row now looks just like the other languages' suggestions: transparent, with your background and the keyboard's sparkle behind (no more grey bar on top).\n" +
