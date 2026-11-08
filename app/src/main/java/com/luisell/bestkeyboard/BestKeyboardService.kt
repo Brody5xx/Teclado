@@ -2035,7 +2035,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val rows = when (page) {
-            Page.LETTERS -> Layouts.letters(numberRow, commaMode, english = lang != "es") // la ñ solo en español
+            Page.LETTERS -> Layouts.letters(numberRow, commaMode, english = lang != "es", chinese = lang == "zh") // la ñ solo en español
             Page.SYM -> Layouts.symbols()
             Page.SYM2 -> Layouts.symbols2()
             Page.NUM -> Layouts.numpad(phone)
@@ -2056,6 +2056,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (hackerActive) return
         if (codeOn && !codeAsking) { if (shift == 1 && !manualShift) setShift(0); return }
         if (shift == 2 || manualShift) return
+        // 🇨🇳 En chino no hay mayúsculas: las letras van al pinyin
+        if (lang == "zh") { if (shift == 1) setShift(0); return }
         if (!autoCap || isPassword || page != Page.LETTERS) {
             if (shift == 1) setShift(0)
             return

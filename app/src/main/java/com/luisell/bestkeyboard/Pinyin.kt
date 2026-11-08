@@ -205,7 +205,11 @@ class PinyinBar(context: Context) : HorizontalScrollView(context) {
 
     fun applyPalette(p: Palette) {
         pal = p
-        // Fondo sólido (no se ven las sugerencias de atrás)
-        background = PanelUi.barBackground(context, p, lightLine = false)
+        // Fondo SÓLIDO: tapa por completo la barra de botones de atrás (con fondo de foto o video también)
+        val solid = if (p.isDark) 0xFF14161C.toInt() else 0xFFF3F4F7.toInt()
+        background = android.graphics.drawable.LayerDrawable(arrayOf(
+            android.graphics.drawable.ColorDrawable(solid),
+            PanelUi.barBackground(context, p, lightLine = false)))
+        isClickable = true // los toques no pasan a los botones de atrás
     }
 }

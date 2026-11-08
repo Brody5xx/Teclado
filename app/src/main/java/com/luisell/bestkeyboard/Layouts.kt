@@ -83,8 +83,8 @@ object Layouts {
     /** Si es false, no hay botón 🌐 (el idioma se cambia deslizando la barra espaciadora). */
     var showGlobe = true
 
-    private fun bottomRow(modeLabel: String, modeCode: Int, comma: String, undo: Boolean = false): List<Key> {
-        val commaKey = when (comma) {
+    private fun bottomRow(modeLabel: String, modeCode: Int, comma: String, undo: Boolean = false, chinese: Boolean = false): List<Key> {
+        val commaKey = if (chinese) Key("，", 0, "，", 1f, emptyList(), emojiKey = true) else when (comma) {
             "@" -> ch("@", ",")
             "/" -> ch("/", ",:")
             else -> Key(",", 0, ",", 1f, emptyList(), emojiKey = true)
@@ -94,14 +94,15 @@ object Layouts {
             commaKey,
             if (showGlobe) sp("🌐", Codes.LANG, 1f) else null,
             Key(" ", Codes.SPACE, null, (if (showGlobe) 4f else 5f) - (if (undo) 1f else 0f), emptyList()),
-            ch(".", ",?¿!¡'\"-:;@/…"),
+            if (chinese) ch("。", "，？！：；、…“”（）.") else ch(".", ",?¿!¡'\"-:;@/…"),
             if (undo) sp("↶", Codes.UNDO, 1f) else null, // ↶ Deshacer (si no hay fila de números)
             sp("↵", Codes.ENTER, 1.5f),
         )
     }
 
     /** [english] = teclado en inglés: sin la ñ en su fila (sale manteniendo la n), como un teclado de EE. UU. */
-    fun letters(withNumberRow: Boolean, comma: String, english: Boolean = false): List<List<Key>> {
+    /** [chinese] = teclado de pinyin: la coma y el punto son los chinos (，。). */
+    fun letters(withNumberRow: Boolean, comma: String, english: Boolean = false, chinese: Boolean = false): List<List<Key>> {
         val rows = mutableListOf<List<Key>>()
         if (withNumberRow) rows += numberRow()
         val digits = "1234567890"
@@ -125,7 +126,7 @@ object Layouts {
         rows += listOf(sp("⇧", Codes.SHIFT, 1.5f)) +
             "zxcvbnm".map { ch(it.toString(), ALTS[it] ?: "") } +
             del()
-        rows += bottomRow("?123", Codes.MODE_SYM, comma, undo = !withNumberRow)
+        rows += bottomRow("?123", Codes.MODE_SYM, comma, undo = !withNumberRow, chinese = chinese)
         return rows
     }
 

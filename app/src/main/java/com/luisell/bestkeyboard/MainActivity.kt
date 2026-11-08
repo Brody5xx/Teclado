@@ -1448,6 +1448,14 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.6.2" to tr("•  Chino arreglado: la fila de caracteres ahora tiene fondo sólido (ya no se ven los botones de atrás encima de los caracteres).\n" +
+            "•  En chino ya no se pone la mayúscula sola al empezar: la primera letra también va al pinyin.\n" +
+            "•  En chino la coma y el punto del teclado son los chinos: ， y 。 (manteniendo el punto salen ？！：；、).\n" +
+            "•  Mejor orden de los caracteres: salen primero los que más se usan (ji → 几, 记, 机…).",
+            "•  Chinese fixed: the character row now has a solid background (the buttons behind no longer show over the characters).\n" +
+            "•  In Chinese the first letter is no longer capitalized by itself: it also goes to the pinyin.\n" +
+            "•  In Chinese the comma and period keys are the Chinese ones: ， and 。 (hold the period for ？！：；、).\n" +
+            "•  Better character order: the most used come first (ji → 几, 记, 机…)."),
         "13.6.1" to tr("•  También se traducen «Desarrollador», la palabra «compilación» de la versión, los nombres de los idiomas del teclado (en chino: 西班牙语, 英语…) y las opciones Normal, Zoom y Flash.",
             "•  «Developer», the word «build» in the version, the keyboard language names (in Chinese: 西班牙语, 英语…) and the Normal, Zoom and Flash options are now translated too."),
         "13.6.0" to tr("•  Traducciones revisadas a mano en portugués, francés, italiano, alemán y chino: todos los botones, títulos, secciones, avisos, ayudas y la guía (más de 1,250 textos). Ya no salen frases raras como «Mis sitios» = «mis páginas web».\n" +
