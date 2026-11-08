@@ -1451,6 +1451,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.7.3" to tr("•  Chino con iniciales (简拼), como Sogou y Gboard: nh → 你好, xx → 谢谢, wm → 我们, hd → 好的, zm → 怎么, dbq → 对不起. Ya no hace falta escribir el pinyin entero.\n" +
+            "•  La fila de caracteres nunca se queda vacía: si las letras no forman pinyin, salen los caracteres más usados que empiezan con esa letra.\n" +
+            "•  Frases de chat comunes: 好的, 没事, 没问题, 不客气, 晚安, 在吗, 多少钱…",
+            "•  Chinese with initials (简拼), like Sogou and Gboard: nh → 你好, xx → 谢谢, wm → 我们, hd → 好的, zm → 怎么, dbq → 对不起. No need to type the whole pinyin anymore.\n" +
+            "•  The character row is never empty: if the letters aren't pinyin, the most used characters starting with that letter show up.\n" +
+            "•  Common chat phrases: 好的, 没事, 没问题, 不客气, 晚安, 在吗, 多少钱…"),
         "13.7.2" to tr("•  Chino: los caracteres de arriba se ven exactamente como las sugerencias en español e inglés: mismo tamaño de letra, 3 por pantalla con la rayita gris entre ellos, el primero en negrita y sin barra encima. Desliza para ver más.",
             "•  Chinese: the characters on top look exactly like the Spanish and English suggestions: same text size, 3 per screen with the grey line between them, the first in bold and no bar on top. Swipe to see more."),
         "13.7.1" to tr("•  Chino: la fila de caracteres ahora se ve igual que las sugerencias de los otros idiomas: transparente, con tu fondo y el destello del teclado detrás (ya no es una barra gris encima).\n" +

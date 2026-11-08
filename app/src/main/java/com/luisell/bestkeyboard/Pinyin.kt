@@ -17,6 +17,11 @@ import android.widget.TextView
 object Pinyin {
     class Cand(val word: String, val consumed: Int)
 
+    @Volatile private var abbr: Map<String, String> = emptyMap()
+    private fun abbrOf(key: String): List<Pair<String, Int>> = abbr[key]?.split('\t')?.mapNotNull {
+        val sp = it.lastIndexOf(' ')
+        if (sp <= 0) null else it.substring(0, sp) to (it.substring(sp + 1).toIntOrNull() ?: 1)
+    } ?: emptyList()
     @Volatile private var keys: Array<String> = emptyArray()
     @Volatile private var vals: Array<String> = emptyArray()
     @Volatile var ready = false
@@ -37,6 +42,15 @@ object Pinyin {
                     if (t > 0) { k.add(l.substring(0, t)); v.add(l.substring(t + 1)) }
                 }
                 keys = k.toTypedArray(); vals = v.toTypedArray()
+                // 简拼: las iniciales (nh → 你好)
+                val am = HashMap<String, String>(13000)
+                try {
+                    app.assets.open("zh_abbr.txt").bufferedReader().forEachLine { l ->
+                        val t = l.indexOf('\t')
+                        if (t > 0) am[l.substring(0, t)] = l.substring(t + 1)
+                    }
+                } catch (_: Exception) { }
+                abbr = am
                 ready = true
             } catch (_: Exception) { }
             loading = false
@@ -124,11 +138,33 @@ object Pinyin {
             }
             more.sortedByDescending { score(it.first, it.second) }.take(if (full.isEmpty()) 12 else 6).forEach { add(it.first, buf.length) }
         }
+        // 简拼: solo las iniciales (nh → 你好, xx → 谢谢, wm → 我们). Si no hay palabra entera, van primero
+        if (buf.length >= 2) {
+            val ab = abbrOf(buf).sortedByDescending { score(it.first, it.second) }
+            if (full.isEmpty() && out.isEmpty()) ab.forEach { add(it.first, buf.length) }
+            else ab.take(4).forEach { add(it.first, buf.length) }
+            // Las iniciales de solo el principio (hdjx → lo de «hdj» y sigue con «x»)
+            if (out.isEmpty()) for (k in buf.length - 1 downTo 2) {
+                val part = abbrOf(buf.substring(0, k))
+                if (part.isNotEmpty()) { part.sortedByDescending { score(it.first, it.second) }.take(8).forEach { add(it.first, k) }; break }
+            }
+        }
         // Solo el principio (nihaoma → 你好 y queda «ma»)
         for (k in buf.length - 1 downTo 1) {
             val part = exact(buf.substring(0, k))
             if (part.isEmpty()) continue
             part.sortedByDescending { score(it.first, it.second) }.take(if (k == 1) 30 else 8).forEach { add(it.first, k) }
+        }
+        // Nunca vacío: los caracteres más usados que empiezan con la primera letra
+        if (out.isEmpty()) {
+            var i = find(buf.substring(0, 1)).let { if (it < 0) -(it + 1) else it }
+            val more = ArrayList<Pair<String, Int>>()
+            var n = 0
+            while (i < keys.size && keys[i].startsWith(buf.substring(0, 1)) && n < 4000) {
+                if (keys[i].length <= 6) entries(i).firstOrNull { it.first.length == 1 }?.let { more.add(it) }
+                i++; n++
+            }
+            more.sortedByDescending { score(it.first, it.second) }.take(20).forEach { add(it.first, 1) }
         }
         return out
     }
