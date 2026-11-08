@@ -15,7 +15,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = buildNumber
-        versionName = "13.9.1 (build $buildNumber)"
+        versionName = "14.0.0 (build $buildNumber)"
         // Solo los procesadores de teléfonos reales: la app pesa menos
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
@@ -61,6 +61,9 @@ dependencies {
     implementation("com.google.guava:listenablefuture:1.0")
     // Leer texto de fotos dentro del teléfono (Google ML Kit, gratis, sin internet)
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // 🇨🇳 Leer chino en las capturas y escribir chino a mano
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+    implementation("com.google.mlkit:digital-ink-recognition:18.1.0")
     // Leer códigos de barras y QR (números de serie, MAC) sin internet
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     // Cámara dentro del teclado (CameraX de Google)

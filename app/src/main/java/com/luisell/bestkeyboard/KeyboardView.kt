@@ -118,6 +118,10 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_ZHLAYOUT = 72
         /** ⌨️ Teclado en todas partes (notificación para abrirlo en cualquier app). */
         const val TOOL_ANYWHERE = 73
+        const val TOOL_PINYIN = 74
+        const val TOOL_SCREEN_TR = 75
+        const val TOOL_CALENDAR = 76
+        const val TOOL_CLEAN = 77
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -3041,6 +3045,10 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_FX -> Icons.MONEY
         TOOL_ZHLAYOUT -> Icons.KEYBOARD
         TOOL_ANYWHERE -> Icons.KEY
+        TOOL_PINYIN -> Icons.TEXTSIZE
+        TOOL_SCREEN_TR -> Icons.IMAGE
+        TOOL_CALENDAR -> Icons.CALENDAR
+        TOOL_CLEAN -> Icons.CHECK
         else -> -1
     }
 

@@ -97,7 +97,8 @@ object Layouts {
     const val ZH_SPLIT = "\uE201"
 
     /** Qué teclado chino sale en la tecla para cambiar: el SIGUIENTE (拼音 → 九键 → 笔画 → 拼音). */
-    fun zhNextLabel(cur: String) = when (cur) { "qwerty" -> "九键"; "t9" -> "笔画"; else -> "拼音" }
+    fun zhNextLabel(cur: String) = when (cur) { "qwerty" -> "九键"; "t9" -> "笔画"; "stroke" -> "手写"; else -> "拼音" }
+    fun zhNext(cur: String) = when (cur) { "qwerty" -> "t9"; "t9" -> "stroke"; "stroke" -> "hand"; else -> "qwerty" }
 
     /** 🇨🇳 九宫格: pinyin con 9 teclas, como en los teléfonos chinos. */
     fun t9(withNumberRow: Boolean): List<List<Key>> {

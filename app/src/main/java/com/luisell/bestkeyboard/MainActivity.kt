@@ -1456,6 +1456,18 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "14.0.0" to tr("•  Chino 联想: después de elegir un carácter, arriba salen solos los que suelen seguir (你 → 好, 们…). Toca y sigue escribiendo frases casi sin teclear.\n" +
+            "•  Chino a mano (手写): escribe el carácter con el dedo y elige arriba. Si sigues escribiendo después de una pausa, se pone el primero solo. Lo eliges con el botón del teclado chino o con la tecla de abajo (九键 → 笔画 → 手写 → 拼音). La primera vez baja el reconocimiento (~20 MB).\n" +
+            "•  Ver pinyin (en ⋯): selecciona o copia un texto chino y te muestra cómo se lee con tonos (你好 → nǐ hǎo) y qué quiere decir.\n" +
+            "•  Traducir captura (en ⋯): toma una captura de pantalla y el teclado lee el texto (chino, inglés, español…) y lo traduce, aunque no se pueda copiar. Sin internet, después de la primera vez.\n" +
+            "•  Agregar al calendario (en ⋯): escribe o copia «mañana a las 3 reunión», «viernes 9am inspección» o «el 15 de noviembre 7:30pm cena» y lo agrega con la fecha y la hora puestas.\n" +
+            "•  Pegar limpio (en ⋯): pega lo copiado sin espacios raros, en una línea, sin emojis o sin espacios (para números de serie y MAC).",
+            "•  Chinese 联想: after picking a character, the ones that usually follow show up by themselves (你 → 好, 们…). Tap and keep writing phrases almost without typing.\n" +
+            "•  Chinese handwriting (手写): write the character with your finger and pick it above. If you keep writing after a pause, the first one goes in by itself. Pick it with the Chinese keyboard button or the bottom key (九键 → 笔画 → 手写 → 拼音). The first time it downloads the recognizer (~20 MB).\n" +
+            "•  See pinyin (in ⋯): select or copy Chinese text and it shows how it's read with tones (你好 → nǐ hǎo) and what it means.\n" +
+            "•  Translate screenshot (in ⋯): take a screenshot and the keyboard reads the text (Chinese, English, Spanish…) and translates it, even if it can't be copied. Offline after the first time.\n" +
+            "•  Add to calendar (in ⋯): type or copy «tomorrow at 3 meeting», «friday 9am inspection» or «nov 15 7:30pm dinner» and it adds it with the date and time set.\n" +
+            "•  Clean paste (in ⋯): paste what you copied without odd spaces, on one line, without emojis or without spaces (for serial numbers and MACs)."),
         "13.9.1" to tr("•  Teclado en todas partes: al tocar «Abrir teclado» la cortina de notificaciones se cierra sola y el teclado se queda abierto en tu app (antes se cerraba al subir la cortina).",
             "•  Keyboard anywhere: tapping «Open keyboard» closes the notification shade by itself and the keyboard stays open in your app (before, it closed when you swiped the shade up)."),
         "13.9.0" to tr("•  Teclado en todas partes: nuevo botón (la llave) en la barra de arriba. Al prenderlo sale una notificación fija; tócala y Best Keyboard se abre en la app donde estés, también en terminales o apps que solo dejan usar un teclado de PC.\n" +

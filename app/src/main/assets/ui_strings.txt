@@ -18,6 +18,7 @@
  · paid
  · working
  · ❌ a line is over 328 ft
+(Couldn't translate: the first time it needs internet.)
 (no address)
 +  Add account
 +  Add phrase
@@ -50,6 +51,7 @@ Accents and punctuation
 Access control, cameras, cabling and fiber reports, in Spanish and English.
 Account
 Accounts
+Add
 Add account
 Add my key
 Add phrase
@@ -57,6 +59,7 @@ Add site
 Add the name and address.
 Add the website or app name.
 Add to Data
+Add to calendar
 Add word
 Address
 Addresses, phones, signatures and loose emails. Type 2–3 letters (or the shortcut) and the keyboard suggests them.
@@ -139,6 +142,8 @@ Chinese (中文): type the pinyin without tones (nihao) and tap the characters i
 Chinese keyboard
 Circle
 Classic
+Clean
+Clean paste
 Clear
 Clear all?
 Clear history (except pinned)
@@ -168,15 +173,20 @@ Copied
 Copied text and codes
 Copied. It's also in your clipboard.
 Copied. Long-press where you type and tap Paste.
+Copied:
 Copy
 Copy error
+Copy pinyin
+Copy some text (or select it here) and tap this button again.
 Copy the text
+Copy translation
 Couldn't create the PDF.
 Couldn't create the ticket.
 Couldn't do it.
 Couldn't download the AI. Check your internet and try again.
 Couldn't download the GIF.
 Couldn't download the language. Connect to the internet once to download it.
+Couldn't download. Connect to the internet once.
 Couldn't find the camera app. Use the Gallery button.
 Couldn't find the gallery.
 Couldn't get your location. Turn on location.
@@ -189,6 +199,7 @@ Couldn't open the image.
 Couldn't open the photo.
 Couldn't open the screenshot.
 Couldn't prepare the video.
+Couldn't read the screenshot.
 Couldn't read the text. Try again.
 Couldn't review.
 Couldn't rewrite. Try again.
@@ -198,6 +209,7 @@ Couldn't take the photo. Try again.
 Couldn't translate (the first time needs internet).
 Couldn't translate. Connect to the internet the first time (it downloads the language, about 30 MB).
 Couldn't translate. The first time it needs internet to download the language.
+Couldn't translate. The first time it needs internet.
 Couldn't translate. Try again.
 Couldn't use the mic. Try again.
 Counted only on your phone. The more you use it, the more it learns from you and the more it guesses.
@@ -274,6 +286,7 @@ English: ON
 Enter = new line
 Enter how much you make per hour (driving and on site) and it works out your take-home pay here.
 Error copied. Paste it in the chat.
+Event
 Every Monday there's a new word with its meaning, an example and how to say it in Spanish. There are 105 words: one a week for 2 years.
 Every day
 Everything copied is deleted, except what you pinned.
@@ -319,6 +332,7 @@ GIFs come from GIPHY and need a FREE key (only once):\n1. Tap «Get a GIPHY key�
 Gallery
 German
 Get a GIPHY key
+Getting handwriting ready… (the first time it downloads about 20 MB)
 Getting rates…
 Getting ready… (the first time it downloads the language, about 30 MB)
 Give it a name.
@@ -331,6 +345,7 @@ Glow
 Got it
 Gross: 
 Hacker theme color
+Handwriting isn't available on this phone.
 Hard hat
 Heartbeat
 Hearts
@@ -347,6 +362,7 @@ How far from the saved point counts as «I'm here». Tap a place below to give i
 How it's deducted
 How many minutes are deducted?
 How the top button bar moves when you swipe it.
+I didn't find text in the screenshot.
 I didn't get it. Example: 120 x 6 + 10%
 I didn't get it. Example: PP1-01 to PP1-24
 I didn't get the time. Try: 5:32pm
@@ -494,10 +510,12 @@ No accounts yet. Tap «Add account».
 No answer.
 No background
 No browser found.
+No calendar app found.
 No codes found. Get a little closer with good light.
 No custom background (the theme's is used).
 No data yet. Tap «Edit».
 No days picked: everything is off (except when you tap Start).
+No emojis
 No emojis for that word.
 No internet needed. Type «fixed» and get ✨ repaired; «works now» → ✨ is now working properly.
 No internet or GIPHY didn't respond.
@@ -513,6 +531,7 @@ No reminder
 No results.
 No saved texts.
 No sites yet. When you're at a job, tap «Save where I am now».
+No spaces
 No text found in the photo. Try with more light or closer.
 No text or codes found. Try more light or get closer.
 No work logged.
@@ -547,6 +566,7 @@ On site:
 On the keyboard: select some text (email, password or anything) and «Save to Data» shows on top.
 On the screen that opens, tap «Allow all the time». That way the phone knows when you arrive or leave even with the keyboard closed.
 One hand
+One line
 One moment, the dictionary is loading…
 One more permission
 One-hand mode
@@ -613,6 +633,7 @@ Quick phrases
 Rainbow
 Rates from 
 Reading the text…
+Reading your latest screenshot…
 Reading…
 Regular hours per day
 Remember each app's language
@@ -677,13 +698,18 @@ Security questions
 See and edit my words
 See last week
 See older versions
+See original
+See pinyin
+See pinyin (Chinese)
 See the guide
 See this week
 Select
 Select a text (or copy it) and tap 🔊 again.
 Select a word or phrase (or put the cursor on it) and tap this button.
 Select all
+Select some Chinese text (or copy it) and tap this button again.
 Select text and tap ⇧: it becomes UPPERCASE. Again: lowercase. Again: Title Case.
+Selected:
 Send
 Send ticket
 Sending…
@@ -767,6 +793,7 @@ Swipe the bar sideways to see all buttons. Press and hold one and drag it to rea
 Swipe the space bar to change language
 Swipe typing
 Take a photo of the text you want to type (labels, serial numbers, papers...).
+Take a screenshot of what you want to translate and tap this button again.
 Take photo
 Take-home approx. 
 Tall
@@ -808,6 +835,7 @@ Texts and shortcuts
 Thank you very much, have a great day.
 Thanks
 That number doesn't look right.
+That text has no Chinese characters.
 That way, if you just stop at home to pick up or drop off something and leave before, your day stays open.
 The AI didn't answer in time. Check your internet and try again.
 The AI didn't answer. Check your internet and try again.
@@ -866,6 +894,7 @@ Tips
 Tips and news
 Tips: good light, straight text that fills the photo. The text is read on the phone, no internet needed.
 To estimate your weekly pay. It's saved only on your phone. It's an approximate calculation: your pay stub is the exact one.
+To read your screenshots, allow «Photos» in the Best Keyboard app (Start › Voice, camera and screenshots).
 To resize: tap ⋯ above the keyboard → «Resize».
 To see GIFs you need a free GIPHY key.\n\nTap here and follow the steps in Settings → GIFs.
 To see the notification, allow Best Keyboard notifications in the phone settings.
@@ -886,6 +915,7 @@ Top bars background (search, translate…)
 Total
 Translate
 Translate message
+Translate screenshot
 Translate what you type or what you got. When dictating it adds punctuation by itself and, on newer phones, understands whether you speak Spanish or English in each sentence. «Search Google» searches without leaving the keyboard.
 Translate, dictate and search
 Translated the first time (needs internet)
@@ -906,6 +936,7 @@ Turn on «Automatic arrival and departure» so it's logged by itself.
 Turn on «Automatic arrival and departure» so your day starts and ends by itself.
 Two halves to type with your thumbs
 Type
+Type (or copy) something with a date or time, like «tomorrow at 3 meeting» or «friday 9am inspection», and tap this button.
 Type /today, /time or /now and a space: you get today's date or the time. In your shortcuts you can use {date} or {time}, and whatever is in [brackets] gets selected so you can change it.
 Type 25*4= and it suggests 100. «120 ft to m» → 36.58 m, «70 f to c» → 21.11 °C, «20 usd to eur» with today's rates. And 7pm → 7:00 PM, cat6 → Cat 6.
 Type ___ (three underscores) where you need to fill something in: when the phrase is inserted it gets selected so you can type over it.
@@ -1000,6 +1031,7 @@ Works with the saved sites below. Uses very little battery. If you're not workin
 Write a note…
 Write code
 Write down what you can't forget (e.g. «bring the ladder tomorrow»). Tap one to mark it done.
+Write here with your finger
 Write it down: without it the backup can't be opened.
 Write like a pro
 Write more formally
@@ -1079,6 +1111,7 @@ week
 •  Chinese on the keyboard: in Keyboard languages pick 中文. Type the pinyin without tones (nihao, xiexie, woaini) and the characters show up above to tap (你好, 谢谢, 我爱你). Space puts the first one, Enter keeps the letters and delete removes one pinyin letter.\n•  Type whole phrases in a row (nihaoma) and it builds the phrase; if you pick just a part, it keeps going with the rest.\n•  What you pick most moves to first place. Punctuation comes out in Chinese: ，。？！\n•  Voice typing also works in Chinese.
 •  Chinese stroke keyboard (笔画): the keys are 一 丨 丿 丶 乛, like Chinese keyboards. Tap the strokes in the order the character is written and pick it above (most used first). More than 8,100 characters.\n•  In Chinese, the special keys are in Chinese: 符号 (symbols), 笔画 / 拼音 (switch between strokes and pinyin), 中文 (back from symbols), and the comma and period are ， 。\n•  Turn it on with the 笔画 key on the Chinese keyboard, or in Start › Language › «Chinese with strokes».
 •  Chinese with initials (简拼), like Sogou and Gboard: nh → 你好, xx → 谢谢, wm → 我们, hd → 好的, zm → 怎么, dbq → 对不起. No need to type the whole pinyin anymore.\n•  The character row is never empty: if the letters aren't pinyin, the most used characters starting with that letter show up.\n•  Common chat phrases: 好的, 没事, 没问题, 不客气, 晚安, 在吗, 多少钱…
+•  Chinese 联想: after picking a character, the ones that usually follow show up by themselves (你 → 好, 们…). Tap and keep writing phrases almost without typing.\n•  Chinese handwriting (手写): write the character with your finger and pick it above. If you keep writing after a pause, the first one goes in by itself. Pick it with the Chinese keyboard button or the bottom key (九键 → 笔画 → 手写 → 拼音). The first time it downloads the recognizer (~20 MB).\n•  See pinyin (in ⋯): select or copy Chinese text and it shows how it's read with tones (你好 → nǐ hǎo) and what it means.\n•  Translate screenshot (in ⋯): take a screenshot and the keyboard reads the text (Chinese, English, Spanish…) and translates it, even if it can't be copied. Offline after the first time.\n•  Add to calendar (in ⋯): type or copy «tomorrow at 3 meeting», «friday 9am inspection» or «nov 15 7:30pm dinner» and it adds it with the date and time set.\n•  Clean paste (in ⋯): paste what you copied without odd spaces, on one line, without emojis or without spaces (for serial numbers and MACs).
 •  Chinese: the character row now looks just like the other languages' suggestions: transparent, with your background and the keyboard's sparkle behind (no more grey bar on top).\n•  Chinese: the first letter no longer stays as a loose capital (Je → it all goes to pinyin). Only when you set the capital yourself does the letter come out.
 •  Chinese: the characters now go INSIDE the keyboard's own suggestion bar (no longer a separate bar on top). It looks just like Spanish and English: transparent, with your background and the sparkle. Swipe to see more.
 •  Chinese: the characters on top look exactly like the Spanish and English suggestions: same text size, 3 per screen with the grey line between them, the first in bold and no bar on top. Swipe to see more.

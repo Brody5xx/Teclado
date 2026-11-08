@@ -82,6 +82,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun zhOn() = lang == "zh" && !translating && !isPassword && !codeOn && !hackerActive && mode == 0 && page == Page.LETTERS
 
     private fun pyRefresh() {
+        if (pyBuf.isNotEmpty()) assoc = false
         val ic = target()
         pyBar?.hide() // ya no se usa: los caracteres van en la misma barra de sugerencias del teclado
         if (pyBuf.isEmpty()) {
@@ -116,6 +117,24 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
         Pinyin.learn(prefs, c.word)
         pyRefresh()
+        if (pyBuf.isEmpty()) showAssoc(c.word) // 联想: lo que suele seguir
+    }
+
+    // ---------------------------------------------------------------- 🇨🇳 联想 (lo que sigue)
+    private var assoc = false
+
+    private fun showAssoc(word: String) {
+        val list = ZhExtras.after(word)
+        if (list.isEmpty()) { clearAssoc(); return }
+        assoc = true
+        pyCands = list.map { Pinyin.Cand(it, 0) }
+        kv?.setZh("", list)
+    }
+
+    private fun clearAssoc() {
+        if (!assoc) return
+        assoc = false
+        if (pyBuf.isEmpty()) { pyCands = emptyList(); kv?.setZh("", emptyList()) }
     }
 
     /** Se olvida lo que estabas escribiendo en pinyin (cambiaste de caja o de idioma). */
@@ -228,6 +247,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var phrasePanel: PhrasePanel? = null
     private var calcPanel: CalcPanel? = null
     private var fxPanel: FxPanel? = null
+    private var handPanel: HandPanel? = null
     private var gifPanel: GifPanel? = null
     private var notebookPanel: ListPanel? = null
     private var ticketsPanel: ListPanel? = null
@@ -395,7 +415,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         kv = v
         // Las teclas mandan la altura; emojis y portapapeles usan la misma
         val box = PanelBox(this, v)
-        if (Langs.pair(prefs).let { it.first == "zh" || it.second == "zh" }) { Pinyin.load(this); Stroke.load(this) }
+        if (Langs.pair(prefs).let { it.first == "zh" || it.second == "zh" }) { Pinyin.load(this); Stroke.load(this); ZhExtras.load(this) }
         // 🖼️ El video de fondo va detrás de las teclas
         val bgv = BgVideoView(this)
         bgv.visibility = View.GONE
@@ -570,6 +590,24 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         box.addView(fx, FrameLayout.LayoutParams(-1, -1))
         fxPanel = fx
+
+        // ✍️ Chino a mano
+        val hp = HandPanel(this)
+        hp.visibility = View.GONE
+        hp.actions = object : HandPanel.Actions {
+            override fun onHandText(text: String) { target()?.commitText(text, 1); if (ZhExtras.hasChinese(text)) Pinyin.learn(prefs, text) }
+            override fun onHandDelete() = onDeletePress()
+            override fun onHandEnter() = handleEnter()
+            override fun onHandSpace() { target()?.commitText(" ", 1) }
+            override fun onHandSymbols() { page = Page.SYM; rebuild(); showMode(0) }
+            override fun onHandNextLayout() {
+                prefs.edit().putString(Prefs.ZH_LAYOUT, "qwerty").putBoolean(Prefs.ZH_STROKE, false).apply()
+                rebuild(); showMode(0)
+            }
+            override fun onHandFeedback() = onKeyFeedback()
+        }
+        box.addView(hp, FrameLayout.LayoutParams(-1, -1))
+        handPanel = hp
 
         // GIFs y stickers
         val gp = GifPanel(this)
@@ -800,7 +838,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Cambia entre teclas, emojis y portapapeles (los paneles usan la misma altura del teclado). */
     private fun showMode(want: Int) {
         // 🛻 Modo manejando fijo: se queda hasta que toques «⌨️ Teclado», la flecha ← o su botón otra vez
-        val m = if (want == 0 && !isPassword && driveSticky()) 14 else want
+        val m = if (want == 0 && !isPassword && driveSticky()) 14 else if (want == 0 && handWanted()) 18 else want
         if (m == 14) setDriveSticky(true)
         mode = m
         val v = kv ?: return
@@ -877,6 +915,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         materialsPanel?.let { it.visibility = if (m == 13) View.VISIBLE else View.GONE; if (m == 13) refreshMaterials() }
         todoPanel?.let { it.visibility = if (m == 15) View.VISIBLE else View.GONE; if (m == 15) refreshTodos() }
         checkPanel?.let { it.visibility = if (m == 16) View.VISIBLE else View.GONE; if (m == 16) refreshChecklist() }
+        handPanel?.let { hp -> val was = hp.visibility == View.VISIBLE; hp.visibility = if (m == 18) View.VISIBLE else View.GONE; if (m == 18 && !was) hp.open() }
         drivePanel?.let { it.visibility = if (m == 14) View.VISIBLE else View.GONE
             if (m == 14) it.open(WorkDay.nextKind(WorkDay.day(prefs))) }
         if (m == 0) { updateAutoCaps(); scheduleUpdate() }
@@ -1993,6 +2032,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         phrasePanel?.applyPalette(pal)
         calcPanel?.applyPalette(pal)
         fxPanel?.applyPalette(pal)
+        handPanel?.applyPalette(pal)
         gifPanel?.applyPalette(pal)
         notebookPanel?.applyPalette(pal)
         ticketsPanel?.applyPalette(pal)
@@ -2110,7 +2150,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         v.setRows(rows)
         v.shift = if (page == Page.LETTERS) shift else 0
         v.swipeEnabled = swipeOn && page == Page.LETTERS && fieldSuggest
+        // ✍️ Chino a mano: en vez de las letras sale el papel para escribir
+        if (handWanted() && mode == 0) handler.post { if (handWanted() && mode == 0) showMode(18) }
     }
+
+    private fun handWanted() = lang == "zh" && page == Page.LETTERS && !isPassword && !hackerActive && !codeOn && Prefs.zhLayout(prefs) == "hand"
 
     private fun setShift(s: Int) {
         shift = s
@@ -2493,6 +2537,168 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onZhPick(index: Int) = pyPick(index)
 
+    // ---------------------------------------------------------------- Herramientas nuevas
+
+    /** Lo seleccionado, o lo copiado. */
+    private fun selOrClip(): Pair<String, Boolean>? {
+        val sel = try { currentInputConnection?.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null }
+        if (!sel.isNullOrEmpty()) return sel to true
+        val clip = try { clipboard?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim() } catch (_: Exception) { null }
+        return if (clip.isNullOrEmpty()) null else clip to false
+    }
+
+    private fun copyText(t: String) {
+        try { clipboard?.setPrimaryClip(ClipData.newPlainText("Best Keyboard", t)) } catch (_: Exception) { }
+        Toast.makeText(this, Emo.strip(L.t("Copiado", "Copied")), Toast.LENGTH_SHORT).show()
+    }
+
+    /** 🇨🇳 拼音: cómo se lee un texto chino (con tonos) y qué quiere decir. */
+    private fun showPinyin() {
+        val bar = infoBar ?: return
+        val (text, _) = selOrClip() ?: run {
+            bar.show(L.t("Ver pinyin", "See pinyin"), L.t("Selecciona un texto en chino (o cópialo) y vuelve a tocar este botón.",
+                "Select some Chinese text (or copy it) and tap this button again."), listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        if (!ZhExtras.hasChinese(text)) {
+            bar.show(L.t("Ver pinyin", "See pinyin"), L.t("Ese texto no tiene caracteres chinos.", "That text has no Chinese characters."),
+                listOf(L.t("Cerrar", "Close") to { closeInfo() }))
+            return
+        }
+        val src = text.take(400)
+        bar.show("拼音", L.t("Leyendo…", "Reading…"), emptyList())
+        Thread {
+            val py = ZhExtras.pinyin(this, src)
+            handler.post {
+                var tr = ""
+                fun render() {
+                    bar.show("拼音", src + "\n" + py + (if (tr.isNotEmpty()) "\n\n" + tr else "\n\n" + L.t("Traduciendo…", "Translating…")), listOf(
+                        L.t("Copiar pinyin", "Copy pinyin") to { copyText(py) },
+                        L.t("Copiar traducción", "Copy translation") to { if (tr.isNotEmpty()) copyText(tr) },
+                        L.t("Cerrar", "Close") to { closeInfo() },
+                    ))
+                }
+                render()
+                val dst = Langs.pair(prefs).let { if (it.first != "zh") it.first else it.second }.let { if (it == "zh") "es" else it }
+                val t = Translation("zh", dst)
+                readTrans?.close(); readTrans = t
+                val fail: (String) -> Unit = { handler.post { tr = L.t("(No se pudo traducir: la primera vez necesita internet.)", "(Couldn't translate: the first time it needs internet.)"); render() } }
+                t.prepare({ t.translate(src, { out -> handler.post { tr = out; render() } }, fail) }, fail)
+            }
+        }.start()
+    }
+
+    /** 🖼 Traduce lo que hay en tu última captura de pantalla (lee el texto con la cámara del teléfono, sin internet). */
+    private fun translateScreen() {
+        val bar = infoBar ?: return
+        if (!Screenshots.hasPermission(this)) {
+            bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("Para leer tus capturas, permite «Fotos» en la app Best Keyboard (Inicio › Voz, cámara y capturas).",
+                "To read your screenshots, allow «Photos» in the Best Keyboard app (Start › Voice, camera and screenshots)."), listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("Leyendo tu última captura…", "Reading your latest screenshot…"), emptyList())
+        Thread {
+            val shot = Screenshots.findRecent(this)
+            handler.post {
+                if (shot == null) {
+                    bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("Toma una captura de pantalla de lo que quieres traducir y vuelve a tocar este botón.",
+                        "Take a screenshot of what you want to translate and tap this button again."), listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+                    return@post
+                }
+                val img = try { com.google.mlkit.vision.common.InputImage.fromFilePath(this, shot.uri) } catch (_: Exception) { null }
+                if (img == null) { bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No se pudo abrir la captura.", "Couldn't open the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() })); return@post }
+                com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions.Builder().build())
+                    .process(img)
+                    .addOnSuccessListener { res ->
+                        val text = res.textBlocks.joinToString("\n") { it.text }.trim()
+                        if (text.isEmpty()) {
+                            bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No encontré texto en la captura.", "I didn't find text in the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() }))
+                            return@addOnSuccessListener
+                        }
+                        val zh = ZhExtras.hasChinese(text)
+                        val mine = Langs.pair(prefs).first.let { if (it == "zh") "es" else it }
+                        val src = if (zh) "zh" else if (looksEnglish(text)) "en" else "es"
+                        val dst = if (src == mine) (if (mine == "en") "es" else "en") else mine
+                        val head = Translation.name(src) + " → " + Translation.name(dst)
+                        bar.show(head, L.t("Traduciendo…", "Translating…"), emptyList())
+                        val t = Translation(src, dst)
+                        readTrans?.close(); readTrans = t
+                        val fail: (String) -> Unit = { handler.post { bar.show(head, L.t("No se pudo traducir. La primera vez necesita internet.", "Couldn't translate. The first time it needs internet."), listOf(L.t("Cerrar", "Close") to { closeInfo() })) } }
+                        t.prepare({ t.translate(text.take(3000), { out -> handler.post {
+                            kv?.flashAi()
+                            bar.show(head, out, listOf(
+                                L.t("Copiar", "Copy") to { copyText(out) },
+                                L.t("Escribir", "Type it") to { insertText(out); closeInfo() },
+                                L.t("Ver original", "See original") to { bar.show(head, text, listOf(L.t("Copiar", "Copy") to { copyText(text) }, L.t("Cerrar", "Close") to { closeInfo() })) },
+                                L.t("Cerrar", "Close") to { closeInfo() },
+                            ))
+                        } }, fail) }, fail)
+                    }
+                    .addOnFailureListener { bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No se pudo leer la captura.", "Couldn't read the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() })) }
+            }
+        }.start()
+    }
+
+    /** 📅 Agrega al calendario lo que escribiste, seleccionaste o copiaste («mañana a las 3 reunión»). */
+    private fun addToCalendar() {
+        val bar = infoBar ?: return
+        val ic = currentInputConnection
+        val sel = try { ic?.getSelectedText(0)?.toString() } catch (_: Exception) { null }
+        val before = try { ic?.getTextBeforeCursor(300, 0)?.toString() } catch (_: Exception) { null }
+        val clip = try { clipboard?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString() } catch (_: Exception) { null }
+        // La última oración que escribiste
+        val lastSentence = before?.split(Regex("(?<=[.!?\n])"))?.lastOrNull { it.isNotBlank() }
+        val en = lang == "en"
+        val ev = listOfNotNull(sel, lastSentence, clip).firstNotNullOfOrNull { TextTools.findEvent(it, en) }
+        if (ev == null) {
+            bar.show(L.t("Agregar al calendario", "Add to calendar"), L.t("Escribe (o copia) algo con fecha u hora, como «mañana a las 3 reunión» o «viernes 9am inspección», y toca este botón.",
+                "Type (or copy) something with a date or time, like «tomorrow at 3 meeting» or «friday 9am inspection», and tap this button."), listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        val title = ev.title.ifBlank { L.t("Evento", "Event") }
+        val f = java.text.SimpleDateFormat(if (ev.hasTime) "EEEE d MMM, h:mm a" else "EEEE d MMM", if (L.english) java.util.Locale.US else java.util.Locale("es"))
+        bar.show(L.t("Agregar al calendario", "Add to calendar"), title + "\n" + f.format(ev.start.time).replaceFirstChar { it.uppercase() }, listOf(
+            L.t("Agregar", "Add") to {
+                closeInfo()
+                try {
+                    val i = Intent(Intent.ACTION_INSERT).setData(android.provider.CalendarContract.Events.CONTENT_URI)
+                        .putExtra(android.provider.CalendarContract.Events.TITLE, title)
+                        .putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, ev.start.timeInMillis)
+                        .putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME, ev.start.timeInMillis + 3_600_000L)
+                        .putExtra(android.provider.CalendarContract.EXTRA_EVENT_ALL_DAY, !ev.hasTime)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(i)
+                } catch (_: Exception) {
+                    Toast.makeText(this, Emo.strip(L.t("No encontré una app de calendario.", "No calendar app found.")), Toast.LENGTH_SHORT).show()
+                }
+            },
+            L.t("Cancelar", "Cancel") to { closeInfo() },
+        ))
+    }
+
+    /** 🧹 Pega lo copiado arreglado: sin espacios raros, en una línea, sin emojis o sin espacios. */
+    private fun cleanPaste() {
+        val bar = infoBar ?: return
+        val (text, isSel) = selOrClip() ?: run {
+            bar.show(L.t("Pegar limpio", "Clean paste"), L.t("Copia un texto (o selecciónalo aquí) y vuelve a tocar este botón.", "Copy some text (or select it here) and tap this button again."),
+                listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+            return
+        }
+        fun put(t: String) {
+            closeInfo()
+            val ic = currentInputConnection ?: return
+            ic.commitText(t, 1) // si había algo seleccionado, se cambia por lo limpio
+        }
+        val preview = TextTools.clean(text).let { if (it.length > 160) it.take(160) + "…" else it }
+        bar.show(L.t("Pegar limpio", "Clean paste"), (if (isSel) L.t("Lo seleccionado:", "Selected:") else L.t("Lo copiado:", "Copied:")) + "\n" + preview, listOf(
+            L.t("Limpio", "Clean") to { put(TextTools.clean(text)) },
+            L.t("En una línea", "One line") to { put(TextTools.oneLine(text)) },
+            L.t("Sin emojis", "No emojis") to { put(TextTools.noEmoji(text)) },
+            L.t("Sin espacios", "No spaces") to { put(TextTools.noSpaces(text)) },
+            L.t("Cancelar", "Cancel") to { closeInfo() },
+        ))
+    }
+
     /** 🇨🇳 Elegir el teclado chino desde la barra de arriba. */
     private fun pickZhLayout() {
         val bar = infoBar ?: return
@@ -2504,12 +2710,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (z == "stroke") Stroke.load(this)
             closeInfo()
             rebuild()
+            showMode(if (z == "hand") 18 else 0)
         }
         fun mark(z: String, label: String) = (if (z == cur) "✓ " else "") + label
         bar.show(L.t("Teclado chino", "Chinese keyboard"), L.t("Elige cómo escribir en chino:", "Pick how to type in Chinese:"), listOf(
             mark("qwerty", "拼音 · 26") to { use("qwerty") },
             mark("t9", "九键 · 9") to { use("t9") },
             mark("stroke", "笔画") to { use("stroke") },
+            mark("hand", "手写") to { use("hand") },
         ))
     }
 
@@ -2697,6 +2905,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 return
             }
             if (pyBuf.isNotEmpty()) pyPick(0)
+            clearAssoc()
             val cn = Pinyin.punct(text)
             if (cn != text) { target()?.commitText(cn, 1); lastWasSpace = false; return }
         }
@@ -2752,6 +2961,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (changeSelectionCase()) return
         }
         val ic = target()
+        if (code != Codes.SHIFT) clearAssoc()
         if (pyBuf.isNotEmpty() && ic != null) {
             if (code == Codes.SPACE) { pyPick(0); return }
             if (code == Codes.ENTER) {
@@ -2840,8 +3050,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 // 🇨🇳 Pinyin (letras) ⇄ trazos (一丨丿丶乛)
                 pyReset(commit = false)
                 target()?.commitText("", 1)
-                val next = when (Prefs.zhLayout(prefs)) { "qwerty" -> "t9"; "t9" -> "stroke"; else -> "qwerty" }
+                val next = Layouts.zhNext(Prefs.zhLayout(prefs))
                 prefs.edit().putString(Prefs.ZH_LAYOUT, next).putBoolean(Prefs.ZH_STROKE, next == "stroke").apply()
+                if (next == "hand") { handPanel?.let { showMode(18) }; return }
                 Stroke.load(this)
                 rebuild()
             }
@@ -2922,6 +3133,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (hackerActive) { sendKey(KeyEvent.KEYCODE_DEL, hMeta()); hConsume(); return }
         if (codeOn && !codeAsking && codeDeleteIndent()) return
         val ic = target() ?: return
+        clearAssoc()
         if (pyBuf.isNotEmpty()) {
             pyBuf.setLength(pyBuf.length - 1)
             if (pyBuf.isEmpty()) ic.commitText("", 1)
@@ -3025,6 +3237,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_FX -> showMode(17)
             KeyboardView.TOOL_ZHLAYOUT -> pickZhLayout()
             KeyboardView.TOOL_ANYWHERE -> toggleAnywhere()
+            KeyboardView.TOOL_PINYIN -> showPinyin()
+            KeyboardView.TOOL_SCREEN_TR -> translateScreen()
+            KeyboardView.TOOL_CALENDAR -> addToCalendar()
+            KeyboardView.TOOL_CLEAN -> cleanPaste()
             KeyboardView.TOOL_GIF -> showMode(9)
             KeyboardView.TOOL_READ -> readMessage()
             KeyboardView.TOOL_TICKET -> startTicket()
@@ -4054,7 +4270,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         pyReset(commit = true)
         lang = l
         Layouts.chineseUi = l == "zh"
-        if (l == "zh") { Pinyin.load(this); Stroke.load(this) }
+        if (l == "zh") { Pinyin.load(this); Stroke.load(this); ZhExtras.load(this) }
         // 🇨🇳 El botón «Teclado chino» aparece o se va de la barra de arriba
         prefs.edit().putString(Prefs.LANG, l).apply()
         Tools.load(this, prefs).let { (b, m) -> kv?.setBarTools(b, m); morePanel?.setTools(b, m, Tools.maxBar(this)) }
