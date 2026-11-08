@@ -166,7 +166,7 @@ class StyleActivity : UiActivity() {
         segmented(tr("Borde", "Border"), Prefs.PANEL_LINE, "thin",
             listOf("none" to tr("Sin borde", "None"), "thin" to tr("Fino", "Thin"), "thick" to tr("Grueso", "Thick"))) { paintPanelPreview() }
         segmented(tr("Vidrio (con tu foto o video de fondo)", "Glass (with your photo or video background)"), Prefs.PANEL_GLASS, "normal",
-            listOf("clear" to tr("Transparente", "Clear"), "normal" to "Normal", "solid" to tr("Sólido", "Solid"))) { paintPanelPreview() }
+            listOf("clear" to tr("Transparente", "Clear"), "normal" to tr("Normal", "Normal"), "solid" to tr("Sólido", "Solid"))) { paintPanelPreview() }
         button(tr("↺ Volver a los colores del tema", "↺ Back to the theme colors")) {
             prefs.edit().remove(Prefs.PANEL_BORDER).remove(Prefs.PANEL_FILL).remove(Prefs.PANEL_ICON).remove(Prefs.PANEL_BAR)
                 .remove(Prefs.PANEL_LINE).remove(Prefs.PANEL_GLASS).apply()
@@ -393,31 +393,31 @@ class StyleActivity : UiActivity() {
 
         card(tr("Teclas", "Keys"), Icons.SHAPES)
         chips(tr("Forma", "Shape"), Prefs.KEY_SHAPE, "normal", listOf(
-            "square" to tr("Cuadradas", "Square"), "normal" to "Normal", "round" to tr("Redondas", "Round"),
+            "square" to tr("Cuadradas", "Square"), "normal" to tr("Normal", "Normal"), "round" to tr("Redondas", "Round"),
             "pill" to tr("Píldora", "Pill"), "circle" to tr("Círculo", "Circle"), "outline" to tr("Solo borde", "Outline"),
             "flat" to tr("Sin fondo", "No background"),
         ))
         segmented(tr("Tamaño de las letras", "Letter size"), Prefs.LABEL_SIZE, "normal",
-            listOf("small" to tr("Pequeñas", "Small"), "normal" to "Normal", "big" to tr("Grandes", "Big")))
+            listOf("small" to tr("Pequeñas", "Small"), "normal" to tr("Normal", "Normal"), "big" to tr("Grandes", "Big")))
         segmented(tr("Altura de las teclas", "Key height"), Prefs.HEIGHT, "normal",
-            listOf("low" to tr("Bajas", "Low"), "normal" to "Normal", "high" to tr("Altas", "Tall")))
+            listOf("low" to tr("Bajas", "Low"), "normal" to tr("Normal", "Normal"), "high" to tr("Altas", "Tall")))
         switch(tr("Fila de números arriba", "Number row on top"), Prefs.NUMBER_ROW, true)
         switch(tr("Letra grande al tocar", "Big letter on tap"), Prefs.PREVIEW, true)
 
         card(tr("Barra de arriba", "Top bar"), Icons.MENU)
         text(tr("Cómo se mueve la barra de botones de arriba cuando la deslizas.", "How the top button bar moves when you swipe it."), 12f, faded = true)
         segmented(tr("Curva de rueda", "Wheel curve"), Prefs.STRIP_ARC, "normal",
-            listOf("none" to tr("Plana", "Flat"), "soft" to tr("Suave", "Soft"), "normal" to "Normal", "strong" to tr("Fuerte", "Strong")))
+            listOf("none" to tr("Plana", "Flat"), "soft" to tr("Suave", "Soft"), "normal" to tr("Normal", "Normal"), "strong" to tr("Fuerte", "Strong")))
         segmented(tr("Línea de luz", "Light line"), Prefs.STRIP_LIGHT, "normal",
-            listOf("off" to tr("Apagada", "Off"), "soft" to tr("Suave", "Soft"), "normal" to "Normal", "bright" to tr("Brillante", "Bright")))
+            listOf("off" to tr("Apagada", "Off"), "soft" to tr("Suave", "Soft"), "normal" to tr("Normal", "Normal"), "bright" to tr("Brillante", "Bright")))
         switch(tr("Nombre del botón del medio", "Name of the middle button"), Prefs.STRIP_NAMES, true)
 
         card(tr("Animación al tocar", "Tap animation"), Icons.RIPPLE)
         chipGrid(tr("Efecto", "Effect"), Prefs.KEY_ANIM, "pop", listOf(
             "none" to tr("Ninguno", "None"), "random" to tr("🎲 Sorpresa", "🎲 Surprise"), "pop" to tr("Rebote", "Bounce"),
-            "zoom" to "Zoom", "lift" to tr("Saltar", "Jump"), "jelly" to tr("Gelatina", "Jelly"),
+            "zoom" to tr("Zoom", "Zoom"), "lift" to tr("Saltar", "Jump"), "jelly" to tr("Gelatina", "Jelly"),
             "shake" to tr("Temblor", "Shake"), "spin" to tr("Giro", "Spin"), "wave" to tr("Ola", "Wave"),
-            "ripple" to tr("Onda", "Ripple"), "glow" to tr("Brillo", "Glow"), "flash" to "Flash",
+            "ripple" to tr("Onda", "Ripple"), "glow" to tr("Brillo", "Glow"), "flash" to tr("Flash", "Flash"),
             "neon" to tr("Neón", "Neon"), "rings" to tr("Anillos", "Rings"), "bubble" to tr("Burbuja", "Bubble"),
             "sparks" to tr("Chispas", "Sparks"), "stars" to tr("Estrellas", "Stars"), "confetti" to tr("Confeti", "Confetti"),
             "hearts" to tr("Corazones", "Hearts"), "fire" to tr("Fuego", "Fire"), "snow" to tr("Nieve", "Snow"),

@@ -188,6 +188,10 @@ class MainActivity : UiActivity() {
         paint()
     }
 
+    /** El nombre de un idioma en el idioma de la pantalla (en chino: 西班牙语, 英语…). */
+    private fun langIn(code: String): String =
+        java.util.Locale(code).getDisplayLanguage(uiLocale).replaceFirstChar { it.titlecase(uiLocale) }.ifBlank { Langs.name(code) }
+
     /** 🌍 Cambia el idioma de las pantallas (si es uno nuevo, primero lo traduce dentro del teléfono). */
     private fun setScreenLang(code: String) {
         val target = if (code == "auto") java.util.Locale.getDefault().language else code
@@ -665,12 +669,12 @@ class MainActivity : UiActivity() {
         meta.orientation = LinearLayout.HORIZONTAL
         meta.gravity = Gravity.CENTER_VERTICAL
         val dev = TextView(this)
-        dev.text = "Developer: Luisell Peña Rodríguez"
+        dev.text = tr("Desarrollador: ", "Developer: ") + "Luisell Peña Rodríguez"
         dev.textSize = 13f
         dev.setTextColor(SUB)
         meta.addView(dev, LinearLayout.LayoutParams(0, -2, 1f))
         val pill = TextView(this)
-        pill.text = "v$version"
+        pill.text = "v" + (version ?: "").replace(" (build ", tr(" (compilación ", " (build "))
         pill.textSize = 11f
         pill.setTextColor(CYAN)
         pill.setPadding(dp(10), dp(4), dp(10), dp(4))
@@ -761,7 +765,7 @@ class MainActivity : UiActivity() {
             "Pick your 2 languages. The keyboard switches between them by itself while you type, with their dictionary and suggestions."), 13f, faded = true)
         val (kl1, kl2) = Langs.pair(prefs)
         fun pickLang(key: String, current: String) {
-            choiceDialog(tr("Elige el idioma", "Pick the language"), Langs.ALL.map { it.name to null },
+            choiceDialog(tr("Elige el idioma", "Pick the language"), Langs.ALL.map { langIn(it.code) to (if (langIn(it.code) != it.name) it.name else null) },
                 Langs.ALL.indexOfFirst { it.code == current }) { which ->
                     val code = Langs.ALL[which].code
                     val e = prefs.edit().putString(key, code)
@@ -775,8 +779,8 @@ class MainActivity : UiActivity() {
                     WordStore.reload(this) { busyDlg.close(); recreate() }
                 }
         }
-        button(tr("Idioma 1: ", "Language 1: ") + Langs.name(kl1)) { pickLang(Prefs.KB_LANG1, kl1) }
-        button(tr("Idioma 2: ", "Language 2: ") + Langs.name(kl2)) { pickLang(Prefs.KB_LANG2, kl2) }
+        button(tr("Idioma 1: ", "Language 1: ") + langIn(kl1)) { pickLang(Prefs.KB_LANG1, kl1) }
+        button(tr("Idioma 2: ", "Language 2: ") + langIn(kl2)) { pickLang(Prefs.KB_LANG2, kl2) }
         text(tr("Todos usan el teclado QWERTY. Las letras con acento (é, ü, ç, ã, ß…) salen manteniendo la letra.",
             "All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter."), 12f, faded = true)
         text(tr("Chino (中文): escribe el pinyin sin tonos (nihao) y toca los caracteres en la fila de arriba (你好). La barra espaciadora pone el primero; Enter deja las letras.",
@@ -1444,6 +1448,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.6.1" to tr("•  También se traducen «Desarrollador», la palabra «compilación» de la versión, los nombres de los idiomas del teclado (en chino: 西班牙语, 英语…) y las opciones Normal, Zoom y Flash.",
+            "•  «Developer», the word «build» in the version, the keyboard language names (in Chinese: 西班牙语, 英语…) and the Normal, Zoom and Flash options are now translated too."),
         "13.6.0" to tr("•  Traducciones revisadas a mano en portugués, francés, italiano, alemán y chino: todos los botones, títulos, secciones, avisos, ayudas y la guía (más de 1,250 textos). Ya no salen frases raras como «Mis sitios» = «mis páginas web».\n" +
             "•  Las secciones del menú (Trabajo, Datos y copiado, Voz y GIFs, Trucos y novedades) ya se traducen.\n" +
             "•  En el calendario, los días y los meses salen en el idioma de la pantalla.",

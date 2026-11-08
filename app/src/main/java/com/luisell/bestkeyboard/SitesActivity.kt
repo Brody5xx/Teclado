@@ -79,7 +79,7 @@ class SitesActivity : UiActivity() {
         text(tr("Qué tan lejos del punto guardado cuenta como «estoy aquí». Toca un lugar abajo para ponerle su propia distancia en el mapa.",
             "How far from the saved point counts as «I'm here». Tap a place below to give it its own distance on the map."), 12f, faded = true)
         segmented(tr("🎯 Sensibilidad", "🎯 Sensitivity"), Prefs.SITE_SENS, "normal",
-            listOf("high" to tr("Alta", "High"), "normal" to "Normal", "low" to tr("Baja", "Low"))) { AutoSites.register(this); paintSens() }
+            listOf("high" to tr("Alta", "High"), "normal" to tr("Normal", "Normal"), "low" to tr("Baja", "Low"))) { AutoSites.register(this); paintSens() }
         sensHelp = text("", 12f, faded = true)
         paintSens()
         paintAuto()

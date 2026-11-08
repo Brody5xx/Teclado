@@ -5,6 +5,7 @@
   ·  ⚠️ no GPS
   · Enter types them
   · you have changes
+ (build 
  (default)
  (fixed, not logged)
  /hour
@@ -230,6 +231,7 @@ Delete?
 Deleted.
 Departure
 Describe what the code should do…
+Developer: 
 Dictation: say "comma", "period", "new line"… Translation and scanner work on the phone.
 Does a site pay more? In «My sites» tap that site and set its hourly pay.
 Does this site pay a different hourly rate? Type it. Leave it empty to use your normal pay.
@@ -291,6 +293,7 @@ Fix error
 Fix grammar
 Fixed code:
 Fixes words when you tap space. Tap ⌫ right after to undo.
+Flash
 Flat
 Flip
 Floating
@@ -1143,6 +1146,7 @@ week
 •  Word of the week fully in English (word, meaning and example) when the keyboard is in English.\n•  The scanner and the code AI answers now use your language.
 •  Your background image or video now also shows in emojis, GIFs, clipboard and every panel.\n•  New modern window while the video is prepared, with a progress bar and a «Cancel» button.
 •  «AI replies» no longer stays thinking: it counts the seconds and, if it hasn't answered after 25 seconds, tells you what to check.
+•  «Developer», the word «build» in the version, the keyboard language names (in Chinese: 西班牙语, 英语…) and the Normal, Zoom and Flash options are now translated too.
 •  «Dictate report» was removed from the top bar: it's already inside the microphone.
 •  «More options» (⋯) and «Resize».
 •  «More options» keeps only «Style» (everything else is inside).\n•  The Hacker theme in 12 colors, including rainbow 🌈 (in Style → Colors).
