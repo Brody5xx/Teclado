@@ -435,9 +435,9 @@ Mic permission is missing (open settings ⚙).
 Microphone
 Minutes (e.g. 20)
 Modern
+Mon – Fri
+Mon – Sat
 Monday
-Monday to Friday
-Monday to Saturday
 More formal
 More formal words
 More options
@@ -1033,6 +1033,7 @@ week
 •  Currency: new ↑↓ button next to the currencies to swap them (it spins when you tap it).\n•  The Currency keys are bigger and the numbers are properly centered (4 rows instead of 5).
 •  Currency: the ↑↓ button is now round and smaller, in the diamond's colors. Tapping it sparkles: a ring of light, a shine across it, a little star and the arrows spin half a turn.
 •  Days you work (Sections › Work › My workday): tap each day (M T W T F S S) to turn it on or off, or use «Monday to Friday», «Monday to Saturday» or «Every day». Change it whenever you want.\n•  On days off there's no My workday notification, no ticket reminder and nothing gets logged by GPS.\n•  If you work on a day off, tap Start (in the keyboard or the widget) and everything turns on that day.
+•  Days you work: the day circles fit completely on any screen and the quick buttons stay on one line (Mon – Fri, Mon – Sat, Every day).
 •  Delete suggestions: press and hold a suggestion (for example a misspelled word it learned) and tap «Delete». It won't show up again in suggestions or autocorrect. In «See and edit my words» you can see the ones you deleted and bring them back with ↶.
 •  Driving mode: the big buttons' icons are centered with their text; the title icon sits next to the title, and Delete letter / Delete all icons are bigger and next to their text.
 •  Driving mode: the big buttons' text moves up a bit (no longer touches the bottom edge).

@@ -147,7 +147,7 @@ class MainActivity : UiActivity() {
         }
         order.forEachIndexed { i, dnum ->
             val b = TextView(this).apply {
-                text = short[i]; textSize = 15f; gravity = Gravity.CENTER; includeFontPadding = false
+                text = short[i]; textSize = 14f; gravity = Gravity.CENTER; includeFontPadding = false
                 setTypeface(Typeface.DEFAULT_BOLD)
                 isClickable = true
                 setOnClickListener {
@@ -159,16 +159,20 @@ class MainActivity : UiActivity() {
                 }
             }
             dots.add(b)
-            row.addView(b, LinearLayout.LayoutParams(dp(40), dp(40)).apply { setMargins(dp(3), 0, dp(3), 0) })
+            // Cada día ocupa 1/7 del ancho y el círculo va centrado: caben siempre, en cualquier pantalla
+            val cell = android.widget.FrameLayout(this)
+            cell.addView(b, android.widget.FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER))
+            row.addView(cell, LinearLayout.LayoutParams(0, dp(40), 1f))
         }
         col.addView(row, col.childCount - 1, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(2) })
         val presets = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for ((label, set) in listOf(tr("Lunes a viernes", "Monday to Friday") to setOf(2, 3, 4, 5, 6),
-                tr("Lunes a sábado", "Monday to Saturday") to setOf(2, 3, 4, 5, 6, 7),
+        for ((label, set) in listOf(tr("Lun – Vie", "Mon – Fri") to setOf(2, 3, 4, 5, 6),
+                tr("Lun – Sáb", "Mon – Sat") to setOf(2, 3, 4, 5, 6, 7),
                 tr("Todos", "Every day") to setOf(1, 2, 3, 4, 5, 6, 7))) {
             presets.addView(TextView(this).apply {
                 text = label; textSize = 13f; gravity = Gravity.CENTER; setTextColor(CYAN)
-                setPadding(dp(6), dp(10), dp(6), dp(10))
+                maxLines = 1; includeFontPadding = false
+                setPadding(dp(4), dp(11), dp(4), dp(11))
                 background = android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x334FD1FF),
                     GradientDrawable().apply { setColor(CARD2); cornerRadius = dpf(20f) }, null)
                 setOnClickListener { WorkDay.setWorkDays(prefs, set); changed() }
@@ -1434,6 +1438,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.5.1" to tr("•  Días que trabajas: los círculos de los días caben completos en cualquier pantalla y los botones rápidos quedan en una línea (Lun – Vie, Lun – Sáb, Todos).",
+            "•  Days you work: the day circles fit completely on any screen and the quick buttons stay on one line (Mon – Fri, Mon – Sat, Every day)."),
         "13.5.0" to tr("•  Días que trabajas (Secciones › Trabajo › Mi jornada): toca cada día (L M M J V S D) para prenderlo o apagarlo, o usa «Lunes a viernes», «Lunes a sábado» o «Todos». Lo cambias cuando quieras.\n" +
             "•  Los días libres no sale la notificación de Mi jornada, ni el aviso del ticket, ni se anota nada solo con el GPS.\n" +
             "•  Si trabajas un día libre, toca Comencé (en el teclado o el widget) y todo se prende ese día.",
