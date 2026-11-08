@@ -68,6 +68,10 @@ object Prefs {
     const val TR_DST = "translate_to"
     /** 🇨🇳 Chino con trazos (一丨丿丶乛) en vez de pinyin. */
     const val ZH_STROKE = "zh_stroke"
+    /** 🇨🇳 Qué teclado chino: "qwerty" (pinyin de 26 teclas), "t9" (9 teclas) o "stroke" (trazos). */
+    const val ZH_LAYOUT = "zh_layout"
+    fun zhLayout(p: android.content.SharedPreferences): String =
+        p.getString(ZH_LAYOUT, null) ?: if (p.getBoolean(ZH_STROKE, false)) "stroke" else "qwerty"
     const val SWIPE = "swipe"
     const val SPELL = "spell_check"
     const val SHOTS = "suggest_screenshots"

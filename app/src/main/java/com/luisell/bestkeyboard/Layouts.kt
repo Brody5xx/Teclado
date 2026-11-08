@@ -89,6 +89,33 @@ object Layouts {
     val STROKE_KEYS = mapOf("\uE101" to 'h', "\uE102" to 's', "\uE103" to 'p', "\uE104" to 'n', "\uE105" to 'z')
     val STROKE_SHOW = mapOf('h' to "一", 's' to "丨", 'p' to "丿", 'n' to "丶", 'z' to "乛")
 
+    /** 九宫格: cada tecla escribe su número (2 = ABC …), y el teclado adivina el pinyin. */
+    val T9_KEYS = mapOf("\uE202" to '2', "\uE203" to '3', "\uE204" to '4', "\uE205" to '5',
+        "\uE206" to '6', "\uE207" to '7', "\uE208" to '8', "\uE209" to '9')
+    /** «重输»: borra todo lo que llevas. «分词»: separa sílabas (aquí no hace falta: no hace nada). */
+    const val ZH_CLEAR = "\uE200"
+    const val ZH_SPLIT = "\uE201"
+
+    /** Qué teclado chino sale en la tecla para cambiar: el SIGUIENTE (拼音 → 九键 → 笔画 → 拼音). */
+    fun zhNextLabel(cur: String) = when (cur) { "qwerty" -> "九键"; "t9" -> "笔画"; else -> "拼音" }
+
+    /** 🇨🇳 九宫格: pinyin con 9 teclas, como en los teléfonos chinos. */
+    fun t9(withNumberRow: Boolean): List<List<Key>> {
+        val rows = mutableListOf<List<Key>>()
+        if (withNumberRow) rows += numberRow()
+        val m = 1.35f
+        rows += listOf(ch("，", "、；：", 1f), Key("分词", 0, ZH_SPLIT, m, emptyList()),
+            Key("ABC", 0, "\uE202", m, emptyList()), Key("DEF", 0, "\uE203", m, emptyList()), del(1f))
+        rows += listOf(ch("。", "…", 1f), Key("GHI", 0, "\uE204", m, emptyList()),
+            Key("JKL", 0, "\uE205", m, emptyList()), Key("MNO", 0, "\uE206", m, emptyList()), Key("重输", 0, ZH_CLEAR, 1f, emptyList()))
+        rows += listOf(ch("？", "", 1f), Key("PQRS", 0, "\uE207", m, emptyList()),
+            Key("TUV", 0, "\uE208", m, emptyList()), Key("WXYZ", 0, "\uE209", m, emptyList()), ch("！", "", 1f))
+        rows += listOf(sp("符号", Codes.MODE_SYM, 1.5f), Key("，", 0, "，", 1f, emptyList(), emojiKey = true),
+            sp(zhNextLabel("t9"), Codes.ZH_TOGGLE, 1.2f), Key(" ", Codes.SPACE, null, 3.3f, emptyList()),
+            ch("。", "，？！：；、…“”（）."), sp("↵", Codes.ENTER, 1.5f))
+        return rows
+    }
+
     /** 🇨🇳 Teclado chino de trazos (笔画), como los teclados chinos: 一 丨 丿 丶 乛. */
     fun strokes(withNumberRow: Boolean): List<List<Key>> {
         val rows = mutableListOf<List<Key>>()
@@ -97,7 +124,7 @@ object Layouts {
             Key("丿", 0, "\uE103", 1f, emptyList()), Key("丶", 0, "\uE104", 1f, emptyList()), Key("乛", 0, "\uE105", 1f, emptyList()))
         rows += listOf(ch("，", "、；"), ch("。", "…"), ch("？"), ch("！"), del(1f))
         rows += listOf(sp("符号", Codes.MODE_SYM, 1.5f), Key("，", 0, "，", 1f, emptyList(), emojiKey = true),
-            sp("拼音", Codes.ZH_TOGGLE, 1.2f), Key(" ", Codes.SPACE, null, 3.3f, emptyList()),
+            sp(zhNextLabel("stroke"), Codes.ZH_TOGGLE, 1.2f), Key(" ", Codes.SPACE, null, 3.3f, emptyList()),
             ch("。", "，？！：；、…“”（）."), sp("↵", Codes.ENTER, 1.5f))
         return rows
     }
@@ -116,7 +143,7 @@ object Layouts {
             sp(if (chinese) "符号" else modeLabel, modeCode, 1.5f),
             commaKey,
             if (showGlobe) sp("🌐", Codes.LANG, 1f) else null,
-            if (chinese) sp("笔画", Codes.ZH_TOGGLE, 1f) else null,
+            if (chinese) sp(zhNextLabel("qwerty"), Codes.ZH_TOGGLE, 1f) else null,
             Key(" ", Codes.SPACE, null, (if (showGlobe) 4f else 5f) - (if (undo) 1f else 0f) - (if (chinese) 1f else 0f), emptyList()),
             if (chinese) ch("。", "，？！：；、…“”（）.") else ch(".", ",?¿!¡'\"-:;@/…"),
             if (undo) sp("↶", Codes.UNDO, 1f) else null, // ↶ Deshacer (si no hay fila de números)

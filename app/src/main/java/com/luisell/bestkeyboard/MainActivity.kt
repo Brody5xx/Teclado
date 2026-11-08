@@ -785,9 +785,14 @@ class MainActivity : UiActivity() {
             "All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter."), 12f, faded = true)
         text(tr("Chino (中文): escribe el pinyin sin tonos (nihao) y toca los caracteres en la fila de arriba (你好). La barra espaciadora pone el primero; Enter deja las letras.",
             "Chinese (中文): type the pinyin without tones (nihao) and tap the characters in the row above (你好). Space puts the first one; Enter keeps the letters."), 12f, faded = true)
-        switch(tr("Chino con trazos (一 丨 丿 丶 乛)", "Chinese with strokes (一 丨 丿 丶 乛)"), Prefs.ZH_STROKE, false,
-            tr("Un teclado chino de verdad, sin letras: tocas los trazos en el orden en que se escribe el carácter (好 = 乛丿一乛丨一) y eliges arriba. En el teclado cambias entre «笔画» (trazos) y «拼音» (pinyin) con su tecla.",
-                "A real Chinese keyboard, no letters: tap the strokes in the order the character is written (好 = 乛丿一乛丨一) and pick it above. On the keyboard switch between «笔画» (strokes) and «拼音» (pinyin) with its key."))
+        if (kl1 == "zh" || kl2 == "zh") {
+            // 🇨🇳 Solo si uno de tus idiomas es el chino
+            if (!prefs.contains(Prefs.ZH_LAYOUT)) prefs.edit().putString(Prefs.ZH_LAYOUT, Prefs.zhLayout(prefs)).apply()
+            segmented(tr("Teclado chino", "Chinese keyboard"), Prefs.ZH_LAYOUT, "qwerty",
+                listOf("qwerty" to tr("Pinyin", "Pinyin"), "t9" to tr("9 teclas", "9 keys"), "stroke" to tr("Trazos", "Strokes")))
+            text(tr("Pinyin: las 26 letras. 9 teclas (九宫格): ABC, DEF… como los teléfonos chinos, para escribir con una mano. Trazos (笔画): 一 丨 丿 丶 乛. En el teclado chino los cambias con la tecla de abajo (九键 → 笔画 → 拼音).",
+                "Pinyin: the 26 letters. 9 keys (九宫格): ABC, DEF… like Chinese phones, to type with one hand. Strokes (笔画): 一 丨 丿 丶 乛. On the Chinese keyboard switch with the key at the bottom (九键 → 笔画 → 拼音)."), 12f, faded = true)
+        }
         text(tr("El traductor también tiene chino: copia un mensaje en chino y toca «Traducir mensaje», o en la barra de traducir toca el nombre del idioma para cambiarlo (Inglés → Chino → …).",
             "The translator also has Chinese: copy a message in Chinese and tap «Translate message», or in the translate bar tap the language name to change it (English → Chinese → …)."), 12f, faded = true)
 
@@ -1451,6 +1456,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.8.0" to tr("•  Teclado chino de 9 teclas (九宫格), como en los teléfonos chinos: ABC, DEF, GHI… Tocas una vez cada tecla (64426 = nihao → 你好) y arriba salen los caracteres; también con iniciales (64 → 你好). Tiene 重输 (borrar todo) y la puntuación china a un lado.\n" +
+            "•  Solo aparece cuando el teclado está en chino: la tecla de abajo cambia entre 九键 (9 teclas), 笔画 (trazos) y 拼音 (26 letras). En Inicio › Idioma › «Teclado chino» también lo eliges (solo si tienes el chino).",
+            "•  Chinese 9-key keyboard (九宫格), like on Chinese phones: ABC, DEF, GHI… Tap each key once (64426 = nihao → 你好) and the characters show up above; also with initials (64 → 你好). It has 重输 (clear all) and Chinese punctuation on the side.\n" +
+            "•  It only shows when the keyboard is in Chinese: the key at the bottom switches between 九键 (9 keys), 笔画 (strokes) and 拼音 (26 letters). You can also pick it in Start › Language › «Chinese keyboard» (only if you have Chinese)."),
         "13.7.4" to tr("•  Chino: los caracteres ahora van DENTRO de la misma barra de sugerencias del teclado (ya no es una barra aparte encima). Se ve igual que en español e inglés: transparente, con tu fondo y el destello. Desliza para ver más.",
             "•  Chinese: the characters now go INSIDE the keyboard's own suggestion bar (no longer a separate bar on top). It looks just like Spanish and English: transparent, with your background and the sparkle. Swipe to see more."),
         "13.7.3" to tr("•  Chino con iniciales (简拼), como Sogou y Gboard: nh → 你好, xx → 谢谢, wm → 我们, hd → 好的, zm → 怎么, dbq → 对不起. Ya no hace falta escribir el pinyin entero.\n" +

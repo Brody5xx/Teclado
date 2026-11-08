@@ -84,10 +84,18 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             kv?.setZh("", emptyList())
             return
         }
-        val stroke = prefs.getBoolean(Prefs.ZH_STROKE, false)
-        val shown = if (stroke) pyBuf.map { Layouts.STROKE_SHOW[it] ?: "" }.joinToString("") else pyBuf.toString()
+        val zl = Prefs.zhLayout(prefs)
+        val shown = when (zl) {
+            "stroke" -> pyBuf.map { Layouts.STROKE_SHOW[it] ?: "" }.joinToString("")
+            "t9" -> Pinyin.spellT9(pyBuf.toString())
+            else -> pyBuf.toString()
+        }
         ic?.setComposingText(shown, 1)
-        pyCands = if (stroke) Stroke.candidates(pyBuf.toString()) else Pinyin.candidates(pyBuf.toString())
+        pyCands = when (zl) {
+            "stroke" -> Stroke.candidates(pyBuf.toString())
+            "t9" -> Pinyin.candidatesT9(pyBuf.toString())
+            else -> Pinyin.candidates(pyBuf.toString())
+        }
         kv?.setZh(shown, pyCands.map { it.word })
     }
 
@@ -95,7 +103,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun pyPick(i: Int) {
         val ic = target() ?: return
         val c = pyCands.getOrNull(i)
-        if (c == null) { ic.commitText(if (prefs.getBoolean(Prefs.ZH_STROKE, false)) "" else pyBuf.toString(), 1); pyBuf.clear(); pyRefresh(); return }
+        if (c == null) { ic.commitText(if (Prefs.zhLayout(prefs) == "qwerty") pyBuf.toString() else "", 1); pyBuf.clear(); pyRefresh(); return }
         ic.beginBatchEdit()
         ic.commitText(c.word, 1)
         pyBuf.delete(0, minOf(c.consumed, pyBuf.length))
@@ -2037,7 +2045,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val rows = when (page) {
-            Page.LETTERS -> if (lang == "zh" && prefs.getBoolean(Prefs.ZH_STROKE, false)) Layouts.strokes(numberRow) // 🇨🇳 一丨丿丶乛
+            Page.LETTERS -> if (lang == "zh" && Prefs.zhLayout(prefs) == "stroke") Layouts.strokes(numberRow) // 🇨🇳 一丨丿丶乛
+                else if (lang == "zh" && Prefs.zhLayout(prefs) == "t9") Layouts.t9(false) // 🇨🇳 九宫格
                 else Layouts.letters(numberRow, commaMode, english = lang != "es", chinese = lang == "zh") // la ñ solo en español
             Page.SYM -> Layouts.symbols()
             Page.SYM2 -> Layouts.symbols2()
@@ -2592,6 +2601,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (spellOn) stopSpell()
         if (hackerActive) { hackerText(text); return }
         if (codeOn && !codeAsking) { codeText(text); return }
+        if (zhOn()) {
+            Layouts.T9_KEYS[text]?.let { dg -> pyBuf.append(dg); pyRefresh(); return } // 🇨🇳 九宫格
+            if (text == Layouts.ZH_CLEAR) { if (pyBuf.isNotEmpty()) { pyBuf.clear(); target()?.commitText("", 1); pyRefresh() }; return }
+            if (text == Layouts.ZH_SPLIT) return
+        }
         if (zhOn()) Layouts.STROKE_KEYS[text]?.let { code ->
             pyBuf.append(code) // 🇨🇳 un trazo más
             pyRefresh()
@@ -2667,7 +2681,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (pyBuf.isNotEmpty() && ic != null) {
             if (code == Codes.SPACE) { pyPick(0); return }
             if (code == Codes.ENTER) {
-                ic.commitText(if (prefs.getBoolean(Prefs.ZH_STROKE, false)) "" else pyBuf.toString(), 1)
+                ic.commitText(when (Prefs.zhLayout(prefs)) { "qwerty" -> pyBuf.toString(); "t9" -> Pinyin.spellT9(pyBuf.toString()).replace("'", ""); else -> "" }, 1)
                 pyBuf.clear(); pyRefresh(); return
             }
             if (code != Codes.SHIFT) pyReset(commit = true)
@@ -2752,7 +2766,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 // 🇨🇳 Pinyin (letras) ⇄ trazos (一丨丿丶乛)
                 pyReset(commit = false)
                 target()?.commitText("", 1)
-                prefs.edit().putBoolean(Prefs.ZH_STROKE, !prefs.getBoolean(Prefs.ZH_STROKE, false)).apply()
+                val next = when (Prefs.zhLayout(prefs)) { "qwerty" -> "t9"; "t9" -> "stroke"; else -> "qwerty" }
+                prefs.edit().putString(Prefs.ZH_LAYOUT, next).putBoolean(Prefs.ZH_STROKE, next == "stroke").apply()
                 Stroke.load(this)
                 rebuild()
             }

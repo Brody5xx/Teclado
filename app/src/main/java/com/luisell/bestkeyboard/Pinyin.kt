@@ -169,6 +169,97 @@ object Pinyin {
         return out
     }
 
+    // ---------------------------------------------------------------- 九宫格: pinyin con 9 teclas (2=ABC … 9=WXYZ)
+
+    private const val T9 = "22233344455566677778889999"
+    fun t9(s: String) = buildString { for (c in s) append(if (c in 'a'..'z') T9[c - 'a'] else c) }
+    @Volatile private var t9Keys: Map<String, IntArray>? = null
+    @Volatile private var t9Ab: Map<String, List<String>>? = null
+
+    @Synchronized private fun t9Index() {
+        if (t9Keys != null || !ready) return
+        val m = HashMap<String, MutableList<Int>>(40000)
+        for (i in keys.indices) m.getOrPut(t9(keys[i])) { ArrayList(2) }.add(i)
+        t9Keys = m.mapValues { it.value.toIntArray() }
+        val a = HashMap<String, MutableList<String>>(12000)
+        for (k in abbr.keys) a.getOrPut(t9(k)) { ArrayList(2) }.add(k)
+        t9Ab = a
+    }
+
+    private fun exactT9(d: String): List<Pair<String, Int>> {
+        t9Index()
+        return t9Keys?.get(d)?.flatMap { entries(it) } ?: emptyList()
+    }
+
+    /** Las letras de pinyin más probables para esos números (64426 → nihao), para mostrarlas mientras escribes. */
+    fun spellT9(buf: String): String {
+        t9Index()
+        val ks = t9Keys ?: return buf
+        ks[buf]?.maxByOrNull { i -> entries(i).maxOfOrNull { score(it.first, it.second) } ?: 0L }?.let { return keys[it] }
+        // Por partes: el pedazo más largo que existe, y luego el resto
+        val sb = StringBuilder()
+        var i = 0
+        while (i < buf.length) {
+            var best = -1
+            for (k in minOf(buf.length, i + 12) downTo i + 1) if (ks.containsKey(buf.substring(i, k))) { best = k; break }
+            if (best < 0) { sb.append(buf.substring(i)); break }
+            val idx = ks[buf.substring(i, best)]!!.maxByOrNull { j -> entries(j).maxOfOrNull { score(it.first, it.second) } ?: 0L }!!
+            if (sb.isNotEmpty()) sb.append('\'')
+            sb.append(keys[idx])
+            i = best
+        }
+        return sb.toString()
+    }
+
+    /** Los caracteres para lo que llevas con el teclado de 9 teclas. */
+    fun candidatesT9(buf: String, max: Int = 40): List<Cand> {
+        if (buf.isEmpty() || !ready) return emptyList()
+        t9Index()
+        val out = ArrayList<Cand>()
+        val seen = HashSet<String>()
+        fun add(w: String, n: Int) { if (out.size < max && seen.add(w)) out.add(Cand(w, n)) }
+        val full = exactT9(buf).sortedByDescending { score(it.first, it.second) }
+        if (full.isEmpty()) {
+            // Frase por partes (94664 → 我爱你)
+            val sb = StringBuilder(); var i = 0; var parts = 0; var ok = true
+            while (i < buf.length) {
+                var best = -1
+                for (k in minOf(buf.length, i + 12) downTo i + 1) if (exactT9(buf.substring(i, k)).isNotEmpty()) { best = k; break }
+                if (best < 0) { ok = false; break }
+                sb.append(exactT9(buf.substring(i, best)).maxByOrNull { score(it.first, it.second) }!!.first)
+                i = best; parts++
+            }
+            if (ok && parts >= 2) add(sb.toString(), buf.length)
+        }
+        full.forEach { add(it.first, buf.length) }
+        // Iniciales (64 → 你好, 99 → 谢谢)
+        if (buf.length >= 2) {
+            val ab = (t9Ab?.get(buf) ?: emptyList()).flatMap { abbrOf(it) }.sortedByDescending { score(it.first, it.second) }
+            (if (out.isEmpty()) ab else ab.take(4)).forEach { add(it.first, buf.length) }
+        }
+        // Solo el principio
+        for (k in buf.length - 1 downTo 1) {
+            val part = exactT9(buf.substring(0, k))
+            if (part.isEmpty()) continue
+            part.sortedByDescending { score(it.first, it.second) }.take(if (k == 1) 24 else 8).forEach { add(it.first, k) }
+        }
+        // Nunca vacío: los más usados que empiezan con alguna letra de la primera tecla
+        if (out.isEmpty()) {
+            val letters = ('a'..'z').filter { T9[it - 'a'] == buf[0] }
+            val more = ArrayList<Pair<String, Int>>()
+            for (l in letters) {
+                var i = find(l.toString()).let { if (it < 0) -(it + 1) else it }
+                var n = 0
+                while (i < keys.size && keys[i].startsWith(l) && n < 3000) {
+                    if (keys[i].length <= 6) entries(i).firstOrNull { it.first.length == 1 }?.let { more.add(it) }
+                    i++; n++
+                }
+            }
+            more.sortedByDescending { score(it.first, it.second) }.take(24).forEach { add(it.first, 1) }
+        }
+        return out
+    }
+
     /** Parte el pinyin en los pedazos más largos que existen y junta la mejor palabra de cada uno. */
     private fun sentence(buf: String): String? {
         val sb = StringBuilder()
