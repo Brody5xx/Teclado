@@ -38,8 +38,36 @@ object UiTr {
     /** ¿Ya está traducida la app a este idioma? */
     fun has(ctx: Context, code: String) = file(ctx, code).exists()
 
+    // ---- Traducciones revisadas a mano (assets/ui_fixed.tsv): mandan sobre la traducción automática
+    @Volatile private var fixed: Map<String, Array<String>>? = null
+    private val COLS = listOf("pt", "fr", "it", "de", "zh")
+
+    @Synchronized private fun fixedMap(): Map<String, Array<String>> {
+        fixed?.let { return it }
+        val ctx = app ?: return emptyMap()
+        val m = HashMap<String, Array<String>>(1400)
+        try {
+            ctx.assets.open("ui_fixed.tsv").bufferedReader().forEachLine { l ->
+                if (l.startsWith("#") || l.isBlank()) return@forEachLine
+                val f = l.split('\t')
+                if (f.size >= 6) m[unesc(f[0])] = Array(5) { unesc(f[it + 1]) }
+            }
+        } catch (_: Exception) { }
+        fixed = m
+        return m
+    }
+
+    private fun fixedOf(code: String, en: String, es: String?): String? {
+        val i = COLS.indexOf(code)
+        if (i < 0) return null
+        val m = fixedMap()
+        if (es != null) m["es:$es"]?.let { return it[i] }
+        return m[en]?.get(i)
+    }
+
     /** El texto en [code], o null si todavía no está traducido. */
-    fun of(code: String, en: String): String? {
+    fun of(code: String, en: String, es: String? = null): String? {
+        fixedOf(code, en, es)?.let { return it }
         val m = map(code) ?: return null
         return m[en]
     }
@@ -83,8 +111,9 @@ object UiTr {
     /** Los textos que faltan por traducir (por ejemplo, los nuevos de una actualización). */
     fun missing(ctx: Context, code: String): Int {
         init(ctx)
-        val m = map(code) ?: return allStrings(ctx).size
-        return allStrings(ctx).count { it !in m }
+        val fx = fixedMap()
+        val m = map(code) ?: return allStrings(ctx).count { it !in fx }
+        return allStrings(ctx).count { it !in m && it !in fx }
     }
 
     @Volatile private var running = false
@@ -99,8 +128,13 @@ object UiTr {
         if (running) { main.post { done(false) }; return }
         running = true
         val have = HashMap<String, String>(map(code) ?: emptyMap())
-        val todo = allStrings(ctx).filter { it !in have }
-        if (todo.isEmpty()) { running = false; main.post { done(true) }; return }
+        val fx = fixedMap()
+        val todo = allStrings(ctx).filter { it !in have && it !in fx } // las revisadas a mano no hace falta traducirlas
+        if (todo.isEmpty()) {
+            // Ya está todo: igual se deja el archivo para que se sepa que este idioma está listo
+            try { if (!file(ctx, code).exists()) file(ctx, code).writeText("") } catch (_: Exception) { }
+            running = false; main.post { done(true) }; return
+        }
         val t = Translation("en", code)
         fun finish(ok: Boolean) {
             try {

@@ -41,6 +41,7 @@ A PDF is made with your days, hours, sites, lunch and overtime, ready to send by
 A lot
 A short tour of everything the keyboard has.
 A website or app with user and password.
+AI replies
 AI writing
 ALL (A–Z)
 Accents and punctuation
@@ -90,6 +91,7 @@ Automatic weekly backup
 Awesome!
 Back
 Back up now
+Background video sound
 Backup
 Backup password
 Backup saved.
@@ -115,6 +117,7 @@ Button color
 Button color (Enter and what's on)
 Button name
 Cable tester
+Calculator
 Calculator and converter
 Calendar
 Cancel
@@ -157,6 +160,7 @@ Confirmed by you
 Continue
 Convert from…
 Convert to…
+Converter
 Copied
 Copied text and codes
 Copied. It's also in your clipboard.
@@ -205,8 +209,10 @@ Daily ticket reminder
 Darken the background (to read the letters)
 Data
 Data (your passwords)
+Data and copy
 Data: emails, passwords and shortcuts
 Day
+Day notebook
 Day starts at
 Days you work
 Default
@@ -253,6 +259,7 @@ Easy mode
 Edit
 Edit item
 Edit shortcut
+Edit text
 Effect
 Email
 Emojis
@@ -286,6 +293,7 @@ Fixed code:
 Fixes words when you tap space. Tap ⌫ right after to undo.
 Flat
 Flip
+Floating
 Floating and one hand
 Floating keyboard
 Flower
@@ -295,6 +303,7 @@ For everyone
 Forget each app's language
 Formal emails, AI writing and shortcuts.
 Formal version
+Formal words
 Free AI: replies and finish sentence
 French
 From now on, what you work this week counts as overtime. ✨
@@ -311,6 +320,7 @@ Give it a name.
 Give the path from the rack to the device: in feet («120»), steps («80 steps»), ceiling tiles («40 tiles») or meters. Add the ceiling («ceiling 12») and how many lines («x 6»).
 Glass (with your photo or video background)
 Glitch
+Glove mode
 Glove mode off
 Glow
 Got it
@@ -336,9 +346,14 @@ I didn't get it. Example: 120 x 6 + 10%
 I didn't get it. Example: PP1-01 to PP1-24
 I didn't get the time. Try: 5:32pm
 I need permission to use the mic. Open it and tap "Allow".
+I'll be there in 15 minutes.
+I'll be there in 30 minutes.
+I'm heading home.
 I'm here.
 I'm making it smaller so it runs light on the keyboard. Don't close this screen.
 I'm not driving (normal keyboard today)
+I'm on my way.
+IP / MAC keypad
 IP / MAC keypad · «ABC» goes back to letters
 IP/MAC pad to type addresses fast, Labels with serial numbers, and «How many feet per line?» which works out the cable you need to run.
 Icon
@@ -408,6 +423,7 @@ Light line
 Lightning
 Like Google's password manager: each account keeps user, email, password, questions, key and PIN. On the keyboard tap the lock, use your fingerprint and pick what to paste. All encrypted and only on your phone.
 Like Google's password manager: save each website or app with its username, email, password, security questions, key and PIN. To open an account it asks for your fingerprint. Everything is encrypted and stays only on your phone.
+Listen to text
 Listening… speak now
 Little
 Loading the dictionary…
@@ -429,6 +445,7 @@ Made with care · Best Keyboard
 Make a copy now
 Making the backup…
 Material name (e.g. Cat 6A cable)
+Materials
 Medium
 Mic permission is missing (open settings ⚙).
 Microphone
@@ -446,6 +463,7 @@ My hours this week
 My passwords
 My phrases
 My sites
+My tickets
 My words
 My workday
 My workday: automatic alerts
@@ -510,7 +528,6 @@ Now
 Number in 
 Number row on top
 Numbers only (e.g. 25.5)
-OT
 Off
 Off = muted. You can also switch it quickly with the sound button on the keyboard.
 Office
@@ -521,6 +538,7 @@ On site
 On site: 
 On the keyboard: select some text (email, password or anything) and «Save to Data» shows on top.
 On the screen that opens, tap «Allow all the time». That way the phone knows when you arrive or leave even with the keyboard closed.
+One hand
 One moment, the dictionary is loading…
 One more permission
 One-hand mode
@@ -540,6 +558,7 @@ Other saved things
 Outline
 Overtime
 Overtime (over 40): 
+PC keyboard
 PC keyboard: Ctrl, Alt, Esc, Tab, arrows and Fn (F1–F12)
 Paid
 Panels and buttons
@@ -569,12 +588,14 @@ Pill
 Pixels
 Point at the text or code (barcode or QR) and take the photo
 Portuguese
+Pre-trip checklist
 Press
 Pulse
 Put a photo or video from your gallery behind the keys. The video is compressed to stay light, plays in full and loops forever.
 Question
 Question (e.g.: First pet's name?)
 Quick guide
+Quick messages
 Quick messages, emojis, GIFs and photos.
 Quick phrases
 Rainbow
@@ -584,6 +605,7 @@ Reading…
 Regular hours per day
 Remember each app's language
 Remind me if I didn't log «Home»
+Remind on arrival
 Reminder time
 Remove
 Remove your home? «Home» won't be logged automatically anymore.
@@ -606,7 +628,6 @@ Ripple
 Round
 Rubber
 Runs in feet: «120 x 6» (6 of 120), «85, 90, 120» or with extra «+ 10%».
-SECTIONS
 SMS are read only on your phone, just to find the code. Nothing is sent.
 Safety glasses
 Same language as your phone
@@ -628,10 +649,12 @@ Saved.
 Saving the backup…
 Saving the first backup…
 Scan
+Scan (text and codes)
 Scan text
 Screenshot
 Search
 Search GIFs
+Search Google
 Search emojis
 Search stickers
 Searches your tickets, the day notebook and the clipboard.
@@ -653,8 +676,10 @@ Send
 Send ticket
 Sending…
 Sent it, delete
+Serial labels
 Set my hourly pay
 Set to 0
+Settings
 Settings, style, words, Data, phrases, shortcuts, clipboard, My workday, tickets, sites, to-dos, your pay and your background are here.\n\nOn this phone you only need to give the permissions again (Android doesn't transfer them):\n1. Enable and choose Best Keyboard (above).\n2. Microphone, photos, notifications and SMS (buttons above).\n3. Location «Allow all the time» in My sites, if you use automatic arrival and departure.\n4. Turn the automatic backup on again (pick the folder again).\n5. Add the My workday widget to your screen, if you used it.
 Setup
 Shake
@@ -821,8 +846,10 @@ Ticket with photos
 Tickets you create with 📋 Notes → Ticket are saved here. Tap one to type it and use it as a base.
 Tickets, Notebook, My workday, My sites, checklist, glove mode, IP/MAC pad and labels. Turn it off if you don't use them and the keyboard looks simpler.
 Time deducted
+Time, date and place
 Timesheet
 Tips
+Tips and news
 Tips: good light, straight text that fills the photo. The text is read on the phone, no internet needed.
 To estimate your weekly pay. It's saved only on your phone. It's an approximate calculation: your pay stub is the exact one.
 To resize: tap ⋯ above the keyboard → «Resize».
@@ -830,6 +857,7 @@ To see GIFs you need a free GIPHY key.\n\nTap here and follow the steps in Setti
 To see your photos, allow «Photos and videos».
 To see «Data»
 To work with the keyboard closed, under Location choose «Allow all the time». The phone uses geofences, which use very little battery.
+To-dos
 Today
 Today 
 Today 7 PM
@@ -841,6 +869,7 @@ Top bar
 Top bar — press, hold and drag
 Top bars background (search, translate…)
 Total
+Translate
 Translate message
 Translate what you type or what you got. When dictating it adds punctuation by itself and, on newer phones, understands whether you speak Spanish or English in each sentence. «Search Google» searches without leaving the keyboard.
 Translate, dictate and search
@@ -908,12 +937,14 @@ Version
 Vibrate on tap
 Vibration
 Visible
+Voice and GIFs
 Voice, camera and screenshots
 Volume
 Wait before logging the departure
 Wave
 Website or app *
 Week of 
+Week summary
 Week total: 
 Welcome!
 What I log
@@ -945,6 +976,7 @@ Without the contacts permission I can't suggest their names.
 Without the microphone permission you can't dictate.
 Word
 Word of the week
+Work
 Work tickets
 Work tools
 Workday · 
@@ -983,14 +1015,23 @@ Your phrase…
 Your privacy
 Your shortcuts
 Your style
+Zoom
 change language
+cm → inches
 delete
 email@example.com
 enter
+feet → meters
+inches → cm
+kg → pounds
+km → miles
 letters
+meters → feet
+miles → km
 next: 
 none
 not yet
+pounds → kg
 shift
 shortcut: 
 space
@@ -1003,6 +1044,8 @@ week
 «AI replies»: copy the message you got and it gives you several replies. «Finish sentence with AI»: type the start and get 3 ways to finish it. Same free AI as Best Notes, no key needed.
 «More formal» needs your FREE Google Gemini key (just once).
 «Paste: …» shows above the keyboard for 3 minutes. One tap types it.
+°C → °F
+°F → °C
 » to start
 •  11 themes (Midnight, Ocean, Neon, Forest, Sunset, Rose, Hacker, Aurora…) and accent color.\n•  Key shape, letter size and tap animations (Bounce, Ripple, Glow).\n•  Modern vibration (the phone's click) and new sounds: letter, delete and space.
 •  AI: back to one request at a time (like Best Notes). Asking two places at once made the free service reject everything.\n•  «Finish sentence with AI» continues what you wrote («Hola como» → estás? / te fue hoy?).
@@ -1019,7 +1062,6 @@ week
 •  Cleaner settings: now you see one section at a time. Tap the «Sections ›» bar under the search box, or the light strip on the right edge of the screen, and an Edge panel (like Samsung's) opens with every section: Start, Typing, AI and work, My workday, Data and copy, Voice and GIFs, Word, Backup and Tips. The search box still searches everything.
 •  Clearer My workday notification: the clock counts your worked hours (lunch already taken out).\n•  Automatic arrival and departure: if GPS jumps and logs a false «departure» but you're still on site, it's removed by itself.
 •  Clipboard: when selecting, each note has a diamond ◇ (empty or checked).\n•  Adding or editing in the clipboard opens a big multi-line box with a «✓ Save» button.
-•  Code mode </> (in ⋯): a keyboard for coding (Tab, ( ) [ ] { } : =), auto-indent, Python/JavaScript/Kotlin/Java/HTML/C++ words and AI: Explain, Write code, Fix error and Hint.
 •  Currency (like in Best Notes): tap ⋯ › Currency. See what every currency in the world is worth today and convert instantly.\n•  Tap a currency to change it: the most used on top and all of them A to Z below, with their names.\n•  In the amount you can do math (50+25×2, 15%) and ⇅ swaps the currencies. Below you see 1 = … both ways.\n•  «Type it» puts the result where you're typing: «100 USD = 5,890.00 DOP».\n•  Rates are from today (updated every 6 hours) and offline it uses the last saved ones.
 •  Currency: new ↑↓ button next to the currencies to swap them (it spins when you tap it).\n•  The Currency keys are bigger and the numbers are properly centered (4 rows instead of 5).
 •  Currency: the ↑↓ button is now round and smaller, in the diamond's colors. Tapping it sparkles: a ring of light, a shine across it, a little star and the arrows spin half a turn.
@@ -1042,7 +1084,7 @@ week
 •  Fixed: the app closed when changing the time with «🕐 Clock». Now a modern round clock shows up.\n•  The calendar (days, months and summary) is fully in the app's language.
 •  Fixed: «AI replies» (and other AI features) stayed thinking. The AI now answers in seconds (no long «thinking»), tries first the model that already worked, doesn't wait in line behind another question and, if it takes more than 45 seconds, tells you instead of staying stuck.
 •  Guesses the next word from day one, in English and Spanish: «thank you» → so much, «I will be there in» → a few minutes, «no te» → preocupes. Before, it only guessed what you had already typed.\n•  It now remembers the 2 previous words (not just 1): it learns your full phrases and completes them for you. What you type always counts more than the built-in ones.\n•  In tests with normal sentences: it guesses 1 in 3 words without typing a single letter, and you type 66% fewer letters.\n   (Example sentences from tatoeba.org, CC-BY 2.0 license.)
-•  Hold a letter for accents (á, é, ñ…) and the period for ¿ ? ¡ !\n•  ⇧ twice = ALL CAPS.\n•  Slide your finger over the letters to type a whole word.\n•  Hold the comma for emojis.\n•  ⋯ opens «More options»; the pencil ✎ lets you arrange every button.\n•  The hacker switches to a PC keyboard (Ctrl, Alt, Esc, Tab, F1–F12).\n•  </> Code mode: a keyboard for coding, and the AI explains, writes and fixes code.\n•  Hold the globe key to switch to another keyboard.
+•  Hand-checked translations in Portuguese, French, Italian, German and Chinese: every button, title, section, notice, help text and the guide (more than 1,250 texts). No more odd phrases like «My sites» = «my websites».\n•  The menu sections (Work, Data and copy, Voice and GIFs, Tips and news) are now translated.\n•  In the calendar, days and months show in the screen language.
 •  In Style, the Hacker theme colors only show when you pick the Hacker theme, and they slide down into view.
 •  Keep the keyboard open: if you tap something to select it, the keyboard no longer goes down by itself; it goes down with the Hide button or the back arrow (turn it off in Settings).\n•  «Quick replies» (the AI one) is now called «AI replies», so it isn't confused with «Quick messages». While it thinks, the diamond shows with its light.
 •  Key and letter color in any theme (rainbow keys too 🌈).\n•  23 tap effects: Jelly, Shake, Spin, Wave, Flash, Neon, Rings, Stars, Confetti, Hearts, Fire, Snow, Flying letter and 🎲 Surprise.\n•  «My words»: see, change, delete and add your words.\n•  «Data»: edit what's saved and, when you select text, «Save to Data».

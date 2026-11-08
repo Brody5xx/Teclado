@@ -1444,6 +1444,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.6.0" to tr("•  Traducciones revisadas a mano en portugués, francés, italiano, alemán y chino: todos los botones, títulos, secciones, avisos, ayudas y la guía (más de 1,250 textos). Ya no salen frases raras como «Mis sitios» = «mis páginas web».\n" +
+            "•  Las secciones del menú (Trabajo, Datos y copiado, Voz y GIFs, Trucos y novedades) ya se traducen.\n" +
+            "•  En el calendario, los días y los meses salen en el idioma de la pantalla.",
+            "•  Hand-checked translations in Portuguese, French, Italian, German and Chinese: every button, title, section, notice, help text and the guide (more than 1,250 texts). No more odd phrases like «My sites» = «my websites».\n" +
+            "•  The menu sections (Work, Data and copy, Voice and GIFs, Tips and news) are now translated.\n" +
+            "•  In the calendar, days and months show in the screen language."),
         "13.5.2" to tr("•  Días que trabajas: los días salen en el idioma de la pantalla (en chino 一 二 三 四 五 六 日), igual que «Lun – Vie» y la lista de días.",
             "•  Days you work: the days show in the screen language (in Chinese 一 二 三 四 五 六 日), and so do «Mon – Fri» and the list of days."),
         "13.5.1" to tr("•  Días que trabajas: los círculos de los días caben completos en cualquier pantalla y los botones rápidos quedan en una línea (Lun – Vie, Lun – Sáb, Todos).",

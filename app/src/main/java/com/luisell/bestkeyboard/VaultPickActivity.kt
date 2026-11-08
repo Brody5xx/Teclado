@@ -34,7 +34,7 @@ class VaultPickActivity : Activity() {
     private var chosen: String? = null
     private var all = false
     private val uiCode by lazy { UiTr.screenLang(this) }
-    private fun tr(es: String, en: String) = when (uiCode) { "es" -> es; "en" -> en; else -> UiTr.of(uiCode, en) ?: en }
+    private fun tr(es: String, en: String) = when (uiCode) { "es" -> es; "en" -> en; else -> UiTr.of(uiCode, en, es) ?: en }
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {

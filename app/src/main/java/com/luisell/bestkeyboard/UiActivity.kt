@@ -68,8 +68,13 @@ abstract class UiActivity : Activity() {
     protected fun tr(es: String, en: String) = when (uiCode) {
         "es" -> es
         "en" -> en
-        else -> UiTr.of(uiCode, en) ?: en
+        else -> UiTr.of(uiCode, en, es) ?: en
     }
+    /** El formato de fechas del idioma de la pantalla. */
+    protected val uiLocale: java.util.Locale get() = when (uiCode) { "es" -> java.util.Locale("es"); "en" -> java.util.Locale.US; else -> java.util.Locale(uiCode) }
+    /** Una fecha bien escrita en el idioma de la pantalla ("EEEEMMMMd" → «domingo, 8 de noviembre», «11月8日星期日»…). */
+    protected fun uiDate(skeleton: String, d: java.util.Date): String =
+        java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(uiLocale, skeleton), uiLocale).format(d).replaceFirstChar { it.uppercase() }
     /** El texto de la ventanita de espera (para poner el porcentaje). */
     protected var busyLabel: TextView? = null
     /** ⏳ Ventanita de «espera»: el diamante con la luz dando vueltas y un texto. Ciérrala con [android.app.Dialog.dismiss]. */

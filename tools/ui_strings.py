@@ -5,7 +5,9 @@ import os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "app/src/main/java")
 OUT = os.path.join(ROOT, "app/src/main/assets/ui_strings.txt")
-NAMES = {"tr", "t", "busy", "toast", "bind", "bindHint", "pill", "key", "moveKey", "command", "ask"}
+NAMES = {"tr", "t", "busy", "toast", "bind", "bindHint", "pill", "key", "moveKey", "command", "ask", "tx",
+         "Sec", "Info", "Opt", "Unit"}
+ENIDX = {"Sec": 2, "Unit": 2}  # (id, es, en, …): el inglés es el 3.º
 
 def tokens(s):
     i, n = 0, len(s)
@@ -65,6 +67,13 @@ def literal(arg):
         elif t != ("P", "+"): return None
     return "".join(out)
 
+def junk(b):
+    t = b.strip()
+    if " " not in t and re.search(r"[a-z][A-Z]", t): return True          # CamelCase (nombres de código)
+    if re.fullmatch(r"[0-9A-F]{6,8}|[A-Z]{3}|[A-Z_]+", t): return True    # colores, monedas, constantes
+    if "<" in t or "#include" in t or "/" in t and re.search(r"\d", t) and " " not in t: return True
+    return False
+
 found = set()
 for dp, _, fs in os.walk(SRC):
     for f in fs:
@@ -84,9 +93,13 @@ for dp, _, fs in os.walk(SRC):
                     j += 1
                 args.append(cur)
                 lits = [literal(a) for a in args]
+                if toks[i][1] in ENIDX:
+                    k = ENIDX[toks[i][1]]
+                    if len(lits) > k and lits[k] and re.search(r"[A-Za-z]", lits[k]): found.add(lits[k])
+                    continue
                 for a, b in zip(lits, lits[1:]):
                     if a is not None and b is not None:
-                        if b.strip() and re.search(r"[A-Za-z]", b): found.add(b)
+                        if b.strip() and re.search(r"[A-Za-z]", b) and not junk(b): found.add(b)
                         break
 
 def esc(x): return x.replace("\\", "\\\\").replace("\n", "\\n").replace("\t", "\\t")

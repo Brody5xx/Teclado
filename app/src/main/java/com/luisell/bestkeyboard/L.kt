@@ -33,11 +33,11 @@ object L {
 
     /** El texto en el idioma actual del teclado. */
     fun t(es: String, en: String): String {
-        screen?.let { return UiTr.of(it, en) ?: en }
+        screen?.let { return UiTr.of(it, en, es) ?: en }
         return when (cur) {
             "es" -> es
             "en" -> en
-            else -> UiTr.of(cur, en) ?: if (english) en else es
+            else -> UiTr.of(cur, en, es) ?: if (english) en else es
         }
     }
 
