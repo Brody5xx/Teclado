@@ -246,11 +246,9 @@ class PinyinBar(context: Context) : HorizontalScrollView(context) {
 
     fun applyPalette(p: Palette) {
         pal = p
-        // Fondo SÓLIDO: tapa por completo la barra de botones de atrás (con fondo de foto o video también)
-        val solid = if (p.isDark) 0xFF14161C.toInt() else 0xFFF3F4F7.toInt()
-        background = android.graphics.drawable.LayerDrawable(arrayOf(
-            android.graphics.drawable.ColorDrawable(solid),
-            PanelUi.barBackground(context, p, lightLine = false)))
-        isClickable = true // los toques no pasan a los botones de atrás
+        // Transparente, igual que las sugerencias de los otros idiomas: se ve el fondo y el destello del teclado
+        // (los botones de la barra se esconden mientras escribes, así que no hay nada encima)
+        background = null
+        isClickable = true // los toques no pasan a la barra de atrás
     }
 }

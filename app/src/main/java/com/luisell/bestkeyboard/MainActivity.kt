@@ -1451,6 +1451,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.7.1" to tr("•  Chino: la fila de caracteres ahora se ve igual que las sugerencias de los otros idiomas: transparente, con tu fondo y el destello del teclado detrás (ya no es una barra gris encima).\n" +
+            "•  Chino: la primera letra ya no se queda en mayúscula suelta (Je → todo va al pinyin). Solo si pones la mayúscula tú, sale la letra.",
+            "•  Chinese: the character row now looks just like the other languages' suggestions: transparent, with your background and the keyboard's sparkle behind (no more grey bar on top).\n" +
+            "•  Chinese: the first letter no longer stays as a loose capital (Je → it all goes to pinyin). Only when you set the capital yourself does the letter come out."),
         "13.7.0" to tr("•  Teclado chino de trazos (笔画): las teclas son 一 丨 丿 丶 乛, como en los teclados chinos. Tocas los trazos en el orden en que se escribe el carácter y eliges arriba (los más usados primero). Más de 8,100 caracteres.\n" +
             "•  En chino, las teclas especiales están en chino: 符号 (símbolos), 笔画 / 拼音 (cambiar entre trazos y pinyin), 中文 (volver de los símbolos), y la coma y el punto son ， 。\n" +
             "•  Se activa con la tecla 笔画 del teclado chino, o en Inicio › Idioma › «Chino con trazos».",

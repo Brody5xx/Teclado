@@ -2599,9 +2599,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         if (zhOn() && text.length == 1) {
             val ch = text[0]
-            if (ch in 'a'..'z' && shift == 0 || (ch in 'a'..'z' || ch in 'A'..'Z') && pyBuf.isNotEmpty()) {
+            // Solo con mayúscula puesta a mano (o bloqueada) sale la letra suelta; si no, todo va al pinyin
+            val realCaps = shift == 2 || (shift == 1 && manualShift)
+            if (ch.isLetter() && ch.code < 128 && (!realCaps || pyBuf.isNotEmpty())) {
                 // 🇨🇳 La letra va al pinyin y salen los caracteres para elegir
                 pyBuf.append(ch.lowercaseChar())
+                if (shift == 1) { manualShift = false; setShift(0) }
                 pyRefresh()
                 return
             }
