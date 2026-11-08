@@ -84,18 +84,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             pyBar?.hide()
             return
         }
-        ic?.setComposingText(pyBuf.toString(), 1)
-        pyCands = Pinyin.candidates(pyBuf.toString())
+        val stroke = prefs.getBoolean(Prefs.ZH_STROKE, false)
+        val shown = if (stroke) pyBuf.map { Layouts.STROKE_SHOW[it] ?: "" }.joinToString("") else pyBuf.toString()
+        ic?.setComposingText(shown, 1)
+        pyCands = if (stroke) Stroke.candidates(pyBuf.toString()) else Pinyin.candidates(pyBuf.toString())
         val bar = pyBar ?: return
         kv?.let { (bar.layoutParams as? FrameLayout.LayoutParams)?.let { lp -> if (lp.height != it.stripHeight) { lp.height = it.stripHeight; bar.layoutParams = lp } } }
-        bar.show(pyBuf.toString(), pyCands)
+        bar.show(shown, pyCands)
     }
 
     /** Elegiste un caracter (o la barra espaciadora pone el primero). */
     private fun pyPick(i: Int) {
         val ic = target() ?: return
         val c = pyCands.getOrNull(i)
-        if (c == null) { ic.commitText(pyBuf.toString(), 1); pyBuf.clear(); pyRefresh(); return }
+        if (c == null) { ic.commitText(if (prefs.getBoolean(Prefs.ZH_STROKE, false)) "" else pyBuf.toString(), 1); pyBuf.clear(); pyRefresh(); return }
         ic.beginBatchEdit()
         ic.commitText(c.word, 1)
         pyBuf.delete(0, minOf(c.consumed, pyBuf.length))
@@ -380,7 +382,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         kv = v
         // Las teclas mandan la altura; emojis y portapapeles usan la misma
         val box = PanelBox(this, v)
-        if (Langs.pair(prefs).let { it.first == "zh" || it.second == "zh" }) Pinyin.load(this)
+        if (Langs.pair(prefs).let { it.first == "zh" || it.second == "zh" }) { Pinyin.load(this); Stroke.load(this) }
         // 🖼️ El video de fondo va detrás de las teclas
         val bgv = BgVideoView(this)
         bgv.visibility = View.GONE
@@ -1879,6 +1881,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun applySettings() {
         L.setScreen(this) // 🌍 por si cambiaste el idioma de las pantallas
+        Layouts.chineseUi = lang == "zh"
         val v = kv ?: return
         val theme = Prefs.theme(prefs)
         val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
@@ -2036,7 +2039,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val rows = when (page) {
-            Page.LETTERS -> Layouts.letters(numberRow, commaMode, english = lang != "es", chinese = lang == "zh") // la ñ solo en español
+            Page.LETTERS -> if (lang == "zh" && prefs.getBoolean(Prefs.ZH_STROKE, false)) Layouts.strokes(numberRow) // 🇨🇳 一丨丿丶乛
+                else Layouts.letters(numberRow, commaMode, english = lang != "es", chinese = lang == "zh") // la ñ solo en español
             Page.SYM -> Layouts.symbols()
             Page.SYM2 -> Layouts.symbols2()
             Page.NUM -> Layouts.numpad(phone)
@@ -2588,6 +2592,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (spellOn) stopSpell()
         if (hackerActive) { hackerText(text); return }
         if (codeOn && !codeAsking) { codeText(text); return }
+        if (zhOn()) Layouts.STROKE_KEYS[text]?.let { code ->
+            pyBuf.append(code) // 🇨🇳 un trazo más
+            pyRefresh()
+            return
+        }
         if (zhOn() && text.length == 1) {
             val ch = text[0]
             if (ch in 'a'..'z' && shift == 0 || (ch in 'a'..'z' || ch in 'A'..'Z') && pyBuf.isNotEmpty()) {
@@ -2654,7 +2663,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val ic = target()
         if (pyBuf.isNotEmpty() && ic != null) {
             if (code == Codes.SPACE) { pyPick(0); return }
-            if (code == Codes.ENTER) { ic.commitText(pyBuf.toString(), 1); pyBuf.clear(); pyRefresh(); return }
+            if (code == Codes.ENTER) {
+                ic.commitText(if (prefs.getBoolean(Prefs.ZH_STROKE, false)) "" else pyBuf.toString(), 1)
+                pyBuf.clear(); pyRefresh(); return
+            }
             if (code != Codes.SHIFT) pyReset(commit = true)
         }
         if (code != Codes.SHIFT) {
@@ -2733,6 +2745,14 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 scheduleUpdate()
             }
             Codes.UNDO -> doUndo()
+            Codes.ZH_TOGGLE -> {
+                // 🇨🇳 Pinyin (letras) ⇄ trazos (一丨丿丶乛)
+                pyReset(commit = false)
+                target()?.commitText("", 1)
+                prefs.edit().putBoolean(Prefs.ZH_STROKE, !prefs.getBoolean(Prefs.ZH_STROKE, false)).apply()
+                Stroke.load(this)
+                rebuild()
+            }
             Codes.MODE_SYM -> { page = Page.SYM; rebuild() }
             Codes.MODE_SYM2 -> { page = Page.SYM2; rebuild() }
             Codes.MODE_LETTERS -> {
@@ -3939,7 +3959,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (l == lang) return
         pyReset(commit = true)
         lang = l
-        if (l == "zh") Pinyin.load(this)
+        Layouts.chineseUi = l == "zh"
+        if (l == "zh") { Pinyin.load(this); Stroke.load(this) }
         prefs.edit().putString(Prefs.LANG, lang).apply()
         rememberAppLang()
         L.set(lang)

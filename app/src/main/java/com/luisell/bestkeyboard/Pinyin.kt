@@ -160,6 +160,47 @@ object Pinyin {
     }
 }
 
+/** 🇨🇳 Escribir con los 5 trazos (一丨丿丶乛) en el orden en que se escribe el carácter. Datos: rime-stroke (LGPL). */
+object Stroke {
+    @Volatile private var codes: Array<String> = emptyArray()
+    @Volatile private var chars: Array<String> = emptyArray()
+    @Volatile private var freqs: IntArray = IntArray(0)
+    @Volatile var ready = false
+        private set
+    @Volatile private var loading = false
+
+    fun load(ctx: Context) {
+        if (ready || loading) return
+        loading = true
+        val app = ctx.applicationContext
+        Thread {
+            try {
+                val c = ArrayList<String>(8200); val h = ArrayList<String>(8200); val f = ArrayList<Int>(8200)
+                app.assets.open("zh_stroke.txt").bufferedReader().forEachLine { l ->
+                    val p = l.split('\t')
+                    if (p.size >= 3) { c.add(p[0]); h.add(p[1]); f.add(p[2].toIntOrNull() ?: 0) }
+                }
+                codes = c.toTypedArray(); chars = h.toTypedArray(); freqs = f.toIntArray()
+                ready = true
+            } catch (_: Exception) { }
+            loading = false
+        }.start()
+    }
+
+    /** Los caracteres que empiezan con esos trazos: primero los exactos, luego los más usados. */
+    fun candidates(buf: String, max: Int = 40): List<Pinyin.Cand> {
+        if (buf.isEmpty() || !ready) return emptyList()
+        val exact = ArrayList<Int>(); val more = ArrayList<Int>()
+        for (i in codes.indices) {
+            val c = codes[i]
+            if (c == buf) exact.add(i) else if (c.startsWith(buf)) more.add(i)
+        }
+        exact.sortByDescending { freqs[it] }
+        more.sortByDescending { freqs[it] }
+        return (exact + more).take(max).map { Pinyin.Cand(chars[it], buf.length) }
+    }
+}
+
 /** La fila de caracteres chinos para elegir (tapa la barra de sugerencias mientras escribes pinyin). */
 @SuppressLint("ViewConstructor")
 class PinyinBar(context: Context) : HorizontalScrollView(context) {

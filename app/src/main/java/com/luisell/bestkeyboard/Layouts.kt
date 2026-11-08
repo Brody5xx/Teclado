@@ -13,6 +13,8 @@ object Codes {
     const val MODE_SYM2 = -7
     /** ↩️ Deshacer (tecla al lado del punto). */
     const val UNDO = -8
+    /** 🇨🇳 Cambia el teclado chino entre pinyin (letras) y trazos (一丨丿丶乛). */
+    const val ZH_TOGGLE = -9
     const val SPACE = 32
 
     // Teclado de computadora ("hacker")
@@ -83,17 +85,39 @@ object Layouts {
     /** Si es false, no hay botón 🌐 (el idioma se cambia deslizando la barra espaciadora). */
     var showGlobe = true
 
-    private fun bottomRow(modeLabel: String, modeCode: Int, comma: String, undo: Boolean = false, chinese: Boolean = false): List<Key> {
+    /** Las teclas de los 5 trazos: escriben un código interno que el teclado convierte en caracteres. */
+    val STROKE_KEYS = mapOf("\uE101" to 'h', "\uE102" to 's', "\uE103" to 'p', "\uE104" to 'n', "\uE105" to 'z')
+    val STROKE_SHOW = mapOf('h' to "一", 's' to "丨", 'p' to "丿", 'n' to "丶", 'z' to "乛")
+
+    /** 🇨🇳 Teclado chino de trazos (笔画), como los teclados chinos: 一 丨 丿 丶 乛. */
+    fun strokes(withNumberRow: Boolean): List<List<Key>> {
+        val rows = mutableListOf<List<Key>>()
+        if (withNumberRow) rows += numberRow()
+        rows += listOf(Key("一", 0, "\uE101", 1f, emptyList()), Key("丨", 0, "\uE102", 1f, emptyList()),
+            Key("丿", 0, "\uE103", 1f, emptyList()), Key("丶", 0, "\uE104", 1f, emptyList()), Key("乛", 0, "\uE105", 1f, emptyList()))
+        rows += listOf(ch("，", "、；"), ch("。", "…"), ch("？"), ch("！"), del(1f))
+        rows += listOf(sp("符号", Codes.MODE_SYM, 1.5f), Key("，", 0, "，", 1f, emptyList(), emojiKey = true),
+            sp("拼音", Codes.ZH_TOGGLE, 1.2f), Key(" ", Codes.SPACE, null, 3.3f, emptyList()),
+            ch("。", "，？！：；、…“”（）."), sp("↵", Codes.ENTER, 1.5f))
+        return rows
+    }
+
+    /** 🇨🇳 Teclado en chino: los nombres de las teclas especiales en chino (符号, 中文…). */
+    var chineseUi = false
+
+    private fun bottomRow(modeLabel0: String, modeCode: Int, comma: String, undo: Boolean = false, chinese: Boolean = false): List<Key> {
+        val modeLabel = if (chineseUi && modeLabel0 == "ABC") "中文" else modeLabel0
         val commaKey = if (chinese) Key("，", 0, "，", 1f, emptyList(), emojiKey = true) else when (comma) {
             "@" -> ch("@", ",")
             "/" -> ch("/", ",:")
             else -> Key(",", 0, ",", 1f, emptyList(), emojiKey = true)
         }
         return listOfNotNull(
-            sp(modeLabel, modeCode, 1.5f),
+            sp(if (chinese) "符号" else modeLabel, modeCode, 1.5f),
             commaKey,
             if (showGlobe) sp("🌐", Codes.LANG, 1f) else null,
-            Key(" ", Codes.SPACE, null, (if (showGlobe) 4f else 5f) - (if (undo) 1f else 0f), emptyList()),
+            if (chinese) sp("笔画", Codes.ZH_TOGGLE, 1f) else null,
+            Key(" ", Codes.SPACE, null, (if (showGlobe) 4f else 5f) - (if (undo) 1f else 0f) - (if (chinese) 1f else 0f), emptyList()),
             if (chinese) ch("。", "，？！：；、…“”（）.") else ch(".", ",?¿!¡'\"-:;@/…"),
             if (undo) sp("↶", Codes.UNDO, 1f) else null, // ↶ Deshacer (si no hay fila de números)
             sp("↵", Codes.ENTER, 1.5f),

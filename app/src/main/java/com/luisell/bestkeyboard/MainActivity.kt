@@ -785,6 +785,9 @@ class MainActivity : UiActivity() {
             "All use the QWERTY layout. Accented letters (é, ü, ç, ã, ß…) come up by holding the letter."), 12f, faded = true)
         text(tr("Chino (中文): escribe el pinyin sin tonos (nihao) y toca los caracteres en la fila de arriba (你好). La barra espaciadora pone el primero; Enter deja las letras.",
             "Chinese (中文): type the pinyin without tones (nihao) and tap the characters in the row above (你好). Space puts the first one; Enter keeps the letters."), 12f, faded = true)
+        switch(tr("Chino con trazos (一 丨 丿 丶 乛)", "Chinese with strokes (一 丨 丿 丶 乛)"), Prefs.ZH_STROKE, false,
+            tr("Un teclado chino de verdad, sin letras: tocas los trazos en el orden en que se escribe el carácter (好 = 乛丿一乛丨一) y eliges arriba. En el teclado cambias entre «笔画» (trazos) y «拼音» (pinyin) con su tecla.",
+                "A real Chinese keyboard, no letters: tap the strokes in the order the character is written (好 = 乛丿一乛丨一) and pick it above. On the keyboard switch between «笔画» (strokes) and «拼音» (pinyin) with its key."))
         text(tr("El traductor también tiene chino: copia un mensaje en chino y toca «Traducir mensaje», o en la barra de traducir toca el nombre del idioma para cambiarlo (Inglés → Chino → …).",
             "The translator also has Chinese: copy a message in Chinese and tap «Translate message», or in the translate bar tap the language name to change it (English → Chinese → …)."), 12f, faded = true)
 
@@ -1448,6 +1451,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.7.0" to tr("•  Teclado chino de trazos (笔画): las teclas son 一 丨 丿 丶 乛, como en los teclados chinos. Tocas los trazos en el orden en que se escribe el carácter y eliges arriba (los más usados primero). Más de 8,100 caracteres.\n" +
+            "•  En chino, las teclas especiales están en chino: 符号 (símbolos), 笔画 / 拼音 (cambiar entre trazos y pinyin), 中文 (volver de los símbolos), y la coma y el punto son ， 。\n" +
+            "•  Se activa con la tecla 笔画 del teclado chino, o en Inicio › Idioma › «Chino con trazos».",
+            "•  Chinese stroke keyboard (笔画): the keys are 一 丨 丿 丶 乛, like Chinese keyboards. Tap the strokes in the order the character is written and pick it above (most used first). More than 8,100 characters.\n" +
+            "•  In Chinese, the special keys are in Chinese: 符号 (symbols), 笔画 / 拼音 (switch between strokes and pinyin), 中文 (back from symbols), and the comma and period are ， 。\n" +
+            "•  Turn it on with the 笔画 key on the Chinese keyboard, or in Start › Language › «Chinese with strokes»."),
         "13.6.3" to tr("•  Chino: mientras escribes pinyin, los botones de la barra de arriba se esconden por completo y solo queda la fila de caracteres, limpia.",
             "•  Chinese: while you type pinyin, the top bar buttons hide completely and only the clean character row stays."),
         "13.6.2" to tr("•  Chino arreglado: la fila de caracteres ahora tiene fondo sólido (ya no se ven los botones de atrás encima de los caracteres).\n" +
