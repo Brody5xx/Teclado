@@ -1456,6 +1456,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.9.1" to tr("•  Teclado en todas partes: al tocar «Abrir teclado» la cortina de notificaciones se cierra sola y el teclado se queda abierto en tu app (antes se cerraba al subir la cortina).",
+            "•  Keyboard anywhere: tapping «Open keyboard» closes the notification shade by itself and the keyboard stays open in your app (before, it closed when you swiped the shade up)."),
         "13.9.0" to tr("•  Teclado en todas partes: nuevo botón (la llave) en la barra de arriba. Al prenderlo sale una notificación fija; tócala y Best Keyboard se abre en la app donde estés, también en terminales o apps que solo dejan usar un teclado de PC.\n" +
             "•  Mientras está prendido, el teclado de la pantalla sale siempre, aunque el teléfono crea que hay un teclado físico conectado.\n" +
             "•  Al apagarlo (con el mismo botón o con «Apagar» en la notificación), la notificación desaparece.",

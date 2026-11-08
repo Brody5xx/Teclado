@@ -1686,6 +1686,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         return super.onEvaluateInputViewShown()
     }
 
+    /** Lo intenta varias veces mientras se cierra la cortina y la app recupera el foco. */
+    fun forceShowSoon() {
+        for (ms in longArrayOf(150L, 450L, 900L, 1600L, 2600L)) handler.postDelayed({
+            if (android.os.SystemClock.uptimeMillis() < Anywhere.showUntil && !isInputViewShown) forceShow()
+        }, ms)
+    }
+
     /** Tocaste la notificación: que salga el teclado en la app donde estás. */
     fun forceShow() {
         handler.post {
@@ -4654,6 +4661,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         inputActive = true
+        // ⌨️ La app volvió (se cerró la cortina): si acabas de tocar «Abrir teclado», que salga otra vez
+        if (android.os.SystemClock.uptimeMillis() < Anywhere.showUntil) forceShowSoon()
     }
 
     override fun onFinishInput() {

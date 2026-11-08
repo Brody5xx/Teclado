@@ -22,6 +22,19 @@ object Anywhere {
 
     fun isOn(ctx: Context) = Prefs.get(ctx).getBoolean(Prefs.KB_ANYWHERE, false)
 
+    /** Hasta cuándo el teclado sigue intentando salir (después de tocar la notificación). */
+    @Volatile var showUntil = 0L
+
+    /** Pide que salga el teclado: lo intenta varias veces mientras la cortina se cierra y la app vuelve. */
+    fun requestShow(ctx: Context) {
+        showUntil = android.os.SystemClock.uptimeMillis() + 6000L
+        val svc = BestKeyboardService.instance
+        if (svc != null) svc.forceShowSoon()
+        else try {
+            (ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showInputMethodPicker()
+        } catch (_: Exception) { }
+    }
+
     fun set(ctx: Context, on: Boolean) {
         Prefs.get(ctx).edit().putBoolean(Prefs.KB_ANYWHERE, on).apply()
         refresh(ctx)
@@ -38,7 +51,9 @@ object Anywhere {
             nm.createNotificationChannel(ch)
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        val show = PendingIntent.getBroadcast(ctx, 740, Intent(ctx, AnywhereReceiver::class.java).setAction(ACTION_SHOW), flags)
+        // Una pantallita invisible: al tocar, Android cierra solo la cortina y vuelves a tu app con el teclado
+        val show = PendingIntent.getActivity(ctx, 740, Intent(ctx, AnywhereActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS), flags)
         val off = PendingIntent.getBroadcast(ctx, 741, Intent(ctx, AnywhereReceiver::class.java).setAction(ACTION_OFF), flags)
         @Suppress("DEPRECATION")
         val b = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(ctx, CHANNEL) else Notification.Builder(ctx)
@@ -63,17 +78,19 @@ class AnywhereReceiver : BroadcastReceiver() {
         L.set(Prefs.get(ctx).getString(Prefs.LANG, "es") ?: "es")
         when (intent.action) {
             Anywhere.ACTION_OFF -> Anywhere.set(ctx, false)
-            Anywhere.ACTION_SHOW -> {
-                // Cierra la cortina de notificaciones y pide que salga el teclado
-                try { if (Build.VERSION.SDK_INT < 31) @Suppress("DEPRECATION") ctx.sendBroadcast(Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)) } catch (_: Exception) { }
-                val svc = BestKeyboardService.instance
-                if (svc != null) svc.forceShow()
-                else try {
-                    // Best Keyboard no es el teclado elegido: se abre la lista para elegirlo
-                    (ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showInputMethodPicker()
-                } catch (_: Exception) { }
-            }
+            Anywhere.ACTION_SHOW -> Anywhere.requestShow(ctx)
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> Anywhere.refresh(ctx)
         }
+    }
+}
+
+
+/** Invisible: se abre y se cierra al instante; la cortina se va sola y el teclado sale en tu app. */
+class AnywhereActivity : android.app.Activity() {
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        Anywhere.requestShow(this)
+        finish()
+        @Suppress("DEPRECATION") overridePendingTransition(0, 0)
     }
 }

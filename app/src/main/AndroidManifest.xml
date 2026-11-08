@@ -105,6 +105,15 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- ⌨️ Teclado en todas partes: pantallita invisible que abre el teclado en tu app -->
+        <activity
+            android:name=".AnywhereActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- ⌨️ Teclado en todas partes: los botones de su notificación -->
         <receiver
             android:name=".AnywhereReceiver"
