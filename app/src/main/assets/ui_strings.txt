@@ -35,6 +35,8 @@
 2 Formal
 2. Choose Best Keyboard
 3 Other language
+: off
+: you work
 A PDF is made with your days, hours, sites, lunch and overtime, ready to send by WhatsApp or email.
 A lot
 A short tour of everything the keyboard has.
@@ -206,6 +208,7 @@ Data (your passwords)
 Data: emails, passwords and shortcuts
 Day
 Day starts at
+Days you work
 Default
 Delete
 Delete account
@@ -261,6 +264,7 @@ Enter = new line
 Enter how much you make per hour (driving and on site) and it works out your take-home pay here.
 Error copied. Paste it in the chat.
 Every Monday there's a new word with its meaning, an example and how to say it in Spanish. There are 105 words: one a week for 2 years.
+Every day
 Everything copied is deleted, except what you pinned.
 Everything stays on your phone. In «My data and privacy» you see what it saves and delete it. With Incognito mode (in ⋯) it doesn't learn or save anything, and it turns on by itself in private tabs.
 Everything the keyboard saves stays ONLY on your phone. Here you can see what it is and delete each thing.
@@ -293,6 +297,7 @@ Formal emails, AI writing and shortcuts.
 Formal version
 Free AI: replies and finish sentence
 French
+Friday
 From now on, what you work this week counts as overtime. ✨
 Full address
 GIFs
@@ -430,6 +435,9 @@ Mic permission is missing (open settings ⚙).
 Microphone
 Minutes (e.g. 20)
 Modern
+Monday
+Monday to Friday
+Monday to Saturday
 More formal
 More formal words
 More options
@@ -467,6 +475,7 @@ No browser found.
 No codes found. Get a little closer with good light.
 No custom background (the theme's is used).
 No data yet. Tap «Edit».
+No days picked: everything is off (except when you tap Start).
 No emojis for that word.
 No internet needed. Type «fixed» and get ✨ repaired; «works now» → ✨ is now working properly.
 No internet or GIPHY didn't respond.
@@ -510,6 +519,7 @@ Off
 Off = muted. You can also switch it quickly with the sound button on the keyboard.
 Office
 Ok, perfect. Thanks.
+On days that are off there's no My workday notification, no ticket reminder and nothing gets logged by GPS. If you work on a day off, everything turns on that day when you tap Start.
 On my way, I'll be there in a few minutes.
 On site
 On site: 
@@ -604,6 +614,7 @@ SECTIONS
 SMS are read only on your phone, just to find the code. Nothing is sent.
 Safety glasses
 Same language as your phone
+Saturday
 Save
 Save EVERYTHING of yours to one file, protected with a password: settings, style, everything the keyboard learned from you (words, phrases, your fixes, deleted suggestions), statistics, each app's language, Data, quick phrases, shortcuts, clipboard, My workday (hours, sites, your home, your pay), tickets, notebook, materials, to-dos, checklist and your background. Keep it in Google Drive or move it to your new phone and tap «Restore».
 Save backup
@@ -717,6 +728,7 @@ Suggestions and autocorrect
 Suggestions in every app
 Suggestions that know you
 Suggestions with a little star swap simple words for formal ones (fixed → repaired). «Review before sending» checks the whole message and «Fix grammar» fixes it.
+Sunday
 Surprise emoji
 Swing
 Swipe the bar sideways to see all buttons. Press and hold one and drag it to rearrange. The three dots (⋯) open «More options», and the pencil lets you arrange everything.
@@ -808,6 +820,7 @@ This is a quick tour of Best Keyboard. Swipe sideways or tap «Next».
 This month: 
 This place has no GPS. Save it while you're there.
 This week
+Thursday
 Ticket 
 Ticket in English
 Ticket in Spanish
@@ -846,6 +859,7 @@ Translating…
 Translation doesn't work in password fields.
 Truck
 Truck parking
+Tuesday
 Turn off automatic backup
 Turn on automatic backup
 Turn on only the buttons you use and rename them however you like (you can put an emoji first). They change on the keyboard, the widget, the lock screen and Quick Settings.
@@ -907,6 +921,7 @@ Volume
 Wait before logging the departure
 Wave
 Website or app *
+Wednesday
 Week of 
 Week total: 
 Welcome!
@@ -961,6 +976,9 @@ You don't have tickets yet. Create one with 📋 Notes → Ticket on the keyboar
 You haven't added phrases yet.
 You haven't made a backup yet.
 You reached Gemini's free limit for now. Wait a while.
+You work Monday to Friday.
+You work every day.
+You work: 
 Your buttons
 Your fixes are deleted and the suggestions you deleted can show up again.
 Your last backup: 
@@ -1014,6 +1032,7 @@ week
 •  Currency (like in Best Notes): tap ⋯ › Currency. See what every currency in the world is worth today and convert instantly.\n•  Tap a currency to change it: the most used on top and all of them A to Z below, with their names.\n•  In the amount you can do math (50+25×2, 15%) and ⇅ swaps the currencies. Below you see 1 = … both ways.\n•  «Type it» puts the result where you're typing: «100 USD = 5,890.00 DOP».\n•  Rates are from today (updated every 6 hours) and offline it uses the last saved ones.
 •  Currency: new ↑↓ button next to the currencies to swap them (it spins when you tap it).\n•  The Currency keys are bigger and the numbers are properly centered (4 rows instead of 5).
 •  Currency: the ↑↓ button is now round and smaller, in the diamond's colors. Tapping it sparkles: a ring of light, a shine across it, a little star and the arrows spin half a turn.
+•  Days you work (Sections › Work › My workday): tap each day (M T W T F S S) to turn it on or off, or use «Monday to Friday», «Monday to Saturday» or «Every day». Change it whenever you want.\n•  On days off there's no My workday notification, no ticket reminder and nothing gets logged by GPS.\n•  If you work on a day off, tap Start (in the keyboard or the widget) and everything turns on that day.
 •  Delete suggestions: press and hold a suggestion (for example a misspelled word it learned) and tap «Delete». It won't show up again in suggestions or autocorrect. In «See and edit my words» you can see the ones you deleted and bring them back with ↶.
 •  Driving mode: the big buttons' icons are centered with their text; the title icon sits next to the title, and Delete letter / Delete all icons are bigger and next to their text.
 •  Driving mode: the big buttons' text moves up a bit (no longer touches the bottom edge).

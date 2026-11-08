@@ -77,7 +77,9 @@ class TicketReminderReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         L.set(Prefs.get(ctx).getString(Prefs.LANG, "es") ?: "es")
         if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) {
-            TicketReminder.notify(ctx)
+            // 📅 Los días que no trabajas no hay aviso del ticket
+            val p = Prefs.get(ctx)
+            if (WorkDay.isWorkDay(p) || WorkStore.hasTicketOn(p, System.currentTimeMillis())) TicketReminder.notify(ctx)
         }
         TicketReminder.schedule(ctx)
     }

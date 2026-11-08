@@ -154,6 +154,8 @@ object AutoSites {
             }
         }
         if (!isOn(ctx)) return
+        // 📅 Tu día libre: no anota nada solo (si ya empezaste a trabajar hoy, sí)
+        if (!WorkDay.isWorkDay(p)) return
         val ev = GeofencingEvent.fromIntent(intent) ?: return
         if (ev.hasError()) return
         val now = System.currentTimeMillis()

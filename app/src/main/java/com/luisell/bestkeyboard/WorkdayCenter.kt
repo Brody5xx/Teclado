@@ -242,6 +242,8 @@ object WorkdayCenter {
         val always = p.getBoolean(Prefs.WORKDAY_ALWAYS, true)
         // Sin el paquete de trabajo no sale (a menos que estés trabajando)
         if (!p.getBoolean(Prefs.WORKDAY_NOTIF, true) || (!running && (!always || !p.getBoolean(Prefs.WORK_PACK, true)))) { nm.cancel(NOTIF_ID); return }
+        // 📅 Tu día libre: no sale nada (si empiezas a trabajar igual, se prende)
+        if (!running && !WorkDay.isWorkDay(p)) { nm.cancel(NOTIF_ID); return }
         if (Build.VERSION.SDK_INT >= 26) {
             val ch = NotificationChannel(CHANNEL, L.t("Mi jornada", "My workday"), NotificationManager.IMPORTANCE_LOW)
             ch.lockscreenVisibility = Notification.VISIBILITY_PUBLIC

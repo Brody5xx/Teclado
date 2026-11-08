@@ -178,6 +178,8 @@ object Prefs {
     const val WORKDAY_NOTIF = "workday_notif"
     /** La notificación de Mi jornada se queda siempre (con el botón 🛻 Comencé antes de empezar). */
     const val WORKDAY_ALWAYS = "workday_always"
+    /** Los días que trabajas: "2,3,4,5,6" = lunes a viernes. */
+    const val WORK_DAYS = "work_days"
     /** Botones de Mi jornada: cuáles se ven y sus nombres (JSON). */
     const val WORKDAY_BTNS = "workday_buttons"
     /** El ícono de Mi jornada: truck, clock, stopwatch, briefcase, calendar, hardhat o building. */

@@ -109,6 +109,75 @@ class MainActivity : UiActivity() {
         }
     }
 
+    /** 📅 Los días que trabajas: tocas cada día para prenderlo o apagarlo. */
+    private fun workDaysPicker() {
+        text(tr("Días que trabajas", "Days you work"), 16f, bold = true).apply { setPadding(0, dp(14), 0, 0) }
+        text(tr("Los días apagados no sale la notificación de Mi jornada, ni el aviso del ticket, ni se anota nada solo con el GPS. Si trabajas un día libre, todo se prende ese día cuando toques Comencé.",
+            "On days that are off there's no My workday notification, no ticket reminder and nothing gets logged by GPS. If you work on a day off, everything turns on that day when you tap Start."), 12f, faded = true)
+        // Lunes primero (Calendar: 2 = lunes … 7 = sábado, 1 = domingo)
+        val order = listOf(2, 3, 4, 5, 6, 7, 1)
+        val short = if (en) listOf("M", "T", "W", "T", "F", "S", "S") else listOf("L", "M", "M", "J", "V", "S", "D")
+        val long = listOf(tr("lunes", "Monday"), tr("martes", "Tuesday"), tr("miércoles", "Wednesday"), tr("jueves", "Thursday"),
+            tr("viernes", "Friday"), tr("sábado", "Saturday"), tr("domingo", "Sunday"))
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        val dots = ArrayList<TextView>()
+        val summary = text("", 13f, faded = true)
+        fun paint() {
+            val on = WorkDay.workDays(prefs)
+            order.forEachIndexed { i, dnum ->
+                val b = dots[i]
+                val sel = dnum in on
+                b.setTextColor(if (sel) 0xFF0B0D12.toInt() else SUB)
+                b.background = if (sel) GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(CYAN, VIOLET)).apply { shape = GradientDrawable.OVAL }
+                else GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(CARD2); setStroke(dp(1), LINE) }
+                b.contentDescription = long[i] + if (sel) tr(": trabajas", ": you work") else tr(": libre", ": off")
+            }
+            val days = order.filter { it in on }
+            summary.text = when {
+                days.size == 7 -> tr("Trabajas todos los días.", "You work every day.")
+                days == listOf(2, 3, 4, 5, 6) -> tr("Trabajas de lunes a viernes.", "You work Monday to Friday.")
+                days.isEmpty() -> tr("No elegiste ningún día: todo está apagado (menos cuando toques Comencé).", "No days picked: everything is off (except when you tap Start).")
+                else -> tr("Trabajas: ", "You work: ") + days.joinToString(", ") { long[order.indexOf(it)] } + "."
+            }
+        }
+        fun changed() {
+            paint()
+            WorkdayCenter.refresh(this)
+            TicketReminder.schedule(this)
+        }
+        order.forEachIndexed { i, dnum ->
+            val b = TextView(this).apply {
+                text = short[i]; textSize = 15f; gravity = Gravity.CENTER; includeFontPadding = false
+                setTypeface(Typeface.DEFAULT_BOLD)
+                isClickable = true
+                setOnClickListener {
+                    val now = WorkDay.workDays(prefs).toMutableSet()
+                    if (dnum in now) now.remove(dnum) else now.add(dnum)
+                    WorkDay.setWorkDays(prefs, now)
+                    animate().scaleX(0.85f).scaleY(0.85f).setDuration(80).withEndAction { animate().scaleX(1f).scaleY(1f).setDuration(120).start() }.start()
+                    changed()
+                }
+            }
+            dots.add(b)
+            row.addView(b, LinearLayout.LayoutParams(dp(40), dp(40)).apply { setMargins(dp(3), 0, dp(3), 0) })
+        }
+        col.addView(row, col.childCount - 1, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(2) })
+        val presets = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for ((label, set) in listOf(tr("Lunes a viernes", "Monday to Friday") to setOf(2, 3, 4, 5, 6),
+                tr("Lunes a sábado", "Monday to Saturday") to setOf(2, 3, 4, 5, 6, 7),
+                tr("Todos", "Every day") to setOf(1, 2, 3, 4, 5, 6, 7))) {
+            presets.addView(TextView(this).apply {
+                text = label; textSize = 13f; gravity = Gravity.CENTER; setTextColor(CYAN)
+                setPadding(dp(6), dp(10), dp(6), dp(10))
+                background = android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x334FD1FF),
+                    GradientDrawable().apply { setColor(CARD2); cornerRadius = dpf(20f) }, null)
+                setOnClickListener { WorkDay.setWorkDays(prefs, set); changed() }
+            }, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
+        }
+        col.addView(presets, col.indexOfChild(summary), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(6) })
+        paint()
+    }
+
     /** 🌍 Cambia el idioma de las pantallas (si es uno nuevo, primero lo traduce dentro del teléfono). */
     private fun setScreenLang(code: String) {
         val target = if (code == "auto") java.util.Locale.getDefault().language else code
@@ -966,6 +1035,7 @@ class MainActivity : UiActivity() {
                 "While you're working, a notification shows the running time and the Arrived / Left / Home buttons, which you can tap without unlocking."))
         switch(tr("Dejarla siempre (con 🛻 Comencé antes de empezar)", "Keep it always (with 🛻 Start before you begin)"), Prefs.WORKDAY_ALWAYS, true,
             tr("Así puedes tocar 🛻 Comencé desde la pantalla de bloqueo, sin desbloquear.", "So you can tap 🛻 Start from the lock screen, without unlocking."))
+        workDaysPicker()
         text(tr("También hay un botón en los ajustes rápidos: desliza la barra de arriba del teléfono hacia abajo, toca el lápiz y arrastra «Comencé / Mi jornada».",
             "There's also a Quick Settings button: swipe down from the top of the phone, tap the pencil and drag «Start / My workday»."), 12f, faded = true)
         button(tr("✏️ Editar botones (nombres y cuáles se ven)", "✏️ Edit buttons (names and which ones show)")) {
@@ -1364,6 +1434,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "13.5.0" to tr("•  Días que trabajas (Secciones › Trabajo › Mi jornada): toca cada día (L M M J V S D) para prenderlo o apagarlo, o usa «Lunes a viernes», «Lunes a sábado» o «Todos». Lo cambias cuando quieras.\n" +
+            "•  Los días libres no sale la notificación de Mi jornada, ni el aviso del ticket, ni se anota nada solo con el GPS.\n" +
+            "•  Si trabajas un día libre, toca Comencé (en el teclado o el widget) y todo se prende ese día.",
+            "•  Days you work (Sections › Work › My workday): tap each day (M T W T F S S) to turn it on or off, or use «Monday to Friday», «Monday to Saturday» or «Every day». Change it whenever you want.\n" +
+            "•  On days off there's no My workday notification, no ticket reminder and nothing gets logged by GPS.\n" +
+            "•  If you work on a day off, tap Start (in the keyboard or the widget) and everything turns on that day."),
         "13.4.2" to tr("•  Divisas: el botón ↑↓ ahora es redondo y más pequeño, con los colores del diamante. Al tocarlo da un destello: un aro de luz, un brillo que lo cruza, una estrellita y las flechas dan media vuelta.",
             "•  Currency: the ↑↓ button is now round and smaller, in the diamond's colors. Tapping it sparkles: a ring of light, a shine across it, a little star and the arrows spin half a turn."),
         "13.4.1" to tr("•  Divisas: nuevo botón ↑↓ al lado de las monedas para cambiarlas de lugar (da la vuelta al tocarlo).\n" +

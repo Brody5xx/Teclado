@@ -162,6 +162,26 @@ object WorkDay {
         p.edit().putString(Prefs.WORKDAY, a.toString()).apply()
     }
 
+    // ---------------------------------------------------------------- 📅 Los días que trabajas
+
+    /** Los días que trabajas (1 = domingo … 7 = sábado, como Calendar). Si no los elegiste: todos. */
+    fun workDays(p: SharedPreferences): Set<Int> =
+        (p.getString(Prefs.WORK_DAYS, null) ?: "1,2,3,4,5,6,7").split(',').mapNotNull { it.trim().toIntOrNull() }.filter { it in 1..7 }.toSet()
+
+    fun setWorkDays(p: SharedPreferences, days: Set<Int>) {
+        p.edit().putString(Prefs.WORK_DAYS, days.sorted().joinToString(",")).apply()
+    }
+
+    /**
+     * ¿Hoy es día de trabajo? Sí si es uno de tus días, o si hoy ya anotaste algo
+     * (trabajaste en tu día libre: todo se prende ese día).
+     */
+    fun isWorkDay(p: SharedPreferences, t: Long = System.currentTimeMillis()): Boolean {
+        val c = java.util.Calendar.getInstance().apply { timeInMillis = t }
+        if (c.get(java.util.Calendar.DAY_OF_WEEK) in workDays(p)) return true
+        return day(p, t).isNotEmpty()
+    }
+
     fun day(p: SharedPreferences, day: Long = System.currentTimeMillis()): List<Event> {
         config(p)
         return all(p).filter { WorkStore.sameDay(it.time, day) }.sortedBy { it.time }
