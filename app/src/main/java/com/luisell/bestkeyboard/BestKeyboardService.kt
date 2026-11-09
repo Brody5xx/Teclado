@@ -919,7 +919,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         shotPanel?.let { sp ->
             val was = sp.visibility == View.VISIBLE
             sp.visibility = if (m == 19) View.VISIBLE else View.GONE
-            if (m == 19) { pendingShot?.let { sp.open(it) { t -> cleanOcr(t) } } } else if (was) sp.close()
+            if (m == 19) { pendingShot?.let { sp.open(it) { t -> cleanOcr(t) } } } else if (was) { sp.close() }
+            Unit
         }
         gifPanel?.let { gp ->
             val was = gp.visibility == View.VISIBLE
