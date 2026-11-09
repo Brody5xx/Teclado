@@ -149,82 +149,92 @@ class InfoBar(context: Context) : LinearLayout(context) {
     }
 
     /**
-     * ✨ El destello de la traducción: una luz que cruza la tarjeta en diagonal y unas estrellitas
-     * de 4 puntas que brillan y se apagan, del color de tu tema.
+     * ✨ El destello de la traducción: el texto aparece suave (sube un poquito mientras se aclara)
+     * y una luz del color de tu tema le da una vuelta completa al borde de la tarjeta, como la barrita de colores.
      */
     fun shine() {
-        val w = body.width; val h = body.height
-        if (w <= 0 || h <= 0) { body.post { if (body.width > 0) shine() }; return }
-        shineFx?.let { body.overlay.remove(it) }
-        val fx = ShineFx(palette.accent, d(14f).toFloat(), d(1f).toFloat())
-        fx.setBounds(0, 0, w, minOf(h, d(170f)))
-        body.overlay.add(fx)
+        body.alpha = 0f
+        body.translationY = d(6f).toFloat()
+        body.animate().alpha(1f).translationY(0f).setDuration(380L).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        val w = scroll.width; val h = scroll.height
+        if (w <= 0 || h <= 0) { scroll.post { if (scroll.width > 0) runComet() }; return }
+        runComet()
+    }
+
+    private fun runComet() {
+        shineFx?.let { scroll.overlay.remove(it) }
+        val fx = CometFx(palette.accent, d(14f).toFloat(), d(1f).toFloat())
+        fx.setBounds(0, 0, scroll.width, scroll.height)
+        scroll.overlay.add(fx)
         shineFx = fx
         val a = android.animation.ValueAnimator.ofFloat(0f, 1f)
-        a.duration = 1300L
-        a.interpolator = android.view.animation.DecelerateInterpolator(1.2f)
-        a.addUpdateListener { fx.t = it.animatedValue as Float; fx.invalidateSelf(); body.invalidate() }
+        a.duration = 1500L
+        a.startDelay = 120L
+        a.interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+        a.addUpdateListener { fx.t = it.animatedValue as Float; fx.invalidateSelf(); scroll.invalidate() }
         a.addListener(object : android.animation.AnimatorListenerAdapter() {
-            override fun onAnimationEnd(an: android.animation.Animator) { body.overlay.remove(fx); if (shineFx === fx) shineFx = null }
+            override fun onAnimationEnd(an: android.animation.Animator) { scroll.overlay.remove(fx); scroll.invalidate(); if (shineFx === fx) shineFx = null }
         })
         a.start()
     }
-    private var shineFx: ShineFx? = null
+    private var shineFx: CometFx? = null
 
-    private class ShineFx(val color: Int, val radius: Float, val dp: Float) : android.graphics.drawable.Drawable() {
+    /** Una luz con cola que recorre el borde redondeado una vez y se apaga al final. */
+    private class CometFx(val color: Int, val radius: Float, val dp: Float) : android.graphics.drawable.Drawable() {
         var t = 0f
-        private val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-        private val star = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-        private val clip = android.graphics.Path()
-        private val rnd = java.util.Random()
-        // Dónde salen las estrellitas (x, y en 0..1), cuándo empiezan y su tamaño
-        private val stars = List(7) { floatArrayOf(rnd.nextFloat(), 0.15f + rnd.nextFloat() * 0.7f, it * 0.09f + rnd.nextFloat() * 0.08f, 5f + rnd.nextFloat() * 5f) }
+        private val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            style = android.graphics.Paint.Style.STROKE; strokeCap = android.graphics.Paint.Cap.ROUND
+        }
+        private val path = android.graphics.Path()
+        private val seg = android.graphics.Path()
+        private var pm: android.graphics.PathMeasure? = null
+        private val pos = FloatArray(2)
+
+        override fun onBoundsChange(b: android.graphics.Rect) {
+            path.reset()
+            val r = android.graphics.RectF(b).apply { inset(dp * 1.2f, dp * 1.2f) }
+            path.addRoundRect(r, radius, radius, android.graphics.Path.Direction.CW)
+            pm = android.graphics.PathMeasure(path, true)
+        }
 
         override fun draw(c: android.graphics.Canvas) {
-            val b = bounds
-            val w = b.width().toFloat(); val h = b.height().toFloat()
-            c.save()
-            clip.reset(); clip.addRoundRect(android.graphics.RectF(b), radius, radius, android.graphics.Path.Direction.CW)
-            c.clipPath(clip)
-            // La luz en diagonal que cruza de izquierda a derecha
-            val band = maxOf(w * 0.35f, 120f * dp)
-            val x = -band + (w + band * 2) * t
-            val white = android.graphics.Color.argb((140 * (1f - t * 0.4f)).toInt(), 255, 255, 255)
-            val tint = (color and 0x00FFFFFF) or (0x55 shl 24)
-            p.shader = android.graphics.LinearGradient(x - band, 0f, x + band, h * 0.6f,
-                intArrayOf(0, tint, white, tint, 0), floatArrayOf(0f, 0.35f, 0.5f, 0.65f, 1f), android.graphics.Shader.TileMode.CLAMP)
-            c.drawRect(b, p)
-            // El borde se ilumina un momento por donde pasa la luz
-            p.shader = null
-            p.style = android.graphics.Paint.Style.STROKE
-            p.strokeWidth = 2f * dp
-            p.color = color
-            p.alpha = (200 * Math.sin(Math.PI * t)).toInt().coerceIn(0, 255)
-            c.drawRoundRect(android.graphics.RectF(b).apply { inset(dp, dp) }, radius, radius, p)
-            p.style = android.graphics.Paint.Style.FILL
-            // Las estrellitas: crecen, brillan y se apagan
-            for (st in stars) {
-                val k = ((t - st[2]) / 0.45f)
-                if (k <= 0f || k >= 1f) continue
-                val a = Math.sin(Math.PI * k).toFloat()
-                val r = st[3] * dp * (0.4f + 0.6f * a)
-                val cx = b.left + st[0] * w; val cy = b.top + st[1] * h
-                star.color = android.graphics.Color.WHITE
-                star.alpha = (255 * a).toInt()
-                c.drawPath(sparkle(cx, cy, r), star)
-                star.color = color
-                star.alpha = (110 * a).toInt()
-                c.drawCircle(cx, cy, r * 0.55f, star)
+            val m = pm ?: return
+            val len = m.length
+            if (len <= 0f) return
+            // Se enciende al empezar y se apaga al terminar la vuelta
+            val fade = (minOf(t / 0.12f, (1f - t) / 0.18f)).coerceIn(0f, 1f)
+            val tail = len * 0.28f
+            val head = len * 0.15f + (len + tail) * t
+            val pieces = 18
+            for (i in 0 until pieces) {
+                val a0 = head - tail * (i + 1) / pieces
+                val a1 = head - tail * i / pieces
+                val k = 1f - i / pieces.toFloat()
+                p.color = color
+                p.alpha = (230 * k * k * fade).toInt()
+                p.strokeWidth = dp * (1.2f + 1.8f * k)
+                drawPart(c, m, len, a0, a1)
             }
-            c.restore()
+            // La punta brilla blanca
+            val hp = ((head % len) + len) % len
+            m.getPosTan(hp, pos, null)
+            p.style = android.graphics.Paint.Style.FILL
+            p.color = color; p.alpha = (90 * fade).toInt()
+            c.drawCircle(pos[0], pos[1], dp * 6f, p)
+            p.color = android.graphics.Color.WHITE; p.alpha = (255 * fade).toInt()
+            c.drawCircle(pos[0], pos[1], dp * 2.2f, p)
+            p.style = android.graphics.Paint.Style.STROKE
         }
 
-        /** Una estrella de 4 puntas (como ✦). */
-        private fun sparkle(cx: Float, cy: Float, r: Float) = android.graphics.Path().apply {
-            val i = r * 0.22f
-            moveTo(cx, cy - r); quadTo(cx + i, cy - i, cx + r, cy); quadTo(cx + i, cy + i, cx, cy + r)
-            quadTo(cx - i, cy + i, cx - r, cy); quadTo(cx - i, cy - i, cx, cy - r); close()
+        private fun drawPart(c: android.graphics.Canvas, m: android.graphics.PathMeasure, len: Float, from: Float, to: Float) {
+            var a = ((from % len) + len) % len
+            var b = a + (to - from)
+            seg.reset()
+            if (b <= len) m.getSegment(a, b, seg, true)
+            else { m.getSegment(a, len, seg, true); m.getSegment(0f, b - len, seg, true) }
+            c.drawPath(seg, p)
         }
+
         override fun setAlpha(alpha: Int) {}
         override fun setColorFilter(cf: android.graphics.ColorFilter?) {}
         @Deprecated("Deprecated in Java")

@@ -247,6 +247,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var phrasePanel: PhrasePanel? = null
     private var calcPanel: CalcPanel? = null
     private var fxPanel: FxPanel? = null
+    private var shotPanel: ShotPanel? = null
     private var handPanel: HandPanel? = null
     private var gifPanel: GifPanel? = null
     private var notebookPanel: ListPanel? = null
@@ -591,6 +592,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         box.addView(fx, FrameLayout.LayoutParams(-1, -1))
         fxPanel = fx
 
+        // 🖼 Elegir el texto de la captura
+        val sp = ShotPanel(this)
+        sp.visibility = View.GONE
+        sp.actions = object : ShotPanel.Actions {
+            override fun onShotTranslate(text: String) { showMode(0); startTr(text, false, true) }
+            override fun onShotBack() { showMode(0); closeInfo() }
+            override fun onShotFeedback() = onKeyFeedback()
+        }
+        box.addView(sp, FrameLayout.LayoutParams(-1, -1))
+        shotPanel = sp
+
         // ✍️ Chino a mano
         val hp = HandPanel(this)
         hp.visibility = View.GONE
@@ -903,6 +915,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         fxPanel?.let { fp ->
             fp.visibility = if (m == 17) View.VISIBLE else View.GONE
             if (m == 17) fp.open()
+        }
+        shotPanel?.let { sp ->
+            val was = sp.visibility == View.VISIBLE
+            sp.visibility = if (m == 19) View.VISIBLE else View.GONE
+            if (m == 19) pendingShot?.let { sp.open(it) { t -> cleanOcr(t) } } else if (was) sp.close()
         }
         gifPanel?.let { gp ->
             val was = gp.visibility == View.VISIBLE
@@ -2037,6 +2054,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         phrasePanel?.applyPalette(pal)
         calcPanel?.applyPalette(pal)
         fxPanel?.applyPalette(pal)
+        shotPanel?.applyPalette(pal)
         handPanel?.applyPalette(pal)
         gifPanel?.applyPalette(pal)
         notebookPanel?.applyPalette(pal)
@@ -2596,28 +2614,6 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** 🖼 Lee el texto de una captura (con el teléfono, sin internet) y lo traduce. */
     private fun translateScreen() = readMessage()
 
-    private fun ocrShot(shot: Screenshots.Shot) {
-        val bar = infoBar ?: return
-        bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("Leyendo tu última captura…", "Reading your latest screenshot…"), emptyList())
-        run {
-            run {
-                val img = try { com.google.mlkit.vision.common.InputImage.fromFilePath(this, shot.uri) } catch (_: Exception) { null }
-                if (img == null) { bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No se pudo abrir la captura.", "Couldn't open the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() })); return }
-                com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions.Builder().build())
-                    .process(img)
-                    .addOnSuccessListener { res ->
-                        val text = cleanOcr(res.textBlocks.joinToString("\n") { it.text })
-                        if (text.isEmpty()) {
-                            bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No encontré texto en la captura.", "I didn't find text in the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() }))
-                            return@addOnSuccessListener
-                        }
-                        startTr(text, false, true)
-                    }
-                    .addOnFailureListener { bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No se pudo leer la captura.", "Couldn't read the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() })) }
-            }
-        }
-    }
-
     /** El texto leído de la captura y el idioma que se detectó en él. */
     private var screenText = ""
     private var screenFound = "en"
@@ -2651,17 +2647,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         } }
         t.prepare({ t.translate(text.take(3000), { out -> handler.post {
             if (readTrans !== t) return@post
-            kv?.flashAi()
+            // (el destello es el de la tarjeta)
             val btns = ArrayList<Pair<String, () -> Unit>>()
             if (trFromSel) btns.add(L.t("Reemplazar", "Replace") to { currentInputConnection?.commitText(out, 1); closeInfo() })
             btns.add(L.t("Copiar", "Copy") to { copyText(out) })
             if (!trFromSel) btns.add(L.t("Escribir", "Type it") to { insertText(out); closeInfo() })
             btns.add(L.t("Ver original", "See original") to { bar.show(head, text, listOf(L.t("Copiar", "Copy") to { copyText(text) }, L.t("Volver", "Back") to { runScreenTr() }, L.t("Cerrar", "Close") to { closeInfo() })); langs() })
             // Cambiar entre lo copiado y la captura
-            val shot = altShot
-            val clip = altClip
-            if (!trFromSel && trFromShot && clip != null) btns.add(L.t("Usar lo copiado", "Use copied text") to { startTr(clip, false) })
-            if (!trFromSel && !trFromShot && shot != null) btns.add(L.t("Usar captura", "Use screenshot") to { ocrShot(shot) })
+            val shot = pendingShot ?: altShot
+            if (trFromShot && shot != null) btns.add(L.t("Elegir otro texto", "Pick other text") to { openShot(shot) })
+            else if (!trFromSel && altShot != null) btns.add(L.t("Usar captura", "Use screenshot") to { openShot(altShot!!) })
             btns.add(L.t("Cerrar", "Close") to { closeInfo() })
             bar.show(head, out, btns)
             langs()
@@ -3943,21 +3938,56 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         Thread {
             val shot = Screenshots.findRecent(this)
             handler.post {
-                val shotMs = (shot?.added ?: 0L) * 1000L
                 altClip = clip; altShot = shot
-                val useShot = shot != null && (clip == null || (clipMs > 0L && shotMs > clipMs))
-                when {
-                    useShot -> ocrShot(shot!!)
-                    clip != null -> startTr(clip, false)
-                    else -> bar.show(L.t("Traducir", "Translate"),
+                if (clip == null && shot == null) {
+                    bar.show(L.t("Traducir", "Translate"),
                         L.t("Copia el mensaje que te llegó (mantenlo presionado › Copiar) o toma una captura de pantalla, y vuelve a tocar este botón.\n\nTambién puedes seleccionar texto aquí y tocarlo.",
                             "Copy the message you got (long-press it › Copy) or take a screenshot, then tap this button again.\n\nYou can also select text here and tap it.") +
                             (if (!Screenshots.hasPermission(this)) "\n\n" + L.t("Para las capturas, permite «Fotos» en la app Best Keyboard (Inicio › Voz, cámara y capturas).",
                                 "For screenshots, allow «Photos» in the Best Keyboard app (Start › Voice, camera and screenshots).") else ""),
                         listOf(L.t("Entendido", "Got it") to { closeInfo() }))
+                    return@post
                 }
+                askTrSource(clip, shot, clipMs)
             }
         }.start()
+    }
+
+    /** Pregunta primero: ¿lo copiado o la captura? Muestra un pedacito de cada uno. */
+    private fun askTrSource(clip: String?, shot: Screenshots.Shot?, clipMs: Long) {
+        val bar = infoBar ?: return
+        fun ago(ms: Long): String {
+            val min = ((System.currentTimeMillis() - ms) / 60000L).coerceAtLeast(0L)
+            return when {
+                min < 1 -> L.t("ahora mismo", "just now")
+                min < 60 -> L.t("hace $min min", "$min min ago")
+                else -> L.t("hace ${min / 60} h", "${min / 60} h ago")
+            }
+        }
+        val sb = StringBuilder()
+        if (clip != null) {
+            val snip = clip.replace(Regex("""\s+"""), " ").let { if (it.length > 90) it.take(90).trimEnd() + "…" else it }
+            sb.append(L.t("Lo copiado", "Copied text")).append(if (clipMs > 0L) " (" + ago(clipMs) + ")" else "").append(":\n«").append(snip).append("»")
+        } else sb.append(L.t("No copiaste nada todavía.", "You haven't copied anything yet."))
+        sb.append("\n\n")
+        if (shot != null) sb.append(L.t("Captura de pantalla", "Screenshot")).append(" (").append(ago(shot.added * 1000L)).append(")")
+            .append(L.t(": la ves y tocas el texto que quieres.", ": you see it and tap the text you want."))
+        else sb.append(if (Screenshots.hasPermission(this)) L.t("No hay capturas de las últimas 24 horas.", "No screenshots from the last 24 hours.")
+            else L.t("Para usar capturas, permite «Fotos» en la app Best Keyboard (Inicio › Voz, cámara y capturas).", "To use screenshots, allow «Photos» in the Best Keyboard app (Start › Voice, camera and screenshots)."))
+        val btns = ArrayList<Pair<String, () -> Unit>>()
+        if (clip != null) btns.add(L.t("Lo copiado", "Copied text") to { startTr(clip, false) })
+        if (shot != null) btns.add(L.t("Captura de pantalla", "Screenshot") to { openShot(shot) })
+        btns.add(L.t("Cerrar", "Close") to { closeInfo() })
+        bar.show(L.t("¿Qué quieres traducir?", "What do you want to translate?"), sb.toString(), btns)
+    }
+
+    /** La captura que se abre en el panel para elegir el texto. */
+    private var pendingShot: Screenshots.Shot? = null
+
+    private fun openShot(shot: Screenshots.Shot) {
+        pendingShot = shot
+        infoBar?.visibility = View.GONE
+        showMode(19)
     }
 
     /** Lo otro que se puede traducir (para el botón «Usar captura» / «Usar lo copiado»). */

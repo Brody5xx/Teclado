@@ -1456,6 +1456,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "14.3.0" to tr("•  Traducir mensaje o captura: ahora te pregunta primero qué quieres traducir, lo copiado o la captura, y te muestra un pedacito de cada uno.\n" +
+            "•  Con la captura, la ves dentro del teclado y tocas los renglones que quieres traducir (se marcan del color de tu tema). «Todo» marca todos. Después puedes tocar «Elegir otro texto».\n" +
+            "•  Animación nueva y más fina: el texto aparece suave y una luz le da la vuelta completa al borde de la tarjeta.",
+            "•  Translate message or screenshot: now it asks first what you want to translate, the copied text or the screenshot, and shows a bit of each.\n" +
+            "•  With the screenshot, you see it inside the keyboard and tap the lines you want to translate (they light up in your theme color). «All» selects them all. Afterwards you can tap «Pick other text».\n" +
+            "•  New, cleaner animation: the text fades in softly and a light runs all the way around the card's border."),
         "14.2.0" to tr("•  «Traducir mensaje» y «Traducir captura» ahora son uno solo: «Traducir mensaje o captura». Traduce lo que seleccionaste; si no, lo más nuevo entre lo que copiaste y tu última captura. Con «Usar captura» o «Usar lo copiado» cambias entre los dos.\n" +
             "•  Los idiomas se tocan para cambiarlos también al traducir mensajes, y ⇄ da la vuelta.\n" +
             "•  Destello nuevo: cuando sale la traducción, una luz cruza la tarjeta y brillan estrellitas del color de tu tema.",
