@@ -114,6 +114,14 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- 🖼 Elegir una imagen de la galería para traducir su texto -->
+        <activity
+            android:name=".PickImageActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- ⌨️ Teclado en todas partes: los botones de su notificación -->
         <receiver
             android:name=".AnywhereReceiver"

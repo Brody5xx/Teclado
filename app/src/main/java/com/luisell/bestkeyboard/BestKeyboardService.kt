@@ -41,6 +41,9 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     companion object {
         /** El teclado que está funcionando (para que la notificación «Teclado en todas partes» lo abra). */
         @Volatile var instance: BestKeyboardService? = null
+        /** La imagen que elegiste en la galería (o null si cancelaste) y si el teclado la está esperando. */
+        @Volatile var pickedImage: android.net.Uri? = null
+        @Volatile var pickWaiting = false
     }
 
     private enum class Page { LETTERS, SYM, SYM2, NUM, IP }
@@ -598,6 +601,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         shp.actions = object : ShotPanel.Actions {
             override fun onShotTranslate(text: String) { showMode(0); startTr(text, false, true) }
             override fun onShotBack() { showMode(0); closeInfo() }
+            override fun onShotGallery() { showMode(0); pickFromGallery() }
             override fun onShotFeedback() = onKeyFeedback()
         }
         box.addView(shp, FrameLayout.LayoutParams(-1, -1))
@@ -1785,6 +1789,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         if (!restarting) { undoSnap = null; kv?.playIntro() } // ⌨️ la luz de bienvenida
+        // 🖼 Volviste de la galería: se abre la imagen para tocar el texto
+        if (pickWaiting) handler.postDelayed({ takePicked() }, 180L)
         pyBuf.clear(); pyBar?.hide(); kv?.setZh("", emptyList())
         if (driveSticky() && !isPassword && mode != 14) handler.post { if (driveSticky()) showMode(14) } // 🛻 sigue en modo manejando
         applySettings()
@@ -3940,15 +3946,6 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             val shot = Screenshots.findRecent(this)
             handler.post {
                 altClip = clip; altShot = shot
-                if (clip == null && shot == null) {
-                    bar.show(L.t("Traducir", "Translate"),
-                        L.t("Copia el mensaje que te llegó (mantenlo presionado › Copiar) o toma una captura de pantalla, y vuelve a tocar este botón.\n\nTambién puedes seleccionar texto aquí y tocarlo.",
-                            "Copy the message you got (long-press it › Copy) or take a screenshot, then tap this button again.\n\nYou can also select text here and tap it.") +
-                            (if (!Screenshots.hasPermission(this)) "\n\n" + L.t("Para las capturas, permite «Fotos» en la app Best Keyboard (Inicio › Voz, cámara y capturas).",
-                                "For screenshots, allow «Photos» in the Best Keyboard app (Start › Voice, camera and screenshots).") else ""),
-                        listOf(L.t("Entendido", "Got it") to { closeInfo() }))
-                    return@post
-                }
                 askTrSource(clip, shot, clipMs)
             }
         }.start()
@@ -3971,6 +3968,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             sb.append(L.t("Lo copiado", "Copied text")).append(if (clipMs > 0L) " (" + ago(clipMs) + ")" else "").append(":\n«").append(snip).append("»")
         } else sb.append(L.t("No copiaste nada todavía.", "You haven't copied anything yet."))
         sb.append("\n\n")
+        sb.append(L.t("O elige cualquier imagen de tu galería.", "Or pick any image from your gallery.")).append("\n\n")
         if (shot != null) sb.append(L.t("Captura de pantalla", "Screenshot")).append(" (").append(ago(shot.added * 1000L)).append(")")
             .append(L.t(": la ves y tocas el texto que quieres.", ": you see it and tap the text you want."))
         else sb.append(if (Screenshots.hasPermission(this)) L.t("No hay capturas de las últimas 24 horas.", "No screenshots from the last 24 hours.")
@@ -3978,12 +3976,31 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val btns = ArrayList<Pair<String, () -> Unit>>()
         if (clip != null) btns.add(L.t("Lo copiado", "Copied text") to { startTr(clip, false) })
         if (shot != null) btns.add(L.t("Captura de pantalla", "Screenshot") to { openShot(shot) })
+        btns.add(L.t("Elegir de la galería", "Pick from gallery") to { closeInfo(); pickFromGallery() })
         btns.add(L.t("Cerrar", "Close") to { closeInfo() })
         bar.show(L.t("¿Qué quieres traducir?", "What do you want to translate?"), sb.toString(), btns)
     }
 
     /** La captura que se abre en el panel para elegir el texto. */
     private var pendingShot: Screenshots.Shot? = null
+
+    /** Abre la galería (una pantallita invisible) para elegir cualquier imagen. */
+    private fun pickFromGallery() {
+        pickWaiting = false; pickedImage = null
+        try {
+            startActivity(Intent(this, PickImageActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS))
+        } catch (_: Exception) {
+            Toast.makeText(this, Emo.strip(L.t("No se pudo abrir la galería.", "Couldn't open the gallery.")), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun takePicked() {
+        if (!pickWaiting) return
+        pickWaiting = false
+        val u = pickedImage ?: return
+        pickedImage = null
+        openShot(Screenshots.Shot(0L, u, "image/*", System.currentTimeMillis() / 1000L))
+    }
 
     private fun openShot(shot: Screenshots.Shot) {
         pendingShot = shot

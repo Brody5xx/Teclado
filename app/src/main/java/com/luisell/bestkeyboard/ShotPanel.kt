@@ -25,6 +25,7 @@ class ShotPanel(context: Context) : FrameLayout(context) {
     interface Actions {
         fun onShotTranslate(text: String)
         fun onShotBack()
+        fun onShotGallery()
         fun onShotFeedback()
     }
 
@@ -42,6 +43,7 @@ class ShotPanel(context: Context) : FrameLayout(context) {
     private val backBtn = IconView(context, Icons.BACK, 7.5f)
     private val title = TextView(context)
     private val allBtn = TextView(context)
+    private val galBtn = TextView(context)
     private val scroll = ScrollView(context)
     private val shot = ShotView()
     private val msg = TextView(context)
@@ -69,6 +71,11 @@ class ShotPanel(context: Context) : FrameLayout(context) {
             for (l in lines) l.on = any
             shot.invalidate(); refresh()
         }
+        galBtn.textSize = 13f
+        galBtn.gravity = Gravity.CENTER
+        galBtn.setPadding(d(12f), d(7f), d(12f), d(7f))
+        galBtn.setOnClickListener { actions?.onShotFeedback(); actions?.onShotGallery() }
+        top.addView(galBtn, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = d(6f) })
         top.addView(allBtn, LinearLayout.LayoutParams(-2, -2))
         col.addView(top, LinearLayout.LayoutParams(-1, -2))
 
@@ -103,7 +110,8 @@ class ShotPanel(context: Context) : FrameLayout(context) {
         lines.clear(); bmp = null
         title.text = L.t("Toca el texto que quieres traducir", "Tap the text you want to translate")
         allBtn.text = L.t("Todo", "All")
-        msg.text = L.t("Leyendo tu captura…", "Reading your screenshot…")
+        galBtn.text = L.t("Galería", "Gallery")
+        msg.text = L.t("Leyendo la imagen…", "Reading the image…")
         msg.visibility = View.VISIBLE
         scroll.visibility = View.INVISIBLE
         scroll.scrollTo(0, 0)
@@ -112,7 +120,7 @@ class ShotPanel(context: Context) : FrameLayout(context) {
             val b = load(s)
             post {
                 if (my != seq) return@post
-                if (b == null) { msg.text = L.t("No se pudo abrir la captura.", "Couldn't open the screenshot."); return@post }
+                if (b == null) { msg.text = L.t("No se pudo abrir la imagen.", "Couldn't open the image."); return@post }
                 bmp = b
                 shot.requestLayout()
                 com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions.Builder().build())
@@ -126,13 +134,13 @@ class ShotPanel(context: Context) : FrameLayout(context) {
                         }
                         lines.sortWith(compareBy<Line> { it.box.centerY() / maxOf(1, d(14f)) }.thenBy { it.box.left })
                         msg.visibility = if (lines.isEmpty()) View.VISIBLE else View.GONE
-                        if (lines.isEmpty()) msg.text = L.t("No encontré texto en la captura.", "I didn't find text in the screenshot.")
+                        if (lines.isEmpty()) msg.text = L.t("No encontré texto en la imagen.", "I didn't find text in the image.")
                         scroll.visibility = View.VISIBLE
                         shot.invalidate(); refresh()
                         // Empieza abajo: lo más nuevo de un chat suele estar abajo
                         scroll.post { scroll.scrollTo(0, maxOf(0, shot.height - scroll.height) * 2 / 3) }
                     }
-                    .addOnFailureListener { if (my == seq) msg.text = L.t("No se pudo leer la captura.", "Couldn't read the screenshot.") }
+                    .addOnFailureListener { if (my == seq) msg.text = L.t("No se pudo leer la imagen.", "Couldn't read the image.") }
             }
         }.start()
     }
@@ -222,6 +230,8 @@ class ShotPanel(context: Context) : FrameLayout(context) {
         msg.setTextColor(p.text)
         backBtn.color = p.text
         backBtn.background = PanelUi.pressable(p.special, p.keyPressed, d(17f).toFloat())
+        galBtn.setTextColor(p.text)
+        galBtn.background = PanelUi.pressable(p.key, p.keyPressed, d(16f).toFloat())
         allBtn.setTextColor(p.text)
         allBtn.background = PanelUi.pressable(p.key, p.keyPressed, d(16f).toFloat())
         go.setTextColor(p.onAccent)
