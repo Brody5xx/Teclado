@@ -116,10 +116,6 @@ class SitesActivity : UiActivity() {
     private var googleFix: ((android.app.Activity) -> Unit)? = null
     private var testLine = ""
 
-    override fun onResume() {
-        super.onResume()
-        if (::gpsBox.isInitialized) { googleOk = null; paintGps() }
-    }
 
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
@@ -300,6 +296,7 @@ class SitesActivity : UiActivity() {
         super.onResume()
         if (::autoBtn.isInitialized) paintAuto()
         if (AutoSites.isOn(this)) AutoSites.register(this)
+        if (::gpsBox.isInitialized) { googleOk = null; paintGps() } // 🎯 por si arreglaste algo en los ajustes
     }
 
     private fun refresh() {
