@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Typeface
 import android.view.Gravity
+import android.view.View
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -27,6 +28,8 @@ class InfoBar(context: Context) : LinearLayout(context) {
         }
     }
     private val chips = LinearLayout(context)
+    /** 🗂 El menú de un grupo: botones grandes con ícono, de dos en dos. */
+    private val menu = LinearLayout(context)
     /** Los dos idiomas que se pueden tocar para cambiarlos (Traducir captura). */
     private val langRow = LinearLayout(context)
     /** 💎 El diamante con la luz dando vueltas mientras espera (traduciendo, la IA pensando…). */
@@ -63,6 +66,9 @@ class InfoBar(context: Context) : LinearLayout(context) {
         body.setTextIsSelectable(false)
         scroll.addView(body, LayoutParams(-1, -2))
         addView(scroll, LayoutParams(-1, -2).apply { topMargin = d(6f) })
+        menu.orientation = VERTICAL
+        menu.visibility = GONE
+        addView(menu, LayoutParams(-1, -2).apply { topMargin = d(6f) })
         chips.orientation = HORIZONTAL
         chips.setPadding(0, d(6f), 0, d(2f))
         val hs = HorizontalScrollView(context)
@@ -82,6 +88,7 @@ class InfoBar(context: Context) : LinearLayout(context) {
 
     fun show(heading: String, text: String, buttons: List<Pair<String, () -> Unit>>) {
         shineAnim?.cancel(); shineAnim = null
+        menu.visibility = GONE
         body.animate().cancel(); body.alpha = 1f; body.translationY = 0f
         party.visibility = GONE
         langRow.visibility = GONE
@@ -95,6 +102,7 @@ class InfoBar(context: Context) : LinearLayout(context) {
         scroll.visibility = if (text.isEmpty()) GONE else VISIBLE
         scroll.scrollTo(0, 0)
         chips.removeAllViews()
+        chips.visibility = VISIBLE
         for ((i, b) in buttons.withIndex()) {
             val c = TextView(context)
             c.textSize = 14f
@@ -188,6 +196,51 @@ class InfoBar(context: Context) : LinearLayout(context) {
         return android.graphics.Color.rgb(ch(android.graphics.Color.red(a), android.graphics.Color.red(b)),
             ch(android.graphics.Color.green(a), android.graphics.Color.green(b)), ch(android.graphics.Color.blue(a), android.graphics.Color.blue(b)))
     }
+
+    /**
+     * 🗂 Muestra las opciones de un grupo como botones grandes (ícono + nombre), de dos en dos.
+     * [items] = (ícono, nombre, prendida, acción).
+     */
+    fun showMenu(heading: String, items: List<MenuItem>) {
+        show(heading, "", emptyList())
+        chips.visibility = GONE
+        menu.removeAllViews()
+        var row: LinearLayout? = null
+        for ((i, it) in items.withIndex()) {
+            if (i % 2 == 0) {
+                row = LinearLayout(context).apply { orientation = HORIZONTAL }
+                menu.addView(row, LayoutParams(-1, -2).apply { if (i > 0) topMargin = d(8f) })
+            }
+            val cell = LinearLayout(context)
+            cell.orientation = HORIZONTAL
+            cell.gravity = Gravity.CENTER_VERTICAL
+            cell.setPadding(d(10f), d(10f), d(10f), d(10f))
+            cell.background = if (it.on) PanelUi.pressable(palette.accent, palette.accentPressed, d(16f).toFloat())
+                else PanelUi.pressable(palette.key, palette.keyPressed, d(16f).toFloat())
+            val ic = IconView(context, it.icon, 6.5f)
+            ic.color = if (it.on) palette.onAccent else PanelUi.icon(palette)
+            cell.addView(ic, LayoutParams(d(28f), d(28f)))
+            val tv = TextView(context)
+            tv.text = it.label
+            tv.textSize = 14f
+            tv.maxLines = 2
+            tv.setTextColor(if (it.on) palette.onAccent else palette.text)
+            tv.setPadding(d(8f), 0, 0, 0)
+            cell.addView(tv, LayoutParams(0, -2, 1f))
+            cell.setOnClickListener { _ -> onFeedback?.invoke(); it.action() }
+            row!!.addView(cell, LayoutParams(0, -1, 1f).apply { if (i % 2 == 1) leftMargin = d(8f) })
+        }
+        if (items.size % 2 == 1) row?.addView(View(context), LayoutParams(0, 1, 1f).apply { leftMargin = d(8f) })
+        menu.visibility = VISIBLE
+        // Entran suave, uno detrás del otro
+        for (r in 0 until menu.childCount) {
+            val v = menu.getChildAt(r)
+            v.alpha = 0f; v.translationY = d(8f).toFloat()
+            v.animate().alpha(1f).translationY(0f).setStartDelay(40L * r).setDuration(220L).start()
+        }
+    }
+
+    class MenuItem(val icon: Int, val label: String, val on: Boolean, val action: () -> Unit)
 
     /** Lo que muestran como resultado (traducciones, lo copiado…): eso no se toca, puede tener tus emojis. */
     var keepEmojis = false

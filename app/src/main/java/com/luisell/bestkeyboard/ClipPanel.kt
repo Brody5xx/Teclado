@@ -31,6 +31,8 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         fun onClipWrite(item: ClipItem?)
         /** 🔍 Buscar en el portapapeles y los tickets. */
         fun onClipFind() {}
+        /** 🧹 Pegar limpio (sin espacios raros, en un renglón, sin emojis…). */
+        fun onClipClean() {}
     }
 
     var listener: PanelListener? = null
@@ -46,6 +48,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
     private val backBtn = IconView(context, Icons.BACK, 7.5f)
     private val addBtn = IconView(context, Icons.PENCIL, 7f)
     private val findBtn = IconView(context, Icons.SEARCH, 7f)
+    private val cleanBtn = IconView(context, Icons.CHECK, 7f)
     // Modo seleccionar (mantener presionado): varios a la vez, como Gboard
     private val selected = LinkedHashSet<Long>()
     private val selBar = LinearLayout(context)
@@ -166,6 +169,9 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         normalBar.addView(addBtn, LinearLayout.LayoutParams(d(40f), d(36f)).apply { leftMargin = d(4f) })
         findBtn.setOnClickListener { listener?.onPanelFeedback(); actions?.onClipFind() }
         normalBar.addView(findBtn, LinearLayout.LayoutParams(d(40f), d(36f)).apply { leftMargin = d(2f) })
+        cleanBtn.setOnClickListener { listener?.onPanelFeedback(); actions?.onClipClean() }
+        cleanBtn.contentDescription = L.t("Pegar limpio", "Clean paste")
+        normalBar.addView(cleanBtn, LinearLayout.LayoutParams(d(40f), d(36f)).apply { leftMargin = d(2f) })
         header.addView(normalBar, LayoutParams(-1, -1))
         // Arriba (seleccionando): ✕ · "2 seleccionados" · ✏️ · 📌 · 🗑
         selBar.orientation = LinearLayout.HORIZONTAL
@@ -444,7 +450,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         title.setTextColor(p.text)
         selCount.setTextColor(p.text)
         empty.setTextColor(p.hint)
-        for (b in listOf(backBtn, addBtn, findBtn, selClose, selEdit, selPin, selDel)) {
+        for (b in listOf(backBtn, addBtn, findBtn, cleanBtn, selClose, selEdit, selPin, selDel)) {
             b.color = p.text
             b.bgColor = p.bg
             b.background = PanelUi.pressable(p.bg, p.keyPressed, d(18f).toFloat())

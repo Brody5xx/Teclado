@@ -443,6 +443,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val cp = ClipPanel(this)
         cp.listener = panelListener
         cp.actions = object : ClipPanel.Actions {
+            override fun onClipClean() { showMode(0); cleanPaste() }
             override fun onPasteText(text: String) = commitPanelText(text)
             override fun onPasteImage(item: ClipItem) = pasteImage(item)
             override fun onClipWrite(item: ClipItem?) {
@@ -3271,6 +3272,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 val title = Tools.info(action)?.label ?: ""
                 Toast.makeText(this, Emo.strip("$title: $name"), Toast.LENGTH_SHORT).show()
             }
+            in Tools.GROUPS.map { it.tool } -> showGroup(action)
             KeyboardView.TOOL_HIDE -> hideByUser()
             KeyboardView.TOOL_EMOJI -> showMode(1)
             KeyboardView.TOOL_CLIP -> showMode(2)
@@ -3949,6 +3951,21 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 askTrSource(clip, shot, clipMs)
             }
         }.start()
+    }
+
+    /** 🗂 Un grupo: muestra sus opciones (si solo queda una, la abre directo). */
+    private fun showGroup(tool: Int) {
+        val g = Tools.group(tool) ?: return
+        val items = Tools.visibleItems(prefs, g)
+        if (items.size == 1) { onToolbar(items[0].tool); return }
+        showMode(0)
+        val bar = infoBar ?: return
+        bar.showMenu(L.t(g.es, g.en), items.map { it ->
+            val t = it.tool
+            val on = kv?.toolOn(t) == true
+            val label = if (t == KeyboardView.TOOL_TRANSLATE && on) L.t("Dejar de traducir al escribir", "Stop translating as you type") else it.label
+            InfoBar.MenuItem(Tools.info(t)?.icon ?: Icons.MORE, label, on) { closeInfo(); onToolbar(t) }
+        })
     }
 
     /** Pregunta primero: ¿lo copiado o la captura? Muestra un pedacito de cada uno. */

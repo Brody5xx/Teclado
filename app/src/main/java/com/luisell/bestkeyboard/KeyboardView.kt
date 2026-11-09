@@ -122,6 +122,18 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_SCREEN_TR = 75
         const val TOOL_CALENDAR = 76
         const val TOOL_CLEAN = 77
+        // 🗂 Grupos: un botón que junta varias opciones parecidas
+        const val TOOL_G_TRANSLATE = 80
+        const val TOOL_G_CALC = 81
+        const val TOOL_G_AI = 82
+        const val TOOL_G_SHAPE = 83
+        const val TOOL_G_SPECIAL = 84
+        const val TOOL_G_PHRASES = 85
+        const val TOOL_G_STYLE = 86
+        const val TOOL_G_WORKDAY = 87
+        const val TOOL_G_TICKETS = 88
+        const val TOOL_G_PLACES = 89
+        const val TOOL_G_TODO = 90
         const val MIN_SCALE = 0.72f
         const val MAX_SCALE = 1.4f
         private const val LONG_PRESS_MS = 350L
@@ -2983,6 +2995,9 @@ class KeyboardView(context: Context) : View(context) {
         }
     }
 
+    /** ¿Está prendida esta opción? (los grupos se ven prendidos si una de las suyas lo está) */
+    fun toolOn(i: Int) = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn) || (i == TOOL_GLOVES && glovesOn) || (i == TOOL_BGSOUND && bgSoundOn) || (i == TOOL_ANYWHERE && anywhereOn)
+
     private fun toolIcon(i: Int): Int = when (i) {
         TOOL_SETTINGS -> Icons.DIAMOND
         TOOL_THEME -> Icons.THEME
@@ -3049,6 +3064,17 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_SCREEN_TR -> Icons.IMAGE
         TOOL_CALENDAR -> Icons.CALENDAR
         TOOL_CLEAN -> Icons.CHECK
+        TOOL_G_TRANSLATE -> Icons.TRANSLATE
+        TOOL_G_CALC -> Icons.CALC
+        TOOL_G_AI -> Icons.FORMAL
+        TOOL_G_SHAPE -> Icons.RESIZE
+        TOOL_G_SPECIAL -> Icons.HACKER
+        TOOL_G_PHRASES -> Icons.BUBBLE
+        TOOL_G_STYLE -> Icons.BRUSH
+        TOOL_G_WORKDAY -> WorkDay.iconKind()
+        TOOL_G_TICKETS -> Icons.TICKETS
+        TOOL_G_PLACES -> Icons.MAP_PIN
+        TOOL_G_TODO -> Icons.TODO
         else -> -1
     }
 
@@ -3260,7 +3286,7 @@ class KeyboardView(context: Context) : View(context) {
         text.textSize = 13f * d
         text.isFakeBoldText = true
         if (la > 0.01f && selE >= 0) {
-            label = Tools.ALL.firstOrNull { it.tool == labelTool }?.label?.substringBefore(" (")?.trim() ?: ""
+            label = Tools.info(labelTool)?.label?.substringBefore(" (")?.trim() ?: ""
             // El nombre completo: si no cabe, la letra se achica un poco (y solo si es larguísimo se corta)
             val maxW = width * 0.66f
             labelW = text.measureText(label)
@@ -3325,7 +3351,7 @@ class KeyboardView(context: Context) : View(context) {
             }
             val kind = toolIcon(i)
             if (kind < 0) continue
-            val on = (i == TOOL_TRANSLATE && translateOn) || (i == TOOL_SPELL && spellOn) || (i == TOOL_HACKER && hackerOn) || (i == TOOL_CODE && codeOn) || (i == TOOL_ONEHAND && oneHand != 0) || (i == TOOL_FLOAT && floatOn) || (i == TOOL_GLOVES && glovesOn) || (i == TOOL_BGSOUND && bgSoundOn) || (i == TOOL_ANYWHERE && anywhereOn)
+            val on = toolOn(i) || (Tools.group(i)?.items?.any { toolOn(it.tool) } == true)
             val bgc = if (stripPressed == i) p.keyPressed else p.bg
             // Modo acomodar: los demás tiemblan un poquito
             val ang = if (editing) (7.0 * kotlin.math.sin(now * 2 * Math.PI * 4.5 + i * 1.7)).toFloat() else 0f

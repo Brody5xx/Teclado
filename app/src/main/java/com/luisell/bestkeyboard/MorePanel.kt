@@ -25,11 +25,12 @@ import kotlin.math.abs
 object Tools {
     class Info(val tool: Int, private val baseIcon: Int, val es: String, val en: String, val opens: Boolean) {
         /** Mi jornada usa el ícono que elegiste. */
-        val icon get() = if (tool == KeyboardView.TOOL_WORKDAY) WorkDay.iconKind() else baseIcon
+        val icon get() = if (tool == KeyboardView.TOOL_WORKDAY || tool == KeyboardView.TOOL_G_WORKDAY) WorkDay.iconKind() else baseIcon
         val label get() = L.t(es, en)
     }
 
-    val ALL = listOf(
+    /** Todas las opciones, también las que ahora viven dentro de un grupo. */
+    private val EVERY = listOf(
         Info(KeyboardView.TOOL_EMOJI, Icons.EMOJI, "Emojis", "Emojis", true),
         Info(KeyboardView.TOOL_CLIP, Icons.CLIP, "Portapapeles", "Clipboard", true),
         Info(KeyboardView.TOOL_TRANSLATE, Icons.TRANSLATE, "Traducir", "Translate", false),
@@ -85,16 +86,83 @@ object Tools {
         Info(KeyboardView.TOOL_BGSOUND, Icons.SPEAKER, "Sonido del video de fondo", "Background video sound", false),
     )
 
+    // ---------------------------------------------------------------- 🗂 Grupos
+
+    class Item(val tool: Int, val es: String, val en: String) { val label get() = L.t(es, en) }
+    class Group(val tool: Int, val icon: Int, val es: String, val en: String, val items: List<Item>)
+
+    val GROUPS = listOf(
+        Group(KeyboardView.TOOL_G_TRANSLATE, Icons.TRANSLATE, "Traducir", "Translate", listOf(
+            Item(KeyboardView.TOOL_TRANSLATE, "Traducir mientras escribes", "Translate as you type"),
+            Item(KeyboardView.TOOL_READ, "Traducir mensaje, captura o foto", "Translate message, screenshot or photo"),
+            Item(KeyboardView.TOOL_PINYIN, "Ver pinyin (chino)", "See pinyin (Chinese)"))),
+        Group(KeyboardView.TOOL_G_CALC, Icons.CALC, "Calcular", "Calculate", listOf(
+            Item(KeyboardView.TOOL_CALC, "Calculadora", "Calculator"),
+            Item(KeyboardView.TOOL_FX, "Divisas", "Currency"),
+            Item(KeyboardView.TOOL_CONVERT, "Convertidor", "Converter"))),
+        Group(KeyboardView.TOOL_G_AI, Icons.FORMAL, "IA para escribir", "AI writing", listOf(
+            Item(KeyboardView.TOOL_SPELL, "Corregir ortografía", "Fix spelling"),
+            Item(KeyboardView.TOOL_REVIEW, "Revisar antes de enviar", "Review before sending"),
+            Item(KeyboardView.TOOL_FORMAL, "Más formal", "More formal"),
+            Item(KeyboardView.TOOL_FINISH, "Terminar la frase", "Finish the sentence"),
+            Item(KeyboardView.TOOL_REPLY, "Respuestas con IA", "AI replies"))),
+        Group(KeyboardView.TOOL_G_SHAPE, Icons.RESIZE, "Forma del teclado", "Keyboard shape", listOf(
+            Item(KeyboardView.TOOL_RESIZE, "Tamaño", "Size"),
+            Item(KeyboardView.TOOL_ONEHAND, "Una mano", "One hand"),
+            Item(KeyboardView.TOOL_FLOAT, "Flotante", "Floating"),
+            Item(KeyboardView.TOOL_GLOVES, "Modo guantes", "Glove mode"))),
+        Group(KeyboardView.TOOL_G_SPECIAL, Icons.HACKER, "Teclados especiales", "Special keyboards", listOf(
+            Item(KeyboardView.TOOL_HACKER, "Teclado PC", "PC keyboard"),
+            Item(KeyboardView.TOOL_CODE, "Modo código", "Code mode"),
+            Item(KeyboardView.TOOL_IPPAD, "Teclado IP / MAC", "IP / MAC keypad"))),
+        Group(KeyboardView.TOOL_G_PHRASES, Icons.BUBBLE, "Frases", "Phrases", listOf(
+            Item(KeyboardView.TOOL_PHRASES, "Mis frases", "My phrases"),
+            Item(KeyboardView.TOOL_STATUS, "Mensajes rápidos", "Quick messages"))),
+        Group(KeyboardView.TOOL_G_STYLE, Icons.BRUSH, "Estilo", "Style", listOf(
+            Item(KeyboardView.TOOL_STYLE, "Estilo del teclado", "Keyboard style"),
+            Item(KeyboardView.TOOL_BGSOUND, "Sonido del video de fondo", "Background video sound"))),
+        Group(KeyboardView.TOOL_G_WORKDAY, Icons.CLOCK, "Mi jornada", "My workday", listOf(
+            Item(KeyboardView.TOOL_WORKDAY, "Mi jornada", "My workday"),
+            Item(KeyboardView.TOOL_WEEK, "Resumen de la semana", "Week summary"),
+            Item(KeyboardView.TOOL_CHECK, "Checklist antes de salir", "Pre-trip checklist"))),
+        Group(KeyboardView.TOOL_G_TICKETS, Icons.TICKETS, "Tickets", "Tickets", listOf(
+            Item(KeyboardView.TOOL_TICKETS, "Mis tickets", "My tickets"),
+            Item(KeyboardView.TOOL_NOTEBOOK, "Libreta del día", "Day notebook"),
+            Item(KeyboardView.TOOL_TICKET, "Notas → Ticket", "Notes → Ticket"))),
+        Group(KeyboardView.TOOL_G_PLACES, Icons.MAP_PIN, "Lugares", "Places", listOf(
+            Item(KeyboardView.TOOL_SITES, "Mis sitios", "My sites"),
+            Item(KeyboardView.TOOL_REMIND, "Recordar al llegar", "Remind on arrival"))),
+        Group(KeyboardView.TOOL_G_TODO, Icons.TODO, "Pendientes", "To-dos", listOf(
+            Item(KeyboardView.TOOL_TODO, "Pendientes", "To-dos"),
+            Item(KeyboardView.TOOL_CALENDAR, "Agregar al calendario", "Add to calendar"))),
+    )
+
+    fun group(tool: Int): Group? = GROUPS.firstOrNull { it.tool == tool }
+
+    /** En qué grupo quedó cada opción (y «Pegar limpio» dentro del portapapeles). */
+    private val GROUP_OF: Map<Int, Int> = HashMap<Int, Int>().apply {
+        for (g in GROUPS) for (it in g.items) put(it.tool, g.tool)
+        put(KeyboardView.TOOL_SCREEN_TR, KeyboardView.TOOL_G_TRANSLATE)
+        put(KeyboardView.TOOL_CLEAN, KeyboardView.TOOL_CLIP)
+    }
+
+    /** Lo que sale en la barra y en «Más opciones»: las opciones sueltas y los grupos. */
+    val ALL: List<Info> = EVERY.filter { it.tool !in GROUP_OF } + GROUPS.map { Info(it.tool, it.icon, it.es, it.en, true) }
+
+    /** Las opciones de un grupo que se pueden usar ahora (sin el paquete de trabajo, no salen las del trabajo). */
+    fun visibleItems(prefs: SharedPreferences, g: Group): List<Item> =
+        g.items.filter { prefs.getBoolean(Prefs.WORK_PACK, true) || it.tool !in WORK }
+
     /** El ⋯ siempre se queda en la barra (si no, no podrías abrir "Más opciones"). */
     const val FIXED = KeyboardView.TOOL_MORE
 
     private val DEFAULT_BAR = listOf(
-        KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_TRANSLATE,
-        KeyboardView.TOOL_SCAN, KeyboardView.TOOL_SPELL, KeyboardView.TOOL_EDIT,
+        KeyboardView.TOOL_EMOJI, KeyboardView.TOOL_CLIP, KeyboardView.TOOL_G_TRANSLATE,
+        KeyboardView.TOOL_SCAN, KeyboardView.TOOL_G_AI, KeyboardView.TOOL_EDIT,
         KeyboardView.TOOL_MORE, KeyboardView.TOOL_VOICE, KeyboardView.TOOL_HIDE,
     )
 
-    fun info(tool: Int): Info? = ALL.firstOrNull { it.tool == tool }
+    fun info(tool: Int): Info? = ALL.firstOrNull { it.tool == tool } ?: EVERY.firstOrNull { it.tool == tool }
 
     /** Cuántos botones caben en la barra de arriba. */
     fun maxBar(ctx: Context): Int {
@@ -103,8 +171,10 @@ object Tools {
         return (wDp / 44f).toInt().coerceIn(5, 10)
     }
 
+    /** Lee la lista guardada; las opciones que ahora están en un grupo se cambian por su grupo (en el mismo lugar). */
     private fun parse(s: String?): List<Int> =
-        s?.split(',')?.mapNotNull { it.trim().toIntOrNull() }?.filter { info(it) != null }?.distinct() ?: emptyList()
+        s?.split(',')?.mapNotNull { it.trim().toIntOrNull() }?.map { GROUP_OF[it] ?: it }
+            ?.filter { t -> ALL.any { it.tool == t } }?.distinct() ?: emptyList()
 
     /** Si sobran botones en la barra, los últimos pasan a "Más opciones" (nunca el ⋯ ni [keep]). */
     fun trim(bar: MutableList<Int>, more: MutableList<Int>, max: Int, keep: Int = -1) {
@@ -119,7 +189,7 @@ object Tools {
     /** Las herramientas del «paquete de trabajo» (técnicos de campo). */
     val WORK = setOf(KeyboardView.TOOL_TICKET, KeyboardView.TOOL_NOTEBOOK, KeyboardView.TOOL_TICKETS, KeyboardView.TOOL_WORKDAY,
         KeyboardView.TOOL_WEEK, KeyboardView.TOOL_CHECK, KeyboardView.TOOL_GLOVES, KeyboardView.TOOL_IPPAD, KeyboardView.TOOL_LABELS,
-        KeyboardView.TOOL_REMIND)
+        KeyboardView.TOOL_REMIND, KeyboardView.TOOL_G_WORKDAY, KeyboardView.TOOL_G_TICKETS)
 
     fun load(ctx: Context, prefs: SharedPreferences): Pair<List<Int>, List<Int>> {
         val max = maxBar(ctx)
