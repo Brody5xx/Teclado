@@ -40,10 +40,60 @@ object WorkdayCenter {
         ctx.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ctx.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-    /** Dónde estás ahora (o null). Espera máximo unos segundos. */
+    /**
+     * 🎯 Dónde estás ahora, con el GPS fino: pide lecturas de alta precisión y se queda con la mejor
+     * hasta tener una de menos de [goodM] metros (o hasta [timeoutMs]). Si no hay, usa la red como antes.
+     */
+    @SuppressLint("MissingPermission")
+    fun preciseFix(ctx: Context, timeoutMs: Long = 9000L, goodM: Float = 30f, done: (Location?) -> Unit) {
+        if (!hasLocation(ctx)) { done(null); return }
+        var best: Location? = null
+        var finished = false
+        val client = try { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(ctx.applicationContext) } catch (_: Throwable) { null }
+        if (client == null) { done(null); return }
+        lateinit var cb: com.google.android.gms.location.LocationCallback
+        val finish = {
+            if (!finished) {
+                finished = true
+                try { client.removeLocationUpdates(cb) } catch (_: Throwable) { }
+                done(best)
+            }
+        }
+        cb = object : com.google.android.gms.location.LocationCallback() {
+            override fun onLocationResult(r: com.google.android.gms.location.LocationResult) {
+                for (l in r.locations) {
+                    // Solo lecturas recientes (de los últimos 2 minutos)
+                    if (System.currentTimeMillis() - l.time > 120_000L) continue
+                    if (best == null || l.accuracy < best!!.accuracy) best = l
+                }
+                if ((best?.accuracy ?: Float.MAX_VALUE) <= goodM) main.post { finish() }
+            }
+        }
+        try {
+            val req = com.google.android.gms.location.LocationRequest.Builder(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+                .setMinUpdateIntervalMillis(500L)
+                .setDurationMillis(timeoutMs)
+                .setWaitForAccurateLocation(true)
+                .build()
+            client.requestLocationUpdates(req, cb, Looper.getMainLooper())
+        } catch (_: Throwable) { done(null); return }
+        main.postDelayed({ finish() }, timeoutMs)
+    }
+
+    /** Dónde estás ahora (o null): primero el GPS fino; si no se puede, la ubicación por red. */
     @SuppressLint("MissingPermission")
     fun locate(ctx: Context, done: (Location?) -> Unit) {
         if (!hasLocation(ctx)) { done(null); return }
+        preciseFix(ctx, 7000L, 40f) { fine ->
+            if (fine != null && fine.accuracy <= 150f) done(fine) else locateNetwork(ctx) { net ->
+                done(listOfNotNull(fine, net).minByOrNull { it.accuracy })
+            }
+        }
+    }
+
+    /** La forma de antes: la red (rápida pero menos precisa) o el GPS del sistema. */
+    @SuppressLint("MissingPermission")
+    private fun locateNetwork(ctx: Context, done: (Location?) -> Unit) {
         val lm = ctx.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: run { done(null); return }
         val provider = when {
             lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER

@@ -108,7 +108,7 @@ object AutoSites {
 
     // ---------------------------------------------------------------- Cuando el teléfono avisa
 
-    fun handle(ctx: Context, intent: Intent) {
+    fun handle(ctx: Context, intent: Intent, rcv: BroadcastReceiver? = null) {
         val p = Prefs.get(ctx)
         L.set(p.getString(Prefs.LANG, "es") ?: "es")
         when (intent.action) {
@@ -160,10 +160,48 @@ object AutoSites {
         if (ev.hasError()) return
         val now = System.currentTimeMillis()
         val at = ev.triggeringLocation?.time?.takeIf { it in (now - 30 * 60_000L)..now } ?: now
+        // 🎯 Antes de anotar, confirma con el GPS fino que de verdad entraste o saliste (el GPS a veces «brinca»)
+        val pr = rcv?.goAsync()
+        WorkdayCenter.preciseFix(ctx.applicationContext, 8000L, 30f) { fix ->
+            try { handle(ctx.applicationContext, p, ev, at, fix) } catch (_: Throwable) { } finally { pr?.finish() }
+        }
+    }
+
+    /** ¿Lo que avisó el teléfono es verdad? Mira la lectura fina (o la del aviso, si es buena). */
+    private fun confirmed(ctx: Context, transition: Int, lat: Double, lon: Double, radius: Float,
+                          fix: android.location.Location?, trig: android.location.Location?, name: String): Boolean {
+        val loc = when {
+            fix != null && fix.accuracy <= 100f -> fix
+            trig != null && trig.accuracy <= radius -> trig
+            else -> return true // no se puede revisar: se hace como antes
+        }
+        val d = FloatArray(1)
+        android.location.Location.distanceBetween(lat, lon, loc.latitude, loc.longitude, d)
+        val ok = when (transition) {
+            // Llegar: tienes que estar dentro del círculo (con el margen de error de la lectura)
+            Geofence.GEOFENCE_TRANSITION_ENTER, Geofence.GEOFENCE_TRANSITION_DWELL -> d[0] <= radius + loc.accuracy
+            // Salir: si la lectura dice claramente que sigues adentro, era un brinco del GPS
+            else -> d[0] + loc.accuracy >= radius * 0.9f
+        }
+        if (!ok) GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, name)
+        return ok
+    }
+
+    private fun handle(ctx: Context, p: android.content.SharedPreferences, ev: GeofencingEvent, at: Long, fix: android.location.Location?) {
+        val trig = ev.triggeringLocation
+        val tr = ev.geofenceTransition
         for (g in ev.triggeringGeofences ?: emptyList()) {
-            val id = g.requestId
+            val gid = g.requestId
+            val center: Triple<Double, Double, Float>? = when {
+                gid == HOME_ID -> SiteStore.home(p)?.let { Triple(it.first, it.second, 150f) }
+                gid.startsWith(NEW_ID) -> SiteStore.getNew(p)?.let { Triple(it.lat, it.lon, SiteStore.defaultRadius(p).toFloat()) }
+                else -> SiteStore.find(p, gid.removePrefix(SITE_ID))?.let { Triple(it.lat, it.lon, SiteStore.radiusOf(p, it).toFloat()) }
+            }
+            if (center != null && !confirmed(ctx, tr, center.first, center.second, center.third, fix, trig,
+                    if (gid == HOME_ID) L.t("Casa", "Home") else gid.removePrefix(SITE_ID).removePrefix(NEW_ID))) continue
+            val id = gid
             if (id == HOME_ID) {
-                when (ev.geofenceTransition) {
+                when (tr) {
                     Geofence.GEOFENCE_TRANSITION_ENTER -> saveEnter(p, HOME_ID, at)
                     Geofence.GEOFENCE_TRANSITION_DWELL -> cameHome(ctx, takeEnter(p, HOME_ID) ?: (at - 2 * 60_000L))
                     Geofence.GEOFENCE_TRANSITION_EXIT -> { cancelHomePending(ctx); leftHome(ctx, at) }
@@ -174,14 +212,14 @@ object AutoSites {
             val site = id.removePrefix(SITE_ID).removePrefix(NEW_ID)
             // 🛻 El parqueo de la camioneta: al salir empieza el día, al volver y quedarte termina
             if (!isNew && SiteStore.find(p, site)?.isStart == true) {
-                when (ev.geofenceTransition) {
+                when (tr) {
                     Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site) }
                     Geofence.GEOFENCE_TRANSITION_DWELL -> endAtParking(ctx, site, takeEnter(p, site) ?: (at - dwellMs(ctx)))
                     Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); if (WorkDay.day(p).isEmpty()) pendingExit(ctx, site, at) }
                 }
                 continue
             }
-            when (ev.geofenceTransition) {
+            when (tr) {
                 Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site); falseExit(ctx, site, at) }
                 Geofence.GEOFENCE_TRANSITION_DWELL -> if (!isNew) arrived(ctx, site, takeEnter(p, site) ?: (at - dwellMs(ctx)))
                 Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); pendingExit(ctx, site, at) }
@@ -435,6 +473,6 @@ object AutoSites {
 
 class AutoSitesReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
-        try { AutoSites.handle(ctx, intent) } catch (_: Throwable) { }
+        try { AutoSites.handle(ctx, intent, this) } catch (_: Throwable) { }
     }
 }

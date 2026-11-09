@@ -91,6 +91,11 @@ class SitesActivity : UiActivity() {
         SiteStore.getNew(prefs)?.let { n ->
             button(tr("📍 Guardar el lugar nuevo de hoy: ", "📍 Save today's new place: ") + n.short) { askName(n.full.ifEmpty { n.short }, n.lat, n.lon, n.short) }
         }
+        // 🎯 Precisión del GPS: revisa los ajustes y deja probar la ubicación
+        card(tr("Precisión del GPS", "GPS accuracy"), Icons.MAP_PIN)
+        gpsBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(gpsBox, LinearLayout.LayoutParams(-1, -2))
+        paintGps()
         card(tr("Sitios guardados", "Saved sites"), Icons.GLOBE)
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         col.addView(list, LinearLayout.LayoutParams(-1, -2))
@@ -106,6 +111,83 @@ class SitesActivity : UiActivity() {
     }
 
     private lateinit var sensHelp: TextView
+    private lateinit var gpsBox: LinearLayout
+    private var googleOk: Boolean? = null
+    private var googleFix: ((android.app.Activity) -> Unit)? = null
+    private var testLine = ""
+
+    override fun onResume() {
+        super.onResume()
+        if (::gpsBox.isInitialized) { googleOk = null; paintGps() }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 77 && ::gpsBox.isInitialized) { googleOk = null; paintGps() }
+    }
+
+    /** La tarjeta «Precisión del GPS»: qué está listo, qué falta (con su botón) y la prueba. */
+    private fun paintGps() {
+        if (!::gpsBox.isInitialized) return
+        if (googleOk == null) GpsCheck.checkGoogle(this) { ok, fix -> googleOk = ok; googleFix = fix; runOnUiThread { drawGps() } }
+        drawGps()
+    }
+
+    private fun drawGps() {
+        gpsBox.removeAllViews()
+        val keep = col
+        col = gpsBox
+        val list = GpsCheck.checks(this, googleOk, googleFix)
+        val missing = list.count { !it.ok }
+        text(if (missing == 0) tr("Todo listo: tu teléfono está usando la ubicación más precisa.", "All set: your phone is using the most precise location.")
+            else tr("Faltan $missing ajustes. Toca cada uno para arreglarlo.", "$missing settings missing. Tap each one to fix it."), 13f, bold = true)
+        for (c in list) {
+            if (c.ok) text(tr("Listo", "Done") + "  ·  " + tr(c.es, c.en), 13f)
+            else {
+                val fx = c.fix
+                button(tr("Arreglar", "Fix") + "  ·  " + tr(c.es, c.en)) { fx?.invoke(this) }
+                text(tr(c.fixEs, c.fixEn), 12f, faded = true)
+            }
+        }
+        button(tr("Probar el GPS ahora", "Test GPS now"), primary = true) { testGps() }
+        if (testLine.isNotEmpty()) text(testLine, 13f)
+        GpsCheck.ignoredText(this)?.let { text(it, 12f, faded = true) }
+        text(tr("Consejo: pon el punto de cada sitio en la entrada o el parqueo donde llegas, y usa 150 m para sitios pequeños (no menos de 100 m).",
+            "Tip: put each site's point at the entrance or parking lot where you arrive, and use 150 m for small sites (not less than 100 m)."), 12f, faded = true)
+        col = keep
+    }
+
+    /** Busca tu ubicación con el GPS fino y dice qué tan precisa es y a qué sitio estás más cerca. */
+    private fun testGps() {
+        testLine = tr("Buscando tu ubicación con el GPS fino… (hasta 15 segundos)", "Finding your location with precise GPS… (up to 15 seconds)")
+        drawGps()
+        WorkdayCenter.preciseFix(this, 15_000L, 15f) { l ->
+            testLine = if (l == null) tr("No se pudo leer la ubicación. Revisa que la ubicación del teléfono esté prendida.", "Couldn't read the location. Check that the phone's location is on.")
+            else {
+                val acc = l.accuracy.toInt()
+                val quality = when {
+                    acc <= 15 -> tr("excelente", "excellent")
+                    acc <= 40 -> tr("buena", "good")
+                    acc <= 100 -> tr("regular", "fair")
+                    else -> tr("mala (sal a un lugar abierto o prende la precisión de Google)", "poor (go outside or turn on Google Location Accuracy)")
+                }
+                var line = tr("Precisión: $acc m, $quality.", "Accuracy: $acc m, $quality.")
+                val near = SiteStore.all(prefs).filter { !(it.lat == 0.0 && it.lon == 0.0) }.map { s ->
+                    val d = FloatArray(1); android.location.Location.distanceBetween(l.latitude, l.longitude, s.lat, s.lon, d); s to d[0]
+                }.minByOrNull { it.second }
+                if (near != null) {
+                    val (s, d) = near
+                    val r = SiteStore.radiusOf(prefs, s)
+                    val dist = if (d >= 1000f) String.format(Locale.US, "%.1f km", d / 1000f) else "${d.toInt()} m"
+                    line += "\n" + tr("El sitio más cerca: ${s.name}, a $dist", "Nearest site: ${s.name}, $dist away") +
+                        (if (d <= r) tr(" (estás adentro de su círculo de $r m).", " (you're inside its $r m circle).") else tr(" (su círculo es de $r m).", " (its circle is $r m)."))
+                }
+                line
+            }
+            runOnUiThread { drawGps() }
+        }
+    }
 
     private fun paintSens() {
         if (!::sensHelp.isInitialized) return
