@@ -1456,6 +1456,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "14.4.1" to tr("•  Animación de la traducción nueva: ya no hay una línea que da vueltas (a veces cruzaba el texto). Ahora el texto aparece suave y un brillo del color de tu tema pasa por encima de las letras una sola vez.",
+            "•  New translation animation: no more line running around (it sometimes crossed the text). Now the text fades in and a glow in your theme color sweeps over the letters once."),
         "14.4.0" to tr("•  Traducir: ahora también puedes «Elegir de la galería» cualquier imagen (fotos de letreros, menús, capturas viejas…). Se abre dentro del teclado y tocas el texto que quieres traducir. Dentro de la imagen, el botón «Galería» te deja elegir otra.",
             "•  Translate: now you can also «Pick from gallery» any image (photos of signs, menus, old screenshots…). It opens inside the keyboard and you tap the text you want to translate. Inside the image, the «Gallery» button lets you pick another one."),
         "14.3.0" to tr("•  Traducir mensaje o captura: ahora te pregunta primero qué quieres traducir, lo copiado o la captura, y te muestra un pedacito de cada uno.\n" +

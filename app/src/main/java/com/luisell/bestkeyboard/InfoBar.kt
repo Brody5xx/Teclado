@@ -81,6 +81,8 @@ class InfoBar(context: Context) : LinearLayout(context) {
     }
 
     fun show(heading: String, text: String, buttons: List<Pair<String, () -> Unit>>) {
+        shineAnim?.cancel(); shineAnim = null
+        body.animate().cancel(); body.alpha = 1f; body.translationY = 0f
         party.visibility = GONE
         langRow.visibility = GONE
         title.visibility = VISIBLE
@@ -149,96 +151,42 @@ class InfoBar(context: Context) : LinearLayout(context) {
     }
 
     /**
-     * ✨ El destello de la traducción: el texto aparece suave (sube un poquito mientras se aclara)
-     * y una luz del color de tu tema le da una vuelta completa al borde de la tarjeta, como la barrita de colores.
+     * ✨ El destello de la traducción: el texto aparece suave y un brillo del color de tu tema
+     * pasa por encima de las letras, de izquierda a derecha, una sola vez (sin líneas encima de la tarjeta).
      */
     fun shine() {
+        shineAnim?.cancel()
         body.alpha = 0f
-        body.translationY = d(6f).toFloat()
-        body.animate().alpha(1f).translationY(0f).setDuration(380L).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
-        val w = scroll.width; val h = scroll.height
-        if (w <= 0 || h <= 0) { scroll.post { if (scroll.width > 0) runComet() }; return }
-        runComet()
-    }
-
-    private fun runComet() {
-        shineFx?.let { scroll.overlay.remove(it) }
-        val fx = CometFx(palette.accent, d(14f).toFloat(), d(1f).toFloat())
-        fx.setBounds(0, 0, scroll.width, scroll.height)
-        scroll.overlay.add(fx)
-        shineFx = fx
+        body.animate().alpha(1f).setDuration(260L).start()
+        val base = palette.text
+        // El brillo: el color de tu tema mezclado con blanco
+        val glow = blend(palette.accent, android.graphics.Color.WHITE, 0.45f)
         val a = android.animation.ValueAnimator.ofFloat(0f, 1f)
-        a.duration = 1500L
+        a.duration = 1250L
         a.startDelay = 120L
         a.interpolator = android.view.animation.AccelerateDecelerateInterpolator()
-        a.addUpdateListener { fx.t = it.animatedValue as Float; fx.invalidateSelf(); scroll.invalidate() }
+        a.addUpdateListener {
+            val w = body.width.toFloat().coerceAtLeast(1f)
+            val h = body.height.toFloat().coerceAtLeast(1f)
+            val band = w * 0.45f
+            val x = -band + (w + band * 2f) * (it.animatedValue as Float)
+            body.paint.shader = android.graphics.LinearGradient(x - band, 0f, x + band, h * 0.5f,
+                intArrayOf(base, base, glow, base, base), floatArrayOf(0f, 0.3f, 0.5f, 0.7f, 1f), android.graphics.Shader.TileMode.CLAMP)
+            body.invalidate()
+        }
         a.addListener(object : android.animation.AnimatorListenerAdapter() {
-            override fun onAnimationEnd(an: android.animation.Animator) { scroll.overlay.remove(fx); scroll.invalidate(); if (shineFx === fx) shineFx = null }
+            override fun onAnimationEnd(an: android.animation.Animator) { body.paint.shader = null; body.invalidate() }
+            override fun onAnimationCancel(an: android.animation.Animator) { body.paint.shader = null; body.invalidate() }
         })
+        shineAnim = a
         a.start()
     }
-    private var shineFx: CometFx? = null
+    private var shineAnim: android.animation.ValueAnimator? = null
 
-    /** Una luz con cola que recorre el borde redondeado una vez y se apaga al final. */
-    private class CometFx(val color: Int, val radius: Float, val dp: Float) : android.graphics.drawable.Drawable() {
-        var t = 0f
-        private val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            style = android.graphics.Paint.Style.STROKE; strokeCap = android.graphics.Paint.Cap.ROUND
-        }
-        private val path = android.graphics.Path()
-        private val seg = android.graphics.Path()
-        private var pm: android.graphics.PathMeasure? = null
-        private val pos = FloatArray(2)
-
-        override fun onBoundsChange(b: android.graphics.Rect) {
-            path.reset()
-            val r = android.graphics.RectF(b).apply { inset(dp * 1.2f, dp * 1.2f) }
-            path.addRoundRect(r, radius, radius, android.graphics.Path.Direction.CW)
-            pm = android.graphics.PathMeasure(path, true)
-        }
-
-        override fun draw(c: android.graphics.Canvas) {
-            val m = pm ?: return
-            val len = m.length
-            if (len <= 0f) return
-            // Se enciende al empezar y se apaga al terminar la vuelta
-            val fade = (minOf(t / 0.12f, (1f - t) / 0.18f)).coerceIn(0f, 1f)
-            val tail = len * 0.28f
-            val head = len * 0.15f + (len + tail) * t
-            val pieces = 18
-            for (i in 0 until pieces) {
-                val a0 = head - tail * (i + 1) / pieces
-                val a1 = head - tail * i / pieces
-                val k = 1f - i / pieces.toFloat()
-                p.color = color
-                p.alpha = (230 * k * k * fade).toInt()
-                p.strokeWidth = dp * (1.2f + 1.8f * k)
-                drawPart(c, m, len, a0, a1)
-            }
-            // La punta brilla blanca
-            val hp = ((head % len) + len) % len
-            m.getPosTan(hp, pos, null)
-            p.style = android.graphics.Paint.Style.FILL
-            p.color = color; p.alpha = (90 * fade).toInt()
-            c.drawCircle(pos[0], pos[1], dp * 6f, p)
-            p.color = android.graphics.Color.WHITE; p.alpha = (255 * fade).toInt()
-            c.drawCircle(pos[0], pos[1], dp * 2.2f, p)
-            p.style = android.graphics.Paint.Style.STROKE
-        }
-
-        private fun drawPart(c: android.graphics.Canvas, m: android.graphics.PathMeasure, len: Float, from: Float, to: Float) {
-            var a = ((from % len) + len) % len
-            var b = a + (to - from)
-            seg.reset()
-            if (b <= len) m.getSegment(a, b, seg, true)
-            else { m.getSegment(a, len, seg, true); m.getSegment(0f, b - len, seg, true) }
-            c.drawPath(seg, p)
-        }
-
-        override fun setAlpha(alpha: Int) {}
-        override fun setColorFilter(cf: android.graphics.ColorFilter?) {}
-        @Deprecated("Deprecated in Java")
-        override fun getOpacity() = android.graphics.PixelFormat.TRANSLUCENT
+    private fun blend(a: Int, b: Int, k: Float): Int {
+        fun ch(x: Int, y: Int) = (x + (y - x) * k).toInt()
+        return android.graphics.Color.rgb(ch(android.graphics.Color.red(a), android.graphics.Color.red(b)),
+            ch(android.graphics.Color.green(a), android.graphics.Color.green(b)), ch(android.graphics.Color.blue(a), android.graphics.Color.blue(b)))
     }
 
     /** Lo que muestran como resultado (traducciones, lo copiado…): eso no se toca, puede tener tus emojis. */
