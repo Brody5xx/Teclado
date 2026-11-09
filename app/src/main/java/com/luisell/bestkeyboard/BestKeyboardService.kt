@@ -593,15 +593,15 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         fxPanel = fx
 
         // 🖼 Elegir el texto de la captura
-        val sp = ShotPanel(this)
-        sp.visibility = View.GONE
-        sp.actions = object : ShotPanel.Actions {
+        val shp = ShotPanel(this)
+        shp.visibility = View.GONE
+        shp.actions = object : ShotPanel.Actions {
             override fun onShotTranslate(text: String) { showMode(0); startTr(text, false, true) }
             override fun onShotBack() { showMode(0); closeInfo() }
             override fun onShotFeedback() = onKeyFeedback()
         }
-        box.addView(sp, FrameLayout.LayoutParams(-1, -1))
-        shotPanel = sp
+        box.addView(shp, FrameLayout.LayoutParams(-1, -1))
+        shotPanel = shp
 
         // ✍️ Chino a mano
         val hp = HandPanel(this)
@@ -919,7 +919,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         shotPanel?.let { sp ->
             val was = sp.visibility == View.VISIBLE
             sp.visibility = if (m == 19) View.VISIBLE else View.GONE
-            if (m == 19) pendingShot?.let { sp.open(it) { t -> cleanOcr(t) } } else if (was) sp.close()
+            if (m == 19) { pendingShot?.let { sp.open(it) { t -> cleanOcr(t) } } } else if (was) sp.close()
         }
         gifPanel?.let { gp ->
             val was = gp.visibility == View.VISIBLE
