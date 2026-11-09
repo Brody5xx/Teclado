@@ -1456,11 +1456,11 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
-        "15.0.0" to tr("•  Barra de arriba más ordenada: 22 opciones parecidas ahora viven juntas en 11 grupos, y la lista es mucho más corta. Toca un grupo y salen sus opciones en botones grandes (la que está prendida se ve de color).\n" +
+        "15.0.0" to tr("•  Barra de arriba más ordenada: 32 opciones parecidas ahora viven juntas en 11 grupos (de 53 botones a 31), y la lista es mucho más corta. Toca un grupo y salen sus opciones en botones grandes (la que está prendida se ve de color).\n" +
             "•  Los grupos: Traducir · Calcular (calculadora, divisas, convertidor) · IA para escribir (ortografía, revisar, más formal, terminar la frase, respuestas) · Forma del teclado (tamaño, una mano, flotante, guantes) · Teclados especiales (PC, código, IP/MAC) · Frases (y mensajes rápidos) · Estilo (y sonido del video) · Mi jornada (semana y checklist) · Tickets (libreta y notas → ticket) · Lugares (sitios y recordar al llegar) · Pendientes (y calendario).\n" +
             "•  «Pegar limpio» ahora es el botón ✓ dentro del portapapeles.\n" +
             "•  Si tenías una de esas opciones en la barra, en su lugar quedó su grupo. No se perdió nada.",
-            "•  Tidier top bar: 22 similar options now live together in 11 groups, and the list is much shorter. Tap a group and its options appear as big buttons (the one that's on is colored).\n" +
+            "•  Tidier top bar: 32 similar options now live together in 11 groups (from 53 buttons to 31), and the list is much shorter. Tap a group and its options appear as big buttons (the one that's on is colored).\n" +
             "•  The groups: Translate · Calculate (calculator, currency, converter) · AI writing (spelling, review, more formal, finish the sentence, replies) · Keyboard shape (size, one hand, floating, gloves) · Special keyboards (PC, code, IP/MAC) · Phrases (and quick messages) · Style (and video sound) · My workday (week and checklist) · Tickets (notebook and notes → ticket) · Places (sites and remind on arrival) · To-dos (and calendar).\n" +
             "•  «Clean paste» is now the ✓ button inside the clipboard.\n" +
             "•  If you had one of those options on the bar, its group took its place. Nothing was lost."),
