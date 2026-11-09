@@ -47,14 +47,13 @@ object Tools {
         Info(KeyboardView.TOOL_VAULT, Icons.LOCK, "Datos", "Data", true),
         Info(KeyboardView.TOOL_CODE, Icons.CODE, "Modo código", "Code mode", false),
         Info(KeyboardView.TOOL_PHRASES, Icons.BUBBLE, "Frases", "Phrases", true),
-        Info(KeyboardView.TOOL_READ, Icons.READ, "Traducir mensaje", "Translate message", true),
+        Info(KeyboardView.TOOL_READ, Icons.READ, "Traducir mensaje o captura", "Translate message or screenshot", true),
         Info(KeyboardView.TOOL_ONEHAND, Icons.ONEHAND, "Una mano", "One hand", false),
         Info(KeyboardView.TOOL_CALC, Icons.CALC, "Calculadora", "Calculator", true),
         Info(KeyboardView.TOOL_FX, Icons.MONEY, "Divisas", "Currency", true),
         Info(KeyboardView.TOOL_ZHLAYOUT, Icons.KEYBOARD, "Teclado chino", "Chinese keyboard", false),
         Info(KeyboardView.TOOL_ANYWHERE, Icons.KEY, "Teclado en todas partes", "Keyboard anywhere", false),
         Info(KeyboardView.TOOL_PINYIN, Icons.TEXTSIZE, "Ver pinyin (chino)", "See pinyin (Chinese)", true),
-        Info(KeyboardView.TOOL_SCREEN_TR, Icons.IMAGE, "Traducir captura de pantalla", "Translate screenshot", true),
         Info(KeyboardView.TOOL_CALENDAR, Icons.CALENDAR, "Agregar al calendario", "Add to calendar", true),
         Info(KeyboardView.TOOL_CLEAN, Icons.CHECK, "Pegar limpio", "Clean paste", true),
         Info(KeyboardView.TOOL_TICKET, Icons.TICKET, "Notas → Ticket", "Notes → Ticket", true),
@@ -137,6 +136,10 @@ object Tools {
                 listOf(KeyboardView.TOOL_MORE, KeyboardView.TOOL_VOICE, KeyboardView.TOOL_HIDE)).toMutableList()
             more = parse(prefs.getString(Prefs.MORE_TOOLS, null)).toMutableList()
         }
+        // 🌐 «Traducir captura» ahora está dentro de «Traducir mensaje o captura»: si estaba en la barra, queda ese en su lugar
+        val si = bar.indexOf(KeyboardView.TOOL_SCREEN_TR)
+        if (si >= 0) { if (KeyboardView.TOOL_READ !in bar) { more.remove(KeyboardView.TOOL_READ); bar[si] = KeyboardView.TOOL_READ } else bar.removeAt(si) }
+        more.remove(KeyboardView.TOOL_SCREEN_TR)
         more.removeAll { it in bar }
         if (FIXED !in bar) { more.remove(FIXED); bar.add(FIXED) }
         for (t in ALL) if (t.tool !in bar && t.tool !in more) more.add(t.tool)

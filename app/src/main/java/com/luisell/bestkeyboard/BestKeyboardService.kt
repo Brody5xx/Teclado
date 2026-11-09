@@ -2593,25 +2593,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }.start()
     }
 
-    /** 🖼 Traduce lo que hay en tu última captura de pantalla (lee el texto con la cámara del teléfono, sin internet). */
-    private fun translateScreen() {
+    /** 🖼 Lee el texto de una captura (con el teléfono, sin internet) y lo traduce. */
+    private fun translateScreen() = readMessage()
+
+    private fun ocrShot(shot: Screenshots.Shot) {
         val bar = infoBar ?: return
-        if (!Screenshots.hasPermission(this)) {
-            bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("Para leer tus capturas, permite «Fotos» en la app Best Keyboard (Inicio › Voz, cámara y capturas).",
-                "To read your screenshots, allow «Photos» in the Best Keyboard app (Start › Voice, camera and screenshots)."), listOf(L.t("Entendido", "Got it") to { closeInfo() }))
-            return
-        }
         bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("Leyendo tu última captura…", "Reading your latest screenshot…"), emptyList())
-        Thread {
-            val shot = Screenshots.findRecent(this)
-            handler.post {
-                if (shot == null) {
-                    bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("Toma una captura de pantalla de lo que quieres traducir y vuelve a tocar este botón.",
-                        "Take a screenshot of what you want to translate and tap this button again."), listOf(L.t("Entendido", "Got it") to { closeInfo() }))
-                    return@post
-                }
+        run {
+            run {
                 val img = try { com.google.mlkit.vision.common.InputImage.fromFilePath(this, shot.uri) } catch (_: Exception) { null }
-                if (img == null) { bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No se pudo abrir la captura.", "Couldn't open the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() })); return@post }
+                if (img == null) { bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No se pudo abrir la captura.", "Couldn't open the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() })); return }
                 com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions.Builder().build())
                     .process(img)
                     .addOnSuccessListener { res ->
@@ -2620,12 +2611,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                             bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No encontré texto en la captura.", "I didn't find text in the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() }))
                             return@addOnSuccessListener
                         }
-                        screenText = text
-                        detectLang(text) { found -> screenFound = found; runScreenTr() }
+                        startTr(text, false, true)
                     }
                     .addOnFailureListener { bar.show(L.t("Traducir captura", "Translate screenshot"), L.t("No se pudo leer la captura.", "Couldn't read the screenshot."), listOf(L.t("Cerrar", "Close") to { closeInfo() })) }
             }
-        }.start()
+        }
     }
 
     /** El texto leído de la captura y el idioma que se detectó en él. */
@@ -2662,13 +2652,20 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         t.prepare({ t.translate(text.take(3000), { out -> handler.post {
             if (readTrans !== t) return@post
             kv?.flashAi()
-            bar.show(head, out, listOf(
-                L.t("Copiar", "Copy") to { copyText(out) },
-                L.t("Escribir", "Type it") to { insertText(out); closeInfo() },
-                L.t("Ver original", "See original") to { bar.show(head, text, listOf(L.t("Copiar", "Copy") to { copyText(text) }, L.t("Volver", "Back") to { runScreenTr() }, L.t("Cerrar", "Close") to { closeInfo() })); langs() },
-                L.t("Cerrar", "Close") to { closeInfo() },
-            ))
+            val btns = ArrayList<Pair<String, () -> Unit>>()
+            if (trFromSel) btns.add(L.t("Reemplazar", "Replace") to { currentInputConnection?.commitText(out, 1); closeInfo() })
+            btns.add(L.t("Copiar", "Copy") to { copyText(out) })
+            if (!trFromSel) btns.add(L.t("Escribir", "Type it") to { insertText(out); closeInfo() })
+            btns.add(L.t("Ver original", "See original") to { bar.show(head, text, listOf(L.t("Copiar", "Copy") to { copyText(text) }, L.t("Volver", "Back") to { runScreenTr() }, L.t("Cerrar", "Close") to { closeInfo() })); langs() })
+            // Cambiar entre lo copiado y la captura
+            val shot = altShot
+            val clip = altClip
+            if (!trFromSel && trFromShot && clip != null) btns.add(L.t("Usar lo copiado", "Use copied text") to { startTr(clip, false) })
+            if (!trFromSel && !trFromShot && shot != null) btns.add(L.t("Usar captura", "Use screenshot") to { ocrShot(shot) })
+            btns.add(L.t("Cerrar", "Close") to { closeInfo() })
+            bar.show(head, out, btns)
             langs()
+            bar.shine() // ✨ el destello sobre la traducción
         } }, fail) }, fail)
     }
 
@@ -3306,7 +3303,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_ZHLAYOUT -> pickZhLayout()
             KeyboardView.TOOL_ANYWHERE -> toggleAnywhere()
             KeyboardView.TOOL_PINYIN -> showPinyin()
-            KeyboardView.TOOL_SCREEN_TR -> translateScreen()
+            KeyboardView.TOOL_SCREEN_TR -> readMessage()
             KeyboardView.TOOL_CALENDAR -> addToCalendar()
             KeyboardView.TOOL_CLEAN -> cleanPaste()
             KeyboardView.TOOL_GIF -> showMode(9)
@@ -3921,59 +3918,59 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             ))
     }
 
-    /** Traduce lo que seleccionaste o, si no hay nada, el último mensaje que copiaste. */
+    /**
+     * 🌐 «Traducir»: una sola opción para todo. Traduce lo que seleccionaste; si no hay nada,
+     * lo más nuevo entre lo que copiaste y tu última captura de pantalla.
+     */
     private fun readMessage() {
         showMode(0)
+        val bar = infoBar ?: return
         val ic = currentInputConnection
         val sel = try { ic?.getSelectedText(0)?.toString()?.trim() } catch (_: Exception) { null }
-        val fromSel = !sel.isNullOrEmpty()
-        val text = if (fromSel) sel else try {
-            clipboard?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
-        } catch (_: Exception) { null }
-        val bar = infoBar ?: return
-        if (text.isNullOrEmpty()) {
-            bar.show(L.t("Traducir mensaje", "Translate message"), L.t(
-                "Mantén presionado el mensaje que te llegó y toca Copiar. Después vuelve a tocar este botón.\n\nTambién puedes seleccionar texto aquí y tocarlo.",
-                "Long-press the message you got and tap Copy. Then tap this button again.\n\nYou can also select text here and tap it."),
-                listOf(L.t("Entendido", "Got it") to { closeInfo() }))
-            return
-        }
-        // Chino → tu idioma (el de las pantallas); si no, inglés ⇄ español como siempre
-        val zh = Translation.isChinese(text)
-        val src = if (zh) "zh" else if (looksEnglish(text)) "en" else "es"
-        val dst = if (zh) Langs.pair(prefs).first else if (src == "es") "en" else "es"
-        val heading = Translation.name(src) + " → " + Translation.name(dst)
-        bar.show(heading, L.t("Traduciendo…", "Translating…"), emptyList())
-        readTrans?.close()
-        val t = Translation(src, dst)
-        readTrans = t
-        val fail: (String) -> Unit = {
-            handler.post {
-                if (readTrans === t) bar.show(heading,
-                    L.t("No se pudo traducir. La primera vez necesita internet para bajar el idioma.", "Couldn't translate. The first time it needs internet to download the language."),
-                    listOf(L.t("Cerrar", "Close") to { closeInfo() }))
+        if (!sel.isNullOrEmpty()) { altClip = null; altShot = null; startTr(sel, true); return }
+        var clip: String? = null
+        var clipMs = 0L
+        try {
+            val pc = clipboard?.primaryClip
+            clip = pc?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()?.takeIf { it.isNotEmpty() }
+            if (Build.VERSION.SDK_INT >= 26) {
+                val ts = pc?.description?.timestamp ?: 0L
+                // Algunos teléfonos lo dan desde que se prendió el teléfono: se pasa a hora normal
+                clipMs = if (ts in 1..999_999_999_999L) System.currentTimeMillis() - (android.os.SystemClock.elapsedRealtime() - ts) else ts
             }
-        }
-        t.prepare({
-            t.translate(text, { out ->
-                handler.post {
-                    if (readTrans !== t) return@post
-                    kv?.flashAi() // ✨ ya está la traducción
-                    val buttons = ArrayList<Pair<String, () -> Unit>>()
-                    if (fromSel) buttons.add(L.t("Reemplazar", "Replace") to {
-                        currentInputConnection?.commitText(out, 1)
-                        closeInfo()
-                    })
-                    buttons.add(L.t("Copiar", "Copy") to {
-                        try { clipboard?.setPrimaryClip(ClipData.newPlainText("Traducción", out)) } catch (_: Exception) { }
-                        Toast.makeText(this, Emo.strip(L.t("Copiado", "Copied")), Toast.LENGTH_SHORT).show()
-                    })
-                    if (!fromSel) buttons.add(L.t("Escribir", "Type it") to { insertText(out); closeInfo() })
-                    buttons.add(L.t("Cerrar", "Close") to { closeInfo() })
-                    bar.show(heading, out, buttons)
+        } catch (_: Exception) { }
+        bar.show(L.t("Traducir", "Translate"), L.t("Buscando lo que copiaste o tu captura…", "Looking for what you copied or your screenshot…"), emptyList())
+        Thread {
+            val shot = Screenshots.findRecent(this)
+            handler.post {
+                val shotMs = (shot?.added ?: 0L) * 1000L
+                altClip = clip; altShot = shot
+                val useShot = shot != null && (clip == null || (clipMs > 0L && shotMs > clipMs))
+                when {
+                    useShot -> ocrShot(shot!!)
+                    clip != null -> startTr(clip, false)
+                    else -> bar.show(L.t("Traducir", "Translate"),
+                        L.t("Copia el mensaje que te llegó (mantenlo presionado › Copiar) o toma una captura de pantalla, y vuelve a tocar este botón.\n\nTambién puedes seleccionar texto aquí y tocarlo.",
+                            "Copy the message you got (long-press it › Copy) or take a screenshot, then tap this button again.\n\nYou can also select text here and tap it.") +
+                            (if (!Screenshots.hasPermission(this)) "\n\n" + L.t("Para las capturas, permite «Fotos» en la app Best Keyboard (Inicio › Voz, cámara y capturas).",
+                                "For screenshots, allow «Photos» in the Best Keyboard app (Start › Voice, camera and screenshots).") else ""),
+                        listOf(L.t("Entendido", "Got it") to { closeInfo() }))
                 }
-            }, fail)
-        }, fail)
+            }
+        }.start()
+    }
+
+    /** Lo otro que se puede traducir (para el botón «Usar captura» / «Usar lo copiado»). */
+    private var altClip: String? = null
+    private var altShot: Screenshots.Shot? = null
+    /** true = vino de la captura; false = de lo copiado o seleccionado. */
+    private var trFromShot = false
+    private var trFromSel = false
+
+    /** Empieza a traducir [text]: adivina el idioma y lo muestra con los idiomas para tocar. */
+    private fun startTr(text: String, fromSel: Boolean, fromShot: Boolean = false) {
+        screenText = text.take(3000); trFromSel = fromSel; trFromShot = fromShot
+        detectLang(screenText) { found -> screenFound = found; runScreenTr() }
     }
 
     // ---------------------------------------------------------------- IA para el trabajo

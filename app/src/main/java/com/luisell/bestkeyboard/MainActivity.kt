@@ -793,8 +793,8 @@ class MainActivity : UiActivity() {
             text(tr("Pinyin: las 26 letras. 9 teclas (九宫格): ABC, DEF… como los teléfonos chinos, para escribir con una mano. Trazos (笔画): 一 丨 丿 丶 乛. En el teclado chino los cambias con la tecla de abajo (九键 → 笔画 → 拼音).",
                 "Pinyin: the 26 letters. 9 keys (九宫格): ABC, DEF… like Chinese phones, to type with one hand. Strokes (笔画): 一 丨 丿 丶 乛. On the Chinese keyboard switch with the key at the bottom (九键 → 笔画 → 拼音)."), 12f, faded = true)
         }
-        text(tr("El traductor también tiene chino: copia un mensaje en chino y toca «Traducir mensaje», o en la barra de traducir toca el nombre del idioma para cambiarlo (Inglés → Chino → …).",
-            "The translator also has Chinese: copy a message in Chinese and tap «Translate message», or in the translate bar tap the language name to change it (English → Chinese → …)."), 12f, faded = true)
+        text(tr("El traductor también tiene chino: copia un mensaje en chino (o toma una captura) y toca «Traducir mensaje o captura», o en la barra de traducir toca el nombre del idioma para cambiarlo (Inglés → Chino → …).",
+            "The translator also has Chinese: copy a message in Chinese (or take a screenshot) and tap «Translate message or screenshot», or in the translate bar tap the language name to change it (English → Chinese → …)."), 12f, faded = true)
 
         // ---- ¿Para qué lo usas?
         card(tr("Para qué lo usas", "What you use it for"), Icons.BRIEFCASE, keywords = "perfil trabajo paquete tickets profile work pack")
@@ -1456,6 +1456,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "14.2.0" to tr("•  «Traducir mensaje» y «Traducir captura» ahora son uno solo: «Traducir mensaje o captura». Traduce lo que seleccionaste; si no, lo más nuevo entre lo que copiaste y tu última captura. Con «Usar captura» o «Usar lo copiado» cambias entre los dos.\n" +
+            "•  Los idiomas se tocan para cambiarlos también al traducir mensajes, y ⇄ da la vuelta.\n" +
+            "•  Destello nuevo: cuando sale la traducción, una luz cruza la tarjeta y brillan estrellitas del color de tu tema.",
+            "•  «Translate message» and «Translate screenshot» are now one: «Translate message or screenshot». It translates what you selected; if nothing, the newest of what you copied and your latest screenshot. «Use screenshot» or «Use copied text» switches between them.\n" +
+            "•  Tap the languages to change them when translating messages too, and ⇄ spins around.\n" +
+            "•  New sparkle: when the translation appears, a light sweeps across the card and little stars shine in your theme color."),
         "14.1.0" to tr("•  Traducir captura: ahora eliges los idiomas. Toca el idioma de la izquierda para decir en qué está la captura (o «Detectar solo») y el de la derecha para elegir a cuál se traduce. Con ⇄ los volteas. Se acuerda de tu elección.\n" +
             "•  Detecta mejor el idioma (también portugués, francés, italiano y alemán) y ya no salen letras raras como «O O O» de los íconos.",
             "•  Translate screenshot: now you choose the languages. Tap the left language to say what the screenshot is in (or «Detect») and the right one to choose what to translate into. ⇄ swaps them. It remembers your choice.\n" +
