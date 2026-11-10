@@ -79,9 +79,44 @@ object SiteStore {
         o.getDouble("la") to o.getDouble("lo")
     } catch (_: Exception) { null }
 
+    private fun homeJson(p: SharedPreferences): JSONObject? = try { JSONObject(p.getString(Prefs.HOME_PLACE, "") ?: "").takeIf { it.has("la") } } catch (_: Exception) { null }
+
+    /** Guarda tu casa. Se queda su distancia; su forma solo si el punto no se movió lejos. */
     fun setHome(p: SharedPreferences, lat: Double?, lon: Double?, address: String = "") {
-        if (lat == null || lon == null) p.edit().remove(Prefs.HOME_PLACE).apply()
-        else p.edit().putString(Prefs.HOME_PLACE, JSONObject().put("la", lat).put("lo", lon).put("a", address).toString()).apply()
+        if (lat == null || lon == null) { p.edit().remove(Prefs.HOME_PLACE).apply(); return }
+        val old = homeJson(p)
+        val o = JSONObject().put("la", lat).put("lo", lon).put("a", address)
+        if (old != null) {
+            if (old.optInt("rd", 0) > 0) o.put("rd", old.optInt("rd"))
+            val d = FloatArray(1)
+            android.location.Location.distanceBetween(old.optDouble("la"), old.optDouble("lo"), lat, lon, d)
+            if (d[0] <= 150f && old.has("sh")) o.put("sh", old.getJSONArray("sh"))
+        }
+        p.edit().putString(Prefs.HOME_PLACE, o.toString()).apply()
+    }
+
+    /** 📏 La distancia de detección de tu casa (150 m si no le pusiste una). */
+    fun homeRadius(p: SharedPreferences): Int = homeJson(p)?.optInt("rd", 0)?.takeIf { it > 0 } ?: 150
+
+    fun setHomeRadius(p: SharedPreferences, r: Int) {
+        val o = homeJson(p) ?: return
+        if (r > 0) o.put("rd", r) else o.remove("rd")
+        p.edit().putString(Prefs.HOME_PLACE, o.toString()).apply()
+    }
+
+    /** 🔷 La forma de tu casa (vacía = el círculo). */
+    fun setHomeShape(p: SharedPreferences, shape: List<DoubleArray>) {
+        val o = homeJson(p) ?: return
+        if (shape.isEmpty()) o.remove("sh") else o.put("sh", JSONArray().apply { for (pt in shape) put(JSONArray().put(pt[0]).put(pt[1])) })
+        p.edit().putString(Prefs.HOME_PLACE, o.toString()).apply()
+    }
+
+    /** Tu casa como un sitio (para el mapa, la forma y la distancia). */
+    fun homeSite(p: SharedPreferences): Site? {
+        val o = homeJson(p) ?: return null
+        val sh = o.optJSONArray("sh")
+        return Site(L.t("Casa", "Home"), o.optString("a", ""), o.optDouble("la"), o.optDouble("lo"), kind = "home", radius = homeRadius(p),
+            shape = if (sh == null) emptyList() else (0 until sh.length()).map { i -> sh.getJSONArray(i).let { doubleArrayOf(it.getDouble(0), it.getDouble(1)) } })
     }
 
     /** La dirección de tu casa (solo se ve en Mis sitios, nunca en tickets ni en el PDF). */

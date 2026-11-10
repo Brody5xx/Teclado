@@ -104,10 +104,10 @@ object AutoSites {
             if (fences.size >= 94) break
         }
         // 🏠 Tu casa: para anotar solo «Llegué a casa» con la hora real
-        SiteStore.home(p)?.let { (la, lo) ->
+        SiteStore.homeSite(p)?.let { hs ->
             fences.add(Geofence.Builder()
                 .setRequestId(HOME_ID)
-                .setCircularRegion(la, lo, 150f)
+                .setCircularRegion(hs.lat, hs.lon, Geo.fenceRadius(p, hs))
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
                 .setLoiteringDelay(2 * 60 * 1000)
@@ -290,7 +290,7 @@ object AutoSites {
 
     /** ¿Lo que avisó el teléfono es verdad? Mira la lectura fina (o la del aviso, si es buena). */
     private fun confirmed(ctx: Context, transition: Int, lat: Double, lon: Double, radius: Float,
-                          fix: android.location.Location?, trig: android.location.Location?, name: String): Boolean {
+                          fix: android.location.Location?, trig: android.location.Location?, name: String, site: SiteStore.Site? = null): Boolean {
         // 📶 Las redes Wi-Fi del sitio se ven: estás adentro (el GPS adentro de edificios falla, el Wi-Fi no)
         if (name.isNotEmpty() && SiteStore.find(Prefs.get(ctx), name) != null) {
             if (SiteLearn.wifiMatch(ctx, name) == true) {
@@ -304,11 +304,11 @@ object AutoSites {
             else -> return true // no se puede revisar: se hace como antes
         }
         // 🔷 Si el sitio tiene su forma dibujada, se usa la forma (más exacta que el círculo)
-        val shaped = SiteStore.find(Prefs.get(ctx), name)?.takeIf { it.hasShape }
+        val shaped = (site ?: SiteStore.find(Prefs.get(ctx), name))?.takeIf { it.hasShape }
         if (shaped != null) {
             val w = Geo.where(Prefs.get(ctx), shaped, loc.latitude, loc.longitude, loc.accuracy)
             val ok = if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) w != true else w != false
-            if (!ok) GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, name)
+            if (!ok) GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, site?.name ?: name)
             return ok
         }
         val d = FloatArray(1)
@@ -319,7 +319,7 @@ object AutoSites {
             // Salir: si la lectura dice claramente que sigues adentro, era un brinco del GPS
             else -> d[0] + loc.accuracy >= radius * 0.9f
         }
-        if (!ok) GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, name)
+        if (!ok) GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, site?.name ?: name)
         return ok
     }
 
@@ -331,13 +331,18 @@ object AutoSites {
             val gid = g.requestId
             // 🎯 Te acercas a un sitio: GPS fino unos minutos
             if (gid.startsWith(NEAR_ID)) { if (tr == Geofence.GEOFENCE_TRANSITION_ENTER) PreciseTracker.start(ctx, "near"); continue }
+            val siteObj: SiteStore.Site? = when {
+                gid == HOME_ID -> SiteStore.homeSite(p)
+                gid.startsWith(NEW_ID) -> null
+                else -> SiteStore.find(p, gid.removePrefix(SITE_ID))
+            }
             val center: Triple<Double, Double, Float>? = when {
-                gid == HOME_ID -> SiteStore.home(p)?.let { Triple(it.first, it.second, 150f) }
+                siteObj != null -> Triple(siteObj.lat, siteObj.lon, if (siteObj.hasShape) Geo.fenceRadius(p, siteObj) else SiteStore.radiusOf(p, siteObj).toFloat())
                 gid.startsWith(NEW_ID) -> SiteStore.getNew(p)?.let { Triple(it.lat, it.lon, SiteStore.defaultRadius(p).toFloat()) }
-                else -> SiteStore.find(p, gid.removePrefix(SITE_ID))?.let { Triple(it.lat, it.lon, SiteStore.radiusOf(p, it).toFloat()) }
+                else -> null
             }
             if (center != null && !confirmed(ctx, tr, center.first, center.second, center.third, fix, trig,
-                    if (gid == HOME_ID) L.t("Casa", "Home") else gid.removePrefix(SITE_ID).removePrefix(NEW_ID))) continue
+                    if (gid == HOME_ID) "" else gid.removePrefix(SITE_ID).removePrefix(NEW_ID), siteObj)) continue
             val id = gid
             if (id == HOME_ID) {
                 when (tr) {

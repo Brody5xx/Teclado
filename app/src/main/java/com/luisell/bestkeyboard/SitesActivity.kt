@@ -258,7 +258,23 @@ class SitesActivity : UiActivity() {
             choiceDialog(tr("Guardar el parqueo de la camioneta", "Save the truck parking lot"), opts.map { it.first to null }) { w -> opts.getOrNull(w)?.second?.invoke() }
             return
         }
+        val all = SiteStore.all(prefs).filter { it.isStart }
+        // Con varios parqueos: primero eliges cuál
+        if (all.size > 1) {
+            choiceDialog(tr("¿Cuál parqueo?", "Which parking lot?"), all.map { it.name to it.address.ifEmpty { null } } +
+                listOf(tr("Agregar otro parqueo", "Add another parking lot") to null)) { w ->
+                if (w < all.size) parkOptions(all[w]) else saveHere(start = true)
+            }
+            return
+        }
+        parkOptions(pk)
+    }
+
+    /** Las opciones de un parqueo (sin pago por hora: ahí no te pagan diferente). */
+    private fun parkOptions(pk: SiteStore.Site) {
         val opts = listOf(
+            tr("Distancia de detección (en el mapa)", "Detection distance (on the map)") to { askRadius(pk) },
+            (if (pk.hasShape) tr("Cambiar la forma del sitio", "Change the site's shape") else tr("Dibujar la forma del sitio", "Draw the site's shape")) to { drawShape(pk) },
             tr("Cambiar la dirección", "Change the address") to { editSiteAddress(pk) },
             tr("Usar donde estoy ahora", "Use where I am now") to { moveSiteHere(pk) },
             tr("Agregar otro parqueo", "Add another parking lot") to { saveHere(start = true) },
@@ -295,8 +311,15 @@ class SitesActivity : UiActivity() {
     }
 
     private fun homeTap() {
-        if (SiteStore.home(prefs) != null) {
+        val hs = SiteStore.homeSite(prefs)
+        if (hs != null) {
             val opts = listOf(
+                tr("Distancia de detección (en el mapa)", "Detection distance (on the map)") to {
+                    askRadius(hs) { r -> SiteStore.setHomeRadius(prefs, r); paintAuto() }
+                },
+                (if (hs.hasShape) tr("Cambiar la forma del sitio", "Change the site's shape") else tr("Dibujar la forma del sitio", "Draw the site's shape")) to {
+                    drawShape(hs) { sh -> SiteStore.setHomeShape(prefs, sh); paintAuto() }
+                },
                 tr("Cambiar la dirección", "Change the address") to {
                     askAddress(tr("Dirección de tu casa", "Your home address"), SiteStore.homeAddress(prefs)) { a, la, lo ->
                         if (la == null || lo == null) { SiteStore.setHomeAddress(prefs, a); paintAuto()
@@ -361,7 +384,9 @@ class SitesActivity : UiActivity() {
         if (::homeAddr.isInitialized) {
             val a = SiteStore.homeAddress(prefs)
             homeAddr.text = if (home == null) tr("Puedes guardarla estando en tu casa o escribiendo la dirección.", "You can save it while at home or by typing the address.")
-                else tr("Dirección: ", "Address: ") + a.ifEmpty { tr("buscando…", "looking it up…") } + "\n" + tr("Solo se ve aquí, en tu teléfono. En los tickets solo dice «Casa».", "Only shown here, on your phone. Tickets only say «Home».")
+                else tr("Dirección: ", "Address: ") + a.ifEmpty { tr("buscando…", "looking it up…") } +
+                    SiteStore.homeSite(prefs)?.let { h -> "  ·  " + if (h.hasShape) tr("forma de ${h.shape.size} esquinas", "${h.shape.size}-corner shape") else "${h.radius} m" }.orEmpty() +
+                    "\n" + tr("Solo se ve aquí, en tu teléfono. En los tickets solo dice «Casa».", "Only shown here, on your phone. Tickets only say «Home».")
             // Las casas guardadas antes no tenían dirección: se busca una vez
             if (home != null && a.isEmpty() && !lookingHome) {
                 lookingHome = true
@@ -378,7 +403,9 @@ class SitesActivity : UiActivity() {
             val all = SiteStore.all(prefs).filter { it.isStart }
             parkAddr.text = if (all.isEmpty()) tr("El parqueo es donde recoges y dejas la camioneta: cuando sales de ahí empieza tu día, y cuando vuelves y te quedas, termina.",
                 "The parking lot is where you pick up and drop off the truck: when you leave it your day starts, and when you come back and stay, it ends.")
-                else all.joinToString("\n") { tr("Dirección: ", "Address: ") + it.address.ifEmpty { tr("(sin dirección)", "(no address)") } + if (all.size > 1) "  (" + it.name + ")" else "" }
+                else all.joinToString("\n") { tr("Dirección: ", "Address: ") + it.address.ifEmpty { tr("(sin dirección)", "(no address)") } +
+                    "  ·  " + (if (it.hasShape) tr("forma de ${it.shape.size} esquinas", "${it.shape.size}-corner shape") else "${SiteStore.radiusOf(prefs, it)} m") +
+                    if (all.size > 1) "  (" + it.name + ")" else "" }
         }
         val on = AutoSites.isOn(this)
         val ready = AutoSites.ready(this)
@@ -444,7 +471,8 @@ class SitesActivity : UiActivity() {
         AutoSites.register(this)
         if (::autoBtn.isInitialized) paintAuto() // 🛻 la dirección del parqueo
         list.removeAllViews()
-        val sites = SiteStore.all(prefs)
+        // 🛻 El parqueo no sale aquí: se ve (y se cambia) debajo de su botón, arriba
+        val sites = SiteStore.all(prefs).filter { !it.isStart }
         if (sites.isEmpty()) {
             val t = TextView(this)
             t.text = tr("Todavía no tienes sitios. Cuando estés en un trabajo, toca «Guardar donde estoy ahora».",
@@ -506,7 +534,7 @@ class SitesActivity : UiActivity() {
      * 🔷 Dibuja la forma real del sitio tocando sus esquinas en el mapa (por ejemplo, el edificio y su parqueo).
      * Así una calle o un parqueo de enfrente no cuentan como «llegué».
      */
-    private fun drawShape(s: SiteStore.Site) {
+    private fun drawShape(s: SiteStore.Site, save: ((List<DoubleArray>) -> Unit)? = null) {
         if (s.lat == 0.0 && s.lon == 0.0) { toast("Este lugar no tiene GPS. Guárdalo estando ahí.", "This place has no GPS. Save it while you're there."); return }
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
         val map = MapPreview(this, s.lat, s.lon)
@@ -543,16 +571,21 @@ class SitesActivity : UiActivity() {
             .setView(box)
             .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
                 if (map.shape.size < 3) { toast("Faltan esquinas: toca al menos 3.", "Not enough corners: tap at least 3."); return@setPositiveButton }
-                SiteStore.setShape(prefs, s.name, map.shape); AutoSites.register(this); refresh()
+                if (save != null) save(map.shape) else SiteStore.setShape(prefs, s.name, map.shape)
+                AutoSites.register(this); refresh()
                 toast("Forma guardada: ahora solo cuenta si estás adentro de ella.", "Shape saved: now it only counts if you're inside it.")
             }
-            .setNeutralButton(tr("Borrar forma", "Delete shape")) { _, _ -> SiteStore.setShape(prefs, s.name, emptyList()); AutoSites.register(this); refresh() }
+            .setNeutralButton(tr("Borrar forma", "Delete shape")) { _, _ ->
+                if (save != null) save(emptyList()) else SiteStore.setShape(prefs, s.name, emptyList())
+                AutoSites.register(this); refresh()
+            }
             .setNegativeButton(tr("Cancelar", "Cancel"), null)
             .show()
     }
 
     /** 📏 La distancia de un lugar, viendo el círculo en el mapa (como Samsung Rutinas). */
-    private fun askRadius(s: SiteStore.Site) {
+    /** [save] = cómo guardar (null = la de un sitio normal; la casa usa la suya). */
+    private fun askRadius(s: SiteStore.Site, save: ((Int) -> Unit)? = null) {
         if (s.lat == 0.0 && s.lon == 0.0) { toast("Este lugar no tiene GPS. Guárdalo estando ahí.", "This place has no GPS. Save it while you're there."); return }
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
         val map = MapPreview(this, s.lat, s.lon)
@@ -580,14 +613,18 @@ class SitesActivity : UiActivity() {
         box.addView(bar, LinearLayout.LayoutParams(-1, -2))
         show(map.radius)
         AlertDialog.Builder(this)
-            .setTitle("📏 " + s.name)
+            .setTitle(s.name)
             .setMessage(tr("Mueve la barra: el círculo es el área donde cuenta que llegaste.", "Move the bar: the circle is the area where it counts as arrived."))
             .setView(box)
             .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
-                SiteStore.setRadius(prefs, s.name, steps[bar.progress]); AutoSites.register(this); refresh()
-                toast("📏 Distancia guardada.", "📏 Distance saved.")
+                if (save != null) save(steps[bar.progress]) else SiteStore.setRadius(prefs, s.name, steps[bar.progress])
+                AutoSites.register(this); refresh()
+                toast("Distancia guardada.", "Distance saved.")
             }
-            .setNeutralButton(tr("Usar la de todos", "Use default")) { _, _ -> SiteStore.setRadius(prefs, s.name, 0); AutoSites.register(this); refresh() }
+            .setNeutralButton(if (save != null) tr("Usar 150 m", "Use 150 m") else tr("Usar la de todos", "Use default")) { _, _ ->
+                if (save != null) save(0) else SiteStore.setRadius(prefs, s.name, 0)
+                AutoSites.register(this); refresh()
+            }
             .setNegativeButton(tr("Cancelar", "Cancel"), null)
             .show()
     }

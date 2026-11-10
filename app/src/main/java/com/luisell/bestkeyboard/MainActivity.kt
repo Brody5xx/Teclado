@@ -1456,6 +1456,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.5.1" to tr("•  Mis sitios: la casa y el parqueo ya no salen en «Sitios guardados»; se ven solo debajo de su botón, con su dirección y su distancia o forma.\n" +
+            "•  Tu casa ahora tiene «Distancia de detección» y «Dibujar la forma del sitio», como los otros sitios.\n" +
+            "•  El parqueo ya no tiene «Pago por hora» (ahí no te pagan diferente).",
+            "•  My sites: home and the parking lot no longer show in «Saved sites»; they only show under their button, with their address and distance or shape.\n" +
+            "•  Your home now has «Detection distance» and «Draw the site's shape», like the other sites.\n" +
+            "•  The parking lot no longer has «Hourly pay» (you aren't paid differently there)."),
         "15.5.0" to tr("•  Mis sitios: debajo de «Casa guardada» y de «Parqueo guardado» ahora se ve su dirección.\n" +
             "•  Toca cualquiera de los dos para cambiar la dirección (escribiéndola), usar donde estás ahora o quitarlo, sin tener que borrar y volver a guardar.\n" +
             "•  La casa y el parqueo ya se pueden guardar escribiendo la dirección, sin estar ahí.\n" +
