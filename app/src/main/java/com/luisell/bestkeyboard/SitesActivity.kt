@@ -65,6 +65,7 @@ class SitesActivity : UiActivity() {
         autoBtn = button("") { toggleAuto() }
         autoHelp = text("", 12f, faded = true)
         homeBtn = button("") { homeTap() }
+        homeAddr = text("", 12f, faded = true)
         segmented(tr("En casa, esperar antes de cerrar el día", "At home, wait before closing the day"), Prefs.HOME_WAIT, "20",
             listOf("10" to "10 min", "20" to "20 min", "30" to "30 min", "45" to "45 min"))
         text(tr("Así, si solo paras en tu casa a buscar o dejar algo y te vas antes, tu día sigue abierto.",
@@ -84,9 +85,9 @@ class SitesActivity : UiActivity() {
         paintSens()
         paintAuto()
         button(tr("📍 Guardar donde estoy ahora", "📍 Save where I am now"), primary = true) { saveHere() }
-        button(tr("🛻 Guardar el parqueo de la camioneta (estoy aquí)", "🛻 Save the truck parking lot (I'm here)")) { saveHere(start = true) }
-        text(tr("El parqueo es donde recoges y dejas la camioneta: cuando sales de ahí empieza tu día, y cuando vuelves y te quedas, termina.",
-            "The parking lot is where you pick up and drop off the truck: when you leave it your day starts, and when you come back and stay, it ends."), 12f, faded = true)
+        parkBtn = button("") { parkTap() }
+        parkAddr = text("", 12f, faded = true)
+        paintAuto()
         button(tr("➕ Agregar por dirección", "➕ Add by address")) { addByAddress() }
         SiteStore.getNew(prefs)?.let { n ->
             button(tr("📍 Guardar el lugar nuevo de hoy: ", "📍 Save today's new place: ") + n.short) { askName(n.full.ifEmpty { n.short }, n.lat, n.lon, n.short) }
@@ -211,46 +212,174 @@ class SitesActivity : UiActivity() {
     private lateinit var autoHelp: TextView
 
     private lateinit var homeBtn: TextView
+    private lateinit var homeAddr: TextView
+    private var lookingHome = false
+    private lateinit var parkBtn: TextView
+    private lateinit var parkAddr: TextView
 
-    private fun homeTap() {
-        if (SiteStore.home(prefs) != null) {
-            AlertDialog.Builder(this)
-                .setTitle(tr("🏠 Tu casa", "🏠 Your home"))
-                .setMessage(tr("¿Quitar tu casa? Ya no se anotará solo «Llegué a casa».", "Remove your home? «Home» won't be logged automatically anymore."))
-                .setPositiveButton(tr("Quitar", "Remove")) { _, _ -> SiteStore.setHome(prefs, null, null); AutoSites.register(this); paintAuto() }
-                .setNegativeButton(tr("Cancelar", "Cancel"), null)
-                .show()
-            return
-        }
-        if (!WorkdayCenter.hasLocation(this)) {
-            requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 31)
-            return
-        }
+    /** ✏️ Una ventanita para escribir una dirección; la busca en el mapa y devuelve dónde queda (o null). */
+    private fun askAddress(title: String, current: String, onFound: (String, Double?, Double?) -> Unit) {
+        val addr = field(tr("Dirección completa (calle, número, ciudad)", "Full address (street, number, city)"), current)
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0); addView(addr, LinearLayout.LayoutParams(-1, -2)) }
         AlertDialog.Builder(this)
-            .setTitle(tr("🏠 Guardar tu casa", "🏠 Save your home"))
-            .setMessage(tr("¿Estás en tu casa ahora? Se guarda solo el punto del GPS, solo en tu teléfono. En los tickets, el PDF y el resumen solo dirá «Casa».",
-                "Are you home right now? Only the GPS point is saved, only on your phone. Tickets, the PDF and the summary will only say «Home»."))
-            .setPositiveButton(tr("Sí, estoy en casa", "Yes, I'm home")) { _, _ ->
-                toast("Buscando dónde estás…", "Finding where you are…")
-                WorkdayCenter.locate(this) { loc ->
-                    runOnUiThread {
-                        if (loc == null) { toast("No pude saber dónde estás. Prende la ubicación.", "Couldn't get your location. Turn on location."); return@runOnUiThread }
-                        SiteStore.setHome(prefs, loc.latitude, loc.longitude)
-                        HomeWifi.learn(this) // 📶 el Wi-Fi de tu casa (para la hora exacta en que sales)
-                        AutoSites.register(this)
-                        paintAuto()
-                        toast("🏠 Casa guardada.", "🏠 Home saved.")
-                        if (!AutoSites.ready(this)) toast("Prende «Llegada y salida automáticas» para que se anote solo.", "Turn on «Automatic arrival and departure» so it's logged by itself.")
-                    }
-                }
+            .setTitle(title)
+            .setView(box)
+            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
+                val a = addr.text.toString().trim()
+                if (a.isEmpty()) { toast("Escribe la dirección.", "Type the address."); return@setPositiveButton }
+                toast("Buscando la dirección en el mapa…", "Finding the address on the map…")
+                Thread {
+                    val f = SiteStore.findAddress(this, a)
+                    runOnUiThread { onFound(f?.getAddressLine(0)?.takeIf { it.isNotBlank() } ?: a, f?.latitude, f?.longitude) }
+                }.start()
             }
             .setNegativeButton(tr("Cancelar", "Cancel"), null)
             .show()
     }
 
+    /** El parqueo de la camioneta (el primero, si guardaste varios). */
+    private fun parking(): SiteStore.Site? = SiteStore.all(prefs).firstOrNull { it.isStart }
+
+    /** 🛻 El botón del parqueo: guardarlo, o cambiar su dirección, usar donde estás, agregar otro o quitarlo. */
+    private fun parkTap() {
+        val pk = parking()
+        if (pk == null) {
+            val opts = listOf(
+                tr("Estoy en el parqueo ahora", "I'm at the parking lot now") to { saveHere(start = true) },
+                tr("Escribir la dirección", "Type the address") to {
+                    askAddress(tr("Dirección del parqueo", "Parking lot address"), "") { a, la, lo ->
+                        if (la == null || lo == null) { toast("No encontré esa dirección en el mapa. Revísala o usa «Estoy en el parqueo ahora».", "I couldn't find that address on the map. Check it or use «I'm at the parking lot now»."); return@askAddress }
+                        SiteStore.add(prefs, SiteStore.Site(tr("Parqueo de la camioneta", "Truck parking"), a, la, lo, kind = "start"))
+                        AutoSites.register(this); refresh(); paintAuto()
+                        toast("Parqueo guardado.", "Parking lot saved.")
+                    }
+                },
+            )
+            choiceDialog(tr("Guardar el parqueo de la camioneta", "Save the truck parking lot"), opts.map { it.first to null }) { w -> opts.getOrNull(w)?.second?.invoke() }
+            return
+        }
+        val opts = listOf(
+            tr("Cambiar la dirección", "Change the address") to { editSiteAddress(pk) },
+            tr("Usar donde estoy ahora", "Use where I am now") to { moveSiteHere(pk) },
+            tr("Agregar otro parqueo", "Add another parking lot") to { saveHere(start = true) },
+            tr("Quitar el parqueo", "Remove the parking lot") to { SiteStore.remove(prefs, pk.name); AutoSites.register(this); refresh(); paintAuto() },
+        )
+        choiceDialog(pk.name, opts.map { it.first to null }) { w -> opts.getOrNull(w)?.second?.invoke() }
+    }
+
+    /** ✏️ Cambia la dirección de un sitio (y lo mueve a esa dirección en el mapa). */
+    private fun editSiteAddress(s: SiteStore.Site) {
+        askAddress(s.name, s.address) { a, la, lo ->
+            SiteStore.setAddress(prefs, s.name, a, la, lo)
+            AutoSites.register(this); refresh(); paintAuto()
+            if (la == null) toast("Guardé la dirección, pero no la encontré en el mapa: el punto del GPS sigue igual.", "I saved the address, but couldn't find it on the map: the GPS point stays the same.")
+            else toast("Dirección cambiada.", "Address changed.")
+        }
+    }
+
+    /** 📍 Pone el sitio donde estás ahora (con su dirección). */
+    private fun moveSiteHere(s: SiteStore.Site) {
+        if (!WorkdayCenter.hasLocation(this)) { requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 31); return }
+        toast("Buscando dónde estás…", "Finding where you are…")
+        WorkdayCenter.locate(this) { loc ->
+            if (loc == null) { runOnUiThread { toast("No pude saber dónde estás. Prende la ubicación.", "Couldn't get your location. Turn on location.") }; return@locate }
+            Thread {
+                val a = SiteStore.addressOf(this, loc.latitude, loc.longitude).ifEmpty { s.address }
+                runOnUiThread {
+                    SiteStore.setAddress(prefs, s.name, a, loc.latitude, loc.longitude)
+                    AutoSites.register(this); refresh(); paintAuto()
+                    toast("Listo: ahora está donde estás.", "Done: it's now where you are.")
+                }
+            }.start()
+        }
+    }
+
+    private fun homeTap() {
+        if (SiteStore.home(prefs) != null) {
+            val opts = listOf(
+                tr("Cambiar la dirección", "Change the address") to {
+                    askAddress(tr("Dirección de tu casa", "Your home address"), SiteStore.homeAddress(prefs)) { a, la, lo ->
+                        if (la == null || lo == null) { SiteStore.setHomeAddress(prefs, a); paintAuto()
+                            toast("Guardé la dirección, pero no la encontré en el mapa: el punto del GPS sigue igual.", "I saved the address, but couldn't find it on the map: the GPS point stays the same."); return@askAddress }
+                        SiteStore.setHome(prefs, la, lo, a); AutoSites.register(this); paintAuto()
+                        toast("Dirección de tu casa cambiada.", "Home address changed.")
+                    }
+                },
+                tr("Usar donde estoy ahora", "Use where I am now") to { saveHomeHere() },
+                tr("Quitar mi casa", "Remove my home") to {
+                    AlertDialog.Builder(this)
+                        .setMessage(tr("¿Quitar tu casa? Ya no se anotará solo «Llegué a casa».", "Remove your home? «Home» won't be logged automatically anymore."))
+                        .setPositiveButton(tr("Quitar", "Remove")) { _, _ -> SiteStore.setHome(prefs, null, null); AutoSites.register(this); paintAuto() }
+                        .setNegativeButton(tr("Cancelar", "Cancel"), null)
+                        .show()
+                },
+            )
+            choiceDialog(tr("Tu casa", "Your home"), opts.map { it.first to null }) { w -> opts.getOrNull(w)?.second?.invoke() }
+            return
+        }
+        val opts = listOf(
+            tr("Estoy en mi casa ahora", "I'm home now") to { saveHomeHere() },
+            tr("Escribir la dirección", "Type the address") to {
+                askAddress(tr("Dirección de tu casa", "Your home address"), "") { a, la, lo ->
+                    if (la == null || lo == null) { toast("No encontré esa dirección en el mapa. Revísala o usa «Estoy en mi casa ahora».", "I couldn't find that address on the map. Check it or use «I'm home now»."); return@askAddress }
+                    SiteStore.setHome(prefs, la, lo, a); AutoSites.register(this); paintAuto()
+                    toast("Casa guardada.", "Home saved.")
+                    if (!AutoSites.ready(this)) toast("Prende «Llegada y salida automáticas» para que se anote solo.", "Turn on «Automatic arrival and departure» so it's logged by itself.")
+                }
+            },
+        )
+        choiceDialog(tr("Guardar tu casa", "Save your home"), opts.map { it.first to null }) { w -> opts.getOrNull(w)?.second?.invoke() }
+    }
+
+    /** 🏠 Guarda tu casa donde estás ahora (con su dirección). Solo en tu teléfono; en los tickets solo dice «Casa». */
+    private fun saveHomeHere() {
+        if (!WorkdayCenter.hasLocation(this)) {
+            requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 31)
+            return
+        }
+        toast("Buscando dónde estás…", "Finding where you are…")
+        WorkdayCenter.locate(this) { loc ->
+            if (loc == null) { runOnUiThread { toast("No pude saber dónde estás. Prende la ubicación.", "Couldn't get your location. Turn on location.") }; return@locate }
+            Thread {
+                val a = SiteStore.addressOf(this, loc.latitude, loc.longitude)
+                runOnUiThread {
+                    SiteStore.setHome(prefs, loc.latitude, loc.longitude, a)
+                    HomeWifi.learn(this) // 📶 el Wi-Fi de tu casa (para la hora exacta en que sales)
+                    AutoSites.register(this)
+                    paintAuto()
+                    toast("Casa guardada.", "Home saved.")
+                    if (!AutoSites.ready(this)) toast("Prende «Llegada y salida automáticas» para que se anote solo.", "Turn on «Automatic arrival and departure» so it's logged by itself.")
+                }
+            }.start()
+        }
+    }
+
     private fun paintAuto() {
-        if (::homeBtn.isInitialized) homeBtn.text = if (SiteStore.home(prefs) != null) tr("🏠 Casa guardada ✓ (toca para quitarla)", "🏠 Home saved ✓ (tap to remove)")
-            else tr("🏠 Guardar mi casa (para anotar solo «Llegué a casa»)", "🏠 Save my home (to log «Home» automatically)")
+        val home = SiteStore.home(prefs)
+        if (::homeBtn.isInitialized) homeBtn.text = if (home != null) tr("Casa guardada ✓ (toca para cambiarla)", "Home saved ✓ (tap to change it)")
+            else tr("Guardar mi casa (para anotar solo «Llegué a casa»)", "Save my home (to log «Home» automatically)")
+        if (::homeAddr.isInitialized) {
+            val a = SiteStore.homeAddress(prefs)
+            homeAddr.text = if (home == null) tr("Puedes guardarla estando en tu casa o escribiendo la dirección.", "You can save it while at home or by typing the address.")
+                else tr("Dirección: ", "Address: ") + a.ifEmpty { tr("buscando…", "looking it up…") } + "\n" + tr("Solo se ve aquí, en tu teléfono. En los tickets solo dice «Casa».", "Only shown here, on your phone. Tickets only say «Home».")
+            // Las casas guardadas antes no tenían dirección: se busca una vez
+            if (home != null && a.isEmpty() && !lookingHome) {
+                lookingHome = true
+                Thread {
+                    val found = SiteStore.addressOf(this, home.first, home.second)
+                    runOnUiThread { if (found.isNotEmpty()) { SiteStore.setHomeAddress(prefs, found); paintAuto() } else homeAddr.text = tr("Dirección: (no se encontró; toca el botón para escribirla)", "Address: (not found; tap the button to type it)") }
+                }.start()
+            }
+        }
+        val pk = parking()
+        if (::parkBtn.isInitialized) parkBtn.text = if (pk != null) tr("Parqueo guardado ✓ (toca para cambiarlo)", "Parking lot saved ✓ (tap to change it)")
+            else tr("Guardar el parqueo de la camioneta", "Save the truck parking lot")
+        if (::parkAddr.isInitialized) {
+            val all = SiteStore.all(prefs).filter { it.isStart }
+            parkAddr.text = if (all.isEmpty()) tr("El parqueo es donde recoges y dejas la camioneta: cuando sales de ahí empieza tu día, y cuando vuelves y te quedas, termina.",
+                "The parking lot is where you pick up and drop off the truck: when you leave it your day starts, and when you come back and stay, it ends.")
+                else all.joinToString("\n") { tr("Dirección: ", "Address: ") + it.address.ifEmpty { tr("(sin dirección)", "(no address)") } + if (all.size > 1) "  (" + it.name + ")" else "" }
+        }
         val on = AutoSites.isOn(this)
         val ready = AutoSites.ready(this)
         autoBtn.text = when {
@@ -313,6 +442,7 @@ class SitesActivity : UiActivity() {
 
     private fun refresh() {
         AutoSites.register(this)
+        if (::autoBtn.isInitialized) paintAuto() // 🛻 la dirección del parqueo
         list.removeAllViews()
         val sites = SiteStore.all(prefs)
         if (sites.isEmpty()) {
@@ -361,6 +491,8 @@ class SitesActivity : UiActivity() {
         val opts = ArrayList<Pair<String, () -> Unit>>()
         opts.add(tr("Distancia de detección (en el mapa)", "Detection distance (on the map)") to { askRadius(s) })
         opts.add((if (s.hasShape) tr("Cambiar la forma del sitio", "Change the site's shape") else tr("Dibujar la forma del sitio", "Draw the site's shape")) to { drawShape(s) })
+        opts.add(tr("Cambiar la dirección", "Change the address") to { editSiteAddress(s) })
+        opts.add(tr("Usar donde estoy ahora", "Use where I am now") to { moveSiteHere(s) })
         opts.add(tr("Pago por hora en este sitio", "Hourly pay at this site") to { askRate(s) })
         opts.add((if (s.isStart) tr("Cambiar a sitio de trabajo normal", "Change to a normal work site")
             else tr("Usarlo como parqueo de la camioneta (comienzo y fin del día)", "Use it as the truck parking (start and end of day)")) to {

@@ -79,10 +79,41 @@ object SiteStore {
         o.getDouble("la") to o.getDouble("lo")
     } catch (_: Exception) { null }
 
-    fun setHome(p: SharedPreferences, lat: Double?, lon: Double?) {
+    fun setHome(p: SharedPreferences, lat: Double?, lon: Double?, address: String = "") {
         if (lat == null || lon == null) p.edit().remove(Prefs.HOME_PLACE).apply()
-        else p.edit().putString(Prefs.HOME_PLACE, JSONObject().put("la", lat).put("lo", lon).toString()).apply()
+        else p.edit().putString(Prefs.HOME_PLACE, JSONObject().put("la", lat).put("lo", lon).put("a", address).toString()).apply()
     }
+
+    /** La dirección de tu casa (solo se ve en Mis sitios, nunca en tickets ni en el PDF). */
+    fun homeAddress(p: SharedPreferences): String = try { JSONObject(p.getString(Prefs.HOME_PLACE, "") ?: "").optString("a", "") } catch (_: Exception) { "" }
+
+    fun setHomeAddress(p: SharedPreferences, address: String) {
+        val h = home(p) ?: return
+        setHome(p, h.first, h.second, address)
+    }
+
+    /**
+     * ✏️ Cambia la dirección de un sitio (y su punto, si se encontró en el mapa). Si el punto se mueve lejos,
+     * se borran su forma y lo aprendido (eran del lugar de antes).
+     */
+    fun setAddress(p: SharedPreferences, name: String, address: String, la: Double?, lo: Double?) {
+        save(p, all(p).map {
+            if (it.name != name) it
+            else if (la == null || lo == null) Site(it.name, address, it.lat, it.lon, it.rate, it.kind, it.radius, it.shape)
+            else {
+                val d = FloatArray(1)
+                android.location.Location.distanceBetween(it.lat, it.lon, la, lo, d)
+                val far = it.lat == 0.0 && it.lon == 0.0 || d[0] > 150f
+                Site(it.name, address, la, lo, it.rate, it.kind, it.radius, if (far) emptyList() else it.shape)
+            }
+        })
+    }
+
+    /** Busca en el mapa dónde queda una dirección (necesita internet; llamar en segundo plano). */
+    fun findAddress(ctx: android.content.Context, address: String): android.location.Address? = try {
+        @Suppress("DEPRECATION")
+        android.location.Geocoder(ctx, java.util.Locale.US).getFromLocationName(address, 1)?.firstOrNull()
+    } catch (_: Exception) { null }
 
     // ---- Lugar nuevo: llegaste a un sitio que no tienes guardado (se pregunta si lo guardas)
     class NewPlace(val time: Long, val short: String, val full: String, val lat: Double, val lon: Double)

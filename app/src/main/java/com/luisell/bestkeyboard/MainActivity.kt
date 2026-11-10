@@ -1456,6 +1456,14 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.5.0" to tr("•  Mis sitios: debajo de «Casa guardada» y de «Parqueo guardado» ahora se ve su dirección.\n" +
+            "•  Toca cualquiera de los dos para cambiar la dirección (escribiéndola), usar donde estás ahora o quitarlo, sin tener que borrar y volver a guardar.\n" +
+            "•  La casa y el parqueo ya se pueden guardar escribiendo la dirección, sin estar ahí.\n" +
+            "•  En cada sitio guardado también hay «Cambiar la dirección» y «Usar donde estoy ahora».",
+            "•  My sites: under «Home saved» and «Parking lot saved» you now see their address.\n" +
+            "•  Tap either one to change the address (by typing it), use where you are now or remove it, without deleting and saving again.\n" +
+            "•  Home and the parking lot can now be saved by typing the address, without being there.\n" +
+            "•  Each saved site also has «Change the address» and «Use where I am now»."),
         "15.4.0" to tr("•  Mapas como Google Maps: vista «Satélite» (las fotos reales desde arriba) con el botón de arriba a la derecha para cambiar a «Mapa». Se acercan y alejan con dos dedos y se mueven arrastrando con un dedo. Así puedes dibujar la forma exacta de una casa o un edificio pequeño.",
             "•  Maps like Google Maps: «Satellite» view (real photos from above) with the top-right button to switch to «Map». Pinch with two fingers to zoom in and out and drag with one finger to move. Now you can draw the exact shape of a house or a small building."),
         "15.3.0" to tr("•  Forma real del sitio: en Mis sitios, toca un sitio › «Dibujar la forma del sitio» y toca sus esquinas en el mapa. Así solo cuenta si estás adentro de esa forma (una calle o un parqueo de enfrente ya no cuentan).\n" +
