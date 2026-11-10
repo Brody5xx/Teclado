@@ -137,6 +137,7 @@ class SitesActivity : UiActivity() {
         val list = GpsCheck.checks(this, googleOk, googleFix)
         val missing = list.count { !it.ok }
         text(if (missing == 0) tr("Todo listo: tu teléfono está usando la ubicación más precisa.", "All set: your phone is using the most precise location.")
+            else if (missing == 1) tr("Falta 1 ajuste. Tócalo para arreglarlo.", "1 setting missing. Tap it to fix it.")
             else tr("Faltan $missing ajustes. Toca cada uno para arreglarlo.", "$missing settings missing. Tap each one to fix it."), 13f, bold = true)
         for (c in list) {
             if (c.ok) text(tr("Listo", "Done") + "  ·  " + tr(c.es, c.en), 13f)

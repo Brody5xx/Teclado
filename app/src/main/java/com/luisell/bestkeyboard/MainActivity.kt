@@ -1456,6 +1456,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.1.1" to tr("•  Arreglado: en «Precisión del GPS», el botón «Arreglar · Batería sin restricciones» no hacía nada. Ahora abre la ventanita de Android para permitirlo (o la página de la app, si tu teléfono no la tiene).",
+            "•  Fixed: in «GPS accuracy», the «Fix · Unrestricted battery» button did nothing. Now it opens Android's window to allow it (or the app's page, if your phone doesn't have it)."),
         "15.1.0" to tr("•  GPS de Mi jornada más preciso: al anotar una llegada o salida, el teléfono pide varias lecturas del GPS fino y se queda con la mejor (antes usaba primero la ubicación por red, que puede fallar por cientos de metros).\n" +
             "•  Antes de anotar una llegada o salida automática, revisa otra vez dónde estás: si el GPS «brincó» (por ejemplo, dice que saliste pero sigues adentro), no la anota.\n" +
             "•  Nueva tarjeta «Precisión del GPS» en Mis sitios: revisa la ubicación precisa, «Permitir todo el tiempo», la precisión de Google, la búsqueda de Wi-Fi y la batería, y te lleva directo al ajuste que falta. Con «Probar el GPS ahora» ves qué tan precisa es tu ubicación y a qué sitio estás más cerca.",

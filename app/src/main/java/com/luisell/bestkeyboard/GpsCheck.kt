@@ -38,8 +38,11 @@ object GpsCheck {
 
     @android.annotation.SuppressLint("BatteryLife")
     private fun openBattery(a: Activity) {
-        try { a.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + a.packageName))) }
-        catch (_: Exception) { try { a.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) } catch (_: Exception) { openAppSettings(a) } }
+        // La ventanita de Android: «¿Permitir que Best Keyboard funcione siempre en segundo plano?»
+        val ask = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + a.packageName))
+        if (ask.resolveActivity(a.packageManager) != null) try { a.startActivity(ask); return } catch (_: Exception) { }
+        // Si el teléfono no la tiene: la página de la app (Batería › Sin restricciones)
+        openAppSettings(a)
     }
 
     /** Lo que se puede revisar al instante. [google] = si la precisión de Google está prendida (null = revisando). */
