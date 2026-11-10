@@ -144,6 +144,7 @@ object SiteLearn {
         while (a.length() > 6) a.remove(0)
         me.put("undo", a)
         save(p, o)
+        stat(p, "undo", site)
     }
 
     /** Minutos extra que espera este sitio antes de anotar la llegada (2 por cada «Deshacer» del último mes, máximo 6). */
@@ -160,6 +161,7 @@ object SiteLearn {
         a.put(t)
         while (a.length() > 40) a.remove(0)
         p.edit().putString("auto_events", a.toString()).apply()
+        stat(p, "auto", "")
     }
 
     fun isAuto(p: SharedPreferences, t: Long): Boolean {
@@ -178,6 +180,7 @@ object SiteLearn {
         while (a.length() > 5) a.remove(0)
         me.put(key, a)
         save(p, o)
+        stat(p, "fixed", site)
     }
 
     /** Cuánto mover la hora automática: la mediana de tus correcciones (si son 2 o más y van al mismo lado), máximo 10 min. */
@@ -187,6 +190,46 @@ object SiteLearn {
         val v = (0 until a.length()).map { a.optLong(it) }.sorted()
         if (!(v.all { it > 0 } || v.all { it < 0 })) return 0L
         return v[v.size / 2].coerceIn(-10 * 60_000L, 10 * 60_000L)
+    }
+
+    // ---------------------------------------------------------------- 📊 Reporte de la semana
+
+    private fun weekKey(t: Long = System.currentTimeMillis()): String {
+        val c = java.util.Calendar.getInstance().apply { firstDayOfWeek = java.util.Calendar.MONDAY; minimalDaysInFirstWeek = 4; timeInMillis = t }
+        return "wk_" + c.get(java.util.Calendar.YEAR) + "_" + c.get(java.util.Calendar.WEEK_OF_YEAR)
+    }
+
+    /** Suma uno: [what] = "auto" (se anotó solo), "fixed" (corregiste la hora) o "undo" (era falsa). */
+    fun stat(p: SharedPreferences, what: String, site: String) {
+        val k = weekKey()
+        val o = try { JSONObject(p.getString(k, "{}") ?: "{}") } catch (_: Exception) { JSONObject() }
+        o.put(what, o.optInt(what, 0) + 1)
+        if (site.isNotEmpty() && what != "auto") {
+            val bad = o.optJSONObject("bad") ?: JSONObject()
+            bad.put(site, bad.optInt(site, 0) + 1)
+            o.put("bad", bad)
+        }
+        val e = p.edit().putString(k, o.toString())
+        // Se guardan solo las últimas 6 semanas
+        val weeks = (p.getString("wk_list", "") ?: "").split(",").filter { it.isNotEmpty() }.toMutableList()
+        if (k !in weeks) weeks.add(k)
+        while (weeks.size > 6) e.remove(weeks.removeAt(0))
+        e.putString("wk_list", weeks.joinToString(",")).apply()
+    }
+
+    /** «Esta semana: 18 se anotaron solas, 2 corregiste y 1 deshiciste (89 % bien). La que más falla: Sitio A.» */
+    fun weekReport(p: SharedPreferences, weeksAgo: Int = 0): String? {
+        val o = try { JSONObject(p.getString(weekKey(System.currentTimeMillis() - weeksAgo * 7L * 24 * 3600_000L), "{}") ?: "{}") } catch (_: Exception) { return null }
+        val auto = o.optInt("auto", 0)
+        if (auto == 0) return null
+        val fixed = o.optInt("fixed", 0); val undo = o.optInt("undo", 0)
+        val good = (100 * (auto - minOf(auto, fixed + undo)) / auto)
+        val bad = o.optJSONObject("bad")
+        val worst = bad?.keys()?.asSequence()?.maxByOrNull { bad.optInt(it) }
+        val head = if (weeksAgo == 0) L.t("Esta semana", "This week") else L.t("La semana pasada", "Last week")
+        return L.t("$head: $auto se anotaron solas, corregiste $fixed y deshiciste $undo ($good % bien).",
+            "$head: $auto were logged automatically, you corrected $fixed and undid $undo ($good % right).") +
+            (if (worst != null) " " + L.t("La que más falla: $worst (súbele la distancia o dibuja su forma).", "The one that fails most: $worst (raise its distance or draw its shape).") else "")
     }
 
     /** «Aprendió de 5 llegadas · Wi-Fi: 8 redes · punto ajustado». */

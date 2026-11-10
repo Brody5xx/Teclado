@@ -56,6 +56,7 @@ object WorkdayCenter {
             if (!finished) {
                 finished = true
                 try { client.removeLocationUpdates(cb) } catch (_: Throwable) { }
+                Trail.add(ctx, best)
                 done(best)
             }
         }

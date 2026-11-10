@@ -87,7 +87,7 @@ object AutoSites {
             if (s.lat == 0.0 && s.lon == 0.0) continue
             fences.add(Geofence.Builder()
                 .setRequestId(SITE_ID + s.name.take(80))
-                .setCircularRegion(s.lat, s.lon, SiteStore.radiusOf(p, s).toFloat())
+                .setCircularRegion(s.lat, s.lon, Geo.fenceRadius(p, s))
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
                 .setLoiteringDelay(dwellFor(app, s.name))
@@ -96,7 +96,7 @@ object AutoSites {
             // 🎯 El círculo grande: al acercarte se prende el GPS fino (para la hora exacta)
             if (PreciseTracker.enabled(app)) fences.add(Geofence.Builder()
                 .setRequestId(NEAR_ID + s.name.take(80))
-                .setCircularRegion(s.lat, s.lon, maxOf(1000f, SiteStore.radiusOf(p, s) + 600f))
+                .setCircularRegion(s.lat, s.lon, maxOf(1000f, Geo.fenceRadius(p, s) + 600f))
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
                 .setNotificationResponsiveness(30_000)
@@ -303,6 +303,14 @@ object AutoSites {
             trig != null && trig.accuracy <= radius -> trig
             else -> return true // no se puede revisar: se hace como antes
         }
+        // 🔷 Si el sitio tiene su forma dibujada, se usa la forma (más exacta que el círculo)
+        val shaped = SiteStore.find(Prefs.get(ctx), name)?.takeIf { it.hasShape }
+        if (shaped != null) {
+            val w = Geo.where(Prefs.get(ctx), shaped, loc.latitude, loc.longitude, loc.accuracy)
+            val ok = if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) w != true else w != false
+            if (!ok) GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, name)
+            return ok
+        }
         val d = FloatArray(1)
         android.location.Location.distanceBetween(lat, lon, loc.latitude, loc.longitude, d)
         val ok = when (transition) {
@@ -318,6 +326,7 @@ object AutoSites {
     private fun handle(ctx: Context, p: android.content.SharedPreferences, ev: GeofencingEvent, at: Long, fix: android.location.Location?) {
         val trig = ev.triggeringLocation
         val tr = ev.geofenceTransition
+        Trail.add(ctx, fix ?: trig)
         for (g in ev.triggeringGeofences ?: emptyList()) {
             val gid = g.requestId
             // 🎯 Te acercas a un sitio: GPS fino unos minutos
@@ -333,8 +342,13 @@ object AutoSites {
             if (id == HOME_ID) {
                 when (tr) {
                     Geofence.GEOFENCE_TRANSITION_ENTER -> saveEnter(p, HOME_ID, at)
-                    Geofence.GEOFENCE_TRANSITION_DWELL -> cameHome(ctx, vehOutNear(p, takeEnter(p, HOME_ID) ?: (at - 2 * 60_000L)))
-                    Geofence.GEOFENCE_TRANSITION_EXIT -> { cancelHomePending(ctx); leftHome(ctx, at) }
+                    Geofence.GEOFENCE_TRANSITION_DWELL -> {
+                        HomeWifi.learn(ctx) // 📶 el Wi-Fi de tu casa
+                        val ent = takeEnter(p, HOME_ID) ?: (at - 2 * 60_000L)
+                        val veh = vehOutNear(p, ent)
+                        cameHome(ctx, if (veh != ent) veh else HomeWifi.onNear(ctx, ent))
+                    }
+                    Geofence.GEOFENCE_TRANSITION_EXIT -> { cancelHomePending(ctx); leftHome(ctx, HomeWifi.offNear(ctx, at)) }
                 }
                 continue
             }
@@ -444,7 +458,8 @@ object AutoSites {
         notify(ctx, L.t("🛻 Terminó tu día", "🛻 Your day ended"),
             L.t("Llegaste a $site a las ${WorkStore.time(t)}: anoté «${WorkDay.plainLabel(fin)}». Hoy: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}.",
                 "You got to $site at ${WorkStore.time(t)}: logged «${WorkDay.plainLabel(fin)}». Today: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}."),
-            listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
+            listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t), L.t("Revisar el día", "Review the day") to reviewIntent(ctx)), NOTIF_ID)
+        maybeWeekReport(ctx)
     }
 
     /** Llegaste a casa: si la jornada sigue abierta, se cierra con la hora en que llegaste. */
@@ -500,7 +515,8 @@ object AutoSites {
         notify(ctx, L.t("🏠 Llegaste a casa", "🏠 You got home"),
             L.t("Lo anoté solo: llegaste a las ${WorkStore.time(t)}. Hoy: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}.",
                 "Logged automatically: you got home at ${WorkStore.time(t)}. Today: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}."),
-            L.t("Deshacer", "Undo") to undoIntent(ctx, t))
+            listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("Revisar el día", "Review the day") to reviewIntent(ctx)), NOTIF_ID)
+        maybeWeekReport(ctx)
     }
 
     /**
@@ -563,6 +579,26 @@ object AutoSites {
         notify(ctx, L.t("🚪 Saliste de ${last.site.ifEmpty { site }}", "🚪 You left ${last.site.ifEmpty { site }}"),
             L.t("Lo anoté solo: saliste a las ${WorkStore.time(t)}.", "Logged automatically: you left at ${WorkStore.time(t)}."),
             listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
+    }
+
+    /** Abre el historial en el día de hoy: el mapa con tu recorrido y cada llegada y salida. */
+    private fun reviewIntent(ctx: Context): PendingIntent =
+        PendingIntent.getActivity(ctx, 5140, Intent(ctx, MonthActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    /** 📊 Terminó el último día de trabajo de la semana: el reporte de precisión. */
+    private fun maybeWeekReport(ctx: Context) {
+        val p = Prefs.get(ctx)
+        val days = WorkDay.workDays(p)
+        if (days.isEmpty()) return
+        val rank = { d: Int -> (d + 5) % 7 } // lunes = 0 … domingo = 6
+        val today = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK)
+        if (rank(today) != days.maxOf { rank(it) }) return
+        if (p.getString("wk_report_day", "") == dayKey()) return
+        val txt = SiteLearn.weekReport(p) ?: return
+        p.edit().putString("wk_report_day", dayKey()).apply()
+        notify(ctx, L.t("Precisión de Mi jornada", "My workday accuracy"), txt,
+            listOf(L.t("Revisar", "Review") to reviewIntent(ctx)), 4723)
     }
 
     private fun dayKey() = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())

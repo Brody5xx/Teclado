@@ -186,8 +186,45 @@ class MonthActivity : UiActivity() {
         return (0xFF shl 24) or (r shl 16) or (g shl 8) or bl
     }
 
+    /**
+     * 🗺️ Revisión del día: el mapa con los puntos donde el GPS te ubicó y cada llegada y salida con su hora.
+     * Así ves de un vistazo si algo salió mal (y lo corriges tocando la hora abajo).
+     */
+    private fun dayMap(day: Long, ev: List<WorkDay.Event>): View? {
+        val trail = Trail.day(this, day)
+        val marks = ArrayList<MapPreview.Mark>()
+        for (e in ev) {
+            val site = if (e.site.isNotEmpty()) SiteStore.find(prefs, e.site)?.takeIf { !(it.lat == 0.0 && it.lon == 0.0) } else null
+            val pos: DoubleArray? = when {
+                site != null -> doubleArrayOf(site.lat, site.lon)
+                e.kind == WorkDay.HOME -> SiteStore.home(prefs)?.let { doubleArrayOf(it.first, it.second) }
+                // Sin sitio: el punto del GPS más cerca de esa hora (máximo 15 minutos)
+                else -> trail.minByOrNull { Math.abs(it[3] - e.time) }?.takeIf { Math.abs(it[3] - e.time) < 15 * 60_000.0 }
+            }
+            if (pos == null) continue
+            val color = when (e.kind) { WorkDay.ARRIVE -> CYAN; WorkDay.LEAVE -> VIOLET; else -> 0xFFFBBF24.toInt() }
+            marks.add(MapPreview.Mark(pos[0], pos[1], WorkStore.time(e.time), color))
+        }
+        if (trail.isEmpty() && marks.isEmpty()) return null
+        val first = marks.firstOrNull()?.let { doubleArrayOf(it.lat, it.lon) } ?: trail.first()
+        val map = MapPreview(this, first[0], first[1])
+        map.path = trail
+        map.marks = marks
+        map.clipToOutline = true
+        map.background = GradientDrawable().apply { cornerRadius = dpf(16f); setColor(0xFF1B2230.toInt()) }
+        return map
+    }
+
     private fun showDay(byDay: Map<Long, List<WorkDay.Event>>) {
         detail.removeAllViews()
+        // 📊 Qué tan bien se anotó solo esta semana (y la pasada)
+        (SiteLearn.weekReport(prefs) ?: SiteLearn.weekReport(prefs, 1))?.let { r ->
+            detail.addView(TextView(this).apply {
+                text = r; textSize = 12f; setTextColor(SUB); setLineSpacing(0f, 1.2f)
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(12f); setStroke(dp(1), LINE) }
+            }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        }
         if (chosen < 0) {
             detail.addView(TextView(this).apply {
                 text = tr("Toca un día para ver a qué hora llegaste, saliste y dónde estuviste.", "Tap a day to see when you arrived, left and where you were.")
@@ -201,6 +238,7 @@ class MonthActivity : UiActivity() {
             textSize = 17f; setTextColor(TEXT); setTypeface(typeface, Typeface.BOLD)
         }
         detail.addView(head)
+        dayMap(chosen, ev)?.let { detail.addView(it, LinearLayout.LayoutParams(-1, dp(260)).apply { topMargin = dp(8) }) }
         if (ev.isEmpty()) {
             detail.addView(TextView(this).apply { text = tr("No trabajaste (o no lo marcaste).", "No work logged."); textSize = 13f; setTextColor(SUB) })
             return

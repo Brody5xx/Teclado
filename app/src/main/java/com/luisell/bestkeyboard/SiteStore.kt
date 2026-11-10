@@ -13,8 +13,11 @@ object SiteStore {
      */
     class Site(val name: String, val address: String, val lat: Double, val lon: Double, val rate: Double = 0.0, val kind: String = "site",
                /** 📏 Distancia de detección de este lugar en metros (0 = la de todos). */
-               val radius: Int = 0) {
+               val radius: Int = 0,
+               /** 🔷 La forma real del sitio (las esquinas, [lat, lon]); vacía = se usa el círculo. */
+               val shape: List<DoubleArray> = emptyList()) {
         val isStart get() = kind == "start"
+        val hasShape get() = shape.size >= 3
     }
 
     /** 📏 La distancia que usan todos los lugares (si no le pusiste una propia). */
@@ -25,10 +28,14 @@ object SiteStore {
 
     /** 🧠 Mueve el punto de un sitio (lo usa el aprendizaje de Mi jornada). */
     fun setPoint(p: SharedPreferences, name: String, la: Double, lo: Double) =
-        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, la, lo, it.rate, it.kind, it.radius) else it })
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, la, lo, it.rate, it.kind, it.radius, it.shape) else it })
+
+    /** 🔷 Guarda (o borra, con una lista vacía) la forma real del sitio. */
+    fun setShape(p: SharedPreferences, name: String, shape: List<DoubleArray>) =
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, it.kind, it.radius, shape) else it })
 
     fun setRadius(p: SharedPreferences, name: String, r: Int) =
-        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, it.kind, r) else it })
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, it.kind, r, it.shape) else it })
 
     /** A cuántos metros cuenta como "estoy en ese sitio". */
     const val RADIUS_M = 400f
@@ -37,23 +44,29 @@ object SiteStore {
         val a = JSONArray(p.getString(Prefs.SITES, "[]"))
         (0 until a.length()).map {
             val o = a.getJSONObject(it)
-            Site(o.optString("n"), o.optString("a"), o.optDouble("la", 0.0), o.optDouble("lo", 0.0), o.optDouble("r", 0.0), o.optString("k", "site"), o.optInt("rd", 0))
+            val sh = o.optJSONArray("sh")
+            Site(o.optString("n"), o.optString("a"), o.optDouble("la", 0.0), o.optDouble("lo", 0.0), o.optDouble("r", 0.0), o.optString("k", "site"), o.optInt("rd", 0),
+                if (sh == null) emptyList() else (0 until sh.length()).map { i -> sh.getJSONArray(i).let { doubleArrayOf(it.getDouble(0), it.getDouble(1)) } })
         }
     } catch (_: Exception) { emptyList() }
 
     private fun save(p: SharedPreferences, list: List<Site>) {
         val a = JSONArray()
-        for (s in list) a.put(JSONObject().put("n", s.name).put("a", s.address).put("la", s.lat).put("lo", s.lon).put("r", s.rate).put("k", s.kind).put("rd", s.radius))
+        for (s in list) {
+            val o = JSONObject().put("n", s.name).put("a", s.address).put("la", s.lat).put("lo", s.lon).put("r", s.rate).put("k", s.kind).put("rd", s.radius)
+            if (s.shape.isNotEmpty()) o.put("sh", JSONArray().apply { for (pt in s.shape) put(JSONArray().put(pt[0]).put(pt[1])) })
+            a.put(o)
+        }
         p.edit().putString(Prefs.SITES, a.toString()).apply()
     }
 
     /** Pago por hora especial de un sitio (0 = el normal). */
     fun setRate(p: SharedPreferences, name: String, rate: Double) =
-        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, rate, it.kind, it.radius) else it })
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, rate, it.kind, it.radius, it.shape) else it })
 
     /** Cambia el tipo: sitio de trabajo, o 🛻 punto de comienzo y fin del día. */
     fun setKind(p: SharedPreferences, name: String, kind: String) =
-        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, kind, it.radius) else it })
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, kind, it.radius, it.shape) else it })
 
     fun add(p: SharedPreferences, site: Site) = save(p, all(p).filter { !it.name.equals(site.name, true) } + site)
     fun remove(p: SharedPreferences, name: String) = save(p, all(p).filter { it.name != name })

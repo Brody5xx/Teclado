@@ -126,6 +126,7 @@ class PreciseTracker : Service() {
     }
 
     private var lastScan = 0L
+    private var lastTrail = 0L
 
     private fun onFix(l: Location) {
         val p = Prefs.get(this)
@@ -133,20 +134,23 @@ class PreciseTracker : Service() {
         val now = System.currentTimeMillis()
         if (now - lastScan > 30_000L) { lastScan = now; SiteLearn.requestScan(this) }
         val t = l.time.takeIf { it in (now - 60_000L)..(now + 5_000L) } ?: now
+        if (now - lastTrail > 20_000L) { lastTrail = now; Trail.add(this, l) }
         val acc = minOf(l.accuracy, 40f)
         val vehOut = p.getLong("veh_out", 0L)
         var anyNear = false
         for (s in SiteStore.all(p)) {
             if (s.lat == 0.0 && s.lon == 0.0) continue
-            val r = SiteStore.radiusOf(p, s).toFloat()
+            val r = Geo.fenceRadius(p, s)
             val d = FloatArray(1)
             Location.distanceBetween(s.lat, s.lon, l.latitude, l.longitude, d)
             if (d[0] < r + 1300f) anyNear = true else continue
             val wifi = if (d[0] < r + 300f) SiteLearn.wifiMatch(this, s.name) else null
             // Una lectura mala no cuenta (salvo que el Wi-Fi diga que estás adentro)
             if (l.accuracy > 60f && wifi != true) continue
-            val inside = wifi == true || d[0] + acc * 0.5f <= r
-            val outside = wifi != true && d[0] - acc * 0.5f > r + 15f
+            // 🔷 Con la forma del sitio (si la dibujaste) o con el círculo
+            val w = Geo.where(p, s, l.latitude, l.longitude, acc)
+            val inside = wifi == true || w == true
+            val outside = wifi != true && w == false
             val x = st.getOrPut(s.name) { St() }
             val prev = x.inside
             if (prev == null) {

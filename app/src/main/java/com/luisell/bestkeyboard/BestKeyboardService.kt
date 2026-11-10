@@ -379,6 +379,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onCreate() {
         super.onCreate()
+        try { HomeWifi.watch(this) } catch (_: Throwable) { } // 🏠📶 la hora exacta en que sales y llegas a casa
         prefs = Prefs.get(this)
         instance = this
         try { Anywhere.refresh(this) } catch (_: Exception) { }

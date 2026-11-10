@@ -158,6 +158,7 @@ class SitesActivity : UiActivity() {
         button(tr("Probar el GPS ahora", "Test GPS now"), primary = true) { testGps() }
         if (testLine.isNotEmpty()) text(testLine, 13f)
         GpsCheck.ignoredText(this)?.let { text(it, 12f, faded = true) }
+        SiteLearn.weekReport(prefs)?.let { text(it, 12f, faded = true) }
         text(tr("Consejo: pon el punto de cada sitio en la entrada o el parqueo donde llegas, y usa 150 m para sitios pequeños (no menos de 100 m).",
             "Tip: put each site's point at the entrance or parking lot where you arrive, and use 150 m for small sites (not less than 100 m)."), 12f, faded = true)
         col = keep
@@ -186,7 +187,8 @@ class SitesActivity : UiActivity() {
                     val r = SiteStore.radiusOf(prefs, s)
                     val dist = if (d >= 1000f) String.format(Locale.US, "%.1f km", d / 1000f) else "${d.toInt()} m"
                     line += "\n" + tr("El sitio más cerca: ${s.name}, a $dist", "Nearest site: ${s.name}, $dist away") +
-                        (if (d <= r) tr(" (estás adentro de su círculo de $r m).", " (you're inside its $r m circle).") else tr(" (su círculo es de $r m).", " (its circle is $r m)."))
+                        (if (s.hasShape) (if (Geo.where(prefs, s, l.latitude, l.longitude, l.accuracy) == true) tr(" (estás adentro de su forma).", " (you're inside its shape).") else tr(" (estás afuera de su forma).", " (you're outside its shape)."))
+                        else if (d <= r) tr(" (estás adentro de su círculo de $r m).", " (you're inside its $r m circle).") else tr(" (su círculo es de $r m).", " (its circle is $r m)."))
                 }
                 line
             }
@@ -234,6 +236,7 @@ class SitesActivity : UiActivity() {
                     runOnUiThread {
                         if (loc == null) { toast("No pude saber dónde estás. Prende la ubicación.", "Couldn't get your location. Turn on location."); return@runOnUiThread }
                         SiteStore.setHome(prefs, loc.latitude, loc.longitude)
+                        HomeWifi.learn(this) // 📶 el Wi-Fi de tu casa (para la hora exacta en que sales)
                         AutoSites.register(this)
                         paintAuto()
                         toast("🏠 Casa guardada.", "🏠 Home saved.")
@@ -337,7 +340,7 @@ class SitesActivity : UiActivity() {
             c.addView(n)
             val a = TextView(this)
             a.text = (if (s.isStart) tr("Comienzo y fin del día · ", "Start and end of day · ") else "") + s.address.ifEmpty { tr("(sin dirección)", "(no address)") } +
-                "  ·  📏 " + SiteStore.radiusOf(prefs, s) + " m" + (if (s.radius > 0) "" else tr(" (la de todos)", " (default)")) +
+                (if (s.hasShape) "  ·  " + tr("forma de ${s.shape.size} esquinas", "${s.shape.size}-corner shape") else "  ·  📏 " + SiteStore.radiusOf(prefs, s) + " m" + (if (s.radius > 0) "" else tr(" (la de todos)", " (default)"))) +
                 (if (s.lat == 0.0 && s.lon == 0.0) tr("  ·  ⚠️ sin GPS", "  ·  ⚠️ no GPS") else "") +
                 SiteLearn.summary(prefs, s.name).let { if (it.isEmpty()) "" else "\n" + it }
             a.textSize = 12f
@@ -355,20 +358,65 @@ class SitesActivity : UiActivity() {
 
     /** Al tocar un sitio: su pago especial o cambiarlo a 🛻 parqueo (comienzo y fin del día). */
     private fun siteOptions(s: SiteStore.Site) {
-        val opts = arrayOf(
-            tr("📏 Distancia de detección (en el mapa)", "📏 Detection distance (on the map)"),
-            tr("💵 Pago por hora en este sitio", "💵 Hourly pay at this site"),
-            if (s.isStart) tr("📍 Cambiar a sitio de trabajo normal", "📍 Change to a normal work site")
-            else tr("🛻 Usarlo como parqueo de la camioneta (comienzo y fin del día)", "🛻 Use it as the truck parking (start and end of day)"),
-        ) + (if (SiteLearn.moved(prefs, s.name)) arrayOf(tr("Volver al punto que guardé yo", "Go back to the point I saved")) else emptyArray())
-        choiceDialog(s.name, opts.map { Emo.stripUi(it).trim() to null }) { w ->
-                when (w) {
-                    0 -> askRadius(s)
-                    1 -> askRate(s)
-                    3 -> { SiteLearn.restorePoint(this, s.name); refresh() }
-                    else -> { SiteStore.setKind(prefs, s.name, if (s.isStart) "site" else "start"); refresh() }
-                }
+        val opts = ArrayList<Pair<String, () -> Unit>>()
+        opts.add(tr("Distancia de detección (en el mapa)", "Detection distance (on the map)") to { askRadius(s) })
+        opts.add((if (s.hasShape) tr("Cambiar la forma del sitio", "Change the site's shape") else tr("Dibujar la forma del sitio", "Draw the site's shape")) to { drawShape(s) })
+        opts.add(tr("Pago por hora en este sitio", "Hourly pay at this site") to { askRate(s) })
+        opts.add((if (s.isStart) tr("Cambiar a sitio de trabajo normal", "Change to a normal work site")
+            else tr("Usarlo como parqueo de la camioneta (comienzo y fin del día)", "Use it as the truck parking (start and end of day)")) to {
+            SiteStore.setKind(prefs, s.name, if (s.isStart) "site" else "start"); refresh()
+        })
+        if (SiteLearn.moved(prefs, s.name)) opts.add(tr("Volver al punto que guardé yo", "Go back to the point I saved") to { SiteLearn.restorePoint(this, s.name); refresh() })
+        choiceDialog(s.name, opts.map { it.first to null }) { w -> opts.getOrNull(w)?.second?.invoke() }
+    }
+
+    /**
+     * 🔷 Dibuja la forma real del sitio tocando sus esquinas en el mapa (por ejemplo, el edificio y su parqueo).
+     * Así una calle o un parqueo de enfrente no cuentan como «llegué».
+     */
+    private fun drawShape(s: SiteStore.Site) {
+        if (s.lat == 0.0 && s.lon == 0.0) { toast("Este lugar no tiene GPS. Guárdalo estando ahí.", "This place has no GPS. Save it while you're there."); return }
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val map = MapPreview(this, s.lat, s.lon)
+        map.radius = SiteStore.radiusOf(prefs, s)
+        map.shape = s.shape
+        map.clipToOutline = true
+        map.background = GradientDrawable().apply { cornerRadius = dpf(18f); setColor(0xFF1B2230.toInt()) }
+        val info = TextView(this).apply { textSize = 13f; setTextColor(SUB); setPadding(0, dp(10), 0, dp(4)); gravity = Gravity.CENTER }
+        fun paintInfo(n: Int) {
+            info.text = when {
+                n == 0 -> tr("Toca las esquinas del sitio en orden, dando la vuelta (mínimo 3).", "Tap the site's corners in order, going around (at least 3).")
+                n < 3 -> tr("Esquinas: $n. Sigue tocando (mínimo 3).", "Corners: $n. Keep tapping (at least 3).")
+                else -> tr("Esquinas: $n. Toca «Guardar» cuando la forma cubra todo el sitio.", "Corners: $n. Tap «Save» when the shape covers the whole site.")
             }
+        }
+        map.onCorner = { paintInfo(it.size) }
+        box.addView(map, LinearLayout.LayoutParams(-1, dp(320)))
+        // Acercar, alejar y deshacer la última esquina
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        fun small(label: String, act: () -> Unit) = TextView(this).apply {
+            text = label; textSize = 14f; setTextColor(TEXT); gravity = Gravity.CENTER
+            setPadding(dp(14), dp(8), dp(14), dp(8))
+            background = GradientDrawable().apply { cornerRadius = dpf(16f); setColor(CARD); setStroke(dp(1), LINE) }
+            setOnClickListener { act() }
+        }
+        row.addView(small("−") { map.zoomShift = map.zoomShift - 1 }, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
+        row.addView(small("+") { map.zoomShift = map.zoomShift + 1 }, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
+        row.addView(small(tr("Quitar última", "Remove last")) { map.shape = map.shape.dropLast(1); paintInfo(map.shape.size) }, LinearLayout.LayoutParams(-2, -2))
+        box.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        box.addView(info)
+        paintInfo(map.shape.size)
+        AlertDialog.Builder(this)
+            .setTitle(s.name)
+            .setView(box)
+            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
+                if (map.shape.size < 3) { toast("Faltan esquinas: toca al menos 3.", "Not enough corners: tap at least 3."); return@setPositiveButton }
+                SiteStore.setShape(prefs, s.name, map.shape); AutoSites.register(this); refresh()
+                toast("Forma guardada: ahora solo cuenta si estás adentro de ella.", "Shape saved: now it only counts if you're inside it.")
+            }
+            .setNeutralButton(tr("Borrar forma", "Delete shape")) { _, _ -> SiteStore.setShape(prefs, s.name, emptyList()); AutoSites.register(this); refresh() }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
     }
 
     /** 📏 La distancia de un lugar, viendo el círculo en el mapa (como Samsung Rutinas). */

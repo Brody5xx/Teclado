@@ -1456,6 +1456,14 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.3.0" to tr("•  Forma real del sitio: en Mis sitios, toca un sitio › «Dibujar la forma del sitio» y toca sus esquinas en el mapa. Así solo cuenta si estás adentro de esa forma (una calle o un parqueo de enfrente ya no cuentan).\n" +
+            "•  Wi-Fi de tu casa: cuando el teléfono se desconecta del Wi-Fi de tu casa, esa es la hora en que saliste (y cuando se conecta, la hora en que llegaste). Lo aprende solo al guardar tu casa o al llegar.\n" +
+            "•  Revisión del día: en el historial de Mi jornada, cada día tiene un mapa con los puntos donde el GPS te ubicó y cada llegada y salida con su hora. Al terminar el día, el aviso trae «Revisar el día».\n" +
+            "•  Reporte de precisión: al terminar tu último día de trabajo de la semana te dice cuántas se anotaron solas, cuántas corregiste y qué sitio falla más. También sale en el historial y en Mis sitios.",
+            "•  Real site shape: in My sites, tap a site › «Draw the site's shape» and tap its corners on the map. Then it only counts if you're inside that shape (a street or a parking lot across the street no longer count).\n" +
+            "•  Your home Wi-Fi: when the phone disconnects from your home Wi-Fi, that's the time you left (and when it connects, the time you got home). It learns it by itself when you save your home or get home.\n" +
+            "•  Day review: in the My workday history, each day has a map with the points where GPS located you and each arrival and departure with its time. When the day ends, the alert has «Review the day».\n" +
+            "•  Accuracy report: when your last workday of the week ends, it tells you how many were logged automatically, how many you corrected and which site fails most. It also shows in the history and in My sites."),
         "15.2.0" to tr("•  Mi jornada mucho más precisa:\n" +
             "•  GPS fino cerca del sitio: al acercarte a 1 km de un sitio, el GPS fino se prende unos minutos y anota el minuto exacto en que entras o sales. Después se apaga solo.\n" +
             "•  Detecta el vehículo (con el permiso «Actividad física»): sabe cuándo te subes y te bajas de la camioneta, también de pasajero. El día empieza y termina a esa hora, y la salida de un sitio se anota al minuto.\n" +
