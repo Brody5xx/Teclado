@@ -161,6 +161,7 @@ object WorkdayCenter {
             if (Build.VERSION.SDK_INT >= 24) android.service.quicksettings.TileService.requestListeningState(ctx, ComponentName(ctx, WorkdayTile::class.java))
         } catch (_: Exception) { }
         scheduleMorning(ctx)
+        try { Forgot.schedule(ctx) } catch (_: Exception) { } // 🔔 «¿se te olvidó?» mientras el día está abierto
         try { scheduleOvertime(ctx) } catch (_: Exception) { }
         try { scheduleNight(ctx) } catch (_: Exception) { }
     }

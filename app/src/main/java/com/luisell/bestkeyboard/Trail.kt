@@ -35,6 +35,33 @@ object Trail {
         e.putString("trail_days", days.joinToString(",")).apply()
     }
 
+    /**
+     * 🧹 El recorrido limpio para el mapa: cuando estás quieto, el GPS cae unos metros distinto cada vez (el «zigzag»);
+     * esos puntos se juntan en uno solo (el promedio). Solo quedan los puntos donde de verdad te moviste.
+     */
+    fun simplify(pts: List<DoubleArray>): List<DoubleArray> {
+        if (pts.size < 3) return pts
+        val out = ArrayList<DoubleArray>()
+        var group = ArrayList<DoubleArray>()
+        val d = FloatArray(1)
+        fun flush() {
+            if (group.isEmpty()) return
+            val la = group.sumOf { it[0] / maxOf(5.0, it[2]) } / group.sumOf { 1.0 / maxOf(5.0, it[2]) }
+            val lo = group.sumOf { it[1] / maxOf(5.0, it[2]) } / group.sumOf { 1.0 / maxOf(5.0, it[2]) }
+            out.add(doubleArrayOf(la, lo, group.minOf { it[2] }, group.first()[3]))
+            group = ArrayList()
+        }
+        for (p in pts) {
+            if (group.isEmpty()) { group.add(p); continue }
+            val f = group.first()
+            Location.distanceBetween(f[0], f[1], p[0], p[1], d)
+            // Dentro del margen de error de las dos lecturas (mínimo 25 m): sigues en el mismo lugar
+            if (d[0] <= maxOf(25.0, (f[2] + p[2]) * 0.6)) group.add(p) else { flush(); group.add(p) }
+        }
+        flush()
+        return out
+    }
+
     /** Los puntos de un día: [lat, lon, precisión, hora]. */
     fun day(ctx: Context, day: Long): List<DoubleArray> {
         val a = try { JSONArray(Prefs.get(ctx).getString(key(day), "[]")) } catch (_: Exception) { return emptyList() }

@@ -51,7 +51,13 @@ class MapPreview(context: Context, private val lat: Double, private val lon: Dou
     /** 🗺️ El recorrido del día ([lat, lon, …]) y las marcas (llegué, salí…). */
     var path: List<DoubleArray> = emptyList()
         set(v) { field = v; invalidate() }
-    class Mark(val lat: Double, val lon: Double, val label: String, val color: Int)
+    class Mark(val lat: Double, val lon: Double, val label: String, val color: Int, val time: Long = 0L, val info: String = "")
+    /** Tocaste una marca del día. */
+    var onMarkTap: ((Mark) -> Unit)? = null
+    /** 🔷 Los sitios del día (su forma o su círculo), para ver si la llegada cayó adentro. */
+    class Area(val lat: Double, val lon: Double, val radius: Int, val shape: List<DoubleArray>)
+    var areas: List<Area> = emptyList()
+        set(v) { field = v; invalidate() }
     var marks: List<Mark> = emptyList()
         set(v) { field = v; invalidate() }
 
@@ -305,6 +311,23 @@ class MapPreview(context: Context, private val lat: Double, private val lon: Dou
     }
 
     private fun drawRoute(c: Canvas) {
+        // Los sitios donde estuviste (tenues, debajo del recorrido)
+        for (a in areas) {
+            if (a.shape.size >= 3) {
+                val pa = Path()
+                for ((i, pt) in a.shape.withIndex()) { val x = sx(pt[1]); val y = sy(pt[0]); if (i == 0) pa.moveTo(x, y) else pa.lineTo(x, y) }
+                pa.close()
+                paint.style = Paint.Style.FILL; paint.color = 0x408B5CF6; c.drawPath(pa, paint)
+                paint.style = Paint.Style.STROKE; paint.strokeWidth = 2f * d; paint.color = 0xCCA78BFA.toInt(); c.drawPath(pa, paint)
+            } else {
+                val rpx = (a.radius / mpp(vz, a.lat) * scale).toFloat()
+                paint.style = Paint.Style.FILL; paint.color = 0x268B5CF6; c.drawCircle(sx(a.lon), sy(a.lat), rpx, paint)
+                paint.style = Paint.Style.STROKE; paint.strokeWidth = 1.5f * d; paint.color = 0xAAA78BFA.toInt()
+                paint.pathEffect = android.graphics.DashPathEffect(floatArrayOf(6f * d, 5f * d), 0f)
+                c.drawCircle(sx(a.lon), sy(a.lat), rpx, paint)
+                paint.pathEffect = null
+            }
+        }
         // 🗺️ El recorrido: una línea suave que une los puntos
         if (path.size >= 2) {
             val pa = Path()
@@ -550,7 +573,16 @@ class MapPreview(context: Context, private val lat: Double, private val lon: Dou
                     zOut.contains(e.x, e.y) -> { zoomBy(-1.0); return true }
                     center.contains(e.x, e.y) -> { userLa = null; userLo = null; userZ = null; invalidate(); return true }
                 }
-                val cb = onCorner ?: return true
+                val cb = onCorner
+                if (cb == null) {
+                    // 🗺️ Tocaste una marca del día: qué fue y a qué hora
+                    val tap = onMarkTap ?: return true
+                    marks.minByOrNull { m -> val dx = sx(m.lon) - e.x; val dy = sy(m.lat) - e.y; dx * dx + dy * dy }?.let { m ->
+                        val dx = sx(m.lon) - e.x; val dy = sy(m.lat) - e.y
+                        if (dx * dx + dy * dy < (26f * d) * (26f * d)) tap(m)
+                    }
+                    return true
+                }
                 if (editMode) { select(hitCorner(e.x, e.y)); return true }
                 shape = shape + listOf(toLatLon(e.x, e.y))
                 cb(shape)

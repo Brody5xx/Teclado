@@ -254,6 +254,8 @@ object AutoSites {
                 if (t > 0) closeAtHome(ctx, t)
                 return
             }
+            Forgot.ACTION -> { Forgot.check(ctx, rcv); Forgot.schedule(ctx); return }
+            Forgot.ACTION_ADD -> { Forgot.add(ctx, intent); return }
             ACTION_HOME_AT -> {
                 val t = intent.getLongExtra(EXTRA_TIME, System.currentTimeMillis())
                 val k = intent.getStringExtra(WorkdayCenter.EXTRA_KIND) ?: WorkDay.HOME

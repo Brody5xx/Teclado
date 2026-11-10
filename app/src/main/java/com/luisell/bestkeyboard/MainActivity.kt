@@ -1456,6 +1456,16 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.7.0" to tr("•  Línea de tiempo del día (en el historial): una barra de colores con cada tramo (manejando, en el sitio, almuerzo), sus horas, lo que duró y lo que ganaste. Usa la misma cuenta que tu cheque. Toca un tramo para cambiar su hora de inicio o de fin.\n" +
+            "•  Avisos de «¿se te olvidó?»: si ya es tarde y tu día sigue abierto, si sigues «en un sitio» pero el GPS dice que ya te fuiste, o si llevas 6 horas sin marcar almuerzo. Cada aviso trae el botón con la hora más probable (por ejemplo, cuando te bajaste de la camioneta).\n" +
+            "•  Mapa del día más claro: sin el zigzag de cuando estás quieto, con la forma de los sitios donde estuviste, y tocas una marca para ver qué fue y cambiar o borrar su hora.\n" +
+            "•  Horas por sitio: esta semana o este mes, cuántas horas en cada sitio y manejando, con el dinero.\n" +
+            "•  Comparar con tu cheque real: escribes lo que te pagaron y te dice la diferencia, cuántas horas son y qué día de esa semana puede estar mal anotado.",
+            "•  Day timeline (in the history): a colored bar with each stretch (driving, on site, lunch), its times, how long it lasted and what you earned. It uses the same math as your paycheck. Tap a stretch to change its start or end time.\n" +
+            "•  «Did you forget?» alerts: if it's late and your day is still open, if you're still «at a site» but GPS says you left, or if you've worked 6 hours without logging lunch. Each alert has a button with the most likely time (for example, when you got out of the truck).\n" +
+            "•  Clearer day map: no zigzag when you're standing still, with the shape of the sites you were at, and tap a marker to see what it was and change or delete its time.\n" +
+            "•  Hours by site: this week or this month, how many hours at each site and driving, with the money.\n" +
+            "•  Compare with your real paycheck: type what you were paid and it tells you the difference, how many hours that is and which day that week may be logged wrong."),
         "15.6.1" to tr("•  Mapa más real: ya no se ven las rayitas finas entre los cuadros de las fotos, las fotos nuevas aparecen suave (y mientras llegan se ve la de más lejos), y los nombres de las calles salen a su tamaño normal también al alejar.\n" +
             "•  Escala como Google abajo a la izquierda (metros y pies).\n" +
             "•  Arreglado: en los paneles del mapa los botones de abajo se veían cortados o sin texto. Ahora siempre se ven completos (el contenido se desliza si no cabe) y su letra se ajusta sola.",
