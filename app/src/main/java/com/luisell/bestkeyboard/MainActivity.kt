@@ -1456,6 +1456,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.4.0" to tr("•  Mapas como Google Maps: vista «Satélite» (las fotos reales desde arriba) con el botón de arriba a la derecha para cambiar a «Mapa». Se acercan y alejan con dos dedos y se mueven arrastrando con un dedo. Así puedes dibujar la forma exacta de una casa o un edificio pequeño.",
+            "•  Maps like Google Maps: «Satellite» view (real photos from above) with the top-right button to switch to «Map». Pinch with two fingers to zoom in and out and drag with one finger to move. Now you can draw the exact shape of a house or a small building."),
         "15.3.0" to tr("•  Forma real del sitio: en Mis sitios, toca un sitio › «Dibujar la forma del sitio» y toca sus esquinas en el mapa. Así solo cuenta si estás adentro de esa forma (una calle o un parqueo de enfrente ya no cuentan).\n" +
             "•  Wi-Fi de tu casa: cuando el teléfono se desconecta del Wi-Fi de tu casa, esa es la hora en que saliste (y cuando se conecta, la hora en que llegaste). Lo aprende solo al guardar tu casa o al llegar.\n" +
             "•  Revisión del día: en el historial de Mi jornada, cada día tiene un mapa con los puntos donde el GPS te ubicó y cada llegada y salida con su hora. Al terminar el día, el aviso trae «Revisar el día».\n" +

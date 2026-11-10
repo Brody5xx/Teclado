@@ -385,7 +385,7 @@ class SitesActivity : UiActivity() {
         val info = TextView(this).apply { textSize = 13f; setTextColor(SUB); setPadding(0, dp(10), 0, dp(4)); gravity = Gravity.CENTER }
         fun paintInfo(n: Int) {
             info.text = when {
-                n == 0 -> tr("Toca las esquinas del sitio en orden, dando la vuelta (mínimo 3).", "Tap the site's corners in order, going around (at least 3).")
+                n == 0 -> tr("Acerca con dos dedos y toca las esquinas del sitio en orden, dando la vuelta (mínimo 3).", "Zoom in with two fingers and tap the site's corners in order, going around (at least 3).")
                 n < 3 -> tr("Esquinas: $n. Sigue tocando (mínimo 3).", "Corners: $n. Keep tapping (at least 3).")
                 else -> tr("Esquinas: $n. Toca «Guardar» cuando la forma cubra todo el sitio.", "Corners: $n. Tap «Save» when the shape covers the whole site.")
             }
