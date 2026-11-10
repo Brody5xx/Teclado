@@ -1456,6 +1456,12 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.6.1" to tr("•  Mapa más real: ya no se ven las rayitas finas entre los cuadros de las fotos, las fotos nuevas aparecen suave (y mientras llegan se ve la de más lejos), y los nombres de las calles salen a su tamaño normal también al alejar.\n" +
+            "•  Escala como Google abajo a la izquierda (metros y pies).\n" +
+            "•  Arreglado: en los paneles del mapa los botones de abajo se veían cortados o sin texto. Ahora siempre se ven completos (el contenido se desliza si no cabe) y su letra se ajusta sola.",
+            "•  More realistic map: no more thin lines between the photo tiles, new photos fade in (while they load you see the farther one), and street names show at their normal size when zoomed out too.\n" +
+            "•  Scale bar like Google at the bottom left (meters and feet).\n" +
+            "•  Fixed: in the map panels the bottom buttons looked cut off or without text. Now they always show completely (the content scrolls if it doesn't fit) and their text adjusts by itself."),
         "15.6.0" to tr("•  Panel nuevo para dibujar la forma del sitio (y para la distancia): tarjeta con su rayita de luz que brilla, mapa más grande con borde de colores y botones bonitos.\n" +
             "•  Satélite más real: fotos de más cerca y más nítidas (si no hay foto tan de cerca, usa la de más lejos sin quedar en gris), con las calles y sus nombres encima, como Google.\n" +
             "•  Botones sobre el mapa como Google Maps: + y − para acercar y alejar, y el de centrar para volver al sitio.\n" +

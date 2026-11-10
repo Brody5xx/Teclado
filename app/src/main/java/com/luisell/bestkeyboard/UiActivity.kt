@@ -193,13 +193,23 @@ abstract class UiActivity : Activity() {
             text = sub; textSize = 13f; setTextColor(SUB); setLineSpacing(0f, 1.15f)
             setPadding(dp(4), 0, dp(4), dp(10))
         })
-        box.addView(content, LinearLayout.LayoutParams(-1, -2))
+        // El contenido se puede deslizar si no cabe: así los botones de abajo siempre se ven completos
+        val maxH = (resources.displayMetrics.heightPixels * 0.62f).toInt()
+        val scroll = object : android.widget.ScrollView(this) {
+            override fun onMeasure(w: Int, h: Int) = super.onMeasure(w, MeasureSpec.makeMeasureSpec(maxH, MeasureSpec.AT_MOST))
+        }
+        scroll.isVerticalScrollBarEnabled = false
+        scroll.overScrollMode = View.OVER_SCROLL_NEVER
+        scroll.addView(content, android.widget.FrameLayout.LayoutParams(-1, -2))
+        box.addView(scroll, LinearLayout.LayoutParams(-1, -2))
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         for ((i, b) in buttons.withIndex()) {
             val tv = TextView(this).apply {
                 text = b.label; textSize = 15f; gravity = Gravity.CENTER; maxLines = 1
-                ellipsize = android.text.TextUtils.TruncateAt.END
-                setPadding(dp(12), dp(12), dp(12), dp(12))
+                // La letra se achica sola si el nombre no cabe (nunca sale cortado con «…»)
+                setAutoSizeTextTypeUniformWithConfiguration(10, 15, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+                minHeight = dp(48)
+                setPadding(dp(8), dp(10), dp(8), dp(10))
                 setTypeface(Typeface.create("sans-serif-medium", if (b.kind == 0) Typeface.BOLD else Typeface.NORMAL))
                 when (b.kind) {
                     0 -> { setTextColor(0xFF0B1020.toInt()); background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(22f) } }
@@ -209,7 +219,7 @@ abstract class UiActivity : Activity() {
                 isClickable = true
                 setOnClickListener { if (b.act()) try { dlg.dismiss() } catch (_: Exception) { } }
             }
-            row.addView(tv, LinearLayout.LayoutParams(0, -2, if (b.kind == 0) 1.25f else 1f).apply { if (i > 0) leftMargin = dp(8) })
+            row.addView(tv, LinearLayout.LayoutParams(0, dp(50), if (b.kind == 0) 1.25f else 1f).apply { if (i > 0) leftMargin = dp(8) })
         }
         box.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
         val wrap = android.widget.FrameLayout(this).apply { setPadding(dp(12), dp(20), dp(12), dp(20)); addView(box) }

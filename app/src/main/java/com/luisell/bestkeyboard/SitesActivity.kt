@@ -531,7 +531,9 @@ class SitesActivity : UiActivity() {
     }
 
     /** El mapa dentro de su marco redondeado (con el borde fino del tema). */
-    private fun mapFrame(map: MapPreview, hDp: Int): android.widget.FrameLayout {
+    private fun mapFrame(map: MapPreview, want: Int): android.widget.FrameLayout {
+        // Que el mapa no sea más alto que la mitad de la pantalla (en teléfonos chicos)
+        val hDp = minOf(want, (resources.displayMetrics.heightPixels / resources.displayMetrics.density * 0.46f).toInt())
         map.mapLabel = tr("Mapa", "Map"); map.satLabel = tr("Satélite", "Satellite")
         map.clipToOutline = true
         map.background = GradientDrawable().apply { cornerRadius = dpf(20f); setColor(0xFF1B2230.toInt()) }
@@ -674,7 +676,7 @@ class SitesActivity : UiActivity() {
         content.addView(bar, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
         show(map.radius)
         panelDialog(s.name, tr("Mueve la barra: el círculo es el área donde cuenta que llegaste.", "Move the bar: the circle is the area where it counts as arrived."), content, listOf(
-            PanelBtn(if (save != null) tr("150 m", "150 m") else tr("La de todos", "Default"), 1) {
+            PanelBtn(if (save != null) tr("150 m", "150 m") else tr("Normal", "Default"), 1) {
                 if (save != null) save(0) else SiteStore.setRadius(prefs, s.name, 0)
                 AutoSites.register(this); refresh(); paintAuto(); true
             },

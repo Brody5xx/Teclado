@@ -156,8 +156,13 @@ class MapPreview(context: Context, private val lat: Double, private val lon: Dou
         val cx = wx(cLo, z); val cy = wy(cLa, z)
         val left = cx - w / 2 / scale; val top = cy - h / 2 / scale
         vLeft = left; vTop = top
-        val layers = if (satellite) listOf("s", "t") else listOf("o")
-        for (layer in layers) drawLayer(c, layer, z, left, top, w, h)
+        if (satellite) {
+            drawLayer(c, "s", z, scale, left, top, w, h)
+            // Las calles y sus nombres: a su tamaño normal (sin pedirlas de más cerca, así las letras no salen chiquitas)
+            val lz = floor(zf + 0.35).toInt().coerceIn(3, OSM_MAX)
+            val ls = (base * 2.0.pow(zf - lz)).toFloat()
+            drawLayer(c, "t", lz, ls, wx(cLo, lz) - w / 2 / ls, wy(cLa, lz) - h / 2 / ls, w, h)
+        } else drawLayer(c, "o", z, scale, left, top, w, h)
         if (!satellite) c.drawColor(0x22000000)
         // Un degradado suave arriba y abajo (para que los botones y el crédito se lean)
         paint.shader = android.graphics.LinearGradient(0f, 0f, 0f, h, intArrayOf(0x55000000, 0x00000000, 0x00000000, 0x66000000),
@@ -172,38 +177,55 @@ class MapPreview(context: Context, private val lat: Double, private val lon: Dou
         drawControls(c, w, h)
     }
 
-    /** Una capa de fotos (s = satélite, t = calles encima, o = mapa). Si una no llegó, usa la de más lejos agrandada. */
-    private fun drawLayer(c: Canvas, layer: String, z: Int, left: Double, top: Double, w: Float, h: Float) {
-        val tilePx = 256f * scale
+    /** Cuándo llegó cada foto (para que aparezca suave, no de golpe). */
+    private val arrived = HashMap<String, Long>()
+
+    /**
+     * Una capa de fotos (s = satélite, t = calles encima, o = mapa). Los cuadros se pegan sin rayitas entre ellos;
+     * si uno no llegó (o no existe tan de cerca), se ve el de más lejos agrandado, y el nuevo aparece suave encima.
+     */
+    private fun drawLayer(c: Canvas, layer: String, z: Int, sc: Float, left: Double, top: Double, w: Float, h: Float) {
+        val tilePx = 256f * sc
         val tx0 = floor(left / 256).toInt(); val ty0 = floor(top / 256).toInt()
-        val tx1 = floor((left + w / scale) / 256).toInt(); val ty1 = floor((top + h / scale) / 256).toInt()
+        val tx1 = floor((left + w / sc) / 256).toInt(); val ty1 = floor((top + h / sc) / 256).toInt()
         val n = 1 shl z
-        paint.alpha = if (layer == "t") 235 else 255
+        val full = if (layer == "t") 235 else 255
+        val now = android.os.SystemClock.uptimeMillis()
+        var fading = false
         for (tx in tx0..tx1) for (ty in ty0..ty1) {
             if (ty < 0 || ty >= n) continue
             val x = ((tx % n) + n) % n
-            val px = ((tx * 256 - left) * scale).toFloat(); val py = ((ty * 256 - top) * scale).toFloat()
-            dst.set(px, py, px + tilePx, py + tilePx)
+            val px = ((tx * 256 - left) * sc).toFloat(); val py = ((ty * 256 - top) * sc).toFloat()
+            // Bordes en píxeles enteros y 1 px de más: así no se ven líneas finas entre los cuadros
+            dst.set(floor(px), floor(py), kotlin.math.ceil(px + tilePx) + 1f, kotlin.math.ceil(py + tilePx) + 1f)
             val key = "$layer/$z/$x/$ty"
             val b = synchronized(cache) { cache[key] }
-            if (b != null) { src.set(0, 0, b.width, b.height); c.drawBitmap(b, src, dst, paint); continue }
-            if (synchronized(missing) { key !in missing }) load(key)
-            // Mientras llega (o si no existe tan de cerca): la de más lejos, agrandada
-            if (layer == "t") continue
-            for (up in 1..4) {
+            val since = arrived[key]
+            val a = if (b == null) 0f else if (since == null) 1f else ((now - since) / 260f).coerceIn(0f, 1f)
+            if (b == null && synchronized(missing) { key !in missing }) load(key)
+            // Debajo (mientras llega o mientras aparece): la de más lejos, agrandada
+            if (a < 1f && layer != "t") for (up in 1..5) {
                 val pz = z - up
                 if (pz < 3) break
                 val f = 1 shl up
                 val pk = "$layer/$pz/${x / f}/${ty / f}"
                 val pb = synchronized(cache) { cache[pk] } ?: continue
-                val sub = pb.width / f
+                val sub = pb.width.toFloat() / f
                 val ox = (x % f) * sub; val oy = (ty % f) * sub
-                src.set(ox, oy, ox + sub, oy + sub)
+                src.set(ox.toInt(), oy.toInt(), (ox + sub).toInt(), (oy + sub).toInt())
+                paint.alpha = full
                 c.drawBitmap(pb, src, dst, paint)
                 break
             }
+            if (b != null) {
+                if (a < 1f) fading = true
+                paint.alpha = (full * a).toInt()
+                src.set(0, 0, b.width, b.height)
+                c.drawBitmap(b, src, dst, paint)
+            }
         }
         paint.alpha = 255
+        if (fading) postInvalidateOnAnimation()
     }
 
     private fun drawSite(c: Canvas, z: Int) {
@@ -322,7 +344,8 @@ class MapPreview(context: Context, private val lat: Double, private val lon: Dou
         paint.style = Paint.Style.FILL
         paint.textSize = 9f * d
         paint.color = 0xDDFFFFFF.toInt()
-        c.drawText(if (satellite) "Imagery © Esri, Maxar, Earthstar Geographics" else "© OpenStreetMap", 8f * d, h - 8f * d, paint)
+        c.drawText(if (satellite) "Imagery © Esri, Maxar, Earthstar Geographics" else "© OpenStreetMap", 8f * d, h - 6f * d, paint)
+        drawScale(c, h - 14f * d)
         // 🛰️ «Satélite / Mapa» arriba a la derecha
         paint.textSize = 12.5f * d
         val label = if (satellite) mapLabel else satLabel
@@ -359,6 +382,36 @@ class MapPreview(context: Context, private val lat: Double, private val lon: Dou
             c.drawLine(x1, y1, x2, y2, paint)
         }
         paint.strokeCap = Paint.Cap.BUTT
+    }
+
+    /** 📏 La escala (como Google): una rayita con «50 m» arriba y «200 ft» abajo. */
+    private fun drawScale(c: Canvas, h: Float) {
+        val mPerPx = mpp(vz, lastLa) / scale
+        val maxPx = 90f * d
+        fun nice(v: Double): Double {
+            val e = 10.0.pow(floor(kotlin.math.log10(v)))
+            val f = v / e
+            return e * when { f >= 5 -> 5.0; f >= 2 -> 2.0; else -> 1.0 }
+        }
+        val m = nice(mPerPx * maxPx); val ft = nice(mPerPx * maxPx * 3.28084)
+        val mPx = (m / mPerPx).toFloat(); val ftPx = (ft / 3.28084 / mPerPx).toFloat()
+        val x0 = 10f * d; val y = h - 24f * d
+        val mLabel = if (m >= 1000) "${(m / 1000).let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }} km" else "${m.toInt()} m"
+        val ftLabel = if (ft >= 5280) "${(ft / 5280).let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }} mi" else "${ft.toInt()} ft"
+        paint.textSize = 10f * d
+        paint.style = Paint.Style.STROKE; paint.strokeCap = Paint.Cap.ROUND
+        paint.strokeWidth = 4f * d; paint.color = 0x99000000.toInt()
+        c.drawLine(x0, y, x0 + maxOf(mPx, ftPx), y, paint)
+        paint.strokeWidth = 2f * d; paint.color = 0xFFFFFFFF.toInt()
+        c.drawLine(x0, y, x0 + maxOf(mPx, ftPx), y, paint)
+        c.drawLine(x0 + mPx, y - 5f * d, x0 + mPx, y, paint)
+        c.drawLine(x0 + ftPx, y, x0 + ftPx, y + 5f * d, paint)
+        paint.strokeCap = Paint.Cap.BUTT
+        paint.style = Paint.Style.FILL
+        paint.setShadowLayer(3f * d, 0f, 0f, 0xCC000000.toInt())
+        c.drawText(mLabel, x0 + 2f * d, y - 6f * d, paint)
+        c.drawText(ftLabel, x0 + 2f * d, y + 14f * d, paint)
+        paint.clearShadowLayer()
     }
 
     /** Un botón de vidrio oscuro con borde fino del color del tema. */
@@ -530,7 +583,7 @@ class MapPreview(context: Context, private val lat: Double, private val lon: Dou
             } catch (_: Throwable) { null }
             // Esri manda una imagen gris («todavía no hay foto») donde no tiene tan de cerca: no sirve
             if (bmp != null && parts[0] == "s" && looksEmpty(bmp)) { bmp = null; notThere = true }
-            if (bmp != null) synchronized(cache) { cache[key] = bmp }
+            if (bmp != null) { synchronized(cache) { cache[key] = bmp }; main.post { arrived[key] = android.os.SystemClock.uptimeMillis() } }
             else if (notThere) synchronized(missing) { missing.add(key) }
             synchronized(loading) { loading.remove(key) }
             main.post { invalidate() }
