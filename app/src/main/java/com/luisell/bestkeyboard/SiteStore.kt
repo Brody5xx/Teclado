@@ -112,10 +112,10 @@ object SiteStore {
     }
 
     /** Tu casa como un sitio (para el mapa, la forma y la distancia). */
-    fun homeSite(p: SharedPreferences): Site? {
+    fun homeSite(p: SharedPreferences, name: String = L.t("Casa", "Home")): Site? {
         val o = homeJson(p) ?: return null
         val sh = o.optJSONArray("sh")
-        return Site(L.t("Casa", "Home"), o.optString("a", ""), o.optDouble("la"), o.optDouble("lo"), kind = "home", radius = homeRadius(p),
+        return Site(name, o.optString("a", ""), o.optDouble("la"), o.optDouble("lo"), kind = "home", radius = homeRadius(p),
             shape = if (sh == null) emptyList() else (0 until sh.length()).map { i -> sh.getJSONArray(i).let { doubleArrayOf(it.getDouble(0), it.getDouble(1)) } })
     }
 

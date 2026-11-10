@@ -210,6 +210,7 @@ class MonthActivity : UiActivity() {
         val map = MapPreview(this, first[0], first[1])
         map.path = trail
         map.marks = marks
+        map.mapLabel = tr("Mapa", "Map"); map.satLabel = tr("Satélite", "Satellite")
         map.clipToOutline = true
         map.background = GradientDrawable().apply { cornerRadius = dpf(16f); setColor(0xFF1B2230.toInt()) }
         return map

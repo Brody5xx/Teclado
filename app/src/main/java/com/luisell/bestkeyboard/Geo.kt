@@ -37,6 +37,19 @@ object Geo {
         return best.toFloat()
     }
 
+    /** El área de la forma en metros cuadrados (aproximada). */
+    fun area(poly: List<DoubleArray>): Double {
+        if (poly.size < 3) return 0.0
+        val la0 = poly.sumOf { it[0] } / poly.size
+        val kx = 111320.0 * cos(Math.toRadians(la0)); val ky = 110540.0
+        var a = 0.0
+        for (i in poly.indices) {
+            val p = poly[i]; val q = poly[(i + 1) % poly.size]
+            a += (p[1] * kx) * (q[0] * ky) - (q[1] * kx) * (p[0] * ky)
+        }
+        return Math.abs(a) / 2.0
+    }
+
     /** Qué tan lejos llega la forma desde el punto del sitio (para el círculo que vigila el teléfono). */
     fun reach(s: SiteStore.Site): Float {
         val d = FloatArray(1)

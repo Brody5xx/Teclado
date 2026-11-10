@@ -169,6 +169,62 @@ abstract class UiActivity : Activity() {
         return dlg
     }
 
+    /** Un botón del panel: [kind] 0 = principal (degradado), 1 = normal, 2 = peligro (rojo suave). [act] devuelve true para cerrar. */
+    protected class PanelBtn(val label: String, val kind: Int, val act: () -> Boolean)
+
+    /**
+     * ✨ Panel bonito (igual que las opciones): tarjeta oscura, título con su rayita de luz que se traza y brilla,
+     * una explicación, el contenido y los botones abajo (el principal con el degradado del diamante).
+     */
+    protected fun panelDialog(title: String, sub: String?, content: View, buttons: List<PanelBtn>): android.app.Dialog {
+        val dlg = android.app.Dialog(this)
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(20), dp(18), dp(16))
+            background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(26f); setStroke(dp(1), LINE) }
+        }
+        box.addView(TextView(this).apply {
+            text = title; textSize = 20f; setTextColor(TEXT)
+            setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD))
+            setPadding(dp(4), 0, dp(4), dp(4))
+        })
+        box.addView(LightLine(this), LinearLayout.LayoutParams(dp(120), dp(8)).apply { topMargin = dp(6); bottomMargin = dp(8); leftMargin = dp(4) })
+        if (!sub.isNullOrBlank()) box.addView(TextView(this).apply {
+            text = sub; textSize = 13f; setTextColor(SUB); setLineSpacing(0f, 1.15f)
+            setPadding(dp(4), 0, dp(4), dp(10))
+        })
+        box.addView(content, LinearLayout.LayoutParams(-1, -2))
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        for ((i, b) in buttons.withIndex()) {
+            val tv = TextView(this).apply {
+                text = b.label; textSize = 15f; gravity = Gravity.CENTER; maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(dp(12), dp(12), dp(12), dp(12))
+                setTypeface(Typeface.create("sans-serif-medium", if (b.kind == 0) Typeface.BOLD else Typeface.NORMAL))
+                when (b.kind) {
+                    0 -> { setTextColor(0xFF0B1020.toInt()); background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(22f) } }
+                    2 -> { setTextColor(0xFFFCA5A5.toInt()); background = GradientDrawable().apply { cornerRadius = dpf(22f); setStroke(dp(1), 0x66F87171) } }
+                    else -> { setTextColor(TEXT); background = GradientDrawable().apply { cornerRadius = dpf(22f); setColor(CARD2); setStroke(dp(1), LINE) } }
+                }
+                isClickable = true
+                setOnClickListener { if (b.act()) try { dlg.dismiss() } catch (_: Exception) { } }
+            }
+            row.addView(tv, LinearLayout.LayoutParams(0, -2, if (b.kind == 0) 1.25f else 1f).apply { if (i > 0) leftMargin = dp(8) })
+        }
+        box.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        val wrap = android.widget.FrameLayout(this).apply { setPadding(dp(12), dp(20), dp(12), dp(20)); addView(box) }
+        dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        dlg.setContentView(wrap)
+        dlg.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+        dlg.window?.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+        dlg.window?.setDimAmount(0.75f)
+        // Entra suave (sube un poquito mientras aparece)
+        box.alpha = 0f; box.translationY = dpf(18f)
+        box.animate().alpha(1f).translationY(0f).setDuration(260L).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        try { dlg.show() } catch (_: Exception) { }
+        return dlg
+    }
+
     /**
      * ✨ La rayita de luz debajo del título: al abrir se traza de izquierda a derecha
      * (con una estrellita en la punta) y después un brillo la recorre una y otra vez.

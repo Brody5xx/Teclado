@@ -1456,6 +1456,16 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.6.0" to tr("•  Panel nuevo para dibujar la forma del sitio (y para la distancia): tarjeta con su rayita de luz que brilla, mapa más grande con borde de colores y botones bonitos.\n" +
+            "•  Satélite más real: fotos de más cerca y más nítidas (si no hay foto tan de cerca, usa la de más lejos sin quedar en gris), con las calles y sus nombres encima, como Google.\n" +
+            "•  Botones sobre el mapa como Google Maps: + y − para acercar y alejar, y el de centrar para volver al sitio.\n" +
+            "•  Modo Editar: arrastra una esquina para moverla, tócala para elegirla y «Quitar punto», o arrastra el puntito «+» del medio de un lado para agregar una esquina ahí. «Deshacer» vuelve atrás paso por paso.\n" +
+            "•  Muestra el área aproximada de la forma (m² y pies²).",
+            "•  New panel to draw the site's shape (and for the distance): card with its shining light line, bigger map with a colored border and nicer buttons.\n" +
+            "•  More realistic satellite: closer, sharper photos (if there's no photo that close, it uses the farther one instead of gray), with the streets and their names on top, like Google.\n" +
+            "•  Buttons on the map like Google Maps: + and − to zoom in and out, and the center button to go back to the site.\n" +
+            "•  Edit mode: drag a corner to move it, tap it to select it and «Remove point», or drag the «+» dot in the middle of a side to add a corner there. «Undo» goes back step by step.\n" +
+            "•  Shows the shape's approximate area (m² and ft²)."),
         "15.5.1" to tr("•  Mis sitios: la casa y el parqueo ya no salen en «Sitios guardados»; se ven solo debajo de su botón, con su dirección y su distancia o forma.\n" +
             "•  Tu casa ahora tiene «Distancia de detección» y «Dibujar la forma del sitio», como los otros sitios.\n" +
             "•  El parqueo ya no tiene «Pago por hora» (ahí no te pagan diferente).",

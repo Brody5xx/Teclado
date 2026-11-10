@@ -311,7 +311,7 @@ class SitesActivity : UiActivity() {
     }
 
     private fun homeTap() {
-        val hs = SiteStore.homeSite(prefs)
+        val hs = SiteStore.homeSite(prefs, tr("Casa", "Home"))
         if (hs != null) {
             val opts = listOf(
                 tr("Distancia de detección (en el mapa)", "Detection distance (on the map)") to {
@@ -530,103 +530,161 @@ class SitesActivity : UiActivity() {
         choiceDialog(s.name, opts.map { it.first to null }) { w -> opts.getOrNull(w)?.second?.invoke() }
     }
 
+    /** El mapa dentro de su marco redondeado (con el borde fino del tema). */
+    private fun mapFrame(map: MapPreview, hDp: Int): android.widget.FrameLayout {
+        map.mapLabel = tr("Mapa", "Map"); map.satLabel = tr("Satélite", "Satellite")
+        map.clipToOutline = true
+        map.background = GradientDrawable().apply { cornerRadius = dpf(20f); setColor(0xFF1B2230.toInt()) }
+        return android.widget.FrameLayout(this).apply {
+            setPadding(dp(1), dp(1), dp(1), dp(1))
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(0x8822D3EE.toInt(), 0x888B5CF6.toInt())).apply { cornerRadius = dpf(21f) }
+            addView(map, android.widget.FrameLayout.LayoutParams(-1, dp(hDp)))
+        }
+    }
+
+    /** Un botoncito redondo de la barra de herramientas del mapa. */
+    private fun toolPill(label: String, act: () -> Unit) = TextView(this).apply {
+        text = label; textSize = 13.5f; setTextColor(TEXT); gravity = Gravity.CENTER; maxLines = 1
+        setPadding(dp(12), dp(9), dp(12), dp(9))
+        background = GradientDrawable().apply { cornerRadius = dpf(18f); setColor(CARD2); setStroke(dp(1), LINE) }
+        isClickable = true
+        setOnClickListener { act() }
+    }
+
+    private fun pillOn(v: TextView, on: Boolean) {
+        v.setTextColor(if (on) 0xFF0B1020.toInt() else TEXT)
+        v.setTypeface(v.typeface, if (on) Typeface.BOLD else Typeface.NORMAL)
+        v.background = if (on) GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(18f) }
+            else GradientDrawable().apply { cornerRadius = dpf(18f); setColor(CARD2); setStroke(dp(1), LINE) }
+    }
+
     /**
-     * 🔷 Dibuja la forma real del sitio tocando sus esquinas en el mapa (por ejemplo, el edificio y su parqueo).
+     * 🔷 Dibuja la forma real del sitio en el mapa (satélite o mapa, con zoom de dos dedos):
+     *  - «Agregar»: cada toque pone una esquina;
+     *  - «Editar»: arrastras una esquina para moverla, tocas una para elegirla y «Quitar punto»,
+     *    y arrastras el puntito del medio de un lado para agregar una esquina ahí;
+     *  - «Deshacer» vuelve atrás paso por paso.
      * Así una calle o un parqueo de enfrente no cuentan como «llegué».
      */
     private fun drawShape(s: SiteStore.Site, save: ((List<DoubleArray>) -> Unit)? = null) {
         if (s.lat == 0.0 && s.lon == 0.0) { toast("Este lugar no tiene GPS. Guárdalo estando ahí.", "This place has no GPS. Save it while you're there."); return }
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val map = MapPreview(this, s.lat, s.lon)
         map.radius = SiteStore.radiusOf(prefs, s)
         map.shape = s.shape
-        map.clipToOutline = true
-        map.background = GradientDrawable().apply { cornerRadius = dpf(18f); setColor(0xFF1B2230.toInt()) }
-        val info = TextView(this).apply { textSize = 13f; setTextColor(SUB); setPadding(0, dp(10), 0, dp(4)); gravity = Gravity.CENTER }
-        fun paintInfo(n: Int) {
-            info.text = when {
-                n == 0 -> tr("Acerca con dos dedos y toca las esquinas del sitio en orden, dando la vuelta (mínimo 3).", "Zoom in with two fingers and tap the site's corners in order, going around (at least 3).")
+        content.addView(mapFrame(map, 380), LinearLayout.LayoutParams(-1, -2))
+        // Las herramientas: Agregar · Editar · Deshacer · Quitar punto
+        val tools = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val history = ArrayList<List<DoubleArray>>()
+        var current = s.shape
+        val info = TextView(this).apply { textSize = 13f; setTextColor(SUB); setLineSpacing(0f, 1.15f); setPadding(dp(4), dp(10), dp(4), 0) }
+        lateinit var addBtn: TextView; lateinit var editBtn: TextView; lateinit var undoBtn: TextView; lateinit var delBtn: TextView
+        fun paint() {
+            val n = current.size
+            pillOn(addBtn, !map.editMode); pillOn(editBtn, map.editMode)
+            undoBtn.alpha = if (history.isEmpty()) 0.4f else 1f
+            delBtn.visibility = if (map.editMode) View.VISIBLE else View.GONE
+            delBtn.alpha = if (map.selected >= 0) 1f else 0.4f
+            val area = Geo.area(current)
+            val size = if (n >= 3) "  ·  " + tr("área aprox. ", "approx. area ") + (if (area >= 10_000) String.format(Locale.US, "%.2f ha", area / 10_000) else "${Math.round(area)} m²") +
+                " (" + String.format(Locale.US, "%,d", Math.round(area * 10.764)) + tr(" pies²)", " ft²)") else ""
+            info.text = (if (map.editMode) when {
+                n == 0 -> tr("Todavía no hay esquinas. Toca «Agregar» y toca el mapa.", "No corners yet. Tap «Add» and tap the map.")
+                map.selected >= 0 -> tr("Esquina ${map.selected + 1} elegida: arrástrala para moverla o toca «Quitar punto».", "Corner ${map.selected + 1} selected: drag it to move it or tap «Remove point».")
+                else -> tr("Arrastra una esquina para moverla. Toca una para elegirla. Arrastra el puntito «+» del medio de un lado para agregar una esquina ahí.",
+                    "Drag a corner to move it. Tap one to select it. Drag the «+» dot in the middle of a side to add a corner there.")
+            } else when {
+                n == 0 -> tr("Acerca con dos dedos y toca las esquinas del sitio en orden, dándole la vuelta.", "Zoom in with two fingers and tap the site's corners in order, going around.")
                 n < 3 -> tr("Esquinas: $n. Sigue tocando (mínimo 3).", "Corners: $n. Keep tapping (at least 3).")
-                else -> tr("Esquinas: $n. Toca «Guardar» cuando la forma cubra todo el sitio.", "Corners: $n. Tap «Save» when the shape covers the whole site.")
-            }
+                else -> tr("Esquinas: $n. Si una quedó mal, toca «Editar» para moverla.", "Corners: $n. If one is off, tap «Edit» to move it.")
+            }) + size
         }
-        map.onCorner = { paintInfo(it.size) }
-        box.addView(map, LinearLayout.LayoutParams(-1, dp(320)))
-        // Acercar, alejar y deshacer la última esquina
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
-        fun small(label: String, act: () -> Unit) = TextView(this).apply {
-            text = label; textSize = 14f; setTextColor(TEXT); gravity = Gravity.CENTER
-            setPadding(dp(14), dp(8), dp(14), dp(8))
-            background = GradientDrawable().apply { cornerRadius = dpf(16f); setColor(CARD); setStroke(dp(1), LINE) }
-            setOnClickListener { act() }
+        addBtn = toolPill(tr("Agregar", "Add")) { map.editMode = false; paint() }
+        editBtn = toolPill(tr("Editar", "Edit")) { map.editMode = true; paint() }
+        undoBtn = toolPill(tr("Deshacer", "Undo")) {
+            if (history.isNotEmpty()) { current = history.removeAt(history.size - 1); map.shape = current; paint() }
         }
-        row.addView(small("−") { map.zoomShift = map.zoomShift - 1 }, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
-        row.addView(small("+") { map.zoomShift = map.zoomShift + 1 }, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
-        row.addView(small(tr("Quitar última", "Remove last")) { map.shape = map.shape.dropLast(1); paintInfo(map.shape.size) }, LinearLayout.LayoutParams(-2, -2))
-        box.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        box.addView(info)
-        paintInfo(map.shape.size)
-        AlertDialog.Builder(this)
-            .setTitle(s.name)
-            .setView(box)
-            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
-                if (map.shape.size < 3) { toast("Faltan esquinas: toca al menos 3.", "Not enough corners: tap at least 3."); return@setPositiveButton }
-                if (save != null) save(map.shape) else SiteStore.setShape(prefs, s.name, map.shape)
-                AutoSites.register(this); refresh()
-                toast("Forma guardada: ahora solo cuenta si estás adentro de ella.", "Shape saved: now it only counts if you're inside it.")
-            }
-            .setNeutralButton(tr("Borrar forma", "Delete shape")) { _, _ ->
+        delBtn = toolPill(tr("Quitar punto", "Remove point")) { map.removeSelected() }
+        delBtn.setTextColor(0xFFFCA5A5.toInt())
+        tools.addView(addBtn, LinearLayout.LayoutParams(0, -2, 1f))
+        tools.addView(editBtn, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(6) })
+        tools.addView(undoBtn, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(6) })
+        content.addView(tools, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        content.addView(delBtn, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        content.addView(info)
+        map.onCorner = { sh -> history.add(current); current = sh; paint() }
+        map.onSelect = { paint() }
+        paint()
+        panelDialog(s.name, tr("Dibuja la forma real del sitio: solo cuenta que llegaste si estás adentro de ella.",
+            "Draw the site's real shape: it only counts as arrived if you're inside it."), content, listOf(
+            PanelBtn(tr("Borrar", "Delete"), 2) {
                 if (save != null) save(emptyList()) else SiteStore.setShape(prefs, s.name, emptyList())
-                AutoSites.register(this); refresh()
-            }
-            .setNegativeButton(tr("Cancelar", "Cancel"), null)
-            .show()
+                AutoSites.register(this); refresh(); paintAuto()
+                toast("Forma borrada: vuelve a usar el círculo.", "Shape deleted: it uses the circle again.")
+                true
+            },
+            PanelBtn(tr("Cancelar", "Cancel"), 1) { true },
+            PanelBtn(tr("Guardar", "Save"), 0) {
+                if (current.size in 1..2) { toast("Faltan esquinas: toca al menos 3.", "Not enough corners: tap at least 3."); return@PanelBtn false }
+                if (save != null) save(current) else SiteStore.setShape(prefs, s.name, current)
+                AutoSites.register(this); refresh(); paintAuto()
+                toast(if (current.isEmpty()) "Sin forma: usa el círculo." else "Forma guardada: ahora solo cuenta si estás adentro de ella.",
+                    if (current.isEmpty()) "No shape: it uses the circle." else "Shape saved: now it only counts if you're inside it.")
+                true
+            },
+        ))
     }
 
-    /** 📏 La distancia de un lugar, viendo el círculo en el mapa (como Samsung Rutinas). */
-    /** [save] = cómo guardar (null = la de un sitio normal; la casa usa la suya). */
+    /** 📏 La distancia de un lugar, viendo el círculo en el mapa (como Samsung Rutinas). [save] = cómo guardar (la casa usa la suya). */
     private fun askRadius(s: SiteStore.Site, save: ((Int) -> Unit)? = null) {
         if (s.lat == 0.0 && s.lon == 0.0) { toast("Este lugar no tiene GPS. Guárdalo estando ahí.", "This place has no GPS. Save it while you're there."); return }
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val map = MapPreview(this, s.lat, s.lon)
         map.radius = SiteStore.radiusOf(prefs, s)
-        map.clipToOutline = true
-        map.background = GradientDrawable().apply { cornerRadius = dpf(18f); setColor(0xFF1B2230.toInt()) }
-        box.addView(map, LinearLayout.LayoutParams(-1, dp(240)))
-        val label = TextView(this).apply { textSize = 16f; setTextColor(TEXT); setPadding(0, dp(12), 0, dp(4)); gravity = Gravity.CENTER }
-        box.addView(label)
+        map.shape = s.shape
+        content.addView(mapFrame(map, 300), LinearLayout.LayoutParams(-1, -2))
+        val label = TextView(this).apply { textSize = 18f; setTextColor(TEXT); setPadding(0, dp(14), 0, dp(2)); gravity = Gravity.CENTER
+            setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD)) }
+        val hint = TextView(this).apply { textSize = 12.5f; setTextColor(SUB); gravity = Gravity.CENTER; setPadding(dp(8), 0, dp(8), dp(4)) }
+        content.addView(label)
+        content.addView(hint)
         val steps = listOf(50, 75, 100, 125, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 1000, 1200, 1500, 2000)
         fun show(r: Int) {
             map.radius = r
-            label.text = "$r m  (" + Math.round(r * 3.281) + tr(" pies)", " ft)") +
-                if (r < 100) tr("\n⚠️ Muy chico: el GPS a veces no lo detecta.", "\n⚠️ Very small: GPS may miss it.") else ""
+            label.text = "$r m  ·  " + Math.round(r * 3.281) + tr(" pies", " ft")
+            hint.text = when {
+                s.hasShape -> tr("Este sitio tiene su forma dibujada: la distancia solo sirve de guía (cuenta la forma).", "This site has a drawn shape: the distance is only a guide (the shape counts).")
+                r < 100 -> tr("Muy chico: el GPS a veces no lo detecta.", "Very small: GPS may miss it.")
+                r <= 200 -> tr("Bueno para una casa o un sitio pequeño.", "Good for a house or a small site.")
+                r <= 400 -> tr("Bueno para un edificio con su parqueo.", "Good for a building with its parking lot.")
+                else -> tr("Para sitios muy grandes (un hospital, un campus).", "For very large sites (a hospital, a campus).")
+            }
         }
         val bar = android.widget.SeekBar(this).apply {
             max = steps.size - 1
             progress = steps.indexOfFirst { it >= map.radius }.let { if (it < 0) steps.size - 1 else it }
+            progressTintList = android.content.res.ColorStateList.valueOf(CYAN)
+            thumbTintList = android.content.res.ColorStateList.valueOf(VIOLET)
             setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(sb: android.widget.SeekBar?, v: Int, user: Boolean) { show(steps[v]) }
                 override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
                 override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
             })
         }
-        box.addView(bar, LinearLayout.LayoutParams(-1, -2))
+        content.addView(bar, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
         show(map.radius)
-        AlertDialog.Builder(this)
-            .setTitle(s.name)
-            .setMessage(tr("Mueve la barra: el círculo es el área donde cuenta que llegaste.", "Move the bar: the circle is the area where it counts as arrived."))
-            .setView(box)
-            .setPositiveButton(tr("Guardar", "Save")) { _, _ ->
-                if (save != null) save(steps[bar.progress]) else SiteStore.setRadius(prefs, s.name, steps[bar.progress])
-                AutoSites.register(this); refresh()
-                toast("Distancia guardada.", "Distance saved.")
-            }
-            .setNeutralButton(if (save != null) tr("Usar 150 m", "Use 150 m") else tr("Usar la de todos", "Use default")) { _, _ ->
+        panelDialog(s.name, tr("Mueve la barra: el círculo es el área donde cuenta que llegaste.", "Move the bar: the circle is the area where it counts as arrived."), content, listOf(
+            PanelBtn(if (save != null) tr("150 m", "150 m") else tr("La de todos", "Default"), 1) {
                 if (save != null) save(0) else SiteStore.setRadius(prefs, s.name, 0)
-                AutoSites.register(this); refresh()
-            }
-            .setNegativeButton(tr("Cancelar", "Cancel"), null)
-            .show()
+                AutoSites.register(this); refresh(); paintAuto(); true
+            },
+            PanelBtn(tr("Cancelar", "Cancel"), 1) { true },
+            PanelBtn(tr("Guardar", "Save"), 0) {
+                if (save != null) save(steps[bar.progress]) else SiteStore.setRadius(prefs, s.name, steps[bar.progress])
+                AutoSites.register(this); refresh(); paintAuto()
+                toast("Distancia guardada.", "Distance saved."); true
+            },
+        ))
     }
 
     /** Un sitio que paga más por hora (0 o vacío = el pago normal). */
