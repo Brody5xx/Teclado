@@ -35,6 +35,9 @@ object AutoSites {
     private const val NEW_ID = "new:"
     private const val SITE_ID = "site:"
     private const val HOME_ID = "home"
+    /** 🎯 El círculo grande (1 km) alrededor de cada sitio: al entrar se prende el GPS fino. */
+    private const val NEAR_ID = "near:"
+    const val ACTION_ACTIVITY = "com.luisell.bestkeyboard.AUTO_ACTIVITY"
     /**
      * 🎯 Sensibilidad (como Samsung Rutinas): cuánto tienes que quedarte para que cuente como «llegué»
      * y qué tan rápido avisa el teléfono. Alta = rápido; Baja = solo si de verdad te quedas.
@@ -44,6 +47,20 @@ object AutoSites {
     private fun responsiveMs(ctx: Context): Int = when (sens(ctx)) { "high" -> 0; "low" -> 3 * 60_000; else -> 60_000 }
 
     fun isOn(ctx: Context) = Prefs.get(ctx).getBoolean(Prefs.AUTO_SITES, false)
+
+    /** Cuánto tienes que quedarte en [site] para que cuente (más si tocaste «Deshacer» ahí). */
+    fun dwellFor(ctx: Context, site: String): Int = dwellMs(ctx) + SiteLearn.extraDwellMs(Prefs.get(ctx), site)
+
+    /** Cuándo entraste a [site] (sin borrarlo), o null. */
+    fun enteredAt(p: android.content.SharedPreferences, site: String): Long? {
+        val o = try { JSONObject(p.getString(Prefs.AUTO_ENTER, "{}") ?: "{}") } catch (_: Exception) { return null }
+        val t = o.optLong(site, -1L)
+        return if (t > 0 && WorkStore.sameDay(t, System.currentTimeMillis())) t else null
+    }
+
+    /** ¿Detectar cuando vas en vehículo? (necesita el permiso «Actividad física»). */
+    fun vehicleOn(ctx: Context) = Prefs.get(ctx).getBoolean("veh_detect", true) &&
+        (Build.VERSION.SDK_INT < 29 || ctx.checkSelfPermission(android.Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED)
 
     /** "Permitir todo el tiempo": sin esto el teléfono no avisa con el teclado cerrado. */
     fun hasBackground(ctx: Context): Boolean =
@@ -73,10 +90,18 @@ object AutoSites {
                 .setCircularRegion(s.lat, s.lon, SiteStore.radiusOf(p, s).toFloat())
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
-                .setLoiteringDelay(dwellMs(app))
+                .setLoiteringDelay(dwellFor(app, s.name))
                 .setNotificationResponsiveness(responsiveMs(app))
                 .build())
-            if (fences.size >= 90) break
+            // 🎯 El círculo grande: al acercarte se prende el GPS fino (para la hora exacta)
+            if (PreciseTracker.enabled(app)) fences.add(Geofence.Builder()
+                .setRequestId(NEAR_ID + s.name.take(80))
+                .setCircularRegion(s.lat, s.lon, maxOf(1000f, SiteStore.radiusOf(p, s) + 600f))
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                .setNotificationResponsiveness(30_000)
+                .build())
+            if (fences.size >= 94) break
         }
         // 🏠 Tu casa: para anotar solo «Llegué a casa» con la hora real
         SiteStore.home(p)?.let { (la, lo) ->
@@ -104,6 +129,99 @@ object AutoSites {
             .addGeofences(fences)
             .build()
         try { client.addGeofences(req, pending(app)) } catch (_: Throwable) { }
+        registerVehicle(app)
+    }
+
+    // ---------------------------------------------------------------- 🛻 Detectar el vehículo
+
+    private fun vehiclePending(ctx: Context): PendingIntent {
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
+        return PendingIntent.getBroadcast(ctx, 5130, Intent(ctx, AutoSitesReceiver::class.java).setAction(ACTION_ACTIVITY), flags)
+    }
+
+    /** Pide a Android que avise cuando te subes o te bajas de un vehículo (con los sensores, casi sin batería). */
+    @SuppressLint("MissingPermission")
+    private fun registerVehicle(ctx: Context) {
+        val ar = try { com.google.android.gms.location.ActivityRecognition.getClient(ctx) } catch (_: Throwable) { return }
+        try { ar.removeActivityTransitionUpdates(vehiclePending(ctx)) } catch (_: Throwable) { }
+        if (!ready(ctx) || !vehicleOn(ctx)) return
+        fun tr(type: Int, kind: Int) = com.google.android.gms.location.ActivityTransition.Builder().setActivityType(type).setActivityTransition(kind).build()
+        val v = com.google.android.gms.location.DetectedActivity.IN_VEHICLE
+        val list = listOf(
+            tr(v, com.google.android.gms.location.ActivityTransition.ACTIVITY_TRANSITION_ENTER),
+            tr(v, com.google.android.gms.location.ActivityTransition.ACTIVITY_TRANSITION_EXIT),
+        )
+        try { ar.requestActivityTransitionUpdates(com.google.android.gms.location.ActivityTransitionRequest(list), vehiclePending(ctx)) } catch (_: Throwable) { }
+    }
+
+    /** Te subiste o te bajaste de un vehículo. */
+    private fun onVehicle(ctx: Context, p: android.content.SharedPreferences, intent: Intent) {
+        val r = com.google.android.gms.location.ActivityTransitionResult.extractResult(intent) ?: return
+        for (e in r.transitionEvents) {
+            if (e.activityType != com.google.android.gms.location.DetectedActivity.IN_VEHICLE) continue
+            val t = System.currentTimeMillis() - (android.os.SystemClock.elapsedRealtimeNanos() - e.elapsedRealTimeNanos) / 1_000_000L
+            val day = WorkDay.day(p)
+            if (e.transitionType == com.google.android.gms.location.ActivityTransition.ACTIVITY_TRANSITION_ENTER) {
+                p.edit().putLong("veh_in", t).apply()
+                if (!WorkDay.isWorkDay(p)) continue
+                if (day.isEmpty()) askStart(ctx, p, t)
+                // Estás en un sitio y te subes: viene la salida (el GPS fino da la hora exacta)
+                else if (WorkDay.lastMain(day)?.kind == WorkDay.ARRIVE) PreciseTracker.start(ctx, "vehicle_in")
+            } else {
+                p.edit().putLong("veh_out", t).apply()
+                if (WorkDay.isWorkDay(p) || day.isNotEmpty()) PreciseTracker.start(ctx, "vehicle_out")
+            }
+        }
+    }
+
+    /** 🛻 Te subiste a un vehículo y todavía no empieza tu día: pregunta (una vez al día) con la hora exacta. */
+    private fun askStart(ctx: Context, p: android.content.SharedPreferences, at: Long) {
+        if (p.getString("veh_ask_day", "") == dayKey()) return
+        p.edit().putString("veh_ask_day", dayKey()).apply()
+        val first = WorkDay.enabledKinds().first()
+        val yes = PendingIntent.getBroadcast(ctx, 5131, Intent(ctx, AutoSitesReceiver::class.java).setAction(ACTION_MARK)
+            .putExtra(EXTRA_TIME, at).putExtra(EXTRA_SITE, "").putExtra(WorkdayCenter.EXTRA_KIND, first),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        notify(ctx, L.t("¿Empezó tu día?", "Did your day start?"),
+            L.t("Te subiste a un vehículo a las ${WorkStore.time(at)}. Si es la camioneta del trabajo, toca «Sí».",
+                "You got into a vehicle at ${WorkStore.time(at)}. If it's the work truck, tap «Yes»."),
+            listOf(L.t("Sí, empezó a las ", "Yes, it started at ") + WorkStore.time(at) to yes), NOTIF_ID)
+    }
+
+    /** La hora en que te bajaste del vehículo, si fue cerca de [at] (para terminar el día al minuto). */
+    private fun vehOutNear(p: android.content.SharedPreferences, at: Long): Long {
+        val v = p.getLong("veh_out", 0L)
+        return if (v > 0 && v >= at - 2 * 60_000L && v <= at + 20 * 60_000L && v <= System.currentTimeMillis()) v else at
+    }
+
+    /** La hora en que te subiste al vehículo, si fue poco antes de [at] (para empezar el día al minuto). */
+    private fun vehInNear(p: android.content.SharedPreferences, at: Long): Long {
+        val v = p.getLong("veh_in", 0L)
+        return if (v > 0 && v <= at + 60_000L && v >= at - 20 * 60_000L) v else at
+    }
+
+    // ---------------------------------------------------------------- Entrar, quedarte y salir de un sitio
+    // (los usan las geocercas y el GPS fino)
+
+    fun siteEnter(ctx: Context, site: String, at: Long) {
+        val p = Prefs.get(ctx)
+        saveEnter(p, site, at)
+        cancelPendingExit(ctx, site)
+        if (SiteStore.find(p, site)?.isStart != true) falseExit(ctx, site, at)
+    }
+
+    fun siteDwell(ctx: Context, site: String, enterAt: Long) {
+        val p = Prefs.get(ctx)
+        takeEnter(p, site)
+        if (SiteStore.find(p, site)?.isStart == true) endAtParking(ctx, site, vehOutNear(p, enterAt))
+        else arrived(ctx, site, enterAt)
+    }
+
+    fun siteExit(ctx: Context, site: String, at: Long) {
+        val p = Prefs.get(ctx)
+        takeEnter(p, site)
+        if (SiteStore.find(p, site)?.isStart == true) { if (WorkDay.day(p).isEmpty()) pendingExit(ctx, site, vehInNear(p, at)) }
+        else pendingExit(ctx, site, at)
     }
 
     // ---------------------------------------------------------------- Cuando el teléfono avisa
@@ -114,6 +232,8 @@ object AutoSites {
         when (intent.action) {
             ACTION_UNDO -> {
                 val t = intent.getLongExtra(EXTRA_TIME, -1L)
+                // 🧠 Una llegada automática que no era: ese sitio esperará un poco más la próxima vez
+                if (t > 0) WorkDay.day(p, t).firstOrNull { it.time == t && it.kind == WorkDay.ARRIVE }?.let { SiteLearn.undo(p, it.site); register(ctx) }
                 if (t > 0) WorkDay.remove(p, t)
                 WorkdayCenter.refresh(ctx)
                 cancel(ctx)
@@ -154,6 +274,7 @@ object AutoSites {
             }
         }
         if (!isOn(ctx)) return
+        if (intent.action == ACTION_ACTIVITY) { onVehicle(ctx, p, intent); return }
         // 📅 Tu día libre: no anota nada solo (si ya empezaste a trabajar hoy, sí)
         if (!WorkDay.isWorkDay(p)) return
         val ev = GeofencingEvent.fromIntent(intent) ?: return
@@ -170,6 +291,13 @@ object AutoSites {
     /** ¿Lo que avisó el teléfono es verdad? Mira la lectura fina (o la del aviso, si es buena). */
     private fun confirmed(ctx: Context, transition: Int, lat: Double, lon: Double, radius: Float,
                           fix: android.location.Location?, trig: android.location.Location?, name: String): Boolean {
+        // 📶 Las redes Wi-Fi del sitio se ven: estás adentro (el GPS adentro de edificios falla, el Wi-Fi no)
+        if (name.isNotEmpty() && SiteStore.find(Prefs.get(ctx), name) != null) {
+            if (SiteLearn.wifiMatch(ctx, name) == true) {
+                if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) { GpsCheck.logIgnored(ctx, true, name); return false }
+                return true
+            }
+        }
         val loc = when {
             fix != null && fix.accuracy <= 100f -> fix
             trig != null && trig.accuracy <= radius -> trig
@@ -192,6 +320,8 @@ object AutoSites {
         val tr = ev.geofenceTransition
         for (g in ev.triggeringGeofences ?: emptyList()) {
             val gid = g.requestId
+            // 🎯 Te acercas a un sitio: GPS fino unos minutos
+            if (gid.startsWith(NEAR_ID)) { if (tr == Geofence.GEOFENCE_TRANSITION_ENTER) PreciseTracker.start(ctx, "near"); continue }
             val center: Triple<Double, Double, Float>? = when {
                 gid == HOME_ID -> SiteStore.home(p)?.let { Triple(it.first, it.second, 150f) }
                 gid.startsWith(NEW_ID) -> SiteStore.getNew(p)?.let { Triple(it.lat, it.lon, SiteStore.defaultRadius(p).toFloat()) }
@@ -203,26 +333,31 @@ object AutoSites {
             if (id == HOME_ID) {
                 when (tr) {
                     Geofence.GEOFENCE_TRANSITION_ENTER -> saveEnter(p, HOME_ID, at)
-                    Geofence.GEOFENCE_TRANSITION_DWELL -> cameHome(ctx, takeEnter(p, HOME_ID) ?: (at - 2 * 60_000L))
+                    Geofence.GEOFENCE_TRANSITION_DWELL -> cameHome(ctx, vehOutNear(p, takeEnter(p, HOME_ID) ?: (at - 2 * 60_000L)))
                     Geofence.GEOFENCE_TRANSITION_EXIT -> { cancelHomePending(ctx); leftHome(ctx, at) }
                 }
                 continue
             }
             val isNew = id.startsWith(NEW_ID)
             val site = id.removePrefix(SITE_ID).removePrefix(NEW_ID)
-            // 🛻 El parqueo de la camioneta: al salir empieza el día, al volver y quedarte termina
-            if (!isNew && SiteStore.find(p, site)?.isStart == true) {
+            // El lugar nuevo de hoy (no guardado): solo para saber cuándo te vas
+            if (isNew) {
                 when (tr) {
-                    Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site) }
-                    Geofence.GEOFENCE_TRANSITION_DWELL -> endAtParking(ctx, site, takeEnter(p, site) ?: (at - dwellMs(ctx)))
-                    Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); if (WorkDay.day(p).isEmpty()) pendingExit(ctx, site, at) }
+                    Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site); falseExit(ctx, site, at) }
+                    Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); pendingExit(ctx, site, at) }
                 }
                 continue
             }
+            // Tus sitios (y 🛻 el parqueo: al salir empieza el día, al volver y quedarte termina)
             when (tr) {
-                Geofence.GEOFENCE_TRANSITION_ENTER -> { saveEnter(p, site, at); cancelPendingExit(ctx, site); falseExit(ctx, site, at) }
-                Geofence.GEOFENCE_TRANSITION_DWELL -> if (!isNew) arrived(ctx, site, takeEnter(p, site) ?: (at - dwellMs(ctx)))
-                Geofence.GEOFENCE_TRANSITION_EXIT -> { takeEnter(p, site); pendingExit(ctx, site, at) }
+                Geofence.GEOFENCE_TRANSITION_ENTER -> siteEnter(ctx, site, at)
+                Geofence.GEOFENCE_TRANSITION_DWELL -> {
+                    siteDwell(ctx, site, enteredAt(p, site) ?: (at - dwellFor(ctx, site)))
+                    // 🧠 Aprende el Wi-Fi y dónde llegas
+                    SiteLearn.learnWifi(ctx, site)
+                    fix?.let { SiteLearn.learnPoint(ctx, site, it) }
+                }
+                Geofence.GEOFENCE_TRANSITION_EXIT -> siteExit(ctx, site, at)
             }
         }
     }
@@ -249,7 +384,8 @@ object AutoSites {
         // Ya estás marcado en este sitio
         if (last?.kind == WorkDay.ARRIVE && (last.site == site || last.site.isEmpty())) return
         if (WorkDay.isRunning(day)) {
-            val t = WorkDay.addAt(p, WorkDay.ARRIVE, site, enterAt)
+            val t = WorkDay.addAt(p, WorkDay.ARRIVE, site, minOf(System.currentTimeMillis(), enterAt + SiteLearn.offsetMs(p, site, WorkDay.ARRIVE)))
+            SiteLearn.markAuto(p, t)
             WorkdayCenter.refresh(ctx)
             Todos.arrivedAt(ctx, site)
             notify(ctx, L.t("📍 Llegaste a $site", "📍 You arrived at $site"),
@@ -372,8 +508,11 @@ object AutoSites {
      * Se borra esa salida falsa, sin molestarte.
      */
     /** Saliste del sitio: no se anota todavía; se espera unos minutos por si el GPS brincó. */
-    private fun pendingExit(ctx: Context, site: String, at: Long) {
+    private fun pendingExit(ctx: Context, site: String, at0: Long) {
         val p = Prefs.get(ctx)
+        // Si el GPS fino ya anotó una salida un poco antes, se queda esa hora (es la más exacta)
+        val prev = try { JSONObject(p.getString(Prefs.AUTO_EXIT_PENDING, "") ?: "") } catch (_: Exception) { null }
+        val at = if (prev != null && prev.optString("s") == site && prev.optLong("t") in (at0 - 30 * 60_000L)..at0) prev.optLong("t") else at0
         p.edit().putString(Prefs.AUTO_EXIT_PENDING, JSONObject().put("s", site).put("t", at).toString()).apply()
         val wait = ((p.getString(Prefs.AUTO_EXIT_WAIT, "10") ?: "10").toIntOrNull() ?: 10).coerceIn(1, 60)
         val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
@@ -417,7 +556,8 @@ object AutoSites {
         if (last.kind != WorkDay.ARRIVE || !WorkDay.isRunning(day)) return
         if (last.site.isNotEmpty() && last.site != site) return
         if (at <= last.time) return
-        val t = WorkDay.addAt(p, WorkDay.LEAVE, last.site.ifEmpty { site }, at)
+        val t = WorkDay.addAt(p, WorkDay.LEAVE, last.site.ifEmpty { site }, maxOf(last.time + 60_000L, minOf(System.currentTimeMillis(), at + SiteLearn.offsetMs(p, last.site.ifEmpty { site }, WorkDay.LEAVE))))
+        SiteLearn.markAuto(p, t)
         p.edit().putLong(Prefs.AUTO_LEAVE, t).apply()
         WorkdayCenter.refresh(ctx)
         notify(ctx, L.t("🚪 Saliste de ${last.site.ifEmpty { site }}", "🚪 You left ${last.site.ifEmpty { site }}"),

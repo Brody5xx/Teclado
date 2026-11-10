@@ -23,6 +23,10 @@ object SiteStore {
     /** La distancia de detección de [s] en metros. */
     fun radiusOf(p: SharedPreferences, s: Site): Int = if (s.radius > 0) s.radius else defaultRadius(p)
 
+    /** 🧠 Mueve el punto de un sitio (lo usa el aprendizaje de Mi jornada). */
+    fun setPoint(p: SharedPreferences, name: String, la: Double, lo: Double) =
+        save(p, all(p).map { if (it.name == name) Site(it.name, it.address, la, lo, it.rate, it.kind, it.radius) else it })
+
     fun setRadius(p: SharedPreferences, name: String, r: Int) =
         save(p, all(p).map { if (it.name == name) Site(it.name, it.address, it.lat, it.lon, it.rate, it.kind, r) else it })
 

@@ -61,6 +61,12 @@ object GpsCheck {
         Check(wifiScan(ctx), "Búsqueda de Wi-Fi", "Wi-Fi scanning",
             "Toca y prende «Búsqueda de Wi-Fi» (y «Búsqueda de Bluetooth»). Funciona aunque tengas el Wi-Fi apagado.",
             "Tap and turn on «Wi-Fi scanning» (and «Bluetooth scanning»). It works even with Wi-Fi off.") { a -> openScanning(a) },
+        Check(Build.VERSION.SDK_INT < 29 || ctx.checkSelfPermission(android.Manifest.permission.ACTIVITY_RECOGNITION) == android.content.pm.PackageManager.PERMISSION_GRANTED,
+            "Actividad física (detectar el vehículo)", "Physical activity (detect the vehicle)",
+            "Toca y permite «Actividad física»: así sabe cuándo te subes y te bajas de la camioneta.",
+            "Tap and allow «Physical activity»: that way it knows when you get in and out of the truck.") { a ->
+            if (Build.VERSION.SDK_INT >= 29) a.requestPermissions(arrayOf(android.Manifest.permission.ACTIVITY_RECOGNITION), 33)
+        },
         Check(battery(ctx), "Batería sin restricciones", "Unrestricted battery",
             "Toca y elige «Permitir» (o «Sin restricciones»), para que los avisos no lleguen tarde.",
             "Tap and choose «Allow» (or «Unrestricted»), so the alerts don't arrive late.") { a -> openBattery(a) },

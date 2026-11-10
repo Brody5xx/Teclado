@@ -1456,6 +1456,16 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.2.0" to tr("•  Mi jornada mucho más precisa:\n" +
+            "•  GPS fino cerca del sitio: al acercarte a 1 km de un sitio, el GPS fino se prende unos minutos y anota el minuto exacto en que entras o sales. Después se apaga solo.\n" +
+            "•  Detecta el vehículo (con el permiso «Actividad física»): sabe cuándo te subes y te bajas de la camioneta, también de pasajero. El día empieza y termina a esa hora, y la salida de un sitio se anota al minuto.\n" +
+            "•  Wi-Fi de cada sitio: aprende las redes que se ven ahí (sin conectarse). Adentro de edificios, si las ve, sabe que sigues ahí aunque el GPS falle.\n" +
+            "•  Aprende solo: dónde llegas (y ajusta el punto del sitio), tus «Deshacer» (ese sitio espera un poco más) y tus correcciones de hora. En Mis sitios ves lo que aprendió de cada uno.",
+            "•  Much more precise My workday:\n" +
+            "•  Precise GPS near the site: when you get within 1 km of a site, precise GPS turns on for a few minutes and logs the exact minute you go in or out. Then it turns off by itself.\n" +
+            "•  Vehicle detection (with the «Physical activity» permission): it knows when you get in and out of the truck, also as a passenger. The day starts and ends at that time, and leaving a site is logged to the minute.\n" +
+            "•  Each site's Wi-Fi: it learns the networks seen there (without connecting). Inside buildings, if it sees them, it knows you're still there even if GPS fails.\n" +
+            "•  It learns by itself: where you arrive (and adjusts the site's point), your «Undo» taps (that site waits a bit longer) and your time corrections. In My sites you see what it learned about each one."),
         "15.1.1" to tr("•  Arreglado: en «Precisión del GPS», el botón «Arreglar · Batería sin restricciones» no hacía nada. Ahora abre la ventanita de Android para permitirlo (o la página de la app, si tu teléfono no la tiene).",
             "•  Fixed: in «GPS accuracy», the «Fix · Unrestricted battery» button did nothing. Now it opens Android's window to allow it (or the app's page, if your phone doesn't have it)."),
         "15.1.0" to tr("•  GPS de Mi jornada más preciso: al anotar una llegada o salida, el teléfono pide varias lecturas del GPS fino y se queda con la mejor (antes usaba primero la ubicación por red, que puede fallar por cientos de metros).\n" +

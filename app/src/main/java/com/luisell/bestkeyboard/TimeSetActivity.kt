@@ -128,6 +128,8 @@ class TimeSetActivity : Activity() {
             set(Calendar.HOUR_OF_DAY, h); set(Calendar.MINUTE, m); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
         val t = c.timeInMillis
+        // 🧠 Corregiste una hora que se anotó sola: Mi jornada lo aprende para ese sitio
+        if (ev != null && ev.site.isNotEmpty() && SiteLearn.isAuto(p, ev.time)) SiteLearn.correction(p, ev.site, ev.kind, t - ev.time)
         if (ev != null) WorkDay.moveTo(p, ev.time, t)
         else WorkDay.addAt(p, kind, if (kind == WorkDay.LEAVE) WorkDay.day(p).lastOrNull { it.kind == WorkDay.ARRIVE }?.site ?: "" else "", t)
         WorkdayCenter.refresh(this)

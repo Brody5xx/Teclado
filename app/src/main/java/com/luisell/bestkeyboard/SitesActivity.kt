@@ -147,6 +147,14 @@ class SitesActivity : UiActivity() {
                 text(tr(c.fixEs, c.fixEn), 12f, faded = true)
             }
         }
+        switch(tr("GPS fino cerca del sitio", "Precise GPS near the site"), "gps_fine_near", true,
+            tr("Al acercarte a 1 km de un sitio, prende el GPS fino unos minutos para anotar el minuto exacto en que entras o sales. Después se apaga solo.",
+                "When you get within 1 km of a site, it turns on precise GPS for a few minutes to log the exact minute you go in or out. Then it turns off by itself."))
+        switch(tr("Detectar cuando vas en vehículo", "Detect when you're in a vehicle"), "veh_detect", true,
+            tr("Sabe cuándo te subes y te bajas de la camioneta (también de pasajero): el día empieza y termina a esa hora, y la salida de un sitio se anota al minuto.",
+                "It knows when you get in and out of the truck (also as a passenger): the day starts and ends at that time, and leaving a site is logged to the minute."))
+        text(tr("Además aprende solo: dónde llegas en cada sitio (y ajusta el punto), las redes Wi-Fi del sitio (para saber que estás adentro aunque el GPS falle), tus «Deshacer» y tus correcciones de hora.",
+            "It also learns by itself: where you arrive at each site (and adjusts the point), the site's Wi-Fi networks (to know you're inside even if GPS fails), your «Undo» taps and your time corrections."), 12f, faded = true)
         button(tr("Probar el GPS ahora", "Test GPS now"), primary = true) { testGps() }
         if (testLine.isNotEmpty()) text(testLine, 13f)
         GpsCheck.ignoredText(this)?.let { text(it, 12f, faded = true) }
@@ -330,7 +338,8 @@ class SitesActivity : UiActivity() {
             val a = TextView(this)
             a.text = (if (s.isStart) tr("Comienzo y fin del día · ", "Start and end of day · ") else "") + s.address.ifEmpty { tr("(sin dirección)", "(no address)") } +
                 "  ·  📏 " + SiteStore.radiusOf(prefs, s) + " m" + (if (s.radius > 0) "" else tr(" (la de todos)", " (default)")) +
-                if (s.lat == 0.0 && s.lon == 0.0) tr("  ·  ⚠️ sin GPS", "  ·  ⚠️ no GPS") else ""
+                (if (s.lat == 0.0 && s.lon == 0.0) tr("  ·  ⚠️ sin GPS", "  ·  ⚠️ no GPS") else "") +
+                SiteLearn.summary(prefs, s.name).let { if (it.isEmpty()) "" else "\n" + it }
             a.textSize = 12f
             a.setTextColor(SUB)
             c.addView(a)
@@ -351,11 +360,12 @@ class SitesActivity : UiActivity() {
             tr("💵 Pago por hora en este sitio", "💵 Hourly pay at this site"),
             if (s.isStart) tr("📍 Cambiar a sitio de trabajo normal", "📍 Change to a normal work site")
             else tr("🛻 Usarlo como parqueo de la camioneta (comienzo y fin del día)", "🛻 Use it as the truck parking (start and end of day)"),
-        )
+        ) + (if (SiteLearn.moved(prefs, s.name)) arrayOf(tr("Volver al punto que guardé yo", "Go back to the point I saved")) else emptyArray())
         choiceDialog(s.name, opts.map { Emo.stripUi(it).trim() to null }) { w ->
                 when (w) {
                     0 -> askRadius(s)
                     1 -> askRate(s)
+                    3 -> { SiteLearn.restorePoint(this, s.name); refresh() }
                     else -> { SiteStore.setKind(prefs, s.name, if (s.isStart) "site" else "start"); refresh() }
                 }
             }

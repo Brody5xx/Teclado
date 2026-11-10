@@ -25,6 +25,12 @@
     <!-- Aviso diario del ticket -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 🎯 Mi jornada precisa: GPS fino cerca del sitio, detectar el vehículo y el Wi-Fi de cada sitio -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <!-- 🔋 Para la ventanita «Permitir que funcione en segundo plano» (Mi jornada sin avisos tarde) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- Para sugerir el código de verificación de tus SMS (solo se lee dentro del teléfono) -->
@@ -196,6 +202,12 @@
         <receiver
             android:name=".AutoSitesReceiver"
             android:exported="false" />
+
+        <!-- 🎯 GPS fino unos minutos cerca de tus sitios -->
+        <service
+            android:name=".PreciseTracker"
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
         <activity
             android:name=".ShortcutsActivity"
