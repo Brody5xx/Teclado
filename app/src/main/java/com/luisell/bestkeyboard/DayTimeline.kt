@@ -45,10 +45,12 @@ object DayTimeline {
         var atSite: String? = null
         var atRate = cfg.site
         // Si el día empezó llegando a un sitio
-        main.first().let { f -> if (f.kind == WorkDay.ARRIVE) { atSite = f.site.ifEmpty { L.t("Sitio", "Site") }; atRate = rates[f.site]?.takeIf { it > 0 } ?: cfg.site } }
+        val f0 = main.first()
+        if (f0.kind == WorkDay.ARRIVE) { atSite = f0.site.ifEmpty { L.t("Sitio", "Site") }; atRate = rates[f0.site]?.takeIf { it > 0 } ?: cfg.site }
         for (e in main.drop(1) + listOfNotNull(if (running) WorkDay.Event(end, "_now") else null)) {
             if (e.time > curStart) {
-                if (atSite != null) segs.add(Seg(SITE, curStart, e.time, atSite, e.time - curStart, rate = atRate, startEv = curEv, endEv = if (e.kind == "_now") -1L else e.time))
+                val here = atSite
+                if (here != null) segs.add(Seg(SITE, curStart, e.time, here, e.time - curStart, rate = atRate, startEv = curEv, endEv = if (e.kind == "_now") -1L else e.time))
                 else segs.add(Seg(DRIVE, curStart, e.time, "", e.time - curStart, rate = cfg.drive, startEv = curEv, endEv = if (e.kind == "_now") -1L else e.time))
             }
             when (e.kind) {
