@@ -75,6 +75,7 @@ object Forgot {
 
     fun check(ctx: Context, rcv: android.content.BroadcastReceiver?) {
         val p = Prefs.get(ctx)
+        L.useScreen(ctx)
         WorkDay.config(p)
         val day = WorkDay.day(p)
         if (!WorkDay.isRunning(day)) return

@@ -81,12 +81,12 @@ object SiteLearn {
     // ---------------------------------------------------------------- 📶 Wi-Fi del sitio
 
     @Suppress("DEPRECATION")
-    private fun scan(ctx: Context): List<android.net.wifi.ScanResult> = try {
+    private fun scan(ctx: Context, maxAgeSec: Int = 180): List<android.net.wifi.ScanResult> = try {
         if (!GpsCheck.precise(ctx)) emptyList() else {
             val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as android.net.wifi.WifiManager
             val now = android.os.SystemClock.elapsedRealtime() * 1000L
             // Solo las que se vieron en los últimos 3 minutos
-            wm.scanResults.filter { now - it.timestamp < 3 * 60_000_000L }
+            wm.scanResults.filter { now - it.timestamp < maxAgeSec * 1_000_000L }
         }
     } catch (_: Throwable) { emptyList() }
 
@@ -118,12 +118,12 @@ object SiteLearn {
     }
 
     /** ¿Las redes que se ven ahora son las de ese sitio? true = sí, false = no, null = no se sabe. */
-    fun wifiMatch(ctx: Context, site: String): Boolean? {
+    fun wifiMatch(ctx: Context, site: String, maxAgeSec: Int = 180): Boolean? {
         val p = Prefs.get(ctx)
         val w = all(p).optJSONObject(site)?.optJSONObject("wifi") ?: return null
         val known = w.keys().asSequence().filter { w.optInt(it) >= 2 }.toSet()
         if (known.size < 2) return null
-        val now = scan(ctx)
+        val now = scan(ctx, maxAgeSec)
         if (now.isEmpty()) return null
         val hits = now.filter { it.BSSID in known }
         return hits.size >= 2 || hits.any { it.level > -65 }

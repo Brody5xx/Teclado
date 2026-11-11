@@ -161,7 +161,8 @@ object WorkdayCenter {
             if (Build.VERSION.SDK_INT >= 24) android.service.quicksettings.TileService.requestListeningState(ctx, ComponentName(ctx, WorkdayTile::class.java))
         } catch (_: Exception) { }
         scheduleMorning(ctx)
-        try { Forgot.schedule(ctx) } catch (_: Exception) { } // 🔔 «¿se te olvidó?» mientras el día está abierto
+        try { Forgot.schedule(ctx) } catch (_: Exception) { }
+        try { Plan.scheduleAsk(ctx) } catch (_: Exception) { } // 🗓️ «¿A dónde vas mañana?» // 🔔 «¿se te olvidó?» mientras el día está abierto
         try { scheduleOvertime(ctx) } catch (_: Exception) { }
         try { scheduleNight(ctx) } catch (_: Exception) { }
     }
@@ -186,7 +187,7 @@ object WorkdayCenter {
     /** "🌙 Tu jornada sigue abierta" con el botón para cerrarla. */
     fun nightAlert(ctx: Context) {
         val p = Prefs.get(ctx)
-        L.set(p.getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         val ev = WorkDay.day(p)
         if (!p.getBoolean(Prefs.NIGHT_REMIND, true) || !WorkDay.isRunning(ev)) return
         val leave = ev.lastOrNull { it.kind == WorkDay.LEAVE }
@@ -233,7 +234,7 @@ object WorkdayCenter {
     /** "⏰ Ya llevas 8 horas: desde ahora es tiempo extra" (una vez al día). */
     fun overtimeAlert(ctx: Context) {
         val p = Prefs.get(ctx)
-        L.set(p.getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         val ev = WorkDay.day(p)
         if (WorkDay.dayHours <= 0 || !WorkDay.isRunning(ev) || p.getString(Prefs.OVERTIME_SITE_SENT, "") == todayKey()) return
         if (WorkDay.summary(ev).site < WorkDay.dayHours * 3600_000L - 60_000L) { scheduleOvertime(ctx); return }
@@ -286,7 +287,9 @@ object WorkdayCenter {
 
     // ---------------------------------------------------------------- Notificación (pantalla de bloqueo)
 
-    private fun updateNotification(ctx: Context) {
+    private fun updateNotification(ctx: Context) = L.withScreen(ctx) { updateNotification0(ctx) } // 🔔 en el idioma de la app
+
+    private fun updateNotification0(ctx: Context) {
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         val p = Prefs.get(ctx)
         val ev = WorkDay.day(p)
@@ -341,7 +344,7 @@ object WorkdayCenter {
     }
 
     fun widgetViews(ctx: Context): RemoteViews {
-        L.set(Prefs.get(ctx).getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         val v = RemoteViews(ctx.packageName, R.layout.widget_workday)
         val p = Prefs.get(ctx)
         val ev = WorkDay.day(p)
@@ -378,7 +381,7 @@ object WorkdayCenter {
     }
 
     fun toastFor(ctx: Context, e: WorkDay.Event) {
-        L.set(Prefs.get(ctx).getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         Toast.makeText(ctx, WorkDay.labelOf(e) + " · " + WorkStore.time(e.time), Toast.LENGTH_SHORT).show()
     }
 }
@@ -400,8 +403,9 @@ class WorkdayReceiver : BroadcastReceiver() {
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
             // (también al instalar una versión nueva: así los avisos se vuelven a programar)
             WorkdayCenter.refresh(ctx)
-            // Al prender el teléfono las geocercas se borran: se vuelven a poner
-            if (intent.action == Intent.ACTION_BOOT_COMPLETED) AutoSites.register(ctx)
+            // Al prender el teléfono las geocercas se borran: se vuelven a poner. Y a las 3 a. m. también,
+            // para que el plan del día nuevo (los sitios que elegiste) empiece a contar
+            AutoSites.register(ctx)
             return
         }
         val kind = intent.getStringExtra(WorkdayCenter.EXTRA_KIND) ?: return

@@ -75,7 +75,7 @@ object Anywhere {
 /** Los botones de la notificación. */
 class AnywhereReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
-        L.set(Prefs.get(ctx).getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         when (intent.action) {
             Anywhere.ACTION_OFF -> Anywhere.set(ctx, false)
             Anywhere.ACTION_SHOW -> Anywhere.requestShow(ctx)

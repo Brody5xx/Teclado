@@ -90,11 +90,12 @@ object AutoSites {
                 .setCircularRegion(s.lat, s.lon, Geo.fenceRadius(p, s))
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
-                .setLoiteringDelay(dwellFor(app, s.name))
-                .setNotificationResponsiveness(responsiveMs(app))
+                // 🗓️ Los sitios del plan de hoy avisan más rápido
+                .setLoiteringDelay(if (Plan.planned(p, s.name)) minOf(60_000, dwellFor(app, s.name)) else dwellFor(app, s.name))
+                .setNotificationResponsiveness(if (Plan.planned(p, s.name)) 0 else responsiveMs(app))
                 .build())
-            // 🎯 El círculo grande: al acercarte se prende el GPS fino (para la hora exacta)
-            if (PreciseTracker.enabled(app)) fences.add(Geofence.Builder()
+            // 🎯 El círculo grande: al acercarte se prende el GPS fino (para la hora exacta). Con plan, solo en esos sitios.
+            if (PreciseTracker.enabled(app) && Plan.focus(p, s.name)) fences.add(Geofence.Builder()
                 .setRequestId(NEAR_ID + s.name.take(80))
                 .setCircularRegion(s.lat, s.lon, maxOf(1000f, Geo.fenceRadius(p, s) + 600f))
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
@@ -121,6 +122,18 @@ object AutoSites {
                 .setCircularRegion(n.lat, n.lon, SiteStore.defaultRadius(p).toFloat())
                 .setExpirationDuration(18L * 3600 * 1000)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_EXIT)
+                .build())
+        }
+        // 🛒 Las ferreterías de por aquí (solo si tienes algo en la lista)
+        if (Stores.pending(p).isNotEmpty()) for ((i, st) in Stores.cached(p).withIndex()) {
+            if (fences.size >= 99) break
+            fences.add(Geofence.Builder()
+                .setRequestId(Stores.STORE_ID + i)
+                .setCircularRegion(st.lat, st.lon, 120f)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_DWELL)
+                .setLoiteringDelay(60_000)
+                .setNotificationResponsiveness(30_000)
                 .build())
         }
         if (fences.isEmpty()) return
@@ -163,12 +176,14 @@ object AutoSites {
             val day = WorkDay.day(p)
             if (e.transitionType == com.google.android.gms.location.ActivityTransition.ACTIVITY_TRANSITION_ENTER) {
                 p.edit().putLong("veh_in", t).apply()
+                Plan.vehicleIn(ctx) // 🛠️ día de servicio: la salida de un lugar nuevo
                 if (!WorkDay.isWorkDay(p)) continue
                 if (day.isEmpty()) askStart(ctx, p, t)
                 // Estás en un sitio y te subes: viene la salida (el GPS fino da la hora exacta)
                 else if (WorkDay.lastMain(day)?.kind == WorkDay.ARRIVE) PreciseTracker.start(ctx, "vehicle_in")
             } else {
                 p.edit().putLong("veh_out", t).apply()
+                Plan.vehicleOut(ctx, t) // 🛠️ día de servicio: ¿te quedaste en un lugar nuevo?
                 if (WorkDay.isWorkDay(p) || day.isNotEmpty()) PreciseTracker.start(ctx, "vehicle_out")
             }
         }
@@ -228,7 +243,7 @@ object AutoSites {
 
     fun handle(ctx: Context, intent: Intent, rcv: BroadcastReceiver? = null) {
         val p = Prefs.get(ctx)
-        L.set(p.getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         when (intent.action) {
             ACTION_UNDO -> {
                 val t = intent.getLongExtra(EXTRA_TIME, -1L)
@@ -255,6 +270,10 @@ object AutoSites {
                 return
             }
             Forgot.ACTION -> { Forgot.check(ctx, rcv); Forgot.schedule(ctx); return }
+            Stores.ACTION_BOUGHT -> { Stores.boughtAll(ctx); (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(4739); return }
+            Plan.ACTION_ASK -> { Plan.ask(ctx); return }
+            Plan.ACTION_STOP -> { Plan.checkStop(ctx, rcv); return }
+            Plan.ACTION_STOP_LEAVE -> { Plan.checkLeave(ctx, rcv); return }
             Forgot.ACTION_ADD -> { Forgot.add(ctx, intent); return }
             ACTION_HOME_AT -> {
                 val t = intent.getLongExtra(EXTRA_TIME, System.currentTimeMillis())
@@ -294,8 +313,11 @@ object AutoSites {
     private fun confirmed(ctx: Context, transition: Int, lat: Double, lon: Double, radius: Float,
                           fix: android.location.Location?, trig: android.location.Location?, name: String, site: SiteStore.Site? = null): Boolean {
         // 📶 Las redes Wi-Fi del sitio se ven: estás adentro (el GPS adentro de edificios falla, el Wi-Fi no)
-        if (name.isNotEmpty() && SiteStore.find(Prefs.get(ctx), name) != null) {
-            if (SiteLearn.wifiMatch(ctx, name) == true) {
+        // Pero si el GPS fino es bueno, manda el GPS: al irte, el teléfono recuerda unos minutos las redes de ahí
+        // (eso hacía que una salida verdadera se tomara como falsa)
+        val goodGps = fix != null && fix.accuracy <= 35f
+        if (!goodGps && name.isNotEmpty() && SiteStore.find(Prefs.get(ctx), name) != null) {
+            if (SiteLearn.wifiMatch(ctx, name, if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) 45 else 180) == true) {
                 if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) { GpsCheck.logIgnored(ctx, true, name); return false }
                 return true
             }
@@ -333,6 +355,8 @@ object AutoSites {
             val gid = g.requestId
             // 🎯 Te acercas a un sitio: GPS fino unos minutos
             if (gid.startsWith(NEAR_ID)) { if (tr == Geofence.GEOFENCE_TRANSITION_ENTER) PreciseTracker.start(ctx, "near"); continue }
+            // 🛒 Llegaste a una ferretería: tu lista
+            if (gid.startsWith(Stores.STORE_ID)) { if (tr == Geofence.GEOFENCE_TRANSITION_DWELL) gid.removePrefix(Stores.STORE_ID).toIntOrNull()?.let { Stores.arrived(ctx, it) }; continue }
             val siteObj: SiteStore.Site? = when {
                 gid == HOME_ID -> SiteStore.homeSite(p)
                 gid.startsWith(NEW_ID) -> null
@@ -483,7 +507,7 @@ object AutoSites {
         p.edit().putLong(Prefs.HOME_PENDING, at).apply()
         val wait = ((p.getString(Prefs.HOME_WAIT, "20") ?: "20").toIntOrNull() ?: 20).coerceIn(1, 120)
         val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
-        try { am.setWindow(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + wait * 60_000L, 60_000L, homeCheckIntent(ctx)) } catch (_: Exception) { }
+        try { am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + wait * 60_000L, homeCheckIntent(ctx)) } catch (_: Exception) { }
     }
 
     private fun homeCheckIntent(ctx: Context): PendingIntent =
@@ -539,7 +563,7 @@ object AutoSites {
         p.edit().putString(Prefs.AUTO_EXIT_PENDING, JSONObject().put("s", site).put("t", at).toString()).apply()
         val wait = ((p.getString(Prefs.AUTO_EXIT_WAIT, "10") ?: "10").toIntOrNull() ?: 10).coerceIn(1, 60)
         val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
-        try { am.setWindow(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + wait * 60_000L, 60_000L, exitCheckIntent(ctx)) } catch (_: Exception) { }
+        try { am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + wait * 60_000L, exitCheckIntent(ctx)) } catch (_: Exception) { }
     }
 
     /** Volviste a entrar antes de que pasaran los minutos: no te saliste (era el GPS). */

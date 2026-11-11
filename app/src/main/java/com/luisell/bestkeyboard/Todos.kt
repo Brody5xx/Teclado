@@ -79,7 +79,7 @@ object Todos {
     /** Avisa los pendientes que ya tocan. */
     fun fireDue(ctx: Context) {
         val p = Prefs.get(ctx)
-        L.set(p.getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         val now = System.currentTimeMillis()
         val due = all(p).filter { !it.done && it.due in 1..(now + 60_000L) }
         for (i in due) {
@@ -94,7 +94,7 @@ object Todos {
     fun arrivedAt(ctx: Context, site: String) {
         if (site.isEmpty()) return
         val p = Prefs.get(ctx)
-        L.set(p.getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         for (i in all(p).filter { !it.done && it.site.equals(site, true) }) {
             notifyItem(ctx, i)
             save(p, all(p).map { if (it.id == i.id) Item(it.id, it.text, it.due, "", it.done) else it })

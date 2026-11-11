@@ -122,6 +122,7 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_SCREEN_TR = 75
         const val TOOL_CALENDAR = 76
         const val TOOL_CLEAN = 77
+        const val TOOL_SHOP = 78
         // 🗂 Grupos: un botón que junta varias opciones parecidas
         const val TOOL_G_TRANSLATE = 80
         const val TOOL_G_CALC = 81
@@ -3064,6 +3065,7 @@ class KeyboardView(context: Context) : View(context) {
         TOOL_SCREEN_TR -> Icons.IMAGE
         TOOL_CALENDAR -> Icons.CALENDAR
         TOOL_CLEAN -> Icons.CHECK
+        TOOL_SHOP -> Icons.TOOLBOX
         TOOL_G_TRANSLATE -> Icons.TRANSLATE
         TOOL_G_CALC -> Icons.CALC
         TOOL_G_AI -> Icons.FORMAL

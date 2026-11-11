@@ -1791,6 +1791,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         if (!restarting) { undoSnap = null; kv?.playIntro() } // ⌨️ la luz de bienvenida
+        if (!restarting) try { Stores.refreshSoon(this) } catch (_: Throwable) { } // 🛒 las ferreterías de por aquí (si tienes lista)
         // 🖼 Volviste de la galería: se abre la imagen para tocar el texto
         if (pickWaiting) handler.postDelayed({ takePicked() }, 180L)
         pyBuf.clear(); pyBar?.hide(); kv?.setZh("", emptyList())
@@ -3274,6 +3275,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 Toast.makeText(this, Emo.strip("$title: $name"), Toast.LENGTH_SHORT).show()
             }
             in Tools.GROUPS.map { it.tool } -> showGroup(action)
+            KeyboardView.TOOL_SHOP -> showShopList()
             KeyboardView.TOOL_HIDE -> hideByUser()
             KeyboardView.TOOL_EMOJI -> showMode(1)
             KeyboardView.TOOL_CLIP -> showMode(2)
@@ -4769,6 +4771,40 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             info = L.t("¿Qué quieres que te recuerde? Después eliges el sitio.", "What should I remind you? Then pick the place."))
     }
 
+    /**
+     * 🛒 La lista de la ferretería: lo que tienes que comprar. Tocas una cosa para marcarla comprada.
+     * Cuando llegas a una ferretería te sale el aviso con la lista.
+     */
+    private fun showShopList() {
+        showMode(0)
+        val bar = infoBar ?: return
+        infoRegen = { showShopList() }
+        val items = Stores.items(prefs)
+        val pending = items.filter { !it.done }
+        val near = Stores.cached(prefs).size
+        val status = when {
+            !AutoSites.ready(this) -> L.t("Para avisarte al llegar a una ferretería, prende «Llegada y salida automáticas» en Mis sitios.",
+                "To alert you when you get to a hardware store, turn on «Automatic arrival and departure» in My sites.")
+            pending.isEmpty() -> L.t("Escribe lo que tienes que comprar (varias cosas separadas por coma). Te aviso cuando llegues a una ferretería.",
+                "Type what you need to buy (several things separated by commas). I'll alert you when you get to a hardware store.")
+            near > 0 -> L.t("Te aviso cuando llegues a una ferretería ($near cerca de aquí).", "I'll alert you when you get to a hardware store ($near near here).")
+            else -> L.t("Buscando las ferreterías de por aquí… Te aviso cuando llegues a una.", "Looking for hardware stores around here… I'll alert you when you get to one.")
+        }
+        val body = (if (items.isEmpty()) "" else items.joinToString("\n") { (if (it.done) "✓  " else "•  ") + it.text } + "\n\n") + status
+        val btns = ArrayList<Pair<String, () -> Unit>>()
+        btns.add(L.t("Agregar", "Add") to {
+            closeInfo()
+            startSearch(gif = false, custom = "shop", customHint = "Ej. cinta, conectores RJ45, tornillos" to "E.g. tape, RJ45 connectors, screws",
+                info = L.t("¿Qué tienes que comprar? Puedes poner varias cosas separadas por coma.", "What do you need to buy? You can add several things separated by commas."))
+        })
+        // Tocas una cosa: comprada (o no)
+        for (it in items.take(8)) btns.add(((if (it.done) "↺ " else "✓ ") + it.text) to { Stores.toggle(this, it.text); showShopList() })
+        if (items.any { it.done }) btns.add(L.t("Borrar comprados", "Remove bought") to { Stores.clearDone(this); showShopList() })
+        if (items.isNotEmpty()) btns.add(L.t("Vaciar lista", "Clear list") to { Stores.clearAll(this); showShopList() })
+        btns.add(L.t("Cerrar", "Close") to { closeInfo() })
+        bar.show(L.t("Lista de la ferretería", "Hardware store list"), body, btns)
+    }
+
     private fun pickRemindSite(id: Long, text: String) {
         val bar = infoBar ?: return
         val sites = SiteStore.all(prefs).filter { !it.isStart }
@@ -5550,6 +5586,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 stopSearch()
                 showMode(0)
                 if (q.isNotEmpty()) googleSearch(q)
+                return
+            }
+            "shop" -> {
+                stopSearch()
+                showMode(0)
+                if (q.isNotEmpty()) Stores.add(this, q)
+                showShopList()
                 return
             }
             "remind" -> {

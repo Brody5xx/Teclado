@@ -84,5 +84,7 @@ object Geo {
 
     /** El radio del círculo que vigila el teléfono: el de siempre, o lo que haga falta para cubrir la forma. */
     fun fenceRadius(p: SharedPreferences, s: SiteStore.Site): Float =
-        if (s.hasShape) maxOf(80f, reach(s) + 40f) else SiteStore.radiusOf(p, s).toFloat()
+        // Android casi no avisa con círculos de menos de 150 m: el que vigila el teléfono nunca es más chico
+        // (la forma dibujada es la que decide si de verdad estás adentro)
+        if (s.hasShape) maxOf(150f, reach(s) + 40f) else maxOf(100f, SiteStore.radiusOf(p, s).toFloat())
 }

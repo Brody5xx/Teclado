@@ -56,6 +56,30 @@ object L {
         for (l in ArrayList(listeners)) l()
     }
 
+    /**
+     * 🔔 Para los avisos, el widget y lo que pasa con el teclado cerrado: el idioma de las pantallas de la app
+     * (no el idioma en que estás escribiendo). El teclado vuelve a poner el suyo cuando se abre.
+     */
+    fun useScreen(ctx: android.content.Context) {
+        // Con el teclado abierto se queda su idioma (si no, sus botones cambiarían de idioma)
+        if (BestKeyboardService.instance?.isInputViewShown == true) return
+        forceScreen(ctx)
+    }
+
+    private fun forceScreen(ctx: android.content.Context) {
+        val c = try { UiTr.screenLang(ctx) } catch (_: Throwable) { "es" }
+        screen = if (c in UiTr.LANGS) c else null
+        english = c == "en" || c == "fr" || c == "de"
+        cur = c
+    }
+
+    /** Igual que [useScreen], pero solo mientras corre [block] (por si el teclado está abierto). */
+    fun <T> withScreen(ctx: android.content.Context, block: () -> T): T {
+        val oc = cur; val oe = english; val os = screen
+        forceScreen(ctx)
+        try { return block() } finally { cur = oc; english = oe; screen = os }
+    }
+
     /** Cambia el idioma de los textos y avisa a todos los paneles para que se actualicen. */
     fun set(lang: String) {
         // Los textos del teclado van en español o inglés (francés y alemán → inglés; portugués e italiano → español)

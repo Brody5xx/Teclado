@@ -17,7 +17,7 @@ import java.util.Locale
 /** "Mis sitios": guarda los lugares donde trabajas para que «Llegué al sitio» sepa dónde estás. */
 class SitesActivity : UiActivity() {
 
-    companion object { const val EXTRA_NEW = "new_place" }
+    companion object { const val EXTRA_NEW = "new_place"; const val EXTRA_PLAN = "plan" }
 
     private lateinit var list: LinearLayout
 
@@ -59,6 +59,15 @@ class SitesActivity : UiActivity() {
         head.addView(DiamondView(this), LinearLayout.LayoutParams(dp(26), dp(26)).apply { leftMargin = dp(10) }) // 💎 con su luz
         root.addView(head)
 
+        // 🗓️ El plan: a qué sitios vas (para enfocar la detección)
+        planBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            background = GradientDrawable().apply { setColor(CARD); cornerRadius = dpf(22f); setStroke(dp(1), 0x804FD1FF.toInt()) }
+        }
+        root.addView(planBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(4) })
+        planDay = if (intent?.getBooleanExtra(EXTRA_PLAN, false) != true && java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) < 12) Plan.today() else Plan.tomorrow()
+        paintPlan()
         text(tr("Cuando tocas «📍 Llegué al sitio», el teclado usa el GPS para saber en cuál estás y lo pone en tu jornada y en el ticket (Location).",
             "When you tap «📍 Arrived on site», the keyboard uses GPS to know which one you're at and puts it in your workday and ticket (Location)."), 13f, faded = true)
         // ---- Llegada y salida automáticas
@@ -112,6 +121,69 @@ class SitesActivity : UiActivity() {
     }
 
     private lateinit var sensHelp: TextView
+    private lateinit var planBox: LinearLayout
+    private var planDay = ""
+
+    /**
+     * 🗓️ «¿A dónde vas?»: eliges hoy o mañana, tocas los sitios (puedes elegir varios) o «Día de servicio».
+     * Los sitios elegidos avisan más rápido y prenden el GPS fino al acercarte.
+     */
+    private fun paintPlan() {
+        planBox.removeAllViews()
+        val (chosen, service) = Plan.get(prefs, planDay)
+        planBox.addView(TextView(this).apply {
+            text = tr("¿A dónde vas?", "Where are you going?"); textSize = 17f; setTextColor(TEXT)
+            setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD))
+        })
+        // Hoy / Mañana
+        val seg = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for ((d, lb) in listOf(Plan.today() to tr("Hoy", "Today"), Plan.tomorrow() to tr("Mañana", "Tomorrow"))) {
+            val on = d == planDay
+            seg.addView(TextView(this).apply {
+                text = lb; textSize = 14f; gravity = Gravity.CENTER; setPadding(dp(10), dp(9), dp(10), dp(9))
+                setTextColor(if (on) 0xFF0B1020.toInt() else TEXT)
+                setTypeface(typeface, if (on) Typeface.BOLD else Typeface.NORMAL)
+                background = if (on) GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(18f) }
+                    else GradientDrawable().apply { cornerRadius = dpf(18f); setColor(CARD2); setStroke(dp(1), LINE) }
+                setOnClickListener { planDay = d; paintPlan() }
+            }, LinearLayout.LayoutParams(0, -2, 1f).apply { if (d == Plan.tomorrow()) leftMargin = dp(8) })
+        }
+        planBox.addView(seg, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        // Los sitios para tocar (y el día de servicio)
+        val flow = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        fun chip(label: String, on: Boolean, act: () -> Unit) = TextView(this).apply {
+            text = (if (on) "✓  " else "") + label; textSize = 14f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            setTextColor(if (on) CYAN else TEXT)
+            background = GradientDrawable().apply { cornerRadius = dpf(16f); setColor(if (on) 0xFF1A2236.toInt() else CARD2); setStroke(dp(if (on) 2 else 1), if (on) CYAN else LINE) }
+            setOnClickListener { act() }
+        }
+        val sites = SiteStore.all(prefs).filter { !it.isStart }
+        flow.addView(chip(tr("Día de servicio (varios lugares)", "Service day (several places)"), service) {
+            Plan.set(this, planDay, if (!service) emptySet() else chosen, !service); paintPlan()
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        if (!service) for (s in sites) flow.addView(chip(s.name, s.name in chosen) {
+            Plan.set(this, planDay, if (s.name in chosen) chosen - s.name else chosen + s.name, false); paintPlan()
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        planBox.addView(flow)
+        val help = when {
+            service -> tr("Se vigilan todos tus sitios, y si te bajas de la camioneta y te quedas 6 minutos en un lugar que no tienes guardado, se anota la llegada ahí (y la salida cuando te vuelves a subir y te vas).",
+                "All your sites are watched, and if you get out of the truck and stay 6 minutes at a place you haven't saved, the arrival is logged there (and the departure when you get back in and leave).")
+            chosen.isNotEmpty() -> tr("Esos sitios avisan más rápido (1 minuto) y prenden el GPS fino al acercarte. Los otros se siguen vigilando, normal.",
+                "Those sites react faster (1 minute) and turn on precise GPS when you get close. The others are still watched as usual.")
+            sites.isEmpty() -> tr("Primero guarda tus sitios abajo.", "First save your sites below.")
+            else -> tr("Toca los sitios a los que vas (puedes elegir varios). Si no eliges nada, se vigilan todos igual.",
+                "Tap the sites you're going to (you can pick several). If you don't pick any, all are watched the same.")
+        }
+        planBox.addView(TextView(this).apply { text = help; textSize = 12.5f; setTextColor(SUB); setLineSpacing(0f, 1.15f); setPadding(dp(2), dp(10), dp(2), 0) })
+        planBox.addView(TextView(this).apply {
+            val on = prefs.getBoolean("plan_ask", true)
+            text = if (on) tr("Te pregunto a las 7:30 p. m. si mañana trabajas (toca para no preguntar)", "I ask at 7:30 p.m. if you work tomorrow (tap to stop asking)")
+                else tr("No te pregunto en la noche (toca para que sí)", "I don't ask in the evening (tap to turn on)")
+            textSize = 12f; setTextColor(if (on) CYAN else SUB); setPadding(dp(2), dp(8), dp(2), 0)
+            setOnClickListener { prefs.edit().putBoolean("plan_ask", !on).apply(); if (!on) Plan.scheduleAsk(this@SitesActivity); paintPlan() }
+        })
+    }
     private lateinit var gpsBox: LinearLayout
     private var googleOk: Boolean? = null
     private var googleFix: ((android.app.Activity) -> Unit)? = null

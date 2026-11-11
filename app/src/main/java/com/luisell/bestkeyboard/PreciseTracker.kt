@@ -91,6 +91,7 @@ class PreciseTracker : Service() {
     private val timeout = Runnable { stopNow() }
 
     private fun foreground() {
+        L.useScreen(this)
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26) {
             val ch = NotificationChannel(CHANNEL, L.t("Mi jornada: GPS fino", "My workday: precise GPS"), NotificationManager.IMPORTANCE_MIN)
@@ -144,7 +145,8 @@ class PreciseTracker : Service() {
             val d = FloatArray(1)
             Location.distanceBetween(s.lat, s.lon, l.latitude, l.longitude, d)
             if (d[0] < r + 1300f) anyNear = true else continue
-            val wifi = if (d[0] < r + 300f) SiteLearn.wifiMatch(this, s.name) else null
+            // El Wi-Fi solo ayuda cuando el GPS está malo (adentro de edificios); con GPS bueno, manda el GPS
+            val wifi = if (d[0] < r + 300f && l.accuracy > 35f) SiteLearn.wifiMatch(this, s.name, 60) else null
             // Una lectura mala no cuenta (salvo que el Wi-Fi diga que estás adentro)
             if (l.accuracy > 60f && wifi != true) continue
             // 🔷 Con la forma del sitio (si la dibujaste) o con el círculo

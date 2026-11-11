@@ -57,6 +57,7 @@ object Tools {
         Info(KeyboardView.TOOL_PINYIN, Icons.TEXTSIZE, "Ver pinyin (chino)", "See pinyin (Chinese)", true),
         Info(KeyboardView.TOOL_CALENDAR, Icons.CALENDAR, "Agregar al calendario", "Add to calendar", true),
         Info(KeyboardView.TOOL_CLEAN, Icons.CHECK, "Pegar limpio", "Clean paste", true),
+        Info(KeyboardView.TOOL_SHOP, Icons.TOOLBOX, "Lista de la ferretería", "Hardware store list", true),
         Info(KeyboardView.TOOL_TICKET, Icons.TICKET, "Notas → Ticket", "Notes → Ticket", true),
         Info(KeyboardView.TOOL_FORMAL, Icons.FORMAL, "Más formal (palabra)", "Formal words", true),
         Info(KeyboardView.TOOL_REVIEW, Icons.REVIEW, "Revisar antes de enviar", "Review before sending", true),
@@ -134,7 +135,8 @@ object Tools {
             Item(KeyboardView.TOOL_REMIND, "Recordar al llegar", "Remind on arrival"))),
         Group(KeyboardView.TOOL_G_TODO, Icons.TODO, "Pendientes", "To-dos", listOf(
             Item(KeyboardView.TOOL_TODO, "Pendientes", "To-dos"),
-            Item(KeyboardView.TOOL_CALENDAR, "Agregar al calendario", "Add to calendar"))),
+            Item(KeyboardView.TOOL_CALENDAR, "Agregar al calendario", "Add to calendar"),
+            Item(KeyboardView.TOOL_SHOP, "Lista de la ferretería", "Hardware store list"))),
     )
 
     fun group(tool: Int): Group? = GROUPS.firstOrNull { it.tool == tool }

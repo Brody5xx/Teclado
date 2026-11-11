@@ -75,7 +75,7 @@ object TicketReminder {
 /** Suena la alarma del aviso (o se prendió el teléfono): avisa y programa el de mañana. */
 class TicketReminderReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
-        L.set(Prefs.get(ctx).getString(Prefs.LANG, "es") ?: "es")
+        L.useScreen(ctx)
         if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) {
             // 📅 Los días que no trabajas no hay aviso del ticket
             val p = Prefs.get(ctx)
