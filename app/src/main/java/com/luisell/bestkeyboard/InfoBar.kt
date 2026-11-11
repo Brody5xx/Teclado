@@ -205,16 +205,21 @@ class InfoBar(context: Context) : LinearLayout(context) {
         show(heading, "", emptyList())
         chips.visibility = GONE
         menu.removeAllViews()
-        var row: LinearLayout? = null
+        // Una sola fila de tarjetas que se desliza a los lados (nunca queda nada tapado por el teclado).
+        // Con más de 2, la siguiente se asoma un poco para que sepas que hay más.
+        val w = (parent as? View)?.width?.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+        val avail = w - paddingLeft - paddingRight
+        val cardW = if (items.size <= 2) (avail - d(8f)) / 2 else ((avail - d(8f)) / 2.3f).toInt()
+        val hs = HorizontalScrollView(context)
+        hs.isHorizontalScrollBarEnabled = false
+        hs.overScrollMode = View.OVER_SCROLL_NEVER
+        val strip = LinearLayout(context).apply { orientation = HORIZONTAL }
+        hs.addView(strip)
         for ((i, it) in items.withIndex()) {
-            if (i % 2 == 0) {
-                row = LinearLayout(context).apply { orientation = HORIZONTAL }
-                menu.addView(row, LayoutParams(-1, -2).apply { if (i > 0) topMargin = d(8f) })
-            }
             val cell = LinearLayout(context)
             cell.orientation = HORIZONTAL
             cell.gravity = Gravity.CENTER_VERTICAL
-            cell.setPadding(d(10f), d(10f), d(10f), d(10f))
+            cell.setPadding(d(10f), d(8f), d(10f), d(8f))
             cell.background = if (it.on) PanelUi.pressable(palette.accent, palette.accentPressed, d(16f).toFloat())
                 else PanelUi.pressable(palette.key, palette.keyPressed, d(16f).toFloat())
             val ic = IconView(context, it.icon, 6.5f)
@@ -224,20 +229,18 @@ class InfoBar(context: Context) : LinearLayout(context) {
             tv.text = it.label
             tv.textSize = 14f
             tv.maxLines = 2
+            tv.ellipsize = android.text.TextUtils.TruncateAt.END
             tv.setTextColor(if (it.on) palette.onAccent else palette.text)
             tv.setPadding(d(8f), 0, 0, 0)
             cell.addView(tv, LayoutParams(0, -2, 1f))
             cell.setOnClickListener { _ -> onFeedback?.invoke(); it.action() }
-            row!!.addView(cell, LayoutParams(0, -1, 1f).apply { if (i % 2 == 1) leftMargin = d(8f) })
+            strip.addView(cell, LayoutParams(cardW, d(62f)).apply { if (i > 0) leftMargin = d(8f) })
+            // Entran suave, una detrás de la otra
+            cell.alpha = 0f; cell.translationX = d(14f).toFloat()
+            cell.animate().alpha(1f).translationX(0f).setStartDelay(45L * i).setDuration(230L).start()
         }
-        if (items.size % 2 == 1) row?.addView(View(context), LayoutParams(0, 1, 1f).apply { leftMargin = d(8f) })
+        menu.addView(hs, LayoutParams(-1, -2))
         menu.visibility = VISIBLE
-        // Entran suave, uno detrás del otro
-        for (r in 0 until menu.childCount) {
-            val v = menu.getChildAt(r)
-            v.alpha = 0f; v.translationY = d(8f).toFloat()
-            v.animate().alpha(1f).translationY(0f).setStartDelay(40L * r).setDuration(220L).start()
-        }
     }
 
     class MenuItem(val icon: Int, val label: String, val on: Boolean, val action: () -> Unit)
