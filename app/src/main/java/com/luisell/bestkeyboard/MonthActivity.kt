@@ -122,6 +122,7 @@ class MonthActivity : UiActivity() {
             text(tr("💵 Tu cheque de la semana", "💵 Your weekly paycheck"), 16f, bold = true)
             text(tr("Pon cuánto ganas por hora (manejando y en el sitio) y aquí te calcula cuánto te queda en el cheque.",
                 "Enter how much you make per hour (driving and on site) and it works out your take-home pay here."), 13f, faded = true)
+            weekHours(WorkDay.weekStart(payWeeksAgo))
             button(tr("Poner mi pago por hora", "Set my hourly pay"), primary = true) {
                 startActivity(android.content.Intent(this, WorkdayButtonsActivity::class.java))
             }
@@ -130,7 +131,8 @@ class MonthActivity : UiActivity() {
             text((if (payWeeksAgo == 0) tr("💵 Tu cheque de esta semana (aprox.)", "💵 This week's paycheck (approx.)")
                 else tr("💵 Tu cheque de la semana pasada (aprox.)", "💵 Last week's paycheck (approx.)")), 16f, bold = true)
             text(tr("Te quedan aprox. ", "Take-home approx. ") + Pay.money(r.net), 22f, bold = true)
-            text(Pay.text(r, cfg), 13f, faded = true)
+            text(L.withScreen(this) { Pay.text(r, cfg) }, 13f, faded = true) // en el idioma de la app
+            weekHours(WorkDay.weekStart(payWeeksAgo))
             button(if (payWeeksAgo == 0) tr("Ver la semana pasada", "See last week") else tr("Ver esta semana", "See this week")) {
                 payWeeksAgo = if (payWeeksAgo == 0) 1 else 0; paintPay()
             }
@@ -150,6 +152,42 @@ class MonthActivity : UiActivity() {
             }
         }
         col = keep
+    }
+
+    /**
+     * ⏱️ El total de horas de la semana que estás viendo: las «sucias» (todo, de que empiezas a que terminas,
+     * con el almuerzo) y las «limpias» (sin el almuerzo que te descuentan).
+     */
+    private fun weekHours(ws: Long) {
+        val we = ws + 7L * 24 * 3600 * 1000
+        val now = System.currentTimeMillis()
+        var dirty = 0L; var clean = 0L; var days = 0
+        for ((day, ev) in WorkDay.byDay(prefs)) {
+            if (day < ws || day >= we || ev.isEmpty()) continue
+            val running = WorkDay.isRunning(ev)
+            val end = if (running && WorkStore.sameDay(day, now)) now else WorkDay.lastMain(ev)?.time ?: ev.last().time
+            dirty += maxOf(0L, end - ev.first().time)
+            clean += WorkDay.summary(ev, if (WorkStore.sameDay(day, now)) now else end).total
+            days++
+        }
+        if (days == 0) return
+        fun h(ms: Long) = String.format(Locale.US, "%.2f h", ms / 3_600_000.0) + "  (" + WorkDay.dur(ms) + ")"
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = GradientDrawable().apply { setColor(CARD2); cornerRadius = dpf(14f); setStroke(dp(1), LINE) }
+        }
+        fun line(label: String, value: String, strong: Boolean) {
+            val r = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(3), 0, dp(3)) }
+            r.addView(TextView(this).apply { text = label; textSize = 13.5f; setTextColor(if (strong) TEXT else SUB) }, LinearLayout.LayoutParams(0, -2, 1f))
+            r.addView(TextView(this).apply { text = value; textSize = 13.5f; setTextColor(if (strong) CYAN else TEXT); if (strong) setTypeface(typeface, Typeface.BOLD) })
+            box.addView(r)
+        }
+        box.addView(TextView(this).apply { text = tr("Horas de la semana", "Hours this week") + " · " + days + tr(" días", " days"); textSize = 14.5f; setTextColor(TEXT); setTypeface(typeface, Typeface.BOLD) })
+        line(tr("Sucias (con el almuerzo)", "Gross (with lunch)"), h(dirty), false)
+        line(tr("Almuerzo descontado", "Lunch deducted"), "−" + h(dirty - clean), false)
+        line(tr("Limpias (te pagan)", "Net (paid)"), h(clean), true)
+        payBox.addView(box, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(4) })
     }
 
     /** 🧾 Escribe cuánto te pagaron de verdad (lo que te quedó, el neto) para compararlo. */

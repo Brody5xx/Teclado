@@ -185,7 +185,8 @@ class PreciseTracker : Service() {
                     x.outCount++
                     if (x.outCount == 1) x.firstOut = if (x.lastIn > 0 && t - x.lastIn < 60_000L) (x.lastIn + t) / 2 else t
                     // Dos lecturas seguidas afuera: saliste (a la hora de la primera)
-                    if (x.outCount >= 2) {
+                    // 📶 Señal mala: tres lecturas seguidas afuera (no dos)
+                    if (x.outCount >= (if (SiteLearn.weak(p, s.name)) 3 else 2)) {
                         x.inside = false; x.exited = true; x.confirmed = false
                         AutoSites.siteExit(this, s.name, x.firstOut)
                     }

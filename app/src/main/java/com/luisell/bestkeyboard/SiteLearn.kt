@@ -232,6 +232,38 @@ object SiteLearn {
             (if (worst != null) " " + L.t("La que más falla: $worst (súbele la distancia o dibuja su forma).", "The one that fails most: $worst (raise its distance or draw its shape).") else "")
     }
 
+    // ---------------------------------------------------------------- 📶 Señal mala
+
+    /** ¿Este sitio tiene «Señal mala» prendido? */
+    fun weak(p: SharedPreferences, site: String): Boolean = all(p).optJSONObject(site)?.optBoolean("weak", false) ?: false
+
+    fun setWeak(ctx: Context, site: String, on: Boolean) {
+        val p = Prefs.get(ctx)
+        val o = all(p)
+        of(o, site).put("weak", on)
+        save(p, o)
+        AutoSites.register(ctx)
+    }
+
+    /** El GPS «brincó» en este sitio (una salida o llegada falsa): se cuenta para sugerir «Señal mala». */
+    fun flap(p: SharedPreferences, site: String) {
+        if (site.isEmpty()) return
+        val o = all(p)
+        val me = of(o, site)
+        val a = me.optJSONArray("flap") ?: JSONArray()
+        a.put(System.currentTimeMillis())
+        while (a.length() > 10) a.remove(0)
+        me.put("flap", a)
+        save(p, o)
+    }
+
+    /** Cuántas veces brincó en las últimas 2 semanas. */
+    fun flaps(p: SharedPreferences, site: String): Int {
+        val a = all(p).optJSONObject(site)?.optJSONArray("flap") ?: return 0
+        val since = System.currentTimeMillis() - 14L * 24 * 3600_000L
+        return (0 until a.length()).count { a.optLong(it) > since }
+    }
+
     /** «Aprendió de 5 llegadas · Wi-Fi: 8 redes · punto ajustado». */
     fun summary(p: SharedPreferences, site: String): String {
         val me = all(p).optJSONObject(site) ?: return ""
@@ -241,6 +273,8 @@ object SiteLearn {
         val w = wifiCount(p, site)
         if (w > 0) parts.add(L.t("Wi-Fi: $w redes", "Wi-Fi: $w networks"))
         if (moved(p, site)) parts.add(L.t("punto ajustado", "point adjusted"))
+        if (weak(p, site)) parts.add(L.t("señal mala: prendido", "weak signal: on"))
+        else if (flaps(p, site) >= 3) parts.add(L.t("el GPS brinca aquí: prende «Señal mala»", "GPS jumps here: turn on «Weak signal»"))
         if (extraDwellMs(p, site) > 0) parts.add(L.t("espera ${extraDwellMs(p, site) / 60_000} min más", "waits ${extraDwellMs(p, site) / 60_000} min more"))
         return parts.joinToString(" · ")
     }

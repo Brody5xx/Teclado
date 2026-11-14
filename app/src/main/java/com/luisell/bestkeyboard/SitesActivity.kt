@@ -598,6 +598,13 @@ class SitesActivity : UiActivity() {
             else tr("Usarlo como parqueo de la camioneta (comienzo y fin del día)", "Use it as the truck parking (start and end of day)")) to {
             SiteStore.setKind(prefs, s.name, if (s.isStart) "site" else "start"); refresh()
         })
+        val weak = SiteLearn.weak(prefs, s.name)
+        opts.add((if (weak) tr("Señal mala: prendido (toca para apagar)", "Weak signal: on (tap to turn off)")
+            else tr("Señal mala: apagado (para sitios donde el GPS brinca)", "Weak signal: off (for sites where GPS jumps)")) to {
+            SiteLearn.setWeak(this, s.name, !weak); refresh()
+            toast(if (!weak) "Señal mala prendida: la salida solo se anota cuando te subes a la camioneta o el GPS te ve claramente lejos." else "Señal mala apagada.",
+                if (!weak) "Weak signal on: the departure is only logged when you get into the truck or GPS clearly sees you far away." else "Weak signal off.")
+        })
         if (SiteLearn.moved(prefs, s.name)) opts.add(tr("Volver al punto que guardé yo", "Go back to the point I saved") to { SiteLearn.restorePoint(this, s.name); refresh() })
         choiceDialog(s.name, opts.map { it.first to null }) { w -> opts.getOrNull(w)?.second?.invoke() }
     }

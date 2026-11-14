@@ -1390,3 +1390,9 @@ Remove bought	Remover comprados	Retirer les achats	Rimuovi acquistati	Gekauftes 
 Clear list	Esvaziar lista	Vider la liste	Svuota lista	Liste leeren	清空清单
 Save this place	Salvar este lugar	Enregistrer ce lieu	Salva questo luogo	Diesen Ort speichern	保存此地点
 New place	Lugar novo	Nouveau lieu	Nuovo luogo	Neuer Ort	新地点
+Hours this week	Horas da semana	Heures de la semaine	Ore della settimana	Stunden dieser Woche	本周工时
+Gross (with lunch)	Brutas (com almoço)	Brutes (avec déjeuner)	Lorde (con pranzo)	Brutto (mit Mittagspause)	总时长（含午餐）
+Lunch deducted	Almoço descontado	Déjeuner déduit	Pranzo detratto	Abgezogene Mittagspause	扣除的午餐
+Net (paid)	Líquidas (pagas)	Nettes (payées)	Nette (pagate)	Netto (bezahlt)	净时长（计薪）
+Add lunch by itself when the day ends	Colocar o almoço sozinho ao terminar o dia	Ajouter le déjeuner tout seul à la fin de la journée	Aggiungi il pranzo da solo a fine giornata	Mittagspause am Tagesende automatisch eintragen	下班时自动添加午餐
+Ask me if I took lunch	Perguntar se almocei	Me demander si j'ai déjeuné	Chiedimi se ho pranzato	Fragen, ob ich Mittag gemacht habe	询问我是否吃了午饭

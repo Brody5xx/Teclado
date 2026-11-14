@@ -191,13 +191,40 @@ object WorkDay {
     /** Anota un evento a una hora que ya pasó (llegada/salida automática). */
     fun addAt(p: SharedPreferences, kind: String, site: String, time: Long): Long {
         save(p, all(p) + Event(time, kind, site))
+        if (kind == finalKind()) autoLunch(p, time)
         return time
     }
 
     fun add(p: SharedPreferences, kind: String, site: String = ""): Long {
         val t = System.currentTimeMillis()
         save(p, all(p) + Event(t, kind, site))
+        if (kind == finalKind()) autoLunch(p, t)
         return t
+    }
+
+    /**
+     * 🍽️ Terminaste el día sin marcar almuerzo: se pone solo (el tiempo fijo, 30 min) en la mitad del tramo más
+     * largo en un sitio (o en la mitad del día). Así se ve en la línea de tiempo; el descuento es el mismo.
+     */
+    private fun autoLunch(p: SharedPreferences, endTime: Long) {
+        if (!p.getBoolean("lunch_auto_add", true) || lunchPaid || lunchAutoMin <= 0) return
+        val ev = all(p).filter { WorkStore.sameDay(it.time, endTime) }.sortedBy { it.time }
+        if (ev.isEmpty() || ev.any { it.kind == LUNCH }) return
+        val first = ev.first().time
+        if (endTime - first < 3 * 3600_000L) return // un día muy corto: no
+        // El tramo más largo en un sitio
+        var best: Pair<Long, Long>? = null
+        var at = -1L
+        for (e in ev) when (e.kind) {
+            ARRIVE -> if (at < 0) at = e.time
+            LEAVE -> if (at >= 0) { if (best == null || e.time - at > best!!.second - best!!.first) best = at to e.time; at = -1 }
+        }
+        if (at >= 0 && (best == null || endTime - at > best!!.second - best!!.first)) best = at to endTime
+        val len = lunchAutoMin * 60_000L
+        val span = best?.takeIf { it.second - it.first > len + 20 * 60_000L } ?: (first to endTime)
+        val start = ((span.first + span.second) / 2 - len / 2) / 60_000L * 60_000L
+        save(p, all(p) + Event(start, LUNCH, "") + Event(start + len, BACK, ""))
+        p.edit().putString("auto_lunch", "$start,${start + len},$endTime").apply()
     }
 
     /** Le pone el sitio a un evento (cuando el GPS ya supo dónde estás, o lo elegiste tú). */
@@ -217,7 +244,12 @@ object WorkDay {
         save(p, all(p).map { if (it.site == old && WorkStore.sameDay(it.time, now)) Event(it.time, it.kind, new) else it })
     }
 
-    fun remove(p: SharedPreferences, time: Long) = save(p, all(p).filter { it.time != time })
+    fun remove(p: SharedPreferences, time: Long) {
+        // Si deshaces el fin del día, también se quita el almuerzo que se puso solo
+        val auto = (p.getString("auto_lunch", "") ?: "").split(",").mapNotNull { it.toLongOrNull() }
+        val drop = if (auto.size == 3 && auto[2] == time) setOf(time, auto[0], auto[1]) else setOf(time)
+        save(p, all(p).filter { it.time !in drop })
+    }
 
     /** Le pone otra hora exacta a un evento. */
     fun moveTo(p: SharedPreferences, time: Long, newTime: Long) =

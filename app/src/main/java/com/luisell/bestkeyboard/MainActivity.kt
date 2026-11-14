@@ -1456,6 +1456,14 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.9.0" to tr("•  Horas de la semana (en el historial, en la tarjeta del cheque, para la semana que veas): sucias (con el almuerzo), el almuerzo descontado y limpias (las que te pagan).\n" +
+            "•  Almuerzo sin preguntas: el aviso «¿Tomaste el almuerzo?» ahora viene apagado. Y si no lo marcas, al terminar el día se pone solo (el tiempo fijo, en la mitad de tu tramo más largo en un sitio). Las dos opciones están en Ajustes de Mi jornada › Almuerzo.\n" +
+            "•  «Señal mala» para los sitios donde el GPS brinca (toca el sitio en Mis sitios): la salida solo se anota cuando te subes a la camioneta o el GPS fino te ve claramente lejos, y espera más antes de anotarla. La lista de sitios te avisa cuando el GPS brinca mucho en uno.\n" +
+            "•  Arreglado: el desglose del cheque salía en inglés.",
+            "•  Hours of the week (in the history, on the paycheck card, for the week you're viewing): gross (with lunch), lunch deducted and net (what you're paid).\n" +
+            "•  Lunch without questions: the «Did you take lunch?» alert is now off. And if you don't log it, when the day ends it's added by itself (the fixed time, in the middle of your longest stretch at a site). Both options are in My workday settings › Lunch.\n" +
+            "•  «Weak signal» for sites where GPS jumps (tap the site in My sites): the departure is only logged when you get into the truck or precise GPS clearly sees you far away, and it waits longer before logging it. The site list tells you when GPS jumps a lot at one.\n" +
+            "•  Fixed: the paycheck breakdown showed in English."),
         "15.8.1" to tr("•  Arreglado: en los grupos de la barra (Pendientes, Traducir, IA para escribir…) la tercera opción en adelante quedaba tapada por el teclado. Ahora las opciones van en una fila que se desliza a los lados, y la siguiente se asoma para que sepas que hay más.",
             "•  Fixed: in the bar groups (To-dos, Translate, AI writing…) the third option onward was hidden behind the keyboard. Now the options are in a row you swipe sideways, and the next one peeks out so you know there's more."),
         "15.8.0" to tr("•  Lista de la ferretería (en el grupo Pendientes): escribe lo que tienes que comprar y, cuando llegas a una ferretería o tienda de material eléctrico, te sale el aviso con toda la lista. Las tiendas cerca salen del mapa gratis de OpenStreetMap.\n" +

@@ -86,7 +86,7 @@ object Forgot {
 
         // 🍽️ Llevas 6 horas y no marcaste almuerzo
         val sum = WorkDay.summary(day, now)
-        if (!WorkDay.lunchPaid && day.none { it.kind == WorkDay.LUNCH } && now - day.first().time >= 6 * 3600_000L && once(ctx, "lunch")) {
+        if (p.getBoolean("lunch_ask", false) && !WorkDay.lunchPaid && day.none { it.kind == WorkDay.LUNCH } && now - day.first().time >= 6 * 3600_000L && once(ctx, "lunch")) {
             AutoSites.notify(ctx, L.t("¿Tomaste el almuerzo?", "Did you take lunch?"),
                 L.t("Ya llevas ${WorkDay.dur(now - day.first().time)}. Aunque no lo marques, te descuentan ${WorkDay.lunchAutoMin} min de almuerzo.",
                     "You're at ${WorkDay.dur(now - day.first().time)}. Even if you don't log it, ${WorkDay.lunchAutoMin} min of lunch are deducted."),

@@ -259,7 +259,11 @@ object AutoSites {
                 val o = try { JSONObject(p.getString(Prefs.AUTO_EXIT_PENDING, "") ?: "") } catch (_: Exception) { null } ?: return
                 p.edit().remove(Prefs.AUTO_EXIT_PENDING).apply()
                 val sn = o.optString("s")
-                if (SiteStore.find(p, sn)?.isStart == true) startFromParking(ctx, sn, o.optLong("t")) else left(ctx, sn, o.optLong("t"))
+                val site = SiteStore.find(p, sn)
+                if (site?.isStart == true) { startFromParking(ctx, sn, o.optLong("t")); return }
+                // 📶 Señal mala: solo cuenta la salida si te subiste al vehículo o el GPS fino te ve claramente lejos
+                if (site != null && SiteLearn.weak(p, sn)) { weakExit(ctx, p, site, o.optLong("t"), rcv); return }
+                left(ctx, sn, o.optLong("t"))
                 return
             }
             ACTION_HOME_CHECK -> {
@@ -332,7 +336,7 @@ object AutoSites {
         if (shaped != null) {
             val w = Geo.where(Prefs.get(ctx), shaped, loc.latitude, loc.longitude, loc.accuracy)
             val ok = if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) w != true else w != false
-            if (!ok) GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, site?.name ?: name)
+            if (!ok) { GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, site?.name ?: name); SiteLearn.flap(Prefs.get(ctx), site?.name ?: name) }
             return ok
         }
         val d = FloatArray(1)
@@ -343,7 +347,7 @@ object AutoSites {
             // Salir: si la lectura dice claramente que sigues adentro, era un brinco del GPS
             else -> d[0] + loc.accuracy >= radius * 0.9f
         }
-        if (!ok) GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, site?.name ?: name)
+        if (!ok) { GpsCheck.logIgnored(ctx, transition == Geofence.GEOFENCE_TRANSITION_EXIT, site?.name ?: name); SiteLearn.flap(Prefs.get(ctx), site?.name ?: name) }
         return ok
     }
 
@@ -561,7 +565,9 @@ object AutoSites {
         val prev = try { JSONObject(p.getString(Prefs.AUTO_EXIT_PENDING, "") ?: "") } catch (_: Exception) { null }
         val at = if (prev != null && prev.optString("s") == site && prev.optLong("t") in (at0 - 30 * 60_000L)..at0) prev.optLong("t") else at0
         p.edit().putString(Prefs.AUTO_EXIT_PENDING, JSONObject().put("s", site).put("t", at).toString()).apply()
-        val wait = ((p.getString(Prefs.AUTO_EXIT_WAIT, "10") ?: "10").toIntOrNull() ?: 10).coerceIn(1, 60)
+        var wait = ((p.getString(Prefs.AUTO_EXIT_WAIT, "10") ?: "10").toIntOrNull() ?: 10).coerceIn(1, 60)
+        // 📶 Señal mala: espera más (el GPS brinca mucho ahí)
+        if (SiteLearn.weak(p, site)) wait = maxOf(wait, 20)
         val am = ctx.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
         try { am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + wait * 60_000L, exitCheckIntent(ctx)) } catch (_: Exception) { }
     }
@@ -592,8 +598,32 @@ object AutoSites {
         if (ev.site.isNotEmpty() && ev.site != site) return
         WorkDay.remove(p, auto)
         p.edit().remove(Prefs.AUTO_LEAVE).apply()
+        SiteLearn.flap(p, site) // 📶 el GPS brincó aquí
         cancel(ctx)
         WorkdayCenter.refresh(ctx)
+    }
+
+    /**
+     * 📶 Salida en un sitio con «Señal mala»: con poca señal el GPS dice que saliste aunque sigas adentro.
+     * Solo se anota si te subiste al vehículo después de llegar (a esa hora) o si el GPS fino, con buena precisión,
+     * te ve lejos del sitio. Si no, sigues ahí (y si de verdad te fuiste, te llega el «¿Saliste de…?»).
+     */
+    private fun weakExit(ctx: Context, p: android.content.SharedPreferences, site: SiteStore.Site, at: Long, rcv: BroadcastReceiver?) {
+        val last = WorkDay.lastMain(WorkDay.day(p)) ?: return
+        if (last.kind != WorkDay.ARRIVE) return
+        val vin = p.getLong("veh_in", 0L)
+        if (vin > last.time && vin > p.getLong("veh_out", 0L) && vin <= System.currentTimeMillis()) { left(ctx, site.name, vin); return }
+        val pr = rcv?.goAsync()
+        WorkdayCenter.preciseFix(ctx.applicationContext, 10_000L, 25f) { fix ->
+            try {
+                if (fix != null && fix.accuracy <= 50f) {
+                    val d = FloatArray(1)
+                    android.location.Location.distanceBetween(site.lat, site.lon, fix.latitude, fix.longitude, d)
+                    if (Geo.where(p, site, fix.latitude, fix.longitude, fix.accuracy) == false && d[0] > Geo.fenceRadius(p, site) + 150f) left(ctx, site.name, at)
+                    else SiteLearn.flap(p, site.name)
+                }
+            } catch (_: Throwable) { } finally { pr?.finish() }
+        }
     }
 
     private fun left(ctx: Context, site: String, at: Long) {

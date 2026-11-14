@@ -132,6 +132,11 @@ class WorkdayButtonsActivity : UiActivity() {
             prefs.edit().putBoolean(Prefs.LUNCH_PAID, prefs.getString(Prefs.LUNCH_PAID + "_s", "unpaid") != "unpaid").apply()
             WorkDay.config(prefs); WorkdayCenter.refresh(this)
         }
+        switch(tr("Poner el almuerzo solo al terminar el día", "Add lunch by itself when the day ends"), "lunch_auto_add", true,
+            tr("Si no lo marcaste, al terminar el día se pone el tiempo fijo en la mitad de tu tramo más largo en un sitio (se ve en la línea de tiempo y lo puedes mover).",
+                "If you didn't log it, when the day ends the fixed time is added in the middle of your longest stretch at a site (it shows on the timeline and you can move it)."))
+        switch(tr("Preguntarme si tomé el almuerzo", "Ask me if I took lunch"), "lunch_ask", false,
+            tr("Apagado: no te llega el aviso de las 6 horas. El almuerzo igual se descuenta.", "Off: you don't get the 6-hour alert. Lunch is still deducted."))
         segmented(tr("Cómo te descuentan", "How it's deducted"), Prefs.LUNCH_RULE, "always",
             listOf("always" to tr("Siempre el fijo", "Always fixed"), "real" to tr("Lo que marque", "What I log"))) { WorkDay.config(prefs); WorkdayCenter.refresh(this) }
         text(tr("Siempre el fijo: cada día que trabajas se descuenta el tiempo fijo, aunque sea un día corto o tomes más o menos.\n" +
