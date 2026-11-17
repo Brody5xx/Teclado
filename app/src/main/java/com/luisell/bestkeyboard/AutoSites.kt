@@ -626,6 +626,26 @@ object AutoSites {
         }
     }
 
+    /**
+     * 🎯 A qué hora saliste de verdad (no cuando Android se dio cuenta):
+     *  1. cuando te subiste a la camioneta (después de llegar y antes del aviso) — lo más exacto;
+     *  2. si no, entre la última vez que el GPS te vio adentro y la primera que te vio afuera (si fue hace poco);
+     *  3. si no, la hora del aviso de Android.
+     */
+    private fun exitTime(ctx: Context, p: android.content.SharedPreferences, site: String, arrived: Long, at: Long): Pair<Long, String> {
+        val vin = p.getLong("veh_in", 0L)
+        if (vin > arrived && vin <= at + 2 * 60_000L && vin >= at - 45 * 60_000L) return vin to L.t(" (cuando te subiste a la camioneta)", " (when you got into the truck)")
+        val s = SiteStore.find(p, site) ?: return at to ""
+        val pts = Trail.day(ctx, at).filter { it[3] > arrived && it[3] <= at + 60_000.0 }
+        val inside = pts.filter { Geo.where(p, s, it[0], it[1], it[2].toFloat()) == true }.maxOfOrNull { it[3].toLong() }
+        if (inside != null && at - inside <= 15 * 60_000L) {
+            val out = pts.filter { it[3] > inside && Geo.where(p, s, it[0], it[1], it[2].toFloat()) == false }.minOfOrNull { it[3].toLong() }
+            val t = if (out != null) (inside + out) / 2 else minOf(at, inside + 60_000L)
+            if (t < at) return t to L.t(" (según el GPS fino)", " (from precise GPS)")
+        }
+        return at to ""
+    }
+
     private fun left(ctx: Context, site: String, at: Long) {
         val p = Prefs.get(ctx)
         val day = WorkDay.day(p)
@@ -633,12 +653,15 @@ object AutoSites {
         if (last.kind != WorkDay.ARRIVE || !WorkDay.isRunning(day)) return
         if (last.site.isNotEmpty() && last.site != site) return
         if (at <= last.time) return
-        val t = WorkDay.addAt(p, WorkDay.LEAVE, last.site.ifEmpty { site }, maxOf(last.time + 60_000L, minOf(System.currentTimeMillis(), at + SiteLearn.offsetMs(p, last.site.ifEmpty { site }, WorkDay.LEAVE))))
+        // 🎯 La hora de verdad: el aviso de «saliste» de Android llega tarde (con el teléfono en el bolsillo y la
+        // camioneta andando, el GPS se revisa cada pocos minutos). Se busca algo más exacto:
+        val (best, why) = exitTime(ctx, p, last.site.ifEmpty { site }, last.time, at)
+        val t = WorkDay.addAt(p, WorkDay.LEAVE, last.site.ifEmpty { site }, maxOf(last.time + 60_000L, minOf(System.currentTimeMillis(), best + SiteLearn.offsetMs(p, last.site.ifEmpty { site }, WorkDay.LEAVE))))
         SiteLearn.markAuto(p, t)
         p.edit().putLong(Prefs.AUTO_LEAVE, t).apply()
         WorkdayCenter.refresh(ctx)
         notify(ctx, L.t("🚪 Saliste de ${last.site.ifEmpty { site }}", "🚪 You left ${last.site.ifEmpty { site }}"),
-            L.t("Lo anoté solo: saliste a las ${WorkStore.time(t)}.", "Logged automatically: you left at ${WorkStore.time(t)}."),
+            L.t("Lo anoté solo: saliste a las ${WorkStore.time(t)}", "Logged automatically: you left at ${WorkStore.time(t)}") + why + ".",
             listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("🕐 Cambiar hora", "🕐 Change time") to fixIntent(ctx, t)), NOTIF_ID)
     }
 
