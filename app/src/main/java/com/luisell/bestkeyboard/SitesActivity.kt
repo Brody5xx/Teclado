@@ -223,6 +223,9 @@ class SitesActivity : UiActivity() {
         switch(tr("GPS fino cerca del sitio", "Precise GPS near the site"), "gps_fine_near", true,
             tr("Al acercarte a 1 km de un sitio, prende el GPS fino unos minutos para anotar el minuto exacto en que entras o sales. Después se apaga solo.",
                 "When you get within 1 km of a site, it turns on precise GPS for a few minutes to log the exact minute you go in or out. Then it turns off by itself."))
+        switch(tr("Precisión máxima en la salida", "Maximum departure precision"), "site_watch", true,
+            tr("Mientras estás en un sitio, revisa dónde estás cada minuto con poca batería; apenas te mueves afuera o te subes a la camioneta, prende el GPS fino y anota la salida al minuto, sin esperar. Usa el mismo aviso de Mi jornada.",
+                "While you're at a site, it checks where you are every minute with little battery; as soon as you move outside or get into the truck, it turns on precise GPS and logs the departure to the minute, without waiting. It uses the same My workday notification."))
         switch(tr("Detectar cuando vas en vehículo", "Detect when you're in a vehicle"), "veh_detect", true,
             tr("Sabe cuándo te subes y te bajas de la camioneta (también de pasajero): el día empieza y termina a esa hora, y la salida de un sitio se anota al minuto.",
                 "It knows when you get in and out of the truck (also as a passenger): the day starts and ends at that time, and leaving a site is logged to the minute."))

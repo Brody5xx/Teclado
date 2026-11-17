@@ -177,6 +177,7 @@ object AutoSites {
             if (e.transitionType == com.google.android.gms.location.ActivityTransition.ACTIVITY_TRANSITION_ENTER) {
                 p.edit().putLong("veh_in", t).apply()
                 Plan.vehicleIn(ctx) // 🛠️ día de servicio: la salida de un lugar nuevo
+                SiteWatch.burstNow() // 🎯 estás en un sitio y te subes: GPS fino ya
                 if (!WorkDay.isWorkDay(p)) continue
                 if (day.isEmpty()) askStart(ctx, p, t)
                 // Estás en un sitio y te subes: viene la salida (el GPS fino da la hora exacta)
@@ -644,6 +645,14 @@ object AutoSites {
             if (t < at) return t to L.t(" (según el GPS fino)", " (from precise GPS)")
         }
         return at to ""
+    }
+
+    /** 🎯 El vigilante de salida ya está seguro de que saliste: se anota sin esperar. */
+    fun watchLeft(ctx: Context, site: String, at: Long) {
+        val p = Prefs.get(ctx)
+        cancelPendingExit(ctx, site)
+        p.edit().remove(Prefs.AUTO_EXIT_PENDING).apply()
+        left(ctx, site, at)
     }
 
     private fun left(ctx: Context, site: String, at: Long) {

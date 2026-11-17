@@ -33,7 +33,7 @@ object WorkdayCenter {
     const val ACTION_REFRESH = "com.luisell.bestkeyboard.WORKDAY_REFRESH"
     const val EXTRA_KIND = "kind"
     private const val CHANNEL = "workday"
-    private const val NOTIF_ID = 4712
+    const val NOTIF_ID = 4712
     private val main = Handler(Looper.getMainLooper())
 
     fun hasLocation(ctx: Context) =
@@ -157,6 +157,7 @@ object WorkdayCenter {
     fun refresh(ctx: Context) {
         try { updateWidgets(ctx) } catch (_: Exception) { }
         try { updateNotification(ctx) } catch (_: Exception) { }
+        try { SiteWatch.sync(ctx) } catch (_: Throwable) { } // 🎯 vigilar la salida mientras estás en un sitio
         try {
             if (Build.VERSION.SDK_INT >= 24) android.service.quicksettings.TileService.requestListeningState(ctx, ComponentName(ctx, WorkdayTile::class.java))
         } catch (_: Exception) { }
@@ -330,8 +331,13 @@ object WorkdayCenter {
             @Suppress("DEPRECATION")
             b.addAction(Notification.Action.Builder(null, Emo.stripUi(WorkDay.label(k)), intentFor(ctx, k, 200 + i)).build())
         }
-        try { nm.notify(NOTIF_ID, b.build()) } catch (_: SecurityException) { }
+        val n = b.build()
+        lastNotif = n
+        try { nm.notify(NOTIF_ID, n) } catch (_: SecurityException) { }
     }
+
+    /** El último aviso fijo de Mi jornada (el vigilante de salida usa este mismo, así no sale otro aviso). */
+    @Volatile var lastNotif: Notification? = null
 
     // ---------------------------------------------------------------- Widget
 

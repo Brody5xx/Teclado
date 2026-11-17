@@ -203,6 +203,12 @@
             android:name=".AutoSitesReceiver"
             android:exported="false" />
 
+        <!-- 🎯 Vigilar la salida mientras estás en un sitio (precisión máxima) -->
+        <service
+            android:name=".SiteWatch"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
         <!-- 🎯 GPS fino unos minutos cerca de tus sitios -->
         <service
             android:name=".PreciseTracker"
