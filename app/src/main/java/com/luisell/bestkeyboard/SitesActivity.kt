@@ -96,6 +96,10 @@ class SitesActivity : UiActivity() {
         button(tr("📍 Guardar donde estoy ahora", "📍 Save where I am now"), primary = true) { saveHere() }
         parkBtn = button("") { parkTap() }
         parkAddr = text("", 12f, faded = true)
+        segmented(tr("Tu día con el parqueo", "Your day with the parking lot"), "park_mode", "arrive",
+            listOf("arrive" to tr("Llego y me voy", "Arrive and leave"), "truck" to tr("Salgo y vuelvo", "Out and back"))) { paintParkMode() }
+        parkModeHelp = text("", 12f, faded = true)
+        paintParkMode()
         paintAuto()
         button(tr("➕ Agregar por dirección", "➕ Add by address")) { addByAddress() }
         SiteStore.getNew(prefs)?.let { n ->
@@ -291,6 +295,16 @@ class SitesActivity : UiActivity() {
     private var lookingHome = false
     private lateinit var parkBtn: TextView
     private lateinit var parkAddr: TextView
+    private lateinit var parkModeHelp: TextView
+
+    private fun paintParkMode() {
+        if (!::parkModeHelp.isInitialized) return
+        parkModeHelp.text = if (AutoSites.parkArrive(prefs))
+            tr("Llego y me voy: tu día empieza cuando llegas al parqueo (a buscar la camioneta) y termina cuando te vas del parqueo (después de dejarla).",
+                "Arrive and leave: your day starts when you get to the parking lot (to pick up the truck) and ends when you leave the parking lot (after dropping it off).")
+        else tr("Salgo y vuelvo: tu día empieza cuando sales del parqueo con la camioneta y termina cuando vuelves y la dejas.",
+            "Out and back: your day starts when you leave the parking lot with the truck and ends when you come back and drop it off.")
+    }
 
     /** ✏️ Una ventanita para escribir una dirección; la busca en el mapa y devuelve dónde queda (o null). */
     private fun askAddress(title: String, current: String, onFound: (String, Double?, Double?) -> Unit) {

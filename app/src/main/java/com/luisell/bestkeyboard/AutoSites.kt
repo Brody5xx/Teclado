@@ -219,25 +219,92 @@ object AutoSites {
     // ---------------------------------------------------------------- Entrar, quedarte y salir de un sitio
     // (los usan las geocercas y el GPS fino)
 
+    /**
+     * 🛻 Cómo cuenta el parqueo: "arrive" = el día empieza cuando LLEGAS al parqueo y termina cuando te VAS del parqueo;
+     * "truck" = empieza cuando sales con la camioneta y termina cuando vuelves y la dejas.
+     */
+    fun parkArrive(p: android.content.SharedPreferences) = (p.getString("park_mode", "arrive") ?: "arrive") == "arrive"
+
+    /** ¿Ya volviste al parqueo después de trabajar? (para saber que la próxima salida del parqueo es el fin del día) */
+    private fun returned(p: android.content.SharedPreferences): Boolean {
+        val day = WorkDay.day(p)
+        if (!WorkDay.isRunning(day)) return false
+        val r = p.getLong("park_return", 0L)
+        return r > day.first().time + 30 * 60_000L && WorkStore.sameDay(r, System.currentTimeMillis())
+    }
+
+    private fun markReturn(p: android.content.SharedPreferences, at: Long) {
+        val day = WorkDay.day(p)
+        if (WorkDay.isRunning(day) && at > day.first().time + 30 * 60_000L) p.edit().putLong("park_return", at).apply()
+    }
+
     fun siteEnter(ctx: Context, site: String, at: Long) {
         val p = Prefs.get(ctx)
         saveEnter(p, site, at)
         cancelPendingExit(ctx, site)
-        if (SiteStore.find(p, site)?.isStart != true) falseExit(ctx, site, at)
+        val park = SiteStore.find(p, site)?.isStart == true
+        if (!park) falseExit(ctx, site, at)
+        else if (parkArrive(p)) markReturn(p, at) // 🛻 volviste al parqueo después de trabajar
     }
 
     fun siteDwell(ctx: Context, site: String, enterAt: Long) {
         val p = Prefs.get(ctx)
         takeEnter(p, site)
-        if (SiteStore.find(p, site)?.isStart == true) endAtParking(ctx, site, vehOutNear(p, enterAt))
-        else arrived(ctx, site, enterAt)
+        if (SiteStore.find(p, site)?.isStart != true) { arrived(ctx, site, enterAt); return }
+        if (parkArrive(p)) {
+            // 🛻 Llegaste al parqueo: si el día no ha empezado, empieza a la hora en que llegaste
+            if (WorkDay.day(p).isEmpty()) startAtParking(ctx, site, enterAt) else markReturn(p, enterAt)
+        } else endAtParking(ctx, site, vehOutNear(p, enterAt))
     }
 
     fun siteExit(ctx: Context, site: String, at: Long) {
         val p = Prefs.get(ctx)
-        takeEnter(p, site)
-        if (SiteStore.find(p, site)?.isStart == true) { if (WorkDay.day(p).isEmpty()) pendingExit(ctx, site, vehInNear(p, at)) }
-        else pendingExit(ctx, site, at)
+        val entered = takeEnter(p, site)
+        if (SiteStore.find(p, site)?.isStart != true) { pendingExit(ctx, site, at); return }
+        if (parkArrive(p)) {
+            val day = WorkDay.day(p)
+            when {
+                // Llegaste y te fuiste rápido con la camioneta (antes de que contara como «quedarte»): el día empezó al llegar
+                day.isEmpty() && entered != null && at - entered >= 90_000L -> startAtParking(ctx, site, entered)
+                // Te vas del parqueo después de volver: termina tu día (se espera unos minutos por si el GPS brincó)
+                returned(p) -> pendingExit(ctx, site, at)
+            }
+        } else if (WorkDay.day(p).isEmpty()) pendingExit(ctx, site, vehInNear(p, at))
+    }
+
+    /** 🛻 Llegaste al parqueo: empieza tu día a la hora en que llegaste. */
+    private fun startAtParking(ctx: Context, site: String, at: Long) {
+        val p = Prefs.get(ctx)
+        if (WorkDay.day(p).isNotEmpty()) return
+        val first = WorkDay.enabledKinds().first()
+        val t = WorkDay.addAt(p, first, "", at)
+        p.edit().putString(Prefs.PARKING_DAY, dayKey()).remove("park_return").apply()
+        WorkdayCenter.refresh(ctx)
+        notify(ctx, L.t("Empezó tu día", "Your day started"),
+            L.t("Llegaste a $site a las ${WorkStore.time(t)}: anoté «${WorkDay.plainLabel(first)}».", "You got to $site at ${WorkStore.time(t)}: logged «${WorkDay.plainLabel(first)}»."),
+            listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("Cambiar hora", "Change time") to fixIntent(ctx, t)), NOTIF_ID)
+    }
+
+    /** 🛻 Te fuiste del parqueo después de dejar la camioneta: termina tu día (a la hora en que te fuiste). */
+    private fun endLeavingParking(ctx: Context, site: String, at0: Long) {
+        val p = Prefs.get(ctx)
+        val day = WorkDay.day(p)
+        if (!WorkDay.isRunning(day)) return
+        val last = WorkDay.lastMain(day) ?: return
+        // Si te fuiste en un carro, la hora exacta es cuando te subiste
+        val ret = p.getLong("park_return", 0L)
+        val vin = p.getLong("veh_in", 0L)
+        val at = if (vin > ret + 60_000L && vin <= at0 + 2 * 60_000L) vin else at0
+        if (at <= last.time) return
+        val fin = WorkDay.finalKind()
+        val t = WorkDay.addAt(p, fin, "", at)
+        p.edit().remove("park_return").apply()
+        WorkdayCenter.refresh(ctx)
+        notify(ctx, L.t("Terminó tu día", "Your day ended"),
+            L.t("Te fuiste de $site a las ${WorkStore.time(t)}: anoté «${WorkDay.plainLabel(fin)}». Hoy: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}.",
+                "You left $site at ${WorkStore.time(t)}: logged «${WorkDay.plainLabel(fin)}». Today: ${WorkDay.dur(WorkDay.summary(WorkDay.day(p)).total)}."),
+            listOf(L.t("Deshacer", "Undo") to undoIntent(ctx, t), L.t("Cambiar hora", "Change time") to fixIntent(ctx, t), L.t("Revisar el día", "Review the day") to reviewIntent(ctx)), NOTIF_ID)
+        maybeWeekReport(ctx)
     }
 
     // ---------------------------------------------------------------- Cuando el teléfono avisa
@@ -261,7 +328,10 @@ object AutoSites {
                 p.edit().remove(Prefs.AUTO_EXIT_PENDING).apply()
                 val sn = o.optString("s")
                 val site = SiteStore.find(p, sn)
-                if (site?.isStart == true) { startFromParking(ctx, sn, o.optLong("t")); return }
+                if (site?.isStart == true) {
+                    if (parkArrive(p)) endLeavingParking(ctx, sn, o.optLong("t")) else startFromParking(ctx, sn, o.optLong("t"))
+                    return
+                }
                 // 📶 Señal mala: solo cuenta la salida si te subiste al vehículo o el GPS fino te ve claramente lejos
                 if (site != null && SiteLearn.weak(p, sn)) { weakExit(ctx, p, site, o.optLong("t"), rcv); return }
                 left(ctx, sn, o.optLong("t"))
