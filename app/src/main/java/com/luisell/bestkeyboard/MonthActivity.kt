@@ -128,14 +128,26 @@ class MonthActivity : UiActivity() {
             }
         } else {
             val r = Pay.week(prefs, WorkDay.weekStart(payWeeksAgo))
-            text((if (payWeeksAgo == 0) tr("💵 Tu cheque de esta semana (aprox.)", "💵 This week's paycheck (approx.)")
-                else tr("💵 Tu cheque de la semana pasada (aprox.)", "💵 Last week's paycheck (approx.)")), 16f, bold = true)
+            text(when (payWeeksAgo) {
+                0 -> tr("Tu cheque de esta semana (aprox.)", "This week's paycheck (approx.)")
+                1 -> tr("Tu cheque de la semana pasada (aprox.)", "Last week's paycheck (approx.)")
+                else -> tr("Tu cheque de la semana ", "Paycheck for the week ") + weekRange(WorkDay.weekStart(payWeeksAgo)) + tr(" (aprox.)", " (approx.)")
+            }, 16f, bold = true)
+            if (payWeeksAgo <= 1) text(weekRange(WorkDay.weekStart(payWeeksAgo)), 12.5f, faded = true)
             text(tr("Te quedan aprox. ", "Take-home approx. ") + Pay.money(r.net), 22f, bold = true)
             text(L.withScreen(this) { Pay.text(r, cfg) }, 13f, faded = true) // en el idioma de la app
             weekHours(WorkDay.weekStart(payWeeksAgo))
-            button(if (payWeeksAgo == 0) tr("Ver la semana pasada", "See last week") else tr("Ver esta semana", "See this week")) {
-                payWeeksAgo = if (payWeeksAgo == 0) 1 else 0; paintPay()
+            // ‹ › para ir de semana en semana
+            val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            fun navBtn(label: String, on: Boolean, act: () -> Unit) = TextView(this).apply {
+                text = label; textSize = 14.5f; gravity = Gravity.CENTER; setPadding(dp(8), dp(12), dp(8), dp(12))
+                setTextColor(if (on) CYAN else SUB); alpha = if (on) 1f else 0.45f
+                background = GradientDrawable().apply { cornerRadius = dpf(20f); setColor(CARD2) }
+                if (on) setOnClickListener { act() }
             }
+            nav.addView(navBtn(tr("‹  Semana anterior", "‹  Previous week"), true) { payWeeksAgo++; paintPay() }, LinearLayout.LayoutParams(0, -2, 1f))
+            nav.addView(navBtn(tr("Semana siguiente  ›", "Next week  ›"), payWeeksAgo > 0) { payWeeksAgo--; paintPay() }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
+            payBox.addView(nav, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
             // 🧾 Comparar con el cheque de verdad
             val ws = WorkDay.weekStart(payWeeksAgo)
             val real = prefs.getFloat("real_check_$ws", -1f)
@@ -152,6 +164,20 @@ class MonthActivity : UiActivity() {
             }
         }
         col = keep
+    }
+
+    /** Cuántas semanas atrás está el día [day] (0 = esta semana). */
+    private fun weeksAgoOf(day: Long): Int {
+        val c = Calendar.getInstance().apply { timeInMillis = day; firstDayOfWeek = Calendar.MONDAY; set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
+        if (c.timeInMillis > day) c.add(Calendar.DAY_OF_YEAR, -7)
+        return Math.round((WorkDay.weekStart(0) - c.timeInMillis) / (7.0 * 24 * 3600 * 1000)).toInt().coerceAtLeast(0)
+    }
+
+    /** «lun 9 – dom 15 nov.» */
+    private fun weekRange(ws: Long): String {
+        val f = SimpleDateFormat("EEE d MMM", uiLocale)
+        return f.format(java.util.Date(ws)) + " – " + f.format(java.util.Date(ws + 6L * 24 * 3600 * 1000))
     }
 
     /**
@@ -389,7 +415,8 @@ class MonthActivity : UiActivity() {
             val dark = ms > 0 && strength > 0.45f
             num.setTextColor(if (dark) 0xFF0B1020.toInt() else TEXT)
             hrs.setTextColor(if (dark) 0xFF0B1020.toInt() else SUB)
-            box.setOnClickListener { chosen = day; paint() }
+            // Tocar un día también pone el cheque de SU semana
+            box.setOnClickListener { chosen = day; payWeeksAgo = weeksAgoOf(day); paint() }
             grid.addView(box, GridLayout.LayoutParams().apply { width = cell - dp(4); height = cell - dp(4); setMargins(dp(2), dp(2), dp(2), dp(2)) })
         }
         totals.text = tr("Este mes: ", "This month: ") + WorkDay.dur(monthMs) + "  ·  " + worked + tr(" día(s) trabajado(s)", " day(s) worked")
