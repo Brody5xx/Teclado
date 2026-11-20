@@ -113,7 +113,13 @@ class MonthActivity : UiActivity() {
         if (::grid.isInitialized) paint()
     }
 
+    private var lastNet = 0.0
+    private val tick = android.os.Handler(android.os.Looper.getMainLooper())
+
+    override fun onPause() { super.onPause(); tick.removeCallbacksAndMessages(null) }
+
     private fun paintPay() {
+        tick.removeCallbacksAndMessages(null)
         payBox.removeAllViews()
         val keep = col
         col = payBox
@@ -134,7 +140,29 @@ class MonthActivity : UiActivity() {
                 else -> tr("Tu cheque de la semana ", "Paycheck for the week ") + weekRange(WorkDay.weekStart(payWeeksAgo)) + tr(" (aprox.)", " (approx.)")
             }, 16f, bold = true)
             if (payWeeksAgo <= 1) text(weekRange(WorkDay.weekStart(payWeeksAgo)), 12.5f, faded = true)
-            text(tr("Te quedan aprox. ", "Take-home approx. ") + Pay.money(r.net), 22f, bold = true)
+            val big = text(tr("Te quedan aprox. ", "Take-home approx. ") + Pay.money(r.net), 22f, bold = true)
+            if (r.live) {
+                // Hoy sigues trabajando: el total sube solo, minuto a minuto (no es un error)
+                val dot = text("●  " + tr("En vivo: hoy sigues trabajando, así que sube cada minuto. Se queda fijo cuando termines el día.",
+                    "Live: you're still working today, so it goes up every minute. It stays fixed when you end the day."), 12.5f)
+                dot.setTextColor(0xFF4ADE80.toInt())
+                val pulse = android.animation.ObjectAnimator.ofFloat(dot, "alpha", 1f, 0.45f, 1f).apply { duration = 1800; repeatCount = -1; start() }
+                dot.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+                    override fun onViewAttachedToWindow(v: android.view.View) {}
+                    override fun onViewDetachedFromWindow(v: android.view.View) { pulse.cancel() }
+                })
+                // Se actualiza solo al cambiar el minuto (mientras miras esta pantalla)
+                tick.removeCallbacksAndMessages(null)
+                tick.postDelayed({ if (!isFinishing && payWeeksAgo == 0) paintPay() }, 60_000L - System.currentTimeMillis() % 60_000L + 300L)
+                // Que se vea subir: cuenta desde lo que mostraba antes
+                val from = lastNet.takeIf { it > 0 && it <= r.net && r.net - it < 50 } ?: r.net
+                if (from < r.net) android.animation.ValueAnimator.ofFloat(from.toFloat(), r.net.toFloat()).apply {
+                    duration = 700
+                    addUpdateListener { big.text = tr("Te quedan aprox. ", "Take-home approx. ") + Pay.money((it.animatedValue as Float).toDouble()) }
+                    start()
+                }
+                lastNet = r.net
+            }
             text(L.withScreen(this) { Pay.text(r, cfg) }, 13f, faded = true) // en el idioma de la app
             weekHours(WorkDay.weekStart(payWeeksAgo))
             // ‹ › para ir de semana en semana

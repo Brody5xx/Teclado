@@ -23,6 +23,8 @@ object Pay {
         val driveH: Double, val siteH: Double, val specialH: Double, val otH: Double,
         val straight: Double, val otPay: Double, val gross: Double,
         val k401: Double, val tax: Double, val life: Double, val other: Double, val net: Double,
+        /** El día de hoy sigue corriendo: el total sube cada minuto mientras trabajas. */
+        val live: Boolean = false,
     )
 
     fun config(p: SharedPreferences): Config {
@@ -37,11 +39,18 @@ object Pay {
         p.edit().putString(Prefs.PAY, o.toString()).apply()
     }
 
+    private fun sameDay(a: Long, b: Long): Boolean {
+        val x = java.util.Calendar.getInstance().apply { timeInMillis = a }
+        val y = java.util.Calendar.getInstance().apply { timeInMillis = b }
+        return x.get(java.util.Calendar.YEAR) == y.get(java.util.Calendar.YEAR) && x.get(java.util.Calendar.DAY_OF_YEAR) == y.get(java.util.Calendar.DAY_OF_YEAR)
+    }
+
     /** Horas pagadas de un día: (manejando, en el sitio por tarifa). */
     private fun dayHours(ev: List<WorkDay.Event>, now: Long, rates: Map<String, Double>, cfg: Config): Pair<Double, List<Pair<Double, Double>>> {
         if (ev.isEmpty()) return 0.0 to emptyList()
         val first = ev.first().time
-        val end = if (WorkDay.isRunning(ev)) now else WorkDay.lastMain(ev)?.time ?: ev.last().time
+        // Un día de otra fecha que se quedó sin terminar no sigue contando: llega hasta lo último anotado
+        val end = if (WorkDay.isRunning(ev) && sameDay(first, now)) now else WorkDay.lastMain(ev)?.time ?: ev.last().time
         val site = ArrayList<Pair<Long, Double>>() // (ms, tarifa)
         var at = -1L
         var atRate = cfg.site
@@ -70,11 +79,14 @@ object Pay {
     fun week(p: SharedPreferences, weekStart: Long): Result {
         val cfg = config(p)
         val rates = SiteStore.all(p).associate { it.name to it.rate }
-        val now = System.currentTimeMillis()
+        // Al minuto exacto (sin segundos): así el total no cambia cada vez que tocas la pantalla
+        val now = System.currentTimeMillis().let { it - it % 60_000L }
         val weekEnd = weekStart + 7L * 24 * 3600 * 1000
+        var live = false
         var driveH = 0.0; var siteH = 0.0; var specialH = 0.0; var straight = 0.0
         for ((day, ev) in WorkDay.byDay(p)) {
             if (day < weekStart || day >= weekEnd) continue
+            if (WorkDay.isRunning(ev) && sameDay(ev.first().time, now)) live = true
             val (dh, sites) = dayHours(ev, now, rates, cfg)
             driveH += dh
             straight += dh * cfg.drive
@@ -94,7 +106,7 @@ object Pay {
         val life = if (gross > 0) cfg.lifeWeek else 0.0
         val other = if (gross > 0) cfg.otherWeek else 0.0
         val net = gross - k401 - tax - life - other
-        return Result(driveH, siteH, specialH, otH, straight, otPay, gross, k401, tax, life, other, net)
+        return Result(driveH, siteH, specialH, otH, straight, otPay, gross, k401, tax, life, other, net, live)
     }
 
     fun money(v: Double): String = "$" + String.format(Locale.US, "%,.2f", v)
