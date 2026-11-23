@@ -1907,8 +1907,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         fieldCorrect = fieldSuggest && variation != InputType.TYPE_TEXT_VARIATION_FILTER
         val wasIncognito = incognito
         incognito = manualIncognito || autoIncognito(info)
+        // 🕶 La barra espaciadora y el ojito se pintan YA con lo de esta pestaña (antes salía lo de la anterior)
+        kv?.spaceLabel = langLabel()
+        if (incognito != wasIncognito) kv?.invalidate()
         // 🕶 Se puso solo (pestaña privada o app de «siempre incógnito»): que se note, con la luz en la barra espaciadora
-        if (incognito && !wasIncognito && !manualIncognito) handler.postDelayed({ kv?.flashSpace() }, 350L)
+        if (incognito != wasIncognito && !manualIncognito) handler.postDelayed({ kv?.flashSpace() }, 350L)
         fieldLearn = fieldSuggest && !incognito
         kv?.enterAction = enterActionFor(info)
 
@@ -4537,8 +4540,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (info == null) return false
         if ((info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0) return true
         val pkg = info.packageName ?: return false
-        return pkg in privateBrowsers || pkg in incognitoApps()
+        // En los navegadores manda la pestaña: incógnito solo en las privadas, normal en las demás
+        return pkg in privateBrowsers || (pkg in incognitoApps() && !isBrowser(pkg))
     }
+
+    /** Los navegadores ya avisan solos cuando la pestaña es incógnito: no hace falta «Siempre en…». */
+    private fun isBrowser(pkg: String): Boolean = pkg in setOf("com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.chrome.canary",
+        "com.brave.browser", "com.brave.browser_beta", "com.sec.android.app.sbrowser", "com.sec.android.app.sbrowser.beta",
+        "org.mozilla.firefox", "org.mozilla.firefox_beta", "com.microsoft.emmx", "com.opera.browser", "com.opera.gx",
+        "com.vivaldi.browser", "com.kiwibrowser.browser", "com.duckduckgo.mobile.android", "com.google.android.googlequicksearchbox") ||
+        pkg.contains("browser") || pkg.contains("chrome")
 
     private fun appLabel(pkg: String): String = try {
         packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
@@ -4563,7 +4574,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             applyIncognito(L.t("$name ya no se pone en incógnito sola.", "$name no longer goes incognito by itself."))
             return
         }
-        if (manualIncognito || name.isEmpty()) {
+        if (manualIncognito || name.isEmpty() || isBrowser(pkg)) {
             val on = !manualIncognito
             prefs.edit().putBoolean(Prefs.INCOGNITO, on).apply()
             applyIncognito(if (on) L.t("Incógnito prendido: no aprendo ni guardo nada de lo que escribas o copies.", "Incognito on: I won't learn or save anything you type or copy.")

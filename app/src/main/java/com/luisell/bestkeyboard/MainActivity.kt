@@ -998,8 +998,8 @@ class MainActivity : UiActivity() {
                 "It doesn't learn or save anything you type or copy. It also turns on by itself in private tabs. Turn it on quickly with the «Incognito mode» button in ⋯."))
         // 🕶 Las apps donde siempre se pone en incógnito solo
         val incApps = (prefs.getString(Prefs.INCOGNITO_APPS, "") ?: "").split('|').filter { it.isNotEmpty() }
-        text(if (incApps.isEmpty()) tr("Se pone solo en: pestañas privadas (Chrome, Samsung Internet, Firefox, Brave, Edge…) y navegadores privados (Firefox Focus, Tor). Para que se ponga solo en otra app: ábrela, toca ⋯ › «Modo incógnito» › «Siempre en …».",
-                "It turns on by itself in: private tabs (Chrome, Samsung Internet, Firefox, Brave, Edge…) and private browsers (Firefox Focus, Tor). To make it turn on by itself in another app: open it, tap ⋯ › «Incognito mode» › «Always in …».")
+        text(if (incApps.isEmpty()) tr("Se pone solo en las pestañas incógnito o privadas (Chrome, Brave, Samsung Internet, Firefox, Edge…); en las pestañas normales el teclado es normal. También en los navegadores privados (Firefox Focus, Tor). Para que se ponga solo en otra app: ábrela, toca ⋯ › «Modo incógnito» › «Siempre en …».",
+                "It turns on by itself in incognito or private tabs (Chrome, Brave, Samsung Internet, Firefox, Edge…); in normal tabs the keyboard is normal. Also in private browsers (Firefox Focus, Tor). To make it turn on by itself in another app: open it, tap ⋯ › «Incognito mode» › «Always in …».")
             else tr("También se pone solo en estas apps (toca una para quitarla):", "It also turns on by itself in these apps (tap one to remove it):"), 12.5f, faded = true)
         for (pk in incApps) {
             val nm = try { packageManager.getApplicationLabel(packageManager.getApplicationInfo(pk, 0)).toString() } catch (_: Exception) { pk }
@@ -1509,6 +1509,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.12.1" to tr("•  Arreglado el incógnito en los navegadores: al entrar a una pestaña incógnito (Chrome, Brave, Samsung Internet, Firefox, Edge…) la barra espaciadora dice «Incógnito» y el ojito se tacha enseguida; al volver a una pestaña normal, el teclado vuelve a ser normal. Antes mostraba lo de la pestaña anterior.",
+            "•  Fixed incognito in browsers: when you go to an incognito tab (Chrome, Brave, Samsung Internet, Firefox, Edge…) the space bar says «Incognito» and the eye gets its line right away; back in a normal tab, the keyboard is normal again. Before, it showed the previous tab's state."),
         "15.12.0" to tr("•  Códigos por correo: cuando te llega un correo con un código (Gmail, Outlook, Samsung Email…), sale «Código (Gmail): 123456» arriba del teclado, igual que los de SMS. Se prende en Ajustes › Copiado y códigos › «Permitir códigos de correo».\n" +
             "•  Incógnito automático mejorado: además de las pestañas privadas, se pone solo en los navegadores privados (Firefox Focus, Tor) y en las apps que tú elijas: toca ⋯ › «Modo incógnito» › «Siempre en …». Cuando se pone solo, la barra espaciadora brilla para que lo notes.\n" +
             "•  El micrófono ya no se traba al cambiar de idioma: se reinicia limpio, y si se queda sin responder, se arregla solo en 3 segundos. Dos toques seguidos ya no se pelean.\n" +
