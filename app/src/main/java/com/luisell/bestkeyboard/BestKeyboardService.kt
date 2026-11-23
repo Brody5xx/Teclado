@@ -459,11 +459,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         val vp = VoicePanel(this)
         vp.listener = panelListener
         vp.actions = object : VoicePanel.Actions {
-            override fun onMicTap() = if (listening) stopVoice(L.t("Toca el micrófono para hablar", "Tap the mic to speak")) else startVoice()
+            override fun onMicTap() {
+                // 🎤 Dos toques muy seguidos no se pelean (uno prende y el otro apaga)
+                val t = SystemClock.uptimeMillis()
+                if (t - lastMicTap < 350L) return
+                lastMicTap = t
+                // Si se quedó trabado (dice que escucha pero no oye nada), el toque lo arranca de nuevo
+                if (listening && micReady) stopVoice(L.t("Toca el micrófono para hablar", "Tap the mic to speak"))
+                else { freshVoice(); startVoice() }
+            }
             override fun onVoiceLangTap() {
                 voiceLang = Langs.other(prefs, voiceLang)
                 vp.setLang(voiceLang)
-                if (listening) { recognizer?.cancel(); startVoice() }
+                if (listening) restartVoice()
             }
             override fun onEnglishTap() {
                 voiceEnglish = !voiceEnglish
@@ -472,7 +480,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     // Hablas en español
                     voiceLang = "es"
                     vp.setLang(voiceLang)
-                    if (listening) { recognizer?.cancel(); startVoice() }
+                    if (listening) restartVoice()
                     val tr = voiceTrans ?: Translation("es", "en").also { voiceTrans = it }
                     if (!tr.ready) tr.prepare({}, {})
                     vp.setStatus(L.t("Habla en español: se escribe en inglés.", "Speak Spanish: it's typed in English."))
@@ -884,11 +892,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 reportMode = false
                 reportBuf.setLength(0)
                 vp.setReport(false, false)
+                voiceTries = 0
                 startVoice()
             } else if (listening || recognizer != null) {
                 reportMode = false
-                listening = false
-                recognizer?.cancel()
+                freshVoice()
                 vp.setListening(false)
             }
         }
@@ -1031,16 +1039,25 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 }
             }
         }
-        if (!codeOn || !QuickPaste.canReadSms(this)) { showQuick(fromClip); return }
+        // 📧 El código que llegó por correo (o en el aviso de una app)
+        val mail = if (codeOn) CodeListener.recent(this)?.takeIf { it.sig != done } else null
+        if (!codeOn || !QuickPaste.canReadSms(this)) { showQuick(listOfNotNull(fromClip, mail).maxByOrNull { it.time }); return }
         val app = applicationContext
         shotIo.execute {
             val sms = QuickPaste.recentSmsCode(app)?.takeIf { it.sig != done }
             handler.post {
-                // El más nuevo de los dos
-                val best = listOfNotNull(fromClip, sms).maxByOrNull { it.time }
+                // El más nuevo de todos
+                val best = listOfNotNull(fromClip, sms, mail).maxByOrNull { it.time }
                 showQuick(best)
             }
         }
+    }
+
+    /** 📧 Llegó un código por correo mientras el teclado está abierto: sale enseguida. */
+    fun codeArrived() {
+        if (!isInputViewShown) return
+        checkQuick()
+        kv?.flashSpace()
     }
 
     private fun showQuick(item: QuickPaste.Item?) {
@@ -1201,24 +1218,62 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_SWITCH_ALLOWED_LANGUAGES, Langs.pair(prefs).let { arrayListOf(Langs.voice(it.first), Langs.voice(it.second)) })
         }
         listening = true
+        micReady = false
         vp.setListening(true)
         vp.setStatus(L.t("Escuchando… habla ahora", "Listening… speak now"))
         try {
             r.startListening(intent)
+            handler.removeCallbacks(voiceWatchdog)
+            handler.postDelayed(voiceWatchdog, 3000L)
         } catch (_: Exception) {
+            freshVoice()
             stopVoice(L.t("No se pudo usar el micrófono. Inténtalo de nuevo.", "Couldn't use the mic. Try again."))
         }
     }
 
-    private fun stopVoice(message: String) {
+    private var lastMicTap = 0L
+    /** El micrófono ya está oyendo de verdad (el teléfono avisó «listo para hablar»). */
+    private var micReady = false
+    private var voiceTries = 0
+    private val voiceWatchdog = Runnable {
+        // Pasaron 3 segundos y el reconocedor no arrancó: se tira y se crea uno nuevo (una vez)
+        if (listening && !micReady && mode == 3) {
+            freshVoice()
+            if (voiceTries++ < 1) startVoice()
+            else stopVoice(L.t("El micrófono no respondió. Tócalo para intentarlo de nuevo.", "The mic didn't respond. Tap it to try again."))
+        }
+    }
+
+    /** Tira el reconocedor de voz (se crea uno nuevo, limpio, la próxima vez). Así no se queda trabado. */
+    private fun freshVoice() {
+        handler.removeCallbacks(voiceWatchdog)
         listening = false
-        recognizer?.cancel()
+        micReady = false
+        try { recognizer?.cancel() } catch (_: Exception) { }
+        try { recognizer?.destroy() } catch (_: Exception) { }
+        recognizer = null
+    }
+
+    /** Cambiaste el idioma mientras hablas: se para, se crea uno nuevo y vuelve a escuchar (con una pausita, si no el teléfono se traba). */
+    private fun restartVoice() {
+        freshVoice()
+        voiceTries = 0
+        voicePanel?.setListening(true)
+        voicePanel?.setStatus(L.t("Cambiando de idioma…", "Changing language…"))
+        handler.postDelayed({ if (mode == 3 && !listening) startVoice() }, 300L)
+    }
+
+    private fun stopVoice(message: String) {
+        handler.removeCallbacks(voiceWatchdog)
+        listening = false
+        micReady = false
+        try { recognizer?.cancel() } catch (_: Exception) { }
         voicePanel?.setListening(false)
         voicePanel?.setStatus(message)
     }
 
     private val voiceListener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: android.os.Bundle?) {}
+        override fun onReadyForSpeech(params: android.os.Bundle?) { micReady = true; voiceTries = 0; handler.removeCallbacks(voiceWatchdog) }
         override fun onBeginningOfSpeech() {}
         override fun onRmsChanged(rmsdB: Float) { voicePanel?.setLevel(rmsdB) }
         override fun onBufferReceived(buffer: ByteArray?) {}
@@ -1227,6 +1282,19 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
         override fun onError(error: Int) {
             if (!listening) return
+            handler.removeCallbacks(voiceWatchdog)
+            // Errores que dejan el reconocedor trabado: se tira y el próximo toque empieza limpio
+            if (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ||
+                error == 11 /* SERVER_DISCONNECTED */ || error == SpeechRecognizer.ERROR_SERVER ||
+                error == 12 /* LANGUAGE_NOT_SUPPORTED */ || error == 13 /* LANGUAGE_UNAVAILABLE */ || error == 10 /* TOO_MANY_REQUESTS */) {
+                freshVoice()
+                // Ocupado o desconectado: vuelve a intentar solito una vez
+                if (mode == 3 && voiceTries++ < 1 && error != 12 && error != 13) {
+                    voicePanel?.setListening(true)
+                    handler.postDelayed({ if (mode == 3 && !listening) startVoice() }, 400L)
+                    return
+                }
+            }
             when (error) {
                 SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
                     stopVoice(L.t("Toca el micrófono para hablar", "Tap the mic to speak"))
@@ -1236,6 +1304,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     stopVoice(L.t("Sin internet. Para dictar sin conexión, descarga el idioma en la app Google (Voz → Reconocimiento sin conexión).", "No internet. To dictate offline, download the language in the Google app (Voice → Offline speech recognition)."))
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY ->
                     stopVoice(L.t("El micrófono está ocupado. Toca para intentarlo de nuevo.", "The mic is busy. Tap to try again."))
+                12, 13 -> stopVoice(L.t("Ese idioma no está listo para dictar. Toca el botón del idioma para cambiarlo, o descárgalo en la app Google (Voz).", "That language isn't ready for dictation. Tap the language button to switch, or download it in the Google app (Voice)."))
                 else -> stopVoice(L.t("Toca el micrófono para hablar", "Tap the mic to speak"))
             }
         }
@@ -1836,8 +1905,10 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         prefs.edit().putString(Prefs.LAST_FIELD,
             "${info.packageName} · 0x${Integer.toHexString(type)} · 0x${Integer.toHexString(info.imeOptions)}").apply()
         fieldCorrect = fieldSuggest && variation != InputType.TYPE_TEXT_VARIATION_FILTER
-        val privateField = (info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0
-        incognito = manualIncognito || privateField
+        val wasIncognito = incognito
+        incognito = manualIncognito || autoIncognito(info)
+        // 🕶 Se puso solo (pestaña privada o app de «siempre incógnito»): que se note, con la luz en la barra espaciadora
+        if (incognito && !wasIncognito && !manualIncognito) handler.postDelayed({ kv?.flashSpace() }, 350L)
         fieldLearn = fieldSuggest && !incognito
         kv?.enterAction = enterActionFor(info)
 
@@ -1885,6 +1956,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        try { if (sentSeen.isNotBlank()) learnSentences(sentSeen, all = true) } catch (_: Exception) { }
+        sentSeen = ""; sentLearned.clear()
         pyReset(commit = true)
         bgVideoView?.pause()
         learnTypedEmail()
@@ -2460,9 +2533,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         if (!suggestOn || !fieldSuggest || eng == null || ic == null || numLike || hackerActive) {
             clearSlots(); return
         }
-        val before = ic.getTextBeforeCursor(48, 0) ?: ""
+        val longBefore = (try { ic.getTextBeforeCursor(400, 0) } catch (_: Exception) { null } ?: "").toString()
+        val before: CharSequence = if (longBefore.length > 48) longBefore.substring(longBefore.length - 48) else longBefore
         val after = ic.getTextAfterCursor(24, 0) ?: ""
         fixSpan = null
+        trackSentences(longBefore)
         if (after.isNotEmpty() && TextUtil.isWordChar(after[0])) {
             // 🔧 Tocaste en medio de una palabra mal escrita: sus correcciones salen aquí arriba (en tu idioma)
             val head = TextUtil.currentWord(before)
@@ -2494,10 +2569,22 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             // Predicción: lo que sueles escribir después de la palabra anterior
             val prev = TextUtil.previousWord(before, 0)
             val prev2 = TextUtil.previousWords(before, 0).second
-            val preds = if (prev != null) eng.predictions(prev, sugLang(eng, before, 0), 3, prev2) else emptyList()
+            var preds = if (prev != null) eng.predictions(prev, sugLang(eng, before, 0), 3, prev2) else emptyList()
+            // 💬 Tus frases de siempre: si estás escribiendo una frase que ya escribiste, sale la misma palabra (siempre igual)
+            val cont = sentenceNext(eng, longBefore, "")
+            val mem = cont.firstOrNull()
+            if (mem != null) preds = (listOf(mem.first) + cont.drop(1).take(1).map { it.first } + preds)
+                .distinctBy { it.lowercase() }.take(3)
             if (preds.isEmpty()) { clearSlots(); return }
             val capital = shift > 0 && page == Page.LETTERS
             val p = preds.map { if (capital) TextUtil.matchCase(it, "A") else it }.toMutableList()
+            if (mem != null && mem.second.size >= 2) {
+                // A la derecha: el resto de tu frase (hasta 6 palabras)
+                val rest = mem.second.take(6).joinToString(" ")
+                val phc = if (capital) TextUtil.matchCase(rest, "A") else rest
+                while (p.size < 2) p.add("")
+                if (p.size >= 3) p[2] = phc else p.add(phc)
+            } else
             // 💬 Si la frase es obvia, a la derecha sale completa («in a few minutes»)
             if (prev != null) try {
                 val ph = eng.phrase(prev, sugLang(eng, before, 0), prev2)
@@ -2520,6 +2607,18 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         applyTouch(eng, word)
         val res = eng.suggest(word, prev, sl, TextUtil.previousWords(before, word.length).second)
         val corr = if (canCorrect(word, before)) res.correction else null
+        // 💬 La palabra que sigue en tu frase de siempre, si empieza con lo que llevas escrito
+        val memWord = sentenceNext(eng, longBefore, word).firstOrNull()?.first?.let { TextUtil.matchCase(it, word) }
+            ?.takeIf { !it.equals(word, true) }
+        if (memWord != null) {
+            if (corr != null && corr != word && !corr.equals(memWord, true)) {
+                showSlots(word, corr, memWord, bold = true, typedLeft = true); return
+            }
+            if (corr == null || corr.equals(memWord, true)) {
+                val other = res.suggestions.firstOrNull { !it.equals(memWord, true) && !it.equals(word, true) }
+                showSlots(word, memWord, other, bold = corr != null, typedLeft = true); return
+            }
+        }
         if (corr != null && corr != word) {
             val right = res.suggestions.firstOrNull { !it.equals(corr, true) && !it.equals(word, true) }
             showSlots(word, corr, right, bold = true, typedLeft = true)
@@ -2544,6 +2643,60 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             }
             showSlots(word, list.getOrNull(0), list.getOrNull(1), bold = false, typedLeft = true)
         }
+    }
+
+    // ---------------------------------------------------------------- 💬 Tus frases
+
+    /** Las frases que ya aprendió en este campo (para no contarlas dos veces). */
+    private val sentLearned = HashSet<String>()
+    /** Lo último que había escrito en el campo (para aprender la frase cuando la envías y el cuadro se vacía). */
+    private var sentSeen = ""
+
+    /** Lo que sigue según tus frases guardadas. [typed] = lo que llevas de la palabra actual. */
+    private fun sentenceNext(eng: com.luisell.bestkeyboard.words.WordEngine, text: String, typed: String): List<Pair<String, List<String>>> {
+        if (!prefs.getBoolean(Prefs.SENTENCE_MEMORY, true)) return emptyList()
+        // La frase que estás escribiendo: desde el último punto, ? o ! (o el salto de línea)
+        val body = text.substring(0, maxOf(0, text.length - typed.length))
+        val cut = body.indexOfLast { it == '.' || it == '?' || it == '!' || it == '\n' || it == '¿' || it == '¡' }
+        val ctx = eng.user.tokens(body.substring(cut + 1))
+        if (ctx.isEmpty()) return emptyList()
+        val all = try { eng.user.continuations(ctx) } catch (_: Exception) { emptyList() }
+        if (typed.isEmpty()) return all
+        val f = TextUtil.fold(typed.lowercase())
+        return all.filter { TextUtil.fold(it.first.lowercase()).startsWith(f) }
+    }
+
+    /** Aprende las frases terminadas (con . ? ! o salto de línea); con [all] también la última. */
+    private fun learnSentences(text: String, all: Boolean) {
+        val eng = WordStore.engine ?: return
+        if (!learnOn || !fieldLearn || incognito || isPassword || !prefs.getBoolean(Prefs.SENTENCE_MEMORY, true)) return
+        val parts = text.split(Regex("(?<=[.!?\n])"))
+        var any = false
+        for ((i, raw) in parts.withIndex()) {
+            val t = raw.trim()
+            if (t.isEmpty()) continue
+            val done = t.last() == '.' || t.last() == '?' || t.last() == '!' || raw.endsWith("\n")
+            if (!done && !(all && i == parts.lastIndex)) continue
+            val key = eng.user.tokens(t).joinToString(" ") { it.lowercase() }
+            if (key.isEmpty() || !sentLearned.add(key)) continue
+            eng.user.learnSentence(t)
+            any = true
+        }
+        if (any) WordStore.scheduleSave()
+    }
+
+    /** Cada vez que cambia el texto: terminaste una frase, o la enviaste (el cuadro se vació). */
+    private fun trackSentences(now: String) {
+        val prevSeen = sentSeen
+        sentSeen = now
+        if (now.isBlank()) {
+            // Enviaste el mensaje (el cuadro se vació): se aprende lo que habías escrito
+            if (prevSeen.isNotBlank()) learnSentences(prevSeen, all = true)
+            sentLearned.clear()
+            return
+        }
+        val t = now.trimEnd(' ')
+        if (now.endsWith(" ") && t.isNotEmpty() && (t.last() == '.' || t.last() == '?' || t.last() == '!')) learnSentences(t, all = false)
     }
 
     /** Mantener presionada una sugerencia: preguntar si la borras para que no vuelva a salir. */
@@ -3140,6 +3293,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun handleEnter() {
         val ic = target() ?: return
+        // 💬 Enter (enviar o salto de línea): la frase que terminaste se aprende
+        try { (ic.getTextBeforeCursor(400, 0) ?: "").toString().let { if (it.isNotBlank()) learnSentences(it, all = true) } } catch (_: Exception) { }
         val ei = targetInfo()
         val action = if (ei != null) enterActionFor(ei) else EditorInfo.IME_ACTION_NONE
         if (action != EditorInfo.IME_ACTION_NONE) {
@@ -4367,16 +4522,75 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     // ---------------------------------------------------------------- 🌐 Idioma (y cambio solo)
 
     /** Cambia el idioma del teclado (con la luz alrededor de la barra espaciadora). */
-    /** 🕶 Prende o apaga el modo incógnito (no aprende ni guarda lo que escribes o copias). */
-    private fun toggleIncognito() {
-        val on = !manualIncognito
-        prefs.edit().putBoolean(Prefs.INCOGNITO, on).apply()
-        incognito = on || (currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) ?: 0) != 0
+    /** Navegadores que siempre son privados (no guardan nada nunca). */
+    private val privateBrowsers = setOf("org.mozilla.focus", "org.mozilla.klar", "org.torproject.torbrowser",
+        "org.torproject.torbrowser_alpha", "com.duckduckgo.mobile.android.focus")
+
+    private fun incognitoApps(): MutableSet<String> =
+        (prefs.getString(Prefs.INCOGNITO_APPS, "") ?: "").split('|').filter { it.isNotEmpty() }.toMutableSet()
+
+    /**
+     * 🕶 ¿Este campo pide incógnito solo? Las pestañas privadas (Chrome, Samsung Internet, Firefox, Brave, Edge…)
+     * avisan al teclado; los navegadores que siempre son privados; y las apps que tú marcaste «Siempre incógnito aquí».
+     */
+    private fun autoIncognito(info: EditorInfo?): Boolean {
+        if (info == null) return false
+        if ((info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0) return true
+        val pkg = info.packageName ?: return false
+        return pkg in privateBrowsers || pkg in incognitoApps()
+    }
+
+    private fun appLabel(pkg: String): String = try {
+        packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
+    } catch (_: Exception) { pkg }
+
+    private fun applyIncognito(msg: String) {
+        incognito = manualIncognito || autoIncognito(currentInputEditorInfo)
         fieldLearn = fieldSuggest && !incognito
         kv?.spaceLabel = langLabel()
         kv?.flashSpace()
-        Toast.makeText(this, if (on) L.t("Incógnito prendido: no aprendo ni guardo nada de lo que escribas o copies.", "Incognito on: I won't learn or save anything you type or copy.")
-            else L.t("Incógnito apagado.", "Incognito off."), Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    }
+
+    /** 🕶 Prende o apaga el modo incógnito (no aprende ni guarda lo que escribes o copias). */
+    private fun toggleIncognito() {
+        val pkg = currentInputEditorInfo?.packageName ?: ""
+        val name = if (pkg.isNotEmpty() && pkg != packageName) appLabel(pkg) else ""
+        val apps = incognitoApps()
+        // Esta app está en «Siempre incógnito»: tocar el ojito la saca de la lista
+        if (pkg in apps) {
+            apps.remove(pkg); prefs.edit().putString(Prefs.INCOGNITO_APPS, apps.joinToString("|")).apply()
+            applyIncognito(L.t("$name ya no se pone en incógnito sola.", "$name no longer goes incognito by itself."))
+            return
+        }
+        if (manualIncognito || name.isEmpty()) {
+            val on = !manualIncognito
+            prefs.edit().putBoolean(Prefs.INCOGNITO, on).apply()
+            applyIncognito(if (on) L.t("Incógnito prendido: no aprendo ni guardo nada de lo que escribas o copies.", "Incognito on: I won't learn or save anything you type or copy.")
+                else L.t("Incógnito apagado.", "Incognito off."))
+            return
+        }
+        // Prenderlo: ¿solo ahora, o siempre en esta app?
+        val bar = infoBar ?: run {
+            prefs.edit().putBoolean(Prefs.INCOGNITO, true).apply()
+            applyIncognito(L.t("Incógnito prendido.", "Incognito on.")); return
+        }
+        infoRegen = null
+        bar.show(L.t("Modo incógnito", "Incognito mode"),
+            L.t("No aprendo ni guardo nada de lo que escribas o copies. Si eliges «Siempre en $name», se prende solo cada vez que escribas en $name.",
+                "I won't learn or save anything you type or copy. If you pick «Always in $name», it turns on by itself every time you type in $name."),
+            listOf(
+                L.t("Solo ahora", "Just now") to {
+                    closeInfo()
+                    prefs.edit().putBoolean(Prefs.INCOGNITO, true).apply()
+                    applyIncognito(L.t("Incógnito prendido: no aprendo ni guardo nada.", "Incognito on: I won't learn or save anything."))
+                },
+                L.t("Siempre en $name", "Always in $name") to {
+                    closeInfo()
+                    apps.add(pkg); prefs.edit().putString(Prefs.INCOGNITO_APPS, apps.joinToString("|")).apply()
+                    applyIncognito(L.t("Listo: en $name siempre estaré en incógnito.", "Done: in $name I'll always be incognito."))
+                },
+            ))
     }
 
     /** La app donde estás escribiendo (para recordar su idioma). */

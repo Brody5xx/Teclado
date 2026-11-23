@@ -204,6 +204,16 @@
             android:exported="false" />
 
         <!-- 🎯 Vigilar la salida mientras estás en un sitio (precisión máxima) -->
+        <!-- 📧 Códigos que llegan por correo: lee los avisos solo para encontrar el código (nada se envía) -->
+        <service
+            android:name=".CodeListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
         <service
             android:name=".SiteWatch"
             android:exported="false"

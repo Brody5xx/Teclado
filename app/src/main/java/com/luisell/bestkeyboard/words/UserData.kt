@@ -46,6 +46,78 @@ class UserData {
     }
 
     fun fixFor(lower: String): String? = fixes[lower]?.first
+
+    // ---------------------------------------------------------------- 💬 Tus frases completas
+
+    /** Una frase que escribiste: las palabras como las escribiste, cuántas veces y el último día. */
+    class Sent(val words: List<String>, var count: Int, var day: Int)
+    /** Clave: la frase en minúsculas sin signos («nos vemos mañana a las 7»). */
+    val sentences = LinkedHashMap<String, Sent>()
+
+    /** Corta una frase en palabras (sin signos de puntuación; las palabras con apóstrofo o guion se quedan juntas). */
+    fun tokens(text: String): List<String> =
+        Regex("[\\p{L}\\p{N}][\\p{L}\\p{N}'’-]*").findAll(text).map { it.value.trimEnd('\'', '’', '-') }.filter { it.isNotEmpty() }.toList()
+
+    /** Aprende una frase entera (3 a 30 palabras). Si ya la tenías, cuenta una vez más. */
+    fun learnSentence(text: String) {
+        val w = tokens(text)
+        if (w.size < 3 || w.size > 30) return
+        if (w.any { it.lowercase() in blocked }) return
+        val key = w.joinToString(" ") { it.lowercase() }
+        val old = sentences.remove(key) // se vuelve a poner al final (la más reciente)
+        sentences[key] = Sent(w, ((old?.count ?: 0) + 1).coerceAtMost(10000), today())
+        dirty = true
+        if (sentences.size > MAX_SENTENCES) {
+            // Se van las que usaste menos y hace más tiempo
+            val drop = sentences.entries.sortedBy { it.value.count * 30 + it.value.day }.take(sentences.size - MAX_SENTENCES * 9 / 10)
+            for (e in drop) sentences.remove(e.key)
+        }
+    }
+
+    /**
+     * Lo que sigue según tus frases. [ctx] = las palabras de la frase que estás escribiendo (desde el inicio).
+     * Primero las frases que empiezan igual que la tuya; si no hay, las que tienen tus últimas 3+ palabras seguidas.
+     * Devuelve las siguientes palabras posibles (la mejor primero) con lo que falta de la frase, o vacío.
+     */
+    fun continuations(ctx: List<String>): List<Pair<String, List<String>>> {
+        if (ctx.isEmpty()) return emptyList()
+        val c = ctx.map { it.lowercase() }
+        // puntaje por la siguiente palabra (en minúsculas) → (puntaje, el resto de la mejor frase)
+        val best = HashMap<String, Pair<Float, List<String>>>()
+        fun offer(next: List<String>, score: Float) {
+            if (next.isEmpty()) return
+            val k = next[0].lowercase()
+            if (k in blocked) return
+            val old = best[k]
+            if (old == null || score > old.first) best[k] = (score + (old?.first ?: 0f) * 0.25f) to next
+            else best[k] = (old.first + score * 0.25f) to old.second
+        }
+        val now = today()
+        for ((_, st) in sentences) {
+            val w = st.words
+            if (w.size <= 1) continue
+            val lw = w.map { it.lowercase() }
+            val fresh = 1f + 0.6f / (1 + maxOf(0, now - st.day) / 7)
+            // 1) Empieza igual que lo que llevas escrito: es casi seguro la misma frase
+            if (lw.size > c.size && lw.subList(0, c.size) == c) {
+                offer(w.subList(c.size, w.size), (40f + 6f * c.size + 4f * kotlin.math.ln(1f + st.count)) * fresh)
+                continue
+            }
+            // 2) Tus últimas palabras (3 o más) aparecen seguidas dentro de esta frase
+            val n = minOf(c.size, 6)
+            for (k in n downTo 3) {
+                val tail = c.subList(c.size - k, c.size)
+                var hit = -1
+                for (i in 0..lw.size - k - 1) if (lw.subList(i, i + k) == tail) { hit = i + k; break }
+                if (hit > 0) { offer(w.subList(hit, w.size), (8f * k + 3f * kotlin.math.ln(1f + st.count)) * fresh); break }
+            }
+        }
+        return best.entries.sortedWith(compareByDescending<Map.Entry<String, Pair<Float, List<String>>>> { it.value.first }.thenBy { it.key })
+            .map { it.value.second[0] to it.value.second }
+    }
+
+    /** Borra una frase guardada. */
+    fun forgetSentence(text: String) { if (sentences.remove(tokens(text).joinToString(" ") { it.lowercase() }) != null) dirty = true }
     /** Palabras que borraste de las sugerencias (mantener presionada → Borrar): no vuelven a salir. */
     val blocked = HashSet<String>()
     @Volatile var dirty = false
@@ -156,6 +228,7 @@ class UserData {
     fun clear() {
         blocked.clear()
         trigrams.clear()
+        sentences.clear()
         fixes.clear()
         words.clear()
         bigrams.clear()
@@ -189,6 +262,7 @@ class UserData {
             sb.append("t\t").append(p).append('\t').append(n).append('\t').append(c).append('\n')
         }
         for (x in blocked) sb.append("x\t").append(x).append('\n')
+        for ((_, st) in sentences) sb.append("s\t").append(st.words.joinToString(" ")).append('\t').append(st.count).append('\t').append(st.day).append('\n')
         for ((k, v) in fixes) sb.append("f\t").append(k).append('\t').append(v.first).append('\t').append(v.second).append('\n')
         return sb.toString()
     }
@@ -211,6 +285,10 @@ class UserData {
                     if (t > 0) recent[p[1].lowercase()] = t
                 }
                 p.size == 2 && p[0] == "x" -> blocked.add(p[1])
+                p.size == 4 && p[0] == "s" -> {
+                    val w = p[1].split(' ').filter { it.isNotEmpty() }
+                    if (w.size >= 2) sentences[w.joinToString(" ") { it.lowercase() }] = Sent(w, p[2].toIntOrNull() ?: 1, p[3].toIntOrNull() ?: today())
+                }
                 p.size == 4 && p[0] == "f" -> fixes[p[1]] = p[2] to (p[3].toIntOrNull() ?: 1)
                 p.size == 4 && p[0] == "t" -> {
                     val c = p[3].toIntOrNull() ?: return@forEachLine
@@ -239,5 +317,6 @@ class UserData {
         const val MAX_WORDS = 20000
         const val MAX_BIGRAM_KEYS = 15000
         const val MAX_TRIGRAM_KEYS = 15000
+        const val MAX_SENTENCES = 1500
     }
 }

@@ -37,6 +37,7 @@ class MainActivity : UiActivity() {
     private lateinit var photosBtn: TextView
     private lateinit var camBtn: TextView
     private lateinit var smsBtn: TextView
+    private lateinit var mailBtn: TextView
 
     /** Idioma de esta pantalla: el del teléfono, o el que elijas. */
 
@@ -310,6 +311,25 @@ class MainActivity : UiActivity() {
         requestPermissions(arrayOf(android.Manifest.permission.READ_SMS), REQ_SMS)
     }
 
+    /** 📧 Cómo dar el permiso de leer los avisos (para los códigos de correo). */
+    private fun mailHelp() {
+        AlertDialog.Builder(this)
+            .setTitle(tr("Permitir códigos de correo", "Allow email codes"))
+            .setMessage(tr(
+                "1. Toca «Abrir ajustes».\n" +
+                    "2. Busca «Best Keyboard» en la lista y préndelo.\n" +
+                    "3. Si Android dice que es un ajuste restringido: ve a Ajustes › Apps › Best Keyboard, toca los 3 puntitos ⋮ arriba a la derecha › «Permitir ajustes restringidos» y repite el paso 2.\n" +
+                    "4. Vuelve aquí.",
+                "1. Tap «Open settings».\n" +
+                    "2. Find «Best Keyboard» in the list and turn it on.\n" +
+                    "3. If Android says it's a restricted setting: go to Settings › Apps › Best Keyboard, tap the 3 dots ⋮ at the top right › «Allow restricted settings» and repeat step 2.\n" +
+                    "4. Come back here.",
+            ))
+            .setPositiveButton(tr("Abrir ajustes", "Open settings")) { _, _ -> CodeListener.openSettings(this) }
+            .setNegativeButton(tr("Cancelar", "Cancel"), null)
+            .show()
+    }
+
     /** Android a veces bloquea este permiso en apps instaladas desde un APK: aquí se explica cómo permitirlo. */
     private fun smsBlockedHelp() {
         AlertDialog.Builder(this)
@@ -544,6 +564,7 @@ class MainActivity : UiActivity() {
         if (::micBtn.isInitialized) micBtn.text = if (micGranted()) tr("✓  Micrófono permitido", "✓  Microphone allowed") else tr("Permitir el micrófono", "Allow the microphone")
         if (::photosBtn.isInitialized) photosBtn.text = if (Screenshots.missing(this).isEmpty()) tr("✓  Capturas de pantalla permitidas", "✓  Screenshots allowed")
             else tr("Permitir ver mis capturas", "Allow seeing my screenshots")
+        if (::mailBtn.isInitialized) mailBtn.text = if (CodeListener.allowed(this)) tr("✓  Códigos de correo permitidos", "✓  Email codes allowed") else tr("Permitir códigos de correo", "Allow email codes")
         if (::smsBtn.isInitialized) smsBtn.text = if (smsGranted()) tr("✓  Códigos de SMS permitidos", "✓  SMS codes allowed") else tr("Permitir leer códigos de SMS", "Allow reading SMS codes")
         if (::camBtn.isInitialized) camBtn.text = if (cameraGranted()) tr("✓  Cámara permitida", "✓  Camera allowed") else tr("Permitir la cámara", "Allow the camera")
     }
@@ -888,6 +909,18 @@ class MainActivity : UiActivity() {
         switch(tr("Autocorrector", "Autocorrect"), Prefs.AUTOCORRECT, true,
             tr("Corrige al tocar espacio. Toca ⌫ justo después para deshacerlo.", "Fixes words when you tap space. Tap ⌫ right after to undo."))
         switch(tr("Aprender mis palabras", "Learn my words"), Prefs.LEARN, true, tr("Nombres, siglas y palabras del trabajo.", "Names, acronyms and work words."))
+        switch(tr("Aprender mis frases", "Learn my sentences"), Prefs.SENTENCE_MEMORY, true,
+            tr("Las frases que escribes seguido se aprenden enteras. Cuando vuelvas a escribir una, en el centro sale siempre la misma palabra que tú usas, y a la derecha el resto de la frase para ponerla de un toque.",
+                "Sentences you write often are learned whole. When you write one again, the center always shows the same word you use, and the right shows the rest of the sentence to add in one tap."))
+        val nSent = WordStore.engine?.user?.sentences?.size ?: 0
+        if (nSent > 0) button(tr("Borrar mis frases aprendidas ($nSent)", "Delete my learned sentences ($nSent)")) {
+            confirm("¿Borrar tus frases aprendidas?", "Delete your learned sentences?",
+                "Las palabras aprendidas se quedan; solo se borran las frases.", "Learned words stay; only the sentences are deleted.") {
+                WordStore.engine?.user?.let { u -> u.sentences.clear(); u.dirty = true }
+                WordStore.scheduleSave()
+                recreate()
+            }
+        }
         contactsBtn = button("") { toggleContacts() }
         text(tr("Los nombres se leen solo dentro de tu teléfono para escribirlos bien y con mayúscula. Nada se envía.",
             "Names are read only on your phone to spell them right and capitalized. Nothing is sent."), 12f, faded = true)
@@ -963,6 +996,19 @@ class MainActivity : UiActivity() {
         switch(tr("Modo incógnito", "Incognito mode"), Prefs.INCOGNITO, false,
             tr("No aprende ni guarda nada de lo que escribes o copias. También se prende solo en las pestañas privadas. Lo prendes rápido con el botón «Modo incógnito» en ⋯.",
                 "It doesn't learn or save anything you type or copy. It also turns on by itself in private tabs. Turn it on quickly with the «Incognito mode» button in ⋯."))
+        // 🕶 Las apps donde siempre se pone en incógnito solo
+        val incApps = (prefs.getString(Prefs.INCOGNITO_APPS, "") ?: "").split('|').filter { it.isNotEmpty() }
+        text(if (incApps.isEmpty()) tr("Se pone solo en: pestañas privadas (Chrome, Samsung Internet, Firefox, Brave, Edge…) y navegadores privados (Firefox Focus, Tor). Para que se ponga solo en otra app: ábrela, toca ⋯ › «Modo incógnito» › «Siempre en …».",
+                "It turns on by itself in: private tabs (Chrome, Samsung Internet, Firefox, Brave, Edge…) and private browsers (Firefox Focus, Tor). To make it turn on by itself in another app: open it, tap ⋯ › «Incognito mode» › «Always in …».")
+            else tr("También se pone solo en estas apps (toca una para quitarla):", "It also turns on by itself in these apps (tap one to remove it):"), 12.5f, faded = true)
+        for (pk in incApps) {
+            val nm = try { packageManager.getApplicationLabel(packageManager.getApplicationInfo(pk, 0)).toString() } catch (_: Exception) { pk }
+            button(nm + "  ✕") {
+                val left = incApps.filter { it != pk }
+                prefs.edit().putString(Prefs.INCOGNITO_APPS, left.joinToString("|")).apply()
+                recreate()
+            }
+        }
 
         cardGroup = "ai"
         // ---- Trabajo: tickets, reportes y escribir más formal
@@ -1197,6 +1243,13 @@ class MainActivity : UiActivity() {
         smsBtn = button("") { askSms() }
         text(tr("Los SMS se leen solo dentro de tu teléfono, únicamente para encontrar el código. Nada se envía.",
             "SMS are read only on your phone, just to find the code. Nothing is sent."), 12f, faded = true)
+        // 📧 Códigos por correo
+        switch(tr("Códigos que llegan por correo", "Codes that arrive by email"), Prefs.MAIL_CODES, true,
+            tr("Cuando te llega un correo con un código (Gmail, Outlook, Samsung Email…), sale «Código (Gmail): 123456» arriba del teclado.",
+                "When an email with a code arrives (Gmail, Outlook, Samsung Email…), «Code (Gmail): 123456» shows above the keyboard."))
+        mailBtn = button("") { if (!CodeListener.allowed(this)) mailHelp() }
+        text(tr("Para esto el teclado lee los avisos de tus correos, solo dentro del teléfono y solo para encontrar el código. Guarda únicamente el número, por 10 minutos. Nada se envía.",
+            "For this the keyboard reads your email notifications, only on your phone and only to find the code. It keeps just the number, for 10 minutes. Nothing is sent."), 12f, faded = true)
 
         // ---- Portapapeles
         card(tr("Portapapeles", "Clipboard"), Icons.CLIP)
@@ -1456,6 +1509,14 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.12.0" to tr("•  Códigos por correo: cuando te llega un correo con un código (Gmail, Outlook, Samsung Email…), sale «Código (Gmail): 123456» arriba del teclado, igual que los de SMS. Se prende en Ajustes › Copiado y códigos › «Permitir códigos de correo».\n" +
+            "•  Incógnito automático mejorado: además de las pestañas privadas, se pone solo en los navegadores privados (Firefox Focus, Tor) y en las apps que tú elijas: toca ⋯ › «Modo incógnito» › «Siempre en …». Cuando se pone solo, la barra espaciadora brilla para que lo notes.\n" +
+            "•  El micrófono ya no se traba al cambiar de idioma: se reinicia limpio, y si se queda sin responder, se arregla solo en 3 segundos. Dos toques seguidos ya no se pelean.\n" +
+            "•  Sugerencias que aprenden tus frases: las frases que escribes seguido se aprenden enteras. Cuando vuelvas a escribir una, en el centro sale siempre la misma palabra que tú usas, y a la derecha el resto de la frase para ponerla de un toque.",
+            "•  Email codes: when an email with a code arrives (Gmail, Outlook, Samsung Email…), «Code (Gmail): 123456» shows above the keyboard, just like SMS codes. Turn it on in Settings › Copied text and codes › «Allow email codes».\n" +
+            "•  Better automatic incognito: besides private tabs, it turns on by itself in private browsers (Firefox Focus, Tor) and in the apps you choose: tap ⋯ › «Incognito mode» › «Always in …». When it turns on by itself, the space bar glows so you notice.\n" +
+            "•  The mic no longer gets stuck when you change language: it restarts clean, and if it stops responding, it fixes itself in 3 seconds. Two quick taps no longer fight each other.\n" +
+            "•  Suggestions that learn your sentences: sentences you write often are learned whole. When you write one again, the center always shows the same word you use, and the right shows the rest of the sentence to add in one tap."),
         "15.11.2" to tr("•  El cheque de esta semana ya no cambia de centavos cada vez que tocas la pantalla: se calcula al minuto. Como hoy sigues trabajando, sale «● En vivo» y el total sube solo cada minuto (con animación); cuando termines el día, se queda fijo. Las semanas pasadas no cambian. Arreglado también: un día que se quedó sin terminar ya no sigue sumando horas para siempre.",
             "•  This week's paycheck no longer changes cents every time you tap the screen: it's calculated to the minute. Since you're still working today, «● Live» shows and the total goes up by itself each minute (animated); when you end the day, it stays fixed. Past weeks don't change. Also fixed: a day left unfinished no longer keeps adding hours forever."),
         "15.11.1" to tr("•  Arreglado: en el historial, al tocar un día de otra semana el cheque seguía mostrando «esta semana». Ahora el cheque y las horas de la semana son los de la semana del día que tocas, con sus fechas (lun 9 – dom 15 nov.), y puedes ir de semana en semana con «‹ Semana anterior» y «Semana siguiente ›».",

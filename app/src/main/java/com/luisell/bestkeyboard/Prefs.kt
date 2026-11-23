@@ -48,6 +48,9 @@ object Prefs {
     const val BACKUP_LAST = "backup_last"
     /** 🕶 Modo incógnito prendido a mano. */
     const val INCOGNITO = "incognito"
+    const val MAIL_CODES = "mail_codes"
+    const val SENTENCE_MEMORY = "sentence_memory"
+    const val INCOGNITO_APPS = "incognito_apps"
     /** Para qué usa el teclado (chat, student, office, tech) y si salen las herramientas del trabajo. */
     const val PROFILE = "profile"
     const val WORK_PACK = "work_pack"
