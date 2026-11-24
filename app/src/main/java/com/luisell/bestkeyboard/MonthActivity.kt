@@ -504,6 +504,19 @@ class MonthActivity : UiActivity() {
         return map
     }
 
+    /** 📍 «+ SITE IN» y «+ SITE OUT»: anotar a mano una llegada o salida de ese día. */
+    private fun siteButtons(parent: LinearLayout, day: Long) {
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for (k in listOf(WorkDay.ARRIVE, WorkDay.LEAVE)) row.addView(TextView(this).apply {
+            text = "+  " + WorkDay.label(k); textSize = 14.5f; gravity = Gravity.CENTER; maxLines = 1
+            setPadding(dp(8), dp(12), dp(8), dp(12)); setTextColor(CYAN)
+            setTypeface(typeface, Typeface.BOLD)
+            background = GradientDrawable().apply { cornerRadius = dpf(20f); setColor(CARD2); setStroke(dp(1), CYAN) }
+            setOnClickListener { askSiteTime(k, day) { paint() } }
+        }, LinearLayout.LayoutParams(0, -2, 1f).apply { if (k == WorkDay.LEAVE) leftMargin = dp(8) })
+        parent.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+    }
+
     private fun showDay(byDay: Map<Long, List<WorkDay.Event>>) {
         detail.removeAllViews()
         // 📊 Qué tan bien se anotó solo esta semana (y la pasada)
@@ -531,6 +544,7 @@ class MonthActivity : UiActivity() {
         timeline(ev)?.let { detail.addView(it, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) }) }
         if (ev.isEmpty()) {
             detail.addView(TextView(this).apply { text = tr("No trabajaste (o no lo marcaste).", "No work logged."); textSize = 13f; setTextColor(SUB) })
+            siteButtons(detail, chosen)
             return
         }
         // Cada cosa del día: tócala para cambiar la hora, o ✕ para borrarla
@@ -559,6 +573,7 @@ class MonthActivity : UiActivity() {
             text = tr("Toca una hora para cambiarla.", "Tap a time to change it.")
             textSize = 12f; setTextColor(SUB); setPadding(0, dp(6), 0, 0)
         })
+        siteButtons(detail, chosen)
         val now = System.currentTimeMillis()
         detail.addView(TextView(this).apply {
             text = WorkDay.text(ev, en).let { if (WorkStore.sameDay(chosen, now)) it else it }

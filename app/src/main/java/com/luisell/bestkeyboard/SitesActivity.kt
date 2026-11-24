@@ -180,6 +180,25 @@ class SitesActivity : UiActivity() {
                 "Tap the sites you're going to (you can pick several). If you don't pick any, all are watched the same.")
         }
         planBox.addView(TextView(this).apply { text = help; textSize = 12.5f; setTextColor(SUB); setLineSpacing(0f, 1.15f); setPadding(dp(2), dp(10), dp(2), 0) })
+        // 📍 Día de servicio (hoy): botones para anotar a mano la llegada y la salida de cada lugar
+        if (service && planDay == Plan.today()) {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            for (k in listOf(WorkDay.ARRIVE, WorkDay.LEAVE)) row.addView(TextView(this).apply {
+                text = "+  " + WorkDay.label(k); textSize = 14.5f; gravity = Gravity.CENTER; maxLines = 1
+                setPadding(dp(8), dp(12), dp(8), dp(12))
+                val inn = k == WorkDay.ARRIVE
+                setTextColor(if (inn) 0xFF0B1020.toInt() else CYAN)
+                setTypeface(typeface, Typeface.BOLD)
+                background = if (inn) GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(CYAN, VIOLET)).apply { cornerRadius = dpf(20f) }
+                    else GradientDrawable().apply { cornerRadius = dpf(20f); setColor(CARD2); setStroke(dp(1), CYAN) }
+                setOnClickListener { askSiteTime(k, System.currentTimeMillis()) { paintPlan() } }
+            }, LinearLayout.LayoutParams(0, -2, 1f).apply { if (k == WorkDay.LEAVE) leftMargin = dp(8) })
+            planBox.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+            planBox.addView(TextView(this).apply {
+                text = tr("¿Llegaste o te fuiste y no se anotó? Tócalo y pon el lugar y la hora.", "Arrived or left and it wasn't logged? Tap it and enter the place and time.")
+                textSize = 12f; setTextColor(SUB); setPadding(dp(2), dp(6), dp(2), 0)
+            })
+        }
         planBox.addView(TextView(this).apply {
             val on = prefs.getBoolean("plan_ask", true)
             text = if (on) tr("Te pregunto a las 7:30 p. m. si mañana trabajas (toca para no preguntar)", "I ask at 7:30 p.m. if you work tomorrow (tap to stop asking)")

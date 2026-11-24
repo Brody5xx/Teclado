@@ -173,6 +173,83 @@ abstract class UiActivity : Activity() {
     protected class PanelBtn(val label: String, val kind: Int, val act: () -> Boolean)
 
     /**
+     * 📍 Anotar a mano una llegada (SITE IN) o salida (SITE OUT) en [day], con el lugar y la hora.
+     * El lugar: toca uno de tus sitios, el lugar nuevo de hoy, o escríbelo. La hora: «ahora» o escríbela (2:15pm).
+     */
+    protected fun askSiteTime(kind: String, day: Long, done: () -> Unit) {
+        val p = Prefs.get(this)
+        val now = System.currentTimeMillis()
+        val isToday = WorkStore.sameDay(day, now)
+        val evs = WorkDay.day(p, day)
+        // Para la salida: el sitio donde estás (la última llegada sin su salida)
+        val openSite = evs.lastOrNull { it.kind == WorkDay.ARRIVE || it.kind == WorkDay.LEAVE }?.takeIf { it.kind == WorkDay.ARRIVE }?.site ?: ""
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        fun field(hintTxt: String, value: String) = android.widget.EditText(this).apply {
+            hint = hintTxt; setText(value); setSelection(text.length); isSingleLine = true
+            textSize = 17f; setTextColor(TEXT); setHintTextColor(SUB)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = GradientDrawable().apply { cornerRadius = dpf(16f); setColor(CARD2); setStroke(dp(1), CYAN) }
+        }
+        box.addView(TextView(this).apply { text = tr("¿Dónde?", "Where?"); textSize = 13f; setTextColor(SUB); setPadding(dp(4), 0, 0, dp(6)) })
+        val place = field(tr("Nombre del lugar", "Place name"), if (kind == WorkDay.LEAVE) openSite else "")
+        box.addView(place, LinearLayout.LayoutParams(-1, -2))
+        // Los lugares para tocar: el nuevo de hoy (día de servicio), los de hoy y tus sitios guardados
+        val names = LinkedHashSet<String>()
+        if (kind == WorkDay.LEAVE && openSite.isNotEmpty()) names.add(openSite)
+        SiteStore.getNew(p)?.takeIf { WorkStore.sameDay(it.time, day) }?.short?.let { if (it.isNotEmpty()) names.add(it) }
+        evs.filter { it.site.isNotEmpty() }.forEach { names.add(it.site) }
+        SiteStore.all(p).filter { !it.isStart }.forEach { names.add(it.name) }
+        if (names.isNotEmpty()) {
+            val hs = android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            for (n in names.take(14)) row.addView(TextView(this).apply {
+                text = n; textSize = 13.5f; setTextColor(TEXT); maxLines = 1
+                setPadding(dp(14), dp(8), dp(14), dp(8))
+                background = GradientDrawable().apply { cornerRadius = dpf(16f); setColor(CARD2); setStroke(dp(1), LINE) }
+                setOnClickListener {
+                    place.setText(n); place.setSelection(n.length)
+                    animate().scaleX(1.08f).scaleY(1.08f).setDuration(90).withEndAction { animate().scaleX(1f).scaleY(1f).setDuration(120).start() }.start()
+                }
+            }, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(8) })
+            hs.addView(row)
+            box.addView(hs, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        }
+        box.addView(TextView(this).apply { text = tr("¿A qué hora?", "What time?"); textSize = 13f; setTextColor(SUB); setPadding(dp(4), dp(14), 0, dp(6)) })
+        val time = field(tr("Ej. 2:15pm", "E.g. 2:15pm"), if (isToday) WorkStore.time(now).lowercase().replace(" ", "") else "")
+        time.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        box.addView(time, LinearLayout.LayoutParams(-1, -2))
+        box.addView(TextView(this).apply {
+            text = tr("Escríbela como quieras: 2:15pm, 215p o 14:15.", "Type it any way: 2:15pm, 215p or 14:15.")
+            textSize = 12f; setTextColor(SUB); setPadding(dp(4), dp(6), 0, 0)
+        })
+        val title = tr("Anotar ", "Log ") + WorkDay.label(kind)
+        panelDialog(title, if (kind == WorkDay.ARRIVE) tr("Llegaste a un lugar: pon dónde y a qué hora.", "You arrived somewhere: enter where and when.")
+            else tr("Te fuiste de un lugar: pon de dónde y a qué hora.", "You left a place: enter where from and when."), box, listOf(
+            PanelBtn(tr("Cancelar", "Cancel"), 1) { true },
+            PanelBtn(tr("Guardar", "Save"), 0) {
+                val name = place.text.toString().trim()
+                val hm = TimeSetActivity.parse(time.text.toString(), if (isToday) now else day + 86_399_000L)
+                when {
+                    name.isEmpty() -> { toast("Pon el nombre del lugar.", "Enter the place name."); false }
+                    hm == null -> { toast("No entendí la hora. Prueba así: 2:15pm", "I didn't get the time. Try: 2:15pm"); false }
+                    else -> {
+                        val c = java.util.Calendar.getInstance().apply {
+                            timeInMillis = day
+                            set(java.util.Calendar.HOUR_OF_DAY, hm.first); set(java.util.Calendar.MINUTE, hm.second)
+                            set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+                        }
+                        WorkDay.addAt(p, kind, name, c.timeInMillis)
+                        WorkdayCenter.refresh(this)
+                        Toast.makeText(this, WorkDay.label(kind) + " · " + name + " · " + WorkStore.time(c.timeInMillis), Toast.LENGTH_SHORT).show()
+                        done()
+                        true
+                    }
+                }
+            },
+        ))
+    }
+
+    /**
      * ✨ Panel bonito (igual que las opciones): tarjeta oscura, título con su rayita de luz que se traza y brilla,
      * una explicación, el contenido y los botones abajo (el principal con el degradado del diamante).
      */
