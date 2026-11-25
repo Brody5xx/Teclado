@@ -59,6 +59,8 @@ object Plan {
         try { am.setWindow(AlarmManager.RTC_WAKEUP, c.timeInMillis, 20 * 60_000L, askIntent(ctx)) } catch (_: Exception) { }
     }
 
+    const val NOTIF_ASK = 4741
+
     fun ask(ctx: Context) {
         val p = Prefs.get(ctx)
         scheduleAsk(ctx)
@@ -68,10 +70,11 @@ object Plan {
         if (get(p, tomorrow()).let { it.first.isNotEmpty() || it.second }) return
         L.useScreen(ctx)
         val open = PendingIntent.getActivity(ctx, 5171, Intent(ctx, SitesActivity::class.java).putExtra(SitesActivity.EXTRA_PLAN, true)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        // Tocar el aviso (o «Elegir») abre Mis sitios en «Mañana», listo para elegir
         AutoSites.notify(ctx, L.t("¿A dónde vas mañana?", "Where are you going tomorrow?"),
-            L.t("Elige tus sitios (o «Día de servicio») y la llegada y la salida se detectan mejor.", "Pick your sites (or «Service day») and arrival and departure are detected better."),
-            listOf(L.t("Elegir", "Choose") to open), 4741)
+            L.t("Toca aquí para elegir tus sitios (o «Día de servicio») y la llegada y la salida se detectan mejor.", "Tap here to pick your sites (or «Service day») and arrival and departure are detected better."),
+            listOf(L.t("Elegir", "Choose") to open), NOTIF_ASK, tap = open)
     }
 
     // ---------------------------------------------------------------- 🛠️ Día de servicio: paradas en lugares nuevos

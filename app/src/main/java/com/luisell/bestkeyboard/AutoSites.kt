@@ -783,7 +783,7 @@ object AutoSites {
     fun notify(ctx: Context, title: String, text: String, action: Pair<String, PendingIntent>?, id: Int = NOTIF_ID) =
         notify(ctx, title, text, if (action == null) emptyList() else listOf(action), id)
 
-    fun notify(ctx: Context, title: String, text: String, actions: List<Pair<String, PendingIntent>>, id: Int) {
+    fun notify(ctx: Context, title: String, text: String, actions: List<Pair<String, PendingIntent>>, id: Int, tap: PendingIntent? = null) {
         // Sin emojis en los avisos: el texto limpio (Android ya pone el ícono de la app)
         @Suppress("NAME_SHADOWING") val title = Emo.strip(title)
         @Suppress("NAME_SHADOWING") val text = Emo.strip(text)
@@ -800,7 +800,7 @@ object AutoSites {
             .setStyle(Notification.BigTextStyle().bigText(text))
             .setAutoCancel(true)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
-            .setContentIntent(PendingIntent.getActivity(ctx, 97, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            .setContentIntent(tap ?: PendingIntent.getActivity(ctx, 97, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         for (a in actions.take(3)) {
             @Suppress("DEPRECATION")

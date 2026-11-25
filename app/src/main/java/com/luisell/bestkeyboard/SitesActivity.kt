@@ -68,6 +68,7 @@ class SitesActivity : UiActivity() {
         root.addView(planBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(4) })
         planDay = if (intent?.getBooleanExtra(EXTRA_PLAN, false) != true && java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) < 12) Plan.today() else Plan.tomorrow()
         paintPlan()
+        if (intent?.getBooleanExtra(EXTRA_PLAN, false) == true) fromAsk()
         text(tr("Cuando tocas «📍 Llegué al sitio», el teclado usa el GPS para saber en cuál estás y lo pone en tu jornada y en el ticket (Location).",
             "When you tap «📍 Arrived on site», the keyboard uses GPS to know which one you're at and puts it in your workday and ticket (Location)."), 13f, faded = true)
         // ---- Llegada y salida automáticas
@@ -122,6 +123,32 @@ class SitesActivity : UiActivity() {
         if (!WorkdayCenter.hasLocation(this)) {
             requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), 31)
         }
+    }
+
+    /** Viniste del aviso «¿A dónde vas mañana?»: se abre en «Mañana», se quita el aviso y la tarjeta brilla. */
+    private fun fromAsk() {
+        planDay = Plan.tomorrow()
+        paintPlan()
+        try { (getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager).cancel(Plan.NOTIF_ASK) } catch (_: Exception) { }
+        val bg = planBox.background as? GradientDrawable ?: return
+        android.animation.ValueAnimator.ofFloat(0f, 1f, 0f, 1f, 0f).apply {
+            duration = 1600
+            addUpdateListener { a ->
+                val f = a.animatedValue as Float
+                bg.setStroke(dp(1) + (dp(2) * f).toInt(), android.graphics.Color.argb((128 + 127 * f).toInt(), 0x4F, 0xD1, 0xFF))
+            }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(an: android.animation.Animator) { bg.setStroke(dp(1), 0x804FD1FF.toInt()) }
+            })
+            startDelay = 250
+            start()
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_PLAN, false) && ::planBox.isInitialized) fromAsk()
     }
 
     private lateinit var sensHelp: TextView
