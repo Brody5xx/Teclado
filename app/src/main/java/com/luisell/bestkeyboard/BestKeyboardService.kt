@@ -943,6 +943,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             try {
                 if (m == 21) window?.window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
                 else if (was) window?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                Unit
             } catch (_: Exception) { }
         }
         calcPanel?.let { cp ->
