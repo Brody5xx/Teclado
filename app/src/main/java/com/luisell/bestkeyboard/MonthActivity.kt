@@ -23,6 +23,7 @@ class MonthActivity : UiActivity() {
     }
     private lateinit var title: TextView
     private lateinit var totals: TextView
+    private lateinit var holLine: TextView
     private lateinit var grid: GridLayout
     private lateinit var detail: LinearLayout
     /** 💵 Tu cheque de la semana (aprox.), debajo del calendario. */
@@ -75,6 +76,13 @@ class MonthActivity : UiActivity() {
         root.addView(head)
         totals = text("", 13f, faded = true)
         totals.gravity = Gravity.CENTER
+        holLine = text("", 12f, faded = true)
+        holLine.gravity = Gravity.CENTER
+        holLine.setOnClickListener {
+            prefs.edit().putBoolean(DaysOff.PREF_HOLIDAYS_OFF, !DaysOff.holidaysOff(prefs)).apply()
+            try { WorkdayCenter.refresh(this) } catch (_: Throwable) { }
+            paint()
+        }
 
         // Nombres de los días (lunes primero)
         val names = GridLayout(this).apply { columnCount = 7 }
@@ -431,22 +439,30 @@ class MonthActivity : UiActivity() {
             box.addView(num)
             box.addView(hrs)
             val h = ms / 3_600_000.0
-            hrs.text = if (ms > 0) String.format(Locale.US, "%.1fh", h) else ""
+            // 🇺🇸 Festivo y 🗓️ día libre
+            val hol = DaysOff.holiday(day + 12 * 3600_000L)
+            val offMark = DaysOff.mark(prefs, day + 12 * 3600_000L) == DaysOff.OFF
+            hrs.text = if (ms > 0) String.format(Locale.US, "%.1fh", h) else if (offMark) tr("Libre", "Off") else if (hol != null) tr("Festivo", "Holiday") else ""
             // Más horas = color más fuerte
             val strength = (h / 10.0).coerceIn(0.0, 1.0).toFloat()
             val bg = GradientDrawable().apply {
                 cornerRadius = dpf(10f)
                 if (ms > 0) setColor(mix(CARD, CYAN, 0.18f + 0.6f * strength)) else setColor(CARD)
                 if (day == chosen) setStroke(dp(2), VIOLET) else if (WorkStore.sameDay(day, now)) setStroke(dp(1), CYAN)
+                else if (hol != null) setStroke(dp(1), 0xAAFBBF24.toInt()) else if (offMark) setStroke(dp(1), 0x66F87171)
             }
             box.background = bg
             val dark = ms > 0 && strength > 0.45f
             num.setTextColor(if (dark) 0xFF0B1020.toInt() else TEXT)
-            hrs.setTextColor(if (dark) 0xFF0B1020.toInt() else SUB)
+            hrs.setTextColor(if (dark) 0xFF0B1020.toInt() else if (ms <= 0 && offMark) 0xFFFCA5A5.toInt() else if (ms <= 0 && hol != null) 0xFFFBBF24.toInt() else SUB)
+            if (ms <= 0 && (hol != null || offMark)) hrs.textSize = 8.5f
             // Tocar un día también pone el cheque de SU semana
             box.setOnClickListener { chosen = day; payWeeksAgo = weeksAgoOf(day); paint() }
             grid.addView(box, GridLayout.LayoutParams().apply { width = cell - dp(4); height = cell - dp(4); setMargins(dp(2), dp(2), dp(2), dp(2)) })
         }
+        holLine.text = if (DaysOff.holidaysOff(prefs)) tr("Festivos federales (en amarillo): cuentan como día libre. Toca para cambiarlo.", "Federal holidays (in yellow): count as days off. Tap to change.")
+            else tr("Festivos federales (en amarillo): se trabajan normal. Toca para cambiarlo.", "Federal holidays (in yellow): normal work days. Tap to change.")
+        holLine.setTextColor(0xFFFBBF24.toInt())
         totals.text = tr("Este mes: ", "This month: ") + WorkDay.dur(monthMs) + "  ·  " + worked + tr(" día(s) trabajado(s)", " day(s) worked")
         showDay(byDay)
     }
@@ -504,6 +520,32 @@ class MonthActivity : UiActivity() {
         return map
     }
 
+    /** 🇺🇸 El festivo de ese día y el botón «No trabajo este día» / «Sí trabajo este día». */
+    private fun dayOffRow(day: Long, worked: Boolean) {
+        val mid = day + 12 * 3600_000L
+        DaysOff.holiday(mid)?.let { h ->
+            detail.addView(TextView(this).apply {
+                text = tr("Festivo federal: ", "Federal holiday: ") + h.name(); textSize = 13.5f
+                setTextColor(0xFFFBBF24.toInt()); setTypeface(typeface, Typeface.BOLD); setPadding(0, dp(4), 0, 0)
+            })
+        }
+        if (worked) return // ya trabajaste ese día: no hace falta
+        if (mid < System.currentTimeMillis() - 24 * 3600_000L) return // días pasados: no
+        val off = DaysOff.isOff(prefs, mid) == true
+        detail.addView(TextView(this).apply {
+            text = if (off) tr("Día libre  ·  toca si sí trabajas", "Day off  ·  tap if you do work") else tr("Marcar «No trabajo este día»", "Mark «Not working this day»")
+            textSize = 14f; gravity = Gravity.CENTER; setPadding(dp(8), dp(11), dp(8), dp(11))
+            setTextColor(if (off) 0xFFFCA5A5.toInt() else CYAN); setTypeface(typeface, Typeface.BOLD)
+            background = GradientDrawable().apply { cornerRadius = dpf(20f); setColor(CARD2); setStroke(dp(1), if (off) 0x99F87171.toInt() else CYAN) }
+            setOnClickListener {
+                DaysOff.setMark(prefs, mid, if (off) DaysOff.WORK else DaysOff.OFF)
+                if (!off) Plan.set(this@MonthActivity, Plan.key(mid), emptySet(), false)
+                try { WorkdayCenter.refresh(this@MonthActivity) } catch (_: Throwable) { }
+                animate().scaleX(0.94f).scaleY(0.94f).setDuration(90).withEndAction { paint() }.start()
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+    }
+
     /** 📍 «+ SITE IN» y «+ SITE OUT»: anotar a mano una llegada o salida de ese día. */
     private fun siteButtons(parent: LinearLayout, day: Long) {
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -540,6 +582,7 @@ class MonthActivity : UiActivity() {
             textSize = 17f; setTextColor(TEXT); setTypeface(typeface, Typeface.BOLD)
         }
         detail.addView(head)
+        dayOffRow(chosen, ev.isNotEmpty())
         dayMap(chosen, ev)?.let { detail.addView(it, LinearLayout.LayoutParams(-1, dp(280)).apply { topMargin = dp(8) }) }
         timeline(ev)?.let { detail.addView(it, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) }) }
         if (ev.isEmpty()) {

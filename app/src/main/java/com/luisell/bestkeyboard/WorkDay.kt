@@ -177,9 +177,12 @@ object WorkDay {
      * (trabajaste en tu día libre: todo se prende ese día).
      */
     fun isWorkDay(p: SharedPreferences, t: Long = System.currentTimeMillis()): Boolean {
+        // Si ya anotaste algo ese día, es día de trabajo
+        if (day(p, t).isNotEmpty()) return true
+        // 🗓️ Lo marcaste «No trabajo» / «Sí trabajo», o es festivo federal
+        DaysOff.isOff(p, t)?.let { return !it }
         val c = java.util.Calendar.getInstance().apply { timeInMillis = t }
-        if (c.get(java.util.Calendar.DAY_OF_WEEK) in workDays(p)) return true
-        return day(p, t).isNotEmpty()
+        return c.get(java.util.Calendar.DAY_OF_WEEK) in workDays(p)
     }
 
     fun day(p: SharedPreferences, day: Long = System.currentTimeMillis()): List<Event> {

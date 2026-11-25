@@ -66,6 +66,16 @@ object Plan {
         scheduleAsk(ctx)
         if (!AutoSites.isOn(ctx) || SiteStore.all(p).none { !it.isStart }) return
         val tmr = System.currentTimeMillis() + 24 * 3600_000L
+        // 🇺🇸 Mañana es festivo (y no lo marcaste): te aviso que es día libre, por si sí trabajas
+        val hol = DaysOff.holiday(tmr)
+        if (hol != null && DaysOff.mark(p, tmr) == null && DaysOff.holidaysOff(p) && WorkDay.day(p, tmr).isEmpty()) {
+            L.useScreen(ctx)
+            AutoSites.notify(ctx, L.t("Mañana es festivo: ", "Tomorrow is a holiday: ") + hol.name(),
+                L.t("Lo tomo como día libre: no anoto nada ni te aviso. Si sí trabajas, toca «Sí trabajo mañana».",
+                    "I'll treat it as a day off: I won't log anything or alert you. If you do work, tap «I work tomorrow»."),
+                listOf(L.t("Sí trabajo mañana", "I work tomorrow") to dayIntent(ctx, ACTION_WORK_TMR, 5174)), NOTIF_ASK)
+            return
+        }
         if (!WorkDay.isWorkDay(p, tmr) || WorkDay.day(p, tmr).isNotEmpty()) return
         if (get(p, tomorrow()).let { it.first.isNotEmpty() || it.second }) return
         L.useScreen(ctx)
@@ -74,7 +84,26 @@ object Plan {
         // Tocar el aviso (o «Elegir») abre Mis sitios en «Mañana», listo para elegir
         AutoSites.notify(ctx, L.t("¿A dónde vas mañana?", "Where are you going tomorrow?"),
             L.t("Toca aquí para elegir tus sitios (o «Día de servicio») y la llegada y la salida se detectan mejor.", "Tap here to pick your sites (or «Service day») and arrival and departure are detected better."),
-            listOf(L.t("Elegir", "Choose") to open), NOTIF_ASK, tap = open)
+            listOf(L.t("Elegir", "Choose") to open, L.t("No trabajo mañana", "Not working tomorrow") to dayIntent(ctx, ACTION_OFF_TMR, 5173)), NOTIF_ASK, tap = open)
+    }
+
+    const val ACTION_OFF_TMR = "com.luisell.bestkeyboard.PLAN_OFF_TMR"
+    const val ACTION_WORK_TMR = "com.luisell.bestkeyboard.PLAN_WORK_TMR"
+
+    private fun dayIntent(ctx: Context, action: String, req: Int) = PendingIntent.getBroadcast(ctx, req,
+        Intent(ctx, AutoSitesReceiver::class.java).setAction(action), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    /** Tocaste «No trabajo mañana» o «Sí trabajo mañana» en el aviso. */
+    fun answerTomorrow(ctx: Context, work: Boolean) {
+        val p = Prefs.get(ctx)
+        val tmr = System.currentTimeMillis() + 24 * 3600_000L
+        DaysOff.setMark(p, tmr, if (work) DaysOff.WORK else DaysOff.OFF)
+        if (!work) set(ctx, tomorrow(), emptySet(), false)
+        (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager)?.cancel(NOTIF_ASK)
+        L.useScreen(ctx)
+        android.widget.Toast.makeText(ctx, if (work) L.t("Listo: mañana trabajas. Mi jornada funciona normal.", "Done: you work tomorrow. My workday works as usual.")
+            else L.t("Listo: mañana es tu día libre. No anoto nada ni te aviso.", "Done: tomorrow is your day off. I won't log anything or alert you."), android.widget.Toast.LENGTH_LONG).show()
+        try { WorkdayCenter.refresh(ctx) } catch (_: Throwable) { }
     }
 
     // ---------------------------------------------------------------- 🛠️ Día de servicio: paradas en lugares nuevos

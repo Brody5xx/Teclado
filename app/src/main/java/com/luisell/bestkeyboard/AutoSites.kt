@@ -347,6 +347,8 @@ object AutoSites {
             Forgot.ACTION -> { Forgot.check(ctx, rcv); Forgot.schedule(ctx); return }
             Stores.ACTION_BOUGHT -> { Stores.boughtAll(ctx); (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(4739); return }
             Plan.ACTION_ASK -> { Plan.ask(ctx); return }
+            Plan.ACTION_OFF_TMR -> { Plan.answerTomorrow(ctx, false); return }
+            Plan.ACTION_WORK_TMR -> { Plan.answerTomorrow(ctx, true); return }
             Plan.ACTION_STOP -> { Plan.checkStop(ctx, rcv); return }
             Plan.ACTION_STOP_LEAVE -> { Plan.checkLeave(ctx, rcv); return }
             Forgot.ACTION_ADD -> { Forgot.add(ctx, intent); return }

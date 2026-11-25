@@ -190,6 +190,29 @@ class SitesActivity : UiActivity() {
             setOnClickListener { act() }
         }
         val sites = SiteStore.all(prefs).filter { !it.isStart }
+        // 🗓️ «No trabajo» ese día (y el festivo, si lo es)
+        val dayMs = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).parse(planDay)?.time?.plus(12 * 3600_000L) ?: System.currentTimeMillis()
+        val hol = DaysOff.holiday(dayMs)
+        val off = DaysOff.isOff(prefs, dayMs) == true
+        if (hol != null) flow.addView(TextView(this).apply {
+            text = tr("Festivo: ", "Holiday: ") + hol.name(); textSize = 13.5f; setTextColor(0xFFFBBF24.toInt())
+            setTypeface(typeface, Typeface.BOLD); setPadding(dp(2), dp(10), dp(2), 0)
+        })
+        flow.addView(chip(if (hol != null && off) tr("No trabajo (día libre por el festivo)", "Not working (holiday off)") else tr("No trabajo este día", "Not working this day"), off) {
+            DaysOff.setMark(prefs, dayMs, if (off) DaysOff.WORK else DaysOff.OFF)
+            if (!off) Plan.set(this, planDay, emptySet(), false)
+            try { WorkdayCenter.refresh(this) } catch (_: Throwable) { }
+            paintPlan()
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        if (off) {
+            planBox.addView(flow)
+            planBox.addView(TextView(this).apply {
+                text = tr("Día libre: Mi jornada no anota nada sola, no te avisa ni te pregunta ese día. Toca otra vez si al final sí trabajas.",
+                    "Day off: My workday won't log anything, alert or ask you that day. Tap again if you end up working.")
+                textSize = 12.5f; setTextColor(SUB); setLineSpacing(0f, 1.15f); setPadding(dp(2), dp(10), dp(2), 0)
+            })
+            return
+        }
         flow.addView(chip(tr("Día de servicio (varios lugares)", "Service day (several places)"), service) {
             Plan.set(this, planDay, if (!service) emptySet() else chosen, !service); paintPlan()
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
