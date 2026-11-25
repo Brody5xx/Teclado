@@ -248,6 +248,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var morePanel: MorePanel? = null
     // Frases (7), calculadora (8) y GIFs (9)
     private var phrasePanel: PhrasePanel? = null
+    private var vaultPanel: VaultPanel? = null
+    private var vaultAll = true
     private var calcPanel: CalcPanel? = null
     private var fxPanel: FxPanel? = null
     private var shotPanel: ShotPanel? = null
@@ -582,6 +584,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         box.addView(pp, FrameLayout.LayoutParams(-1, -1))
         phrasePanel = pp
+
+        // 🔐 Datos (cuentas y contraseñas) dentro del teclado
+        val vlt = VaultPanel(this)
+        vlt.visibility = View.GONE
+        vlt.actions = object : VaultPanel.Actions {
+            override fun onVaultText(text: String) { showMode(0); insertText(text) }
+            override fun onVaultBack() = showMode(0)
+            override fun onVaultFeedback() = onKeyFeedback()
+        }
+        box.addView(vlt, FrameLayout.LayoutParams(-1, -1))
+        vaultPanel = vlt
 
         // Calculadora
         val calc = CalcPanel(this)
@@ -922,6 +935,16 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             pp.visibility = if (m == 7) View.VISIBLE else View.GONE
             if (m == 7) pp.open()
         }
+        vaultPanel?.let { vp ->
+            val was = vp.visibility == View.VISIBLE
+            vp.visibility = if (m == 21) View.VISIBLE else View.GONE
+            if (m == 21) vp.open(vaultAll) else if (was) vp.close()
+            // 🔒 Mientras se ven tus datos, no se pueden tomar capturas de pantalla
+            try {
+                if (m == 21) window?.window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                else if (was) window?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+            } catch (_: Exception) { }
+        }
         calcPanel?.let { cp ->
             cp.visibility = if (m == 8) View.VISIBLE else View.GONE
             if (m == 8) cp.open()
@@ -1097,6 +1120,22 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Tocaste la sugerencia: se escribe lo copiado o el código. */
+    /**
+     * 🔐 «Datos» dentro del teclado. Primero tu huella o PIN (Android la muestra en su ventanita);
+     * al volver, tus cuentas salen aquí mismo, sin cambiar de pantalla.
+     */
+    private fun openVault(everything: Boolean) {
+        vaultAll = everything
+        val km = getSystemService(KEYGUARD_SERVICE) as? android.app.KeyguardManager
+        if (km != null && !km.isDeviceSecure) { showMode(21); return } // el teléfono no tiene bloqueo
+        try {
+            startActivity(Intent(this, VaultPickActivity::class.java)
+                .putExtra(VaultPickActivity.EXTRA_ALL, everything)
+                .putExtra(VaultPickActivity.EXTRA_PANEL, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or Intent.FLAG_ACTIVITY_NO_ANIMATION))
+        } catch (_: Exception) { }
+    }
+
     private fun useQuick() {
         val q = quick ?: return
         if (q.save) {
@@ -1112,10 +1151,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         if (q.picker) {
             // Ventanita para elegir la contraseña (pide huella o PIN antes de escribirla)
-            try {
-                startActivity(Intent(this, VaultPickActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS))
-            } catch (_: Exception) { }
+            openVault(false)
             return
         }
         clearQuick(true)
@@ -1930,6 +1966,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         rebuild()
         insertScanned(info)
         VaultStore.load(this)
+        if (VaultStore.openPanel != 0) {
+            val fresh = System.currentTimeMillis() - VaultStore.openPanelAt < 60_000L
+            vaultAll = VaultStore.openPanel == 2
+            VaultStore.openPanel = 0
+            if (fresh) handler.post { showMode(21) }
+        }
         VaultStore.pendingInsert?.let { p ->
             // Volviste de elegir una contraseña: se escribe aquí
             VaultStore.pendingInsert = null
@@ -2138,6 +2180,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         editPanel?.applyPalette(pal)
         morePanel?.applyPalette(pal)
         phrasePanel?.applyPalette(pal)
+        vaultPanel?.applyPalette(pal)
         calcPanel?.applyPalette(pal)
         fxPanel?.applyPalette(pal)
         shotPanel?.applyPalette(pal)
@@ -3455,11 +3498,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_VAULT -> {
                 // Pide la huella y muestra tus correos, contraseñas y textos guardados
                 showMode(0)
-                try {
-                    startActivity(Intent(this, VaultPickActivity::class.java)
-                        .putExtra(VaultPickActivity.EXTRA_ALL, true)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS))
-                } catch (_: Exception) { }
+                openVault(true)
             }
             KeyboardView.TOOL_LANG -> onKeyCode(Codes.LANG)
             KeyboardView.TOOL_PHRASES -> showMode(7)

@@ -29,6 +29,8 @@ class VaultPickActivity : Activity() {
     companion object {
         /** true = mostrar todo (pide la huella al abrir). */
         const val EXTRA_ALL = "todo"
+        /** Solo pide la huella; los datos se ven dentro del teclado. */
+        const val EXTRA_PANEL = "panel"
     }
 
     private var chosen: String? = null
@@ -47,6 +49,16 @@ class VaultPickActivity : Activity() {
         // 🔐 La huella va primero, apenas abres Datos; después entras libre a tus cuentas
         // Cada vez que tocas el candado se pide (sin «recordar» el minuto). Adentro, los datos ya no la piden.
         setContentView(View(this))
+        if (intent.getBooleanExtra(EXTRA_PANEL, false)) {
+            // 🔐 Solo la huella: al volver, el teclado abre «Datos» adentro (sin cambiar de pantalla)
+            authenticate(onOk = {
+                VaultStore.openPanel = if (all) 2 else 1
+                VaultStore.openPanelAt = System.currentTimeMillis()
+                finish()
+                @Suppress("DEPRECATION") overridePendingTransition(0, 0)
+            }, onFail = { finish() })
+            return
+        }
         authenticate(onOk = { showAccounts() }, onFail = { finish() })
     }
 

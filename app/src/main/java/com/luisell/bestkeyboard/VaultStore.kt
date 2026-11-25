@@ -129,6 +129,9 @@ object VaultStore {
 
     /** Lo que eliges en la ventanita de contraseñas: el teclado lo escribe al volver. */
     @Volatile var pendingInsert: String? = null
+    /** 🔐 Pusiste tu huella: al volver, el teclado abre «Datos» adentro. 0 = no; 1 = solo contraseñas; 2 = todo. */
+    @Volatile var openPanel = 0
+    @Volatile var openPanelAt = 0L
 
     private fun file(ctx: Context) = File(ctx.applicationContext.filesDir, FILE)
 
