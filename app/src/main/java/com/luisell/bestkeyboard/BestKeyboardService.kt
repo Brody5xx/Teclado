@@ -308,6 +308,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var scanPanel: ScanPanel? = null
     private var panelBox: PanelBox? = null
     private var scanPhoto: android.graphics.Bitmap? = null
+    /** La foto del escáner vino del portapapeles: ← vuelve al teclado. */
+    private var scanFromClip = false
 
     // Dictado por voz (panel 3)
     private var voicePanel: VoicePanel? = null
@@ -449,7 +451,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             override fun onClipClean() { showMode(0); cleanPaste() }
             override fun onPasteText(text: String) = commitPanelText(text)
             override fun onPasteImage(item: ClipItem) = pasteImage(item)
-            override fun onClipScan(bmp: android.graphics.Bitmap) { scanPhoto = bmp; showMode(4) }
+            override fun onClipScan(bmp: android.graphics.Bitmap) { scanPhoto = bmp; scanFromClip = true; showMode(4) }
             override fun onClipWrite(item: ClipItem?) {
                 clipEditing = item
                 startSearch(gif = false, clipText = item?.text ?: "")
@@ -920,7 +922,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             if (m == 4) {
                 val photo = scanPhoto
                 scanPhoto = null
-                if (photo != null) sp.openWithPhoto(photo) else sp.open()
+                if (photo != null) sp.openWithPhoto(photo, scanFromClip) else sp.open()
+                scanFromClip = false
             } else if (was) sp.close()
             if (m == 4 || was) panelBox?.requestLayout()
         }

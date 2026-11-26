@@ -1509,6 +1509,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.15.2" to tr("•  «Elegir texto» de una foto del portapapeles: la flecha ← ahora vuelve al teclado (antes abría la cámara).",
+            "•  «Pick text» from a clipboard photo: the ← arrow now goes back to the keyboard (before it opened the camera)."),
         "15.15.1" to tr("•  Arreglado: en la 15.15.0 el teclado se cerraba al abrirse (un error al preparar la foto grande del portapapeles). Ya abre normal.",
             "•  Fixed: in 15.15.0 the keyboard crashed when opening (a bug preparing the clipboard's large photo view). It opens normally now."),
         "15.15.0" to tr("•  Fotos del portapapeles en grande: toca la lupa en la esquina de una foto y se abre grande dentro del teclado. Pellizca con dos dedos para agrandar, arrastra para moverla y toca dos veces para hacer zoom.\n" +

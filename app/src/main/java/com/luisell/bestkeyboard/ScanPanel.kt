@@ -101,7 +101,8 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         circle(backBtn)
         backBtn.setOnClickListener {
             actions?.onScanFeedback()
-            if (photo.visibility == VISIBLE) retake() else actions?.onScanClose()
+            // Foto del portapapeles: ← vuelve al teclado (no abre la cámara)
+            if (photo.visibility == VISIBLE && !backCloses) retake() else actions?.onScanClose()
         }
         addView(backBtn, LayoutParams(d(48f), d(48f), Gravity.TOP or Gravity.START).apply { setMargins(d(10f), d(10f), 0, 0) })
 
@@ -213,6 +214,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
     // ---------------------------------------------------------------- Cámara
 
     fun open() {
+        backCloses = false
         retake()
         startCamera()
     }
@@ -223,7 +225,11 @@ class ScanPanel(context: Context) : FrameLayout(context) {
     }
 
     /** Abre el escáner directamente con una foto (de la galería), sin cámara. */
-    fun openWithPhoto(bmp: Bitmap) {
+    /** true = la flecha ← cierra el escáner (vuelve al teclado) en vez de abrir la cámara. */
+    private var backCloses = false
+
+    fun openWithPhoto(bmp: Bitmap, closeOnBack: Boolean = false) {
+        backCloses = closeOnBack
         stopCamera()
         busy = true
         resultBar.visibility = GONE
