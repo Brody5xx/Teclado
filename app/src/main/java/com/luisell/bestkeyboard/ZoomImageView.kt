@@ -29,8 +29,25 @@ class ZoomImageView(context: Context) : View(context) {
     /** Se avisa cuando cambia el zoom (para mostrar «2.5x»). */
     var onZoom: ((Float) -> Unit)? = null
 
+    /** 📝 Los renglones de texto de la foto (en coordenadas de la foto): se marcan y se pueden tocar. */
+    class Box(val r: android.graphics.RectF, val text: String)
+    var boxes: List<Box> = emptyList()
+        set(v) { field = v; flashIdx = -1; invalidate() }
+    /** Tocaste un renglón. */
+    var onBoxTap: ((Box) -> Unit)? = null
+    var accent = 0xFF4FD1FF.toInt()
+    private var flashIdx = -1
+    private var flashT = 0f
+    private val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val boxLine = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val tmpR = android.graphics.RectF()
+
+    /** Abre la misma foto otra vez: se queda donde la dejaste (zoom y posición). */
+    fun sameImage(b: Bitmap?) = b != null && b === bmp
+
     fun setImage(b: Bitmap?) {
         bmp = b
+        boxes = emptyList()
         zoom = 1f
         fit()
         // Entra creciendo un poquito
@@ -92,6 +109,22 @@ class ZoomImageView(context: Context) : View(context) {
             if (zoom <= 1.01f) return false
             tx -= dx; ty -= dy; clamp(); invalidate(); return true
         }
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+            // ¿Tocaste un renglón? (de la pantalla a la foto)
+            val sc = base * zoom
+            val x = (e.x - tx) / sc; val y = (e.y - ty) / sc
+            val pad = 6f * resources.displayMetrics.density / sc
+            val i = boxes.indexOfFirst { b -> x >= b.r.left - pad && x <= b.r.right + pad && y >= b.r.top - pad && y <= b.r.bottom + pad }
+            if (i < 0) return false
+            flashIdx = i
+            ValueAnimator.ofFloat(1f, 0f).apply {
+                duration = 600L
+                addUpdateListener { flashT = it.animatedValue as Float; invalidate() }
+                start()
+            }
+            onBoxTap?.invoke(boxes[i])
+            return true
+        }
         override fun onDoubleTap(e: MotionEvent): Boolean {
             animateTo(if (zoom > 1.5f) 1f else 2.8f, e.x, e.y); return true
         }
@@ -111,5 +144,18 @@ class ZoomImageView(context: Context) : View(context) {
         m.postScale(base * zoom, base * zoom)
         m.postTranslate(tx, ty)
         c.drawBitmap(b, m, paint)
+        if (boxes.isEmpty()) return
+        // Cada renglón con su marquito de luz (el que tocaste brilla)
+        val sc = base * zoom
+        val rad = 4f * resources.displayMetrics.density
+        boxLine.strokeWidth = 1.2f * resources.displayMetrics.density
+        for ((i, bx) in boxes.withIndex()) {
+            tmpR.set(bx.r.left * sc + tx - 3, bx.r.top * sc + ty - 2, bx.r.right * sc + tx + 3, bx.r.bottom * sc + ty + 2)
+            val on = i == flashIdx && flashT > 0f
+            boxPaint.color = (accent and 0x00FFFFFF) or ((if (on) 0x30 + (0x70 * flashT).toInt() else 0x26) shl 24)
+            boxLine.color = (accent and 0x00FFFFFF) or ((if (on) 0xFF else 0x8C) shl 24)
+            c.drawRoundRect(tmpR, rad, rad, boxPaint)
+            c.drawRoundRect(tmpR, rad, rad, boxLine)
+        }
     }
 }

@@ -278,6 +278,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     // Sugerencia de captura de pantalla
     private var shot: Screenshots.Shot? = null
+    /** La imagen de referencia (captura) que tienes abierta para copiar su texto. */
+    private var refUri: android.net.Uri? = null
+    private var refId = ""
+    private var refThumb: android.graphics.Bitmap? = null
+    private var refPanel: RefPanel? = null
+    private var lastShotThumb: android.graphics.Bitmap? = null
+    private var refPkg = ""
     /** El botón de arriba está pidiendo el permiso de fotos (en vez de ofrecer una captura). */
     private var shotAsk = false
     private val shotIo = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -452,6 +459,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             override fun onPasteText(text: String) = commitPanelText(text)
             override fun onPasteImage(item: ClipItem) = pasteImage(item)
             override fun onClipScan(bmp: android.graphics.Bitmap) { scanPhoto = bmp; scanFromClip = true; showMode(4) }
+            override fun onClipView(item: ClipItem) {
+                val f = ClipStore.fileOf(this@BestKeyboardService, item) ?: return
+                refThumb = null
+                openRef(android.net.Uri.fromFile(f), "clip:" + item.id, null)
+            }
             override fun onClipWrite(item: ClipItem?) {
                 clipEditing = item
                 startSearch(gif = false, clipText = item?.text ?: "")
@@ -598,6 +610,24 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
         box.addView(vlt, FrameLayout.LayoutParams(-1, -1))
         vaultPanel = vlt
+
+        // Referencia: la captura grande con el texto para tocar
+        val rp = RefPanel(this)
+        rp.visibility = View.GONE
+        rp.actions = object : RefPanel.Actions {
+            override fun onRefText(text: String) = insertText(text)
+            override fun onRefKeyboard() = showMode(0)
+            override fun onRefPick(bmp: android.graphics.Bitmap) { scanPhoto = bmp; scanFromClip = true; showMode(4) }
+            override fun onRefPaste() {
+                val u = refUri ?: return
+                showMode(0)
+                ClipStore.addImage(this@BestKeyboardService, u, contentResolver.getType(u)) { item -> if (item != null) pasteImage(item) }
+            }
+            override fun onRefClose() = closeRef()
+            override fun onRefFeedback() = onKeyFeedback()
+        }
+        box.addView(rp, FrameLayout.LayoutParams(-1, -1))
+        refPanel = rp
 
         // Calculadora
         val calc = CalcPanel(this)
@@ -939,6 +969,11 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             pp.visibility = if (m == 7) View.VISIBLE else View.GONE
             if (m == 7) pp.open()
         }
+        refPanel?.let { rp ->
+            rp.visibility = if (m == 22) View.VISIBLE else View.GONE
+            if (m == 22) refUri?.let { u -> rp.open(u, refId) }
+            if (m != 22 && refUri != null && quick == null && shot == null && !shotAsk) clearShot()
+        }
         vaultPanel?.let { vp ->
             val was = vp.visibility == View.VISIBLE
             vp.visibility = if (m == 21) View.VISIBLE else View.GONE
@@ -1011,6 +1046,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (s != null) {
                     shot = s
                     shotAsk = false
+                    lastShotThumb = thumb
                     if (quick == null) kv?.setChip(thumb,
                         if (s.isVideo) L.t("▶ Grabación de pantalla", "▶ Screen recording") else L.t("Captura de pantalla", "Screenshot"))
                 } else if (!Screenshots.hasVideoPermission(app) && prefs.getInt("shot_video_asks", 0) < 2) {
@@ -1050,7 +1086,41 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun clearShot() {
         shot = null
         shotAsk = false
-        if (quick == null) kv?.setChip(null, null)
+        if (quick == null) {
+            // Si tienes una referencia abierta, arriba queda «Referencia» para volver a ella
+            if (refUri != null) kv?.setChip(refThumb, L.t("Referencia · toca para verla", "Reference · tap to see it"))
+            else kv?.setChip(null, null)
+        }
+    }
+
+    /** Abre la imagen como referencia dentro del teclado (tocas un renglón y se escribe). */
+    private fun openRef(uri: android.net.Uri, id: String, thumb: android.graphics.Bitmap?) {
+        val same = id == refId
+        refUri = uri
+        refId = id
+        refPkg = curPkg
+        if (thumb != null) refThumb = thumb
+        else if (refThumb == null || !same) shotIo.execute {
+            val t = try {
+                val px = (48 * resources.displayMetrics.density).toInt()
+                val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, o) }
+                var sm = 1
+                while (o.outWidth / (sm * 2) >= px && o.outHeight / (sm * 2) >= px) sm *= 2
+                contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, android.graphics.BitmapFactory.Options().apply { inSampleSize = sm }) }
+            } catch (_: Throwable) { null }
+            handler.post { if (refId == id) refThumb = t }
+        }
+        showMode(22)
+    }
+
+    private fun closeRef() {
+        refUri = null
+        refId = ""
+        refThumb = null
+        refPanel?.forget()
+        if (mode == 22) showMode(0)
+        clearShot()
     }
 
     // ---------------------------------------------------------------- Copiado / códigos
@@ -1200,6 +1270,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     /** Tocaste "Captura de pantalla": se guarda en el portapapeles y se pega aquí. */
     /** ✕ en la sugerencia: ya no se ofrece (lo copiado sigue en tu portapapeles 📋). */
     private fun dismissChip() {
+        if (quick == null && shot == null && !shotAsk && refUri != null) { closeRef(); return }
         if (quick != null) {
             val wasSave = quick?.save == true
             clearQuick(forget = !wasSave)
@@ -1223,14 +1294,18 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             askPermission(MainActivity.EXTRA_ASK_PHOTOS)
             return
         }
-        val s = shot ?: return
-        markShotUsed(s.id, s.added)
-        clearShot()
-        if (s.isVideo) { pasteUri(s.uri, s.mime); return }
-        ClipStore.addImage(this, s.uri, s.mime) { item ->
-            if (item != null) pasteImage(item)
-            else Toast.makeText(this, Emo.strip(L.t("No se pudo abrir la captura.", "Couldn't open the screenshot.")), Toast.LENGTH_SHORT).show()
+        val s = shot ?: run {
+            // No hay captura nueva: si tienes una referencia, se vuelve a abrir
+            if (refUri != null) showMode(22)
+            return
         }
+        markShotUsed(s.id, s.added)
+        if (s.isVideo) { clearShot(); pasteUri(s.uri, s.mime); return }
+        // La captura se abre grande como referencia: tocas el texto que necesitas y se escribe aqui
+        saveShotToClip(s)
+        val th = lastShotThumb
+        shot = null
+        openRef(s.uri, "shot:" + s.id, th)
     }
 
     /** Escribe un texto (del escáner) con el espacio correcto antes. */
@@ -1992,7 +2067,8 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             page = if (numeric || phone) Page.NUM else Page.LETTERS
             shift = 0
             manualShift = false
-            if (mode != 0) showMode(0)
+            // 📄 La referencia se queda abierta mientras llenas los campos de la misma app
+            if (mode != 0 && !(mode == 22 && curPkg == refPkg && refUri != null)) showMode(0)
             if (translating) stopTranslate()
             if (spellOn) stopSpell(keepSelection = true)
             hCtrl = 0; hAlt = 0; hShift = 0; hFn = false
@@ -2218,6 +2294,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         morePanel?.applyPalette(pal)
         phrasePanel?.applyPalette(pal)
         vaultPanel?.applyPalette(pal)
+        refPanel?.applyPalette(pal)
         calcPanel?.applyPalette(pal)
         fxPanel?.applyPalette(pal)
         shotPanel?.applyPalette(pal)

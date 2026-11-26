@@ -35,6 +35,8 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         fun onClipClean() {}
         /** 🔍 Elegir texto de una imagen (se abre el escáner con la foto). */
         fun onClipScan(bmp: Bitmap) {}
+        /** La lupa: ver la foto grande como referencia (tocas el texto y se escribe). */
+        fun onClipView(item: ClipItem) {}
     }
 
     var listener: PanelListener? = null
@@ -138,7 +140,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
             h.zoom.visibility = if (it.isImage && !selecting) VISIBLE else GONE
             h.zoom.color = 0xFFFFFFFF.toInt()
             h.zoom.background = PanelUi.rounded(0x99000000.toInt(), d(15f).toFloat())
-            h.zoom.setOnClickListener { _ -> listener?.onPanelFeedback(); openViewer(it) }
+            h.zoom.setOnClickListener { _ -> listener?.onPanelFeedback(); actions?.onClipView(it) }
             if (it.isImage) {
                 h.text.visibility = GONE
                 h.image.visibility = VISIBLE
