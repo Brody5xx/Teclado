@@ -1509,6 +1509,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.15.3" to tr("•  Las capturas de pantalla se guardan solas en el portapapeles apenas salen arriba del teclado, aunque toques la ✕ (antes solo se guardaban si las pegabas).\n" +
+            "•  Grabaciones de pantalla: ahora salen aunque hayas tomado una captura durante la grabación, y también las que tienen otro nombre (se reconocen por tener el tamaño de la pantalla). Si quitas la captura con la ✕, sale la grabación. Las que ya usaste o quitaste no vuelven a salir.",
+            "•  Screenshots are saved to the clipboard by themselves as soon as they show above the keyboard, even if you tap the ✕ (before, they were only saved if you pasted them).\n" +
+            "•  Screen recordings: they now show even if you took a screenshot during the recording, and also ones with a different name (recognized by having the screen's size). If you remove the screenshot with the ✕, the recording shows. The ones you used or removed don't come back."),
         "15.15.2" to tr("•  «Elegir texto» de una foto del portapapeles: la flecha ← ahora vuelve al teclado (antes abría la cámara).",
             "•  «Pick text» from a clipboard photo: the ← arrow now goes back to the keyboard (before it opened the camera)."),
         "15.15.1" to tr("•  Arreglado: en la 15.15.0 el teclado se cerraba al abrirse (un error al preparar la foto grande del portapapeles). Ya abre normal.",

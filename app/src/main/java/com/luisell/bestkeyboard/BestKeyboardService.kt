@@ -998,13 +998,17 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             } else clearShot()
             return
         }
-        val usedId = prefs.getLong(Prefs.SHOT_USED, -1L)
+        val used = usedShots()
+        val usedAt = prefs.getLong("shot_used_added", 0L)
         val px = (48 * resources.displayMetrics.density).toInt()
         shotIo.execute {
-            val s = Screenshots.findNewest(app)
-            val thumb = if (s != null && s.id != usedId) Screenshots.thumbnail(app, s, px) else null // puede faltar: se muestra 🖼
+            // La más nueva que todavía no usaste ni quitaste (si quitaste la captura, sale la grabación, y al revés)
+            // (solo las más nuevas que la última que usaste o quitaste: las viejas no vuelven)
+            val s = Screenshots.findNewest(app, used)?.takeIf { it.added > usedAt }
+            val thumb = if (s != null) Screenshots.thumbnail(app, s, px) else null // puede faltar: se muestra 🖼
             handler.post {
-                if (s != null && s.id != usedId) {
+                if (s != null) saveShotToClip(s)
+                if (s != null) {
                     shot = s
                     shotAsk = false
                     if (quick == null) kv?.setChip(thumb,
@@ -1018,6 +1022,29 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 } else clearShot()
             }
         }
+    }
+
+    /** Las capturas y grabaciones que ya usaste o quitaste (no vuelven a salir). */
+    private fun usedShots(): Set<Long> {
+        val set = (prefs.getString("shot_used_set", "") ?: "").split(',').mapNotNull { it.toLongOrNull() }.toMutableSet()
+        prefs.getLong(Prefs.SHOT_USED, -1L).takeIf { it >= 0 }?.let { set.add(it) }
+        return set
+    }
+
+    private fun markShotUsed(id: Long, added: Long = 0L) {
+        if (added > prefs.getLong("shot_used_added", 0L)) prefs.edit().putLong("shot_used_added", added).apply()
+        val l = (prefs.getString("shot_used_set", "") ?: "").split(',').filter { it.isNotEmpty() && it != id.toString() }.takeLast(40) + id.toString()
+        prefs.edit().putLong(Prefs.SHOT_USED, id).putString("shot_used_set", l.joinToString(",")).apply()
+    }
+
+    /** 📋 Toda captura nueva se guarda sola en el portapapeles (aunque toques ✕), una sola vez. */
+    private fun saveShotToClip(s: Screenshots.Shot) {
+        if (s.isVideo || !clipHistoryOn || incognito) return
+        val key = "shot_clipped"
+        val done = (prefs.getString(key, "") ?: "").split(',')
+        if (s.id.toString() in done) return
+        prefs.edit().putString(key, (done.takeLast(30) + s.id.toString()).filter { it.isNotEmpty() }.joinToString(",")).apply()
+        ClipStore.addImage(this, s.uri, s.mime) { if (mode == 2) clipPanel?.refresh() }
     }
 
     private fun clearShot() {
@@ -1180,7 +1207,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val s = shot
-        if (s != null) prefs.edit().putLong(Prefs.SHOT_USED, s.id).apply()
+        if (s != null) {
+            markShotUsed(s.id, s.added)
+            saveShotToClip(s)
+            // Toast suave: ya quedó en el portapapeles
+            if (!s.isVideo && clipHistoryOn && !incognito) Toast.makeText(this, L.t("La captura quedó en tu portapapeles.", "The screenshot is in your clipboard."), Toast.LENGTH_SHORT).show()
+        }
         else if (shotAsk) prefs.edit().putInt(Prefs.SHOT_ASKS, 3).putInt("shot_video_asks", 2).apply()
         clearShot()
     }
@@ -1192,7 +1224,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val s = shot ?: return
-        prefs.edit().putLong(Prefs.SHOT_USED, s.id).apply()
+        markShotUsed(s.id, s.added)
         clearShot()
         if (s.isVideo) { pasteUri(s.uri, s.mime); return }
         ClipStore.addImage(this, s.uri, s.mime) { item ->
