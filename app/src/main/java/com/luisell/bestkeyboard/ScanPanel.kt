@@ -62,6 +62,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
     private val resultBar = LinearLayout(context)
     private val resultText = TextView(context)
     private val insertBtn = TextView(context)
+    private val copyBtn = TextView(context)
 
     private var owner: PanelLifecycle? = null
     private var provider: ProcessCameraProvider? = null
@@ -137,7 +138,27 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         insertBtn.gravity = Gravity.CENTER
         insertBtn.setPadding(d(20f), d(12f), d(20f), d(12f))
         insertBtn.setOnClickListener { insert() }
-        resultBar.addView(insertBtn, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = d(10f) })
+        // 📋 Copiar lo elegido (además de escribirlo)
+        L.bind(copyBtn, "Copiar", "Copy")
+        copyBtn.textSize = 15f
+        copyBtn.gravity = Gravity.CENTER
+        copyBtn.setTextColor(0xFFFFFFFF.toInt())
+        copyBtn.setPadding(d(14f), d(12f), d(14f), d(12f))
+        copyBtn.background = PanelUi.pressable(0xFF303134.toInt(), 0xFF505257.toInt(), d(24f).toFloat())
+        copyBtn.setOnClickListener {
+            val t = photo.selectedText()
+            if (t.isEmpty()) return@setOnClickListener
+            actions?.onScanFeedback()
+            try {
+                (context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+                    .setPrimaryClip(android.content.ClipData.newPlainText("text", t))
+            } catch (_: Exception) { }
+            copyBtn.text = L.t("Copiado", "Copied")
+            copyBtn.animate().scaleX(1.1f).scaleY(1.1f).setDuration(90).withEndAction { copyBtn.animate().scaleX(1f).scaleY(1f).setDuration(140).start() }.start()
+            main.postDelayed({ copyBtn.text = L.t("Copiar", "Copy") }, 1500L)
+        }
+        resultBar.addView(copyBtn, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = d(8f) })
+        resultBar.addView(insertBtn, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = d(8f) })
         resultBar.visibility = GONE
         addView(resultBar, LayoutParams(-1, -2, Gravity.BOTTOM).apply { setMargins(d(8f), 0, d(8f), d(8f)) })
 
@@ -419,6 +440,7 @@ class ScanPanel(context: Context) : FrameLayout(context) {
         val t = photo.selectedText()
         resultText.text = if (t.isEmpty()) L.t("Desliza el dedo sobre las palabras", "Slide your finger over the words") else t.replace('\n', ' ')
         insertBtn.alpha = if (t.isEmpty()) 0.5f else 1f
+        copyBtn.alpha = insertBtn.alpha
     }
 
     private fun insert() {

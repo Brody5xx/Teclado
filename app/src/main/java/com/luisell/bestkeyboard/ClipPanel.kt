@@ -33,6 +33,8 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         fun onClipFind() {}
         /** 🧹 Pegar limpio (sin espacios raros, en un renglón, sin emojis…). */
         fun onClipClean() {}
+        /** 🔍 Elegir texto de una imagen (se abre el escáner con la foto). */
+        fun onClipScan(bmp: Bitmap) {}
     }
 
     var listener: PanelListener? = null
@@ -89,7 +91,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
     }
     private val decoder = Executors.newSingleThreadExecutor()
 
-    private inner class Holder(val box: FrameLayout, val text: TextView, val image: ImageView, val pin: IconView, val check: IconView, val time: TextView)
+    private inner class Holder(val box: FrameLayout, val text: TextView, val image: ImageView, val pin: IconView, val check: IconView, val time: TextView, val zoom: IconView)
 
     /** 🕐 Cuándo lo copiaste: «Hoy 9:41», «Ayer 18:05», «3 nov». */
     private fun whenLabel(t: Long): String {
@@ -133,6 +135,10 @@ class ClipPanel(context: Context) : FrameLayout(context) {
             h.pin.color = palette.accent
             h.pin.bgColor = palette.bg
             h.pin.background = PanelUi.rounded(palette.bg, d(10f).toFloat())
+            h.zoom.visibility = if (it.isImage && !selecting) VISIBLE else GONE
+            h.zoom.color = 0xFFFFFFFF.toInt()
+            h.zoom.background = PanelUi.rounded(0x99000000.toInt(), d(15f).toFloat())
+            h.zoom.setOnClickListener { _ -> listener?.onPanelFeedback(); openViewer(it) }
             if (it.isImage) {
                 h.text.visibility = GONE
                 h.image.visibility = VISIBLE
@@ -247,6 +253,7 @@ class ClipPanel(context: Context) : FrameLayout(context) {
 
         addView(body, LayoutParams(-1, -1))
         addView(overlay, LayoutParams(-1, -1))
+        buildViewer()
 
         applyPalette(palette)
     }
@@ -284,7 +291,10 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         time.textSize = 10f
         time.setPadding(d(6f), d(1f), d(6f), d(1f))
         box.addView(time, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = d(3f); rightMargin = d(4f) })
-        val h = Holder(box, text, image, pin, check, time)
+        // 🔍 Agrandar la foto (y copiar su texto)
+        val zoom = IconView(context, Icons.SEARCH, 6.5f)
+        box.addView(zoom, FrameLayout.LayoutParams(d(30f), d(30f), Gravity.BOTTOM or Gravity.START).apply { bottomMargin = d(4f); leftMargin = d(4f) })
+        val h = Holder(box, text, image, pin, check, time, zoom)
         box.tag = h
         return h
     }
@@ -363,6 +373,8 @@ class ClipPanel(context: Context) : FrameLayout(context) {
 
     fun close() {
         overlay.hide()
+        viewer.animate().cancel(); viewer.visibility = GONE; viewer.alpha = 1f
+        zoomView.setImage(null); viewerBmp = null; viewerItem = null
         selected.clear()
         stopWiggle()
     }
@@ -442,6 +454,131 @@ class ClipPanel(context: Context) : FrameLayout(context) {
         option(L.t("🗑   Borrar", "🗑   Delete")) { ClipStore.remove(item); refresh() }
         val lp = LayoutParams(minOf(d(280f), width - d(32f)), -2, Gravity.CENTER)
         overlay.show(card, lp)
+    }
+
+    // ---------------------------------------------------------------- 🔍 Ver la foto grande
+
+    private val viewer = FrameLayout(context)
+    private val zoomView = ZoomImageView(context)
+    private val viewerHint = TextView(context)
+    private val zoomLabel = TextView(context)
+    private var viewerBmp: Bitmap? = null
+    private var viewerItem: ClipItem? = null
+    private val recognizer by lazy {
+        com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions.Builder().build())
+    }
+
+    private fun buildViewer() {
+        viewer.setBackgroundColor(0xF2000000.toInt())
+        viewer.visibility = GONE
+        viewer.isClickable = true
+        viewer.addView(zoomView, LayoutParams(-1, -1).apply { bottomMargin = d(58f) })
+        zoomView.onZoom = { z ->
+            zoomLabel.text = String.format(java.util.Locale.US, "%.1fx", z)
+            zoomLabel.visibility = if (z > 1.05f) VISIBLE else GONE
+        }
+        // Arriba: ← volver
+        val back = IconView(context, Icons.BACK, 8f)
+        back.color = 0xFFFFFFFF.toInt()
+        back.background = PanelUi.pressable(0x99303134.toInt(), 0xCC505257.toInt(), d(22f).toFloat())
+        back.setOnClickListener { listener?.onPanelFeedback(); closeViewer() }
+        viewer.addView(back, LayoutParams(d(44f), d(44f), Gravity.TOP or Gravity.START).apply { setMargins(d(8f), d(8f), 0, 0) })
+        zoomLabel.textSize = 12f
+        zoomLabel.setTextColor(0xFFFFFFFF.toInt())
+        zoomLabel.setPadding(d(10f), d(4f), d(10f), d(4f))
+        zoomLabel.background = PanelUi.rounded(0x99303134.toInt(), d(12f).toFloat())
+        zoomLabel.visibility = GONE
+        viewer.addView(zoomLabel, LayoutParams(-2, -2, Gravity.TOP or Gravity.END).apply { setMargins(0, d(16f), d(12f), 0) })
+        // El aviso (Pellizca para agrandar / Texto copiado)
+        viewerHint.textSize = 13f
+        viewerHint.setTextColor(0xFFFFFFFF.toInt())
+        viewerHint.setPadding(d(14f), d(6f), d(14f), d(6f))
+        viewerHint.background = PanelUi.rounded(0xCC202124.toInt(), d(16f).toFloat())
+        viewer.addView(viewerHint, LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = d(66f) })
+        // Abajo: Copiar texto · Elegir texto · Pegar
+        val row = LinearLayout(context)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.setPadding(d(6f), 0, d(6f), d(6f))
+        fun pill(label: String, main: Boolean, act: () -> Unit) = TextView(context).apply {
+            text = label; textSize = 13.5f; gravity = Gravity.CENTER; maxLines = 1
+            setAutoSizeTextTypeUniformWithConfiguration(10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+            setTextColor(if (main) palette.onAccent else 0xFFFFFFFF.toInt())
+            background = if (main) PanelUi.pressable(palette.accent, palette.accentPressed, d(22f).toFloat())
+                else PanelUi.pressable(0xFF303134.toInt(), 0xFF505257.toInt(), d(22f).toFloat())
+            setOnClickListener { listener?.onPanelFeedback(); act() }
+        }
+        row.tag = "viewerRow"
+        viewer.addView(row, LayoutParams(-1, d(52f), Gravity.BOTTOM))
+        addView(viewer, LayoutParams(-1, -1))
+        fun fill() {
+            row.removeAllViews()
+            row.addView(pill(L.t("Copiar texto", "Copy text"), true) { copyText() }, LinearLayout.LayoutParams(0, d(44f), 1.2f))
+            row.addView(pill(L.t("Elegir texto", "Pick text"), false) { viewerBmp?.let { b -> closeViewer(); actions?.onClipScan(b) } },
+                LinearLayout.LayoutParams(0, d(44f), 1f).apply { leftMargin = d(6f) })
+            row.addView(pill(L.t("Pegar", "Paste"), false) { viewerItem?.let { closeViewer(); paste(it) } },
+                LinearLayout.LayoutParams(0, d(44f), 0.8f).apply { leftMargin = d(6f) })
+        }
+        fillRow = { fill() }
+    }
+
+    private var fillRow: (() -> Unit)? = null
+
+    private fun openViewer(item: ClipItem) {
+        val file = ClipStore.fileOf(context, item) ?: return
+        viewerItem = item
+        fillRow?.invoke()
+        viewerHint.text = L.t("Pellizca con dos dedos para agrandar · toca dos veces", "Pinch with two fingers to zoom · double-tap")
+        viewerHint.visibility = VISIBLE
+        zoomLabel.visibility = GONE
+        viewer.alpha = 0f
+        viewer.visibility = VISIBLE
+        viewer.animate().alpha(1f).setDuration(200L).start()
+        zoomView.setImage(null)
+        decoder.execute {
+            try {
+                // Grande, pero sin pasarse de memoria (máximo ~2500 px)
+                val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(file.path, o)
+                var sm = 1
+                while (maxOf(o.outWidth, o.outHeight) / sm > 2500) sm *= 2
+                val b = BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = sm }) ?: return@execute
+                handler.post { if (viewerItem === item) { viewerBmp = b; zoomView.setImage(b) } }
+            } catch (_: Throwable) { }
+        }
+        handler.postDelayed({ if (viewer.visibility == VISIBLE && viewerHint.text.startsWith(L.t("Pellizca", "Pinch"))) viewerHint.animate().alpha(0f).setDuration(400L).withEndAction { viewerHint.visibility = GONE; viewerHint.alpha = 1f }.start() }, 3500L)
+    }
+
+    /** ¿Está abierta la foto grande? (la flecha atrás la cierra primero) */
+    fun viewerOpen() = viewer.visibility == VISIBLE
+
+    fun closeViewer() {
+        if (viewer.visibility != VISIBLE) return
+        viewer.animate().alpha(0f).setDuration(160L).withEndAction {
+            viewer.visibility = GONE; viewer.alpha = 1f
+            zoomView.setImage(null); viewerBmp = null; viewerItem = null
+        }.start()
+    }
+
+    /** 📝 Lee todo el texto de la foto (dentro del teléfono) y lo copia. */
+    private fun copyText() {
+        val b = viewerBmp ?: return
+        viewerHint.animate().cancel(); viewerHint.alpha = 1f
+        viewerHint.visibility = VISIBLE
+        viewerHint.text = L.t("Leyendo el texto…", "Reading the text…")
+        recognizer.process(com.google.mlkit.vision.common.InputImage.fromBitmap(b, 0))
+            .addOnSuccessListener { r ->
+                val t = r.textBlocks.joinToString("\n") { bl -> bl.lines.joinToString("\n") { it.text } }.trim()
+                if (t.isEmpty()) { viewerHint.text = L.t("No encontré texto en esta imagen.", "No text found in this image."); return@addOnSuccessListener }
+                try {
+                    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    cm.setPrimaryClip(android.content.ClipData.newPlainText("text", t))
+                } catch (_: Exception) { }
+                val n = t.split(Regex("\\s+")).count { it.isNotBlank() }
+                viewerHint.text = L.t("Texto copiado ($n palabras). Ya está en tu portapapeles.", "Text copied ($n words). It's in your clipboard.")
+                viewerHint.scaleX = 1.08f; viewerHint.scaleY = 1.08f
+                viewerHint.animate().scaleX(1f).scaleY(1f).setDuration(220L).start()
+            }
+            .addOnFailureListener { viewerHint.text = L.t("No se pudo leer el texto. Inténtalo otra vez.", "Couldn't read the text. Try again.") }
     }
 
     fun applyPalette(p: Palette) {

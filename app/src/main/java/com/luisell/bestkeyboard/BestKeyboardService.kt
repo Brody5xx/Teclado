@@ -449,6 +449,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             override fun onClipClean() { showMode(0); cleanPaste() }
             override fun onPasteText(text: String) = commitPanelText(text)
             override fun onPasteImage(item: ClipItem) = pasteImage(item)
+            override fun onClipScan(bmp: android.graphics.Bitmap) { scanPhoto = bmp; showMode(4) }
             override fun onClipWrite(item: ClipItem?) {
                 clipEditing = item
                 startSearch(gif = false, clipText = item?.text ?: "")
