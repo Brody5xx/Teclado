@@ -253,7 +253,6 @@ class ClipPanel(context: Context) : FrameLayout(context) {
 
         addView(body, LayoutParams(-1, -1))
         addView(overlay, LayoutParams(-1, -1))
-        buildViewer()
 
         applyPalette(palette)
     }
@@ -373,8 +372,10 @@ class ClipPanel(context: Context) : FrameLayout(context) {
 
     fun close() {
         overlay.hide()
-        viewer.animate().cancel(); viewer.visibility = GONE; viewer.alpha = 1f
-        zoomView.setImage(null); viewerBmp = null; viewerItem = null
+        if (viewerBuilt) {
+            viewer.animate().cancel(); viewer.visibility = GONE; viewer.alpha = 1f
+            zoomView.setImage(null); viewerBmp = null; viewerItem = null
+        }
         selected.clear()
         stopWiggle()
     }
@@ -523,8 +524,12 @@ class ClipPanel(context: Context) : FrameLayout(context) {
 
     private var fillRow: (() -> Unit)? = null
 
+    /** La foto grande se arma la primera vez que la abres (no al crear el teclado). */
+    private var viewerBuilt = false
+
     private fun openViewer(item: ClipItem) {
         val file = ClipStore.fileOf(context, item) ?: return
+        if (!viewerBuilt) { viewerBuilt = true; buildViewer() }
         viewerItem = item
         fillRow?.invoke()
         viewerHint.text = L.t("Pellizca con dos dedos para agrandar · toca dos veces", "Pinch with two fingers to zoom · double-tap")
@@ -549,10 +554,10 @@ class ClipPanel(context: Context) : FrameLayout(context) {
     }
 
     /** ¿Está abierta la foto grande? (la flecha atrás la cierra primero) */
-    fun viewerOpen() = viewer.visibility == VISIBLE
+    fun viewerOpen() = viewerBuilt && viewer.visibility == VISIBLE
 
     fun closeViewer() {
-        if (viewer.visibility != VISIBLE) return
+        if (!viewerBuilt || viewer.visibility != VISIBLE) return
         viewer.animate().alpha(0f).setDuration(160L).withEndAction {
             viewer.visibility = GONE; viewer.alpha = 1f
             zoomView.setImage(null); viewerBmp = null; viewerItem = null
