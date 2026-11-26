@@ -104,7 +104,7 @@ class RefPanel(context: Context) : FrameLayout(context) {
         pill(L.t("Teclado", "Keyboard"), true, 1f) { actions?.onRefKeyboard() }
         pill(L.t("Copiar todo", "Copy all"), false, 1.1f) { copyAll() }
         pill(L.t("Elegir palabras", "Pick words"), false, 1.25f) { bmp?.let { actions?.onRefPick(it) } }
-        pill(L.t("Pegar", "Paste"), false, 0.8f) { actions?.onRefPaste() }
+        pill(L.t("Pegar foto", "Paste photo"), false, 0.95f) { actions?.onRefPaste() }
     }
 
     /** Abre la foto [uri] (o la misma de antes, tal como la dejaste). [id] la identifica. */

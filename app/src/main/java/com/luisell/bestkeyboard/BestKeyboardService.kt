@@ -1029,7 +1029,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                 if (!shotAsk) prefs.edit().putInt(Prefs.SHOT_ASKS, asks + 1).apply()
                 shot = null
                 shotAsk = true
-                if (quick == null) kv?.setChip(null, L.t("Activar sugerencia de capturas", "Turn on screenshot suggestions"))
+                if (quick == null) { kv?.chipView = false; kv?.setChip(null, L.t("Activar sugerencia de capturas", "Turn on screenshot suggestions")) }
             } else clearShot()
             return
         }
@@ -1047,6 +1047,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     shot = s
                     shotAsk = false
                     lastShotThumb = thumb
+                    if (quick == null) kv?.chipView = !s.isVideo
                     if (quick == null) kv?.setChip(thumb,
                         if (s.isVideo) L.t("▶ Grabación de pantalla", "▶ Screen recording") else L.t("Captura de pantalla", "Screenshot"))
                 } else if (!Screenshots.hasVideoPermission(app) && prefs.getInt("shot_video_asks", 0) < 2) {
@@ -1054,7 +1055,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     if (!shotAsk) prefs.edit().putInt("shot_video_asks", prefs.getInt("shot_video_asks", 0) + 1).apply()
                     shot = null
                     shotAsk = true
-                    if (quick == null) kv?.setChip(null, L.t("Activar sugerencia de grabaciones", "Turn on screen recording suggestions"))
+                    if (quick == null) { kv?.chipView = false; kv?.setChip(null, L.t("Activar sugerencia de grabaciones", "Turn on screen recording suggestions")) }
                 } else clearShot()
             }
         }
@@ -1087,6 +1088,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         shot = null
         shotAsk = false
         if (quick == null) {
+            kv?.chipView = false
             // Si tienes una referencia abierta, arriba queda «Referencia» para volver a ella
             if (refUri != null) kv?.setChip(refThumb, L.t("Referencia · toca para verla", "Reference · tap to see it"))
             else kv?.setChip(null, null)
@@ -1187,6 +1189,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private fun showQuick(item: QuickPaste.Item?) {
         quick = item
+        kv?.chipView = false
         if (item == null) {
             kv?.setChip(null, null)
             checkScreenshot()
@@ -1300,11 +1303,24 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             return
         }
         markShotUsed(s.id, s.added)
-        if (s.isVideo) { clearShot(); pasteUri(s.uri, s.mime); return }
-        // La captura se abre grande como referencia: tocas el texto que necesitas y se escribe aqui
+        clearShot()
+        if (s.isVideo) { pasteUri(s.uri, s.mime); return }
+        // Tocar la captura la pega (como antes); la lupa 🔍 la abre como referencia
+        ClipStore.addImage(this, s.uri, s.mime) { item ->
+            if (item != null) pasteImage(item)
+            else Toast.makeText(this, Emo.strip(L.t("No se pudo abrir la captura.", "Couldn't open the screenshot.")), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** 🔍 La lupa del botón: la captura se abre grande como referencia (tocas el texto y se escribe). */
+    private fun viewScreenshot() {
+        val s = shot ?: return
+        if (s.isVideo) return
+        markShotUsed(s.id, s.added)
         saveShotToClip(s)
         val th = lastShotThumb
         shot = null
+        kv?.chipView = false
         openRef(s.uri, "shot:" + s.id, th)
     }
 
@@ -3598,6 +3614,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyboardView.TOOL_EDIT -> showMode(5)
             KeyboardView.TOOL_SHOT -> if (quick != null) useQuick() else useScreenshot()
             KeyboardView.TOOL_CHIP_X -> dismissChip()
+            KeyboardView.TOOL_CHIP_VIEW -> viewScreenshot()
             KeyboardView.TOOL_SPELL -> if (spellOn) stopSpell() else startSpell(grammarNow = true) // ✅ directo a corregir gramática
             KeyboardView.TOOL_TRANSLATE -> if (translating) stopTranslate() else startTranslate()
             KeyboardView.TOOL_MORE -> showMode(6)

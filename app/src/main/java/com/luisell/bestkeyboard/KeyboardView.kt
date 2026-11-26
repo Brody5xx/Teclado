@@ -108,6 +108,8 @@ class KeyboardView(context: Context) : View(context) {
         const val TOOL_UNDO = 65
         const val TOOL_REMIND = 66
         const val TOOL_CHIP_X = 67
+        /** 🔍 La lupa del botón de la captura: abrirla como referencia. */
+        const val TOOL_CHIP_VIEW = 199
         const val TOOL_GOOGLE = 68
         /** ✍️ Terminar la frase con IA (solo cuando lo tocas). */
         const val TOOL_FINISH = 69
@@ -1210,6 +1212,10 @@ class KeyboardView(context: Context) : View(context) {
     private var chipIcon = Icons.IMAGE
     private val shotRect = RectF()
     private val chipX = RectF()
+    private val chipV = RectF()
+    /** El botón de arriba lleva lupa (captura de pantalla: verla como referencia). */
+    var chipView = false
+        set(v) { if (field != v) { field = v; invalidate(0, 0, width, stripH.toInt() + 1) } }
     private val showingShot get() = chipLabel != null && !forceTools && !(typingWord && hasSuggestions)
 
     /** Botón grande en el centro de la barra (la captura de pantalla, o el aviso del permiso). */
@@ -1231,6 +1237,7 @@ class KeyboardView(context: Context) : View(context) {
             if (x < menuW) return TOOL_MENU
             // La ✕ chiquita a la derecha del botón quita la sugerencia
             if (x >= chipX.left - 6f * d && x <= chipX.right + 10f * d) return TOOL_CHIP_X
+            if (chipView && x >= chipV.left - 4f * d && x <= chipV.right + 4f * d) return TOOL_CHIP_VIEW
             return if (x >= shotRect.left && x <= shotRect.right) TOOL_SHOT else -1
         }
         // Se toca lo que se VE: la cápsula con el nombre entera es de su botón, y los vecinos donde están dibujados
@@ -3432,7 +3439,8 @@ class KeyboardView(context: Context) : View(context) {
         val tw = text.measureText(label)
         val h = stripH * 0.78f
         val xr = h * 0.3f // la ✕
-        val w = h + 10f * d + tw + 12f * d + xr * 2 + 8f * d
+        val vw = if (chipView) xr * 2 + 8f * d else 0f // la lupa
+        val w = h + 10f * d + tw + 12f * d + xr * 2 + 8f * d + vw
         val left = (width - w) / 2f
         val top = (stripH - h) / 2f
         shotRect.set(left, top, left + w, top + h)
@@ -3480,6 +3488,14 @@ class KeyboardView(context: Context) : View(context) {
         fill.color = if (stripPressed == TOOL_CHIP_X) alphaOf(PanelUi.border(p), 0.5f) else alphaOf(p.text, 0.14f)
         c.drawCircle(xcx, cy, xr, fill)
         Icons.draw(c, Icons.CLOSE, xcx, cy, xr * 0.5f, p.text, 0, d)
+        // 🔍 Lupa: abrir la captura grande (referencia) en vez de pegarla
+        if (chipView) {
+            val vcx = xcx - xr * 2 - 8f * d
+            chipV.set(vcx - xr, cy - xr, vcx + xr, cy + xr)
+            fill.color = if (stripPressed == TOOL_CHIP_VIEW) alphaOf(PanelUi.border(p), 0.6f) else alphaOf(PanelUi.border(p), 0.28f)
+            c.drawCircle(vcx, cy, xr, fill)
+            Icons.draw(c, Icons.SEARCH, vcx, cy, xr * 0.55f, p.text, 0, d)
+        } else chipV.setEmpty()
     }
 
     private fun drawSuggestions(c: Canvas, p: Palette) {
