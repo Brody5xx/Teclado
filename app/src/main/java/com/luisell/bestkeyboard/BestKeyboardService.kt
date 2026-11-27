@@ -1799,13 +1799,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private fun prepareTranslator() {
         trans?.close()
         val tb = tBar ?: return
-        tb.setStatus(L.t("Preparando… (la primera vez descarga el idioma, unos 30 MB)", "Getting ready… (the first time it downloads the language, about 30 MB)"))
+        tb.setStatus(L.t("Descargando el idioma (solo la primera vez)…", "Downloading the language (first time only)…"))
         val t = Translation(tSrc, tDst)
         trans = t
         t.prepare(
             onReady = { if (trans === t) { tb.setStatus(""); doTranslate() } },
             onError = {
-                if (trans === t) tb.setStatus(L.t("No se pudo descargar el idioma. Conéctate a internet una vez para descargarlo.", "Couldn't download the language. Connect to the internet once to download it."))
+                if (trans === t) tb.setStatus(L.t("Sin internet: no se pudo descargar el idioma.", "No internet: couldn't download the language."), now = true)
             },
         )
     }
@@ -1857,7 +1857,7 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     if (pendingSend) sendTranslated()
                 }
             },
-            onError = { if (seq == tSeq) tb.setStatus(L.t("No se pudo traducir. Inténtalo de nuevo.", "Couldn't translate. Try again.")) },
+            onError = { if (seq == tSeq) tb.setStatus(L.t("No se pudo traducir. Inténtalo de nuevo.", "Couldn't translate. Try again."), now = true) },
         )
     }
 

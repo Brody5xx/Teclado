@@ -79,11 +79,16 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         box.isFocusable = false
         box.setPadding(d(14f), d(8f), d(14f), d(8f))
         box.onTapMoved = { actions?.onTranslateCursor() }
-        addView(box, LayoutParams(-1, -2).apply { topMargin = d(6f) })
-
-        status.textSize = 12f
-        status.setPadding(d(14f), d(2f), d(14f), d(2f))
-        addView(status, LayoutParams(-1, -2))
+        // El aviso («Preparando…») va ENCIMA de la caja, abajo a la derecha: así el teclado no brinca
+        val holder = android.widget.FrameLayout(context)
+        holder.addView(box, android.widget.FrameLayout.LayoutParams(-1, -2))
+        status.textSize = 11f
+        status.maxLines = 1
+        status.ellipsize = android.text.TextUtils.TruncateAt.END
+        status.setPadding(d(10f), d(2f), d(10f), d(2f))
+        status.visibility = GONE
+        holder.addView(status, android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { setMargins(d(40f), 0, d(8f), d(4f)) })
+        addView(holder, LayoutParams(-1, -2).apply { topMargin = d(6f) })
 
         connection = box.onCreateInputConnection(inputInfo)
             ?: android.view.inputmethod.BaseInputConnection(box, true)
@@ -104,9 +109,25 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         lastDst = dst
     }
 
-    fun setStatus(text: String) {
+    private val showStatus = Runnable {
+        status.alpha = 0f
+        status.visibility = VISIBLE
+        status.animate().alpha(1f).setDuration(200L).start()
+    }
+
+    /**
+     * El aviso de abajo a la derecha. Si el idioma ya está descargado casi nunca se ve: solo sale si tarda
+     * más de un momento (así cambiar de idioma no parpadea).
+     */
+    fun setStatus(text: String, now: Boolean = false) {
+        removeCallbacks(showStatus)
+        if (text.isEmpty()) {
+            if (status.visibility == VISIBLE) status.animate().alpha(0f).setDuration(160L).withEndAction { status.visibility = GONE }.start()
+            return
+        }
+        status.animate().cancel()
         status.text = Emo.strip(text)
-        status.visibility = if (text.isEmpty()) GONE else VISIBLE
+        if (now || status.visibility == VISIBLE) { status.alpha = 1f; status.visibility = VISIBLE } else postDelayed(showStatus, 700L)
     }
 
     /** Borrar hacia atrás dentro de la caja (una letra, o un emoji completo). */
@@ -156,6 +177,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         bg.setStroke(d(1.5f), p.accent)
         box.background = bg
         status.setTextColor(p.hint)
+        status.background = PanelUi.rounded((p.key and 0x00FFFFFF) or 0xE6000000.toInt(), d(10f).toFloat())
     }
 }
 
