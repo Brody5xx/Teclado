@@ -1800,11 +1800,13 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
         trans?.close()
         val tb = tBar ?: return
         tb.setStatus(L.t("Descargando el idioma (solo la primera vez)…", "Downloading the language (first time only)…"))
+        tb.loading(true)
         val t = Translation(tSrc, tDst)
         trans = t
         t.prepare(
-            onReady = { if (trans === t) { tb.setStatus(""); doTranslate() } },
+            onReady = { if (trans === t) { tb.setStatus(""); tb.loading(false); doTranslate() } },
             onError = {
+                if (trans === t) tb.loading(false)
                 if (trans === t) tb.setStatus(L.t("Sin internet: no se pudo descargar el idioma.", "No internet: couldn't download the language."), now = true)
             },
         )
@@ -2769,6 +2771,12 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
                     if (p.size >= 3) p[2] = phc else { while (p.size < 2) p.add(""); p.add(phc) }
                 }
             } catch (_: Exception) { }
+            // ✨ IA (si la prendiste): cuando haces una pausa, propone cómo seguir tu frase
+            if (mem == null) aiPhrase(longBefore)?.let { ai ->
+                val aic = if (capital) TextUtil.matchCase(ai, "A") else ai
+                while (p.size < 2) p.add("")
+                if (p.size >= 3) p[2] = aic else p.add(aic)
+            }
             // ❓ La frase es una pregunta: a la izquierda sale «?»
             val q = try { SmartFormat.isQuestion(before) } catch (_: Exception) { false }
             if (q && before.isNotEmpty() && before.last() == ' ') {
@@ -2827,6 +2835,43 @@ class BestKeyboardService : InputMethodService(), KeyboardView.Listener {
     private val sentLearned = HashSet<String>()
     /** Lo último que había escrito en el campo (para aprender la frase cuando la envías y el cuadro se vacía). */
     private var sentSeen = ""
+
+    // ---------------------------------------------------------------- ✨ Sugerencia con IA (opcional)
+
+    private val aiRunnable = Runnable { askAi() }
+    private var aiCtx = ""
+
+    /** La frase que estás escribiendo (desde el último punto), para la IA. */
+    private fun aiContext(text: String): String {
+        val cut = text.indexOfLast { it == '.' || it == '?' || it == '!' || it == '\n' }
+        val cur = text.substring(cut + 1).trim()
+        // Si la frase va empezando, la de antes ayuda a entender (máximo 220 letras en total)
+        val prev = if (cut >= 0 && cur.length < 60) text.substring(0, cut + 1).takeLast(120).trim() else ""
+        return (if (prev.isNotEmpty()) "$prev $cur" else cur).takeLast(220)
+    }
+
+    /** La continuación que ya trajo la IA para lo que llevas (o null); si no hay, la pide tras una pausa. */
+    private fun aiPhrase(text: String): String? {
+        handler.removeCallbacks(aiRunnable)
+        if (!prefs.getBoolean(Prefs.AI_SUGGEST, false) || incognito || isPassword || !fieldLearn) return null
+        val ctx = aiContext(text)
+        if (ctx.split(' ').count { it.isNotBlank() } < 3 || !text.endsWith(" ")) return null
+        AiNext.cached(ctx)?.let { return it }
+        aiCtx = ctx
+        handler.postDelayed(aiRunnable, 800L)
+        return null
+    }
+
+    private fun askAi() {
+        val ctx = aiCtx
+        if (ctx.isEmpty()) return
+        val eng = WordStore.engine
+        val l = try { if (eng != null) sugLang(eng, ctx, 0) else lang } catch (_: Exception) { lang }
+        AiNext.ask(ctx, l) { r ->
+            // Llegó y sigues en el mismo lugar: se pone en la barra
+            if (r != null && aiCtx == ctx && mode == 0 && translating.not()) updateSuggestions()
+        }
+    }
 
     /** Lo que sigue según tus frases guardadas. [typed] = lo que llevas de la palabra actual. */
     private fun sentenceNext(eng: com.luisell.bestkeyboard.words.WordEngine, text: String, typed: String): List<Pair<String, List<String>>> {

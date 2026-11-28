@@ -50,6 +50,7 @@ object Prefs {
     const val INCOGNITO = "incognito"
     const val MAIL_CODES = "mail_codes"
     const val SENTENCE_MEMORY = "sentence_memory"
+    const val AI_SUGGEST = "ai_suggest"
     const val INCOGNITO_APPS = "incognito_apps"
     /** Para qué usa el teclado (chat, student, office, tech) y si salen las herramientas del trabajo. */
     const val PROFILE = "profile"

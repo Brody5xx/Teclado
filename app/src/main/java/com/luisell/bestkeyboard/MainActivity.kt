@@ -909,6 +909,9 @@ class MainActivity : UiActivity() {
         switch(tr("Autocorrector", "Autocorrect"), Prefs.AUTOCORRECT, true,
             tr("Corrige al tocar espacio. Toca ⌫ justo después para deshacerlo.", "Fixes words when you tap space. Tap ⌫ right after to undo."))
         switch(tr("Aprender mis palabras", "Learn my words"), Prefs.LEARN, true, tr("Nombres, siglas y palabras del trabajo.", "Names, acronyms and work words."))
+        switch(tr("Sugerencias con IA", "AI suggestions"), Prefs.AI_SUGGEST, false,
+            tr("Cuando haces una pausa al escribir, la IA gratis lee la frase que llevas y propone cómo seguirla (a la derecha de las sugerencias; un toque y se escribe). Necesita internet y envía solo esa frase a la IA, nunca en incógnito ni en contraseñas.",
+                "When you pause while typing, the free AI reads the sentence you're on and suggests how to continue it (on the right of the suggestions; one tap types it). Needs internet and sends only that sentence to the AI, never in incognito or passwords."))
         switch(tr("Aprender mis frases", "Learn my sentences"), Prefs.SENTENCE_MEMORY, true,
             tr("Las frases que escribes seguido se aprenden enteras. Cuando vuelvas a escribir una, en el centro sale siempre la misma palabra que tú usas, y a la derecha el resto de la frase para ponerla de un toque.",
                 "Sentences you write often are learned whole. When you write one again, the center always shows the same word you use, and the right shows the rest of the sentence to add in one tap."))
@@ -1509,6 +1512,10 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.17.0" to tr("•  Traducir mientras escribes, más bonito: al tocar ⇄ los dos idiomas se cruzan de lado y la flechita da media vuelta; al cambiar uno, su botón da una vueltita como tarjeta; y mientras se prepara el idioma, una luz con los colores del diamante le da la vuelta a la caja.\n" +
+            "•  Sugerencias con IA (nuevo, en Ajustes › Sugerencias, apagado de fábrica): cuando haces una pausa al escribir, la IA gratis lee tu frase y propone cómo seguirla, a la derecha de las sugerencias. Un toque y se escribe. Necesita internet; nunca en incógnito ni en contraseñas.",
+            "•  Translate while typing, prettier: tapping ⇄ makes the two languages cross sides and the arrow does a half turn; changing one makes its button flip like a card; and while the language gets ready, a light in the diamond's colors goes around the box.\n" +
+            "•  AI suggestions (new, in Settings › Suggestions, off by default): when you pause while typing, the free AI reads your sentence and suggests how to continue it, on the right of the suggestions. One tap types it. Needs internet; never in incognito or passwords."),
         "15.16.2" to tr("•  Traducir mientras escribes: al cambiar de idioma el teclado ya no brinca. El aviso de «Preparando…» salía un instante en una línea nueva y empujaba todo; ahora solo sale si de verdad está descargando un idioma, y va dentro de la caja (abajo a la derecha), sin mover nada.",
             "•  Translate while typing: changing the language no longer makes the keyboard jump. The «Getting ready…» notice flashed for a moment on a new line and pushed everything; now it only shows if it's really downloading a language, and it sits inside the box (bottom right), without moving anything."),
         "15.16.1" to tr("•  El botón «Captura de pantalla» de arriba ahora tiene las dos formas: tócalo y se pega la foto (como antes), o toca la lupa que tiene al lado y se abre como referencia (el texto marcado para tocarlo y escribirlo). Dentro de la referencia también está «Pegar foto».",

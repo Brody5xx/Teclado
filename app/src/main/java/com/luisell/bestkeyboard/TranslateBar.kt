@@ -7,6 +7,8 @@ import android.text.InputType
 import android.text.Selection
 import android.text.TextWatcher
 import android.view.Gravity
+import android.view.View
+import android.graphics.Canvas
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.widget.EditText
@@ -39,6 +41,7 @@ class TranslateBar(context: Context) : LinearLayout(context) {
     private val to = TextView(context)
     val box = CursorBox(context)
     private val status = TextView(context)
+    private val sweep = SweepBorder(context)
     private var silent = false
 
     /** El teclado escribe aquí (no en la app) mientras traduces. */
@@ -82,6 +85,8 @@ class TranslateBar(context: Context) : LinearLayout(context) {
         // El aviso («Preparando…») va ENCIMA de la caja, abajo a la derecha: así el teclado no brinca
         val holder = android.widget.FrameLayout(context)
         holder.addView(box, android.widget.FrameLayout.LayoutParams(-1, -2))
+        // ✨ Mientras carga el idioma, una luz de colores le da la vuelta al borde de la caja
+        holder.addView(sweep, android.widget.FrameLayout.LayoutParams(-1, -1))
         status.textSize = 11f
         status.maxLines = 1
         status.ellipsize = android.text.TextUtils.TruncateAt.END
@@ -103,11 +108,45 @@ class TranslateBar(context: Context) : LinearLayout(context) {
     }
 
     fun setLangs(src: String, dst: String) {
+        val shown = isShown // al abrir no se anima, solo al cambiar
+        val swapped = shown && src == lastDst && dst == lastSrc && src != dst
+        val srcChanged = shown && src != lastSrc
+        val dstChanged = shown && dst != lastDst
         from.text = Translation.name(src)
         to.text = Translation.name(dst)
         lastSrc = src
         lastDst = dst
+        if (swapped) {
+            // ⇄ Los dos idiomas se cruzan de lado y la flechita da media vuelta
+            val dist = (to.left - from.left).toFloat().takeIf { it > 0f } ?: d(160f).toFloat()
+            for ((v, start) in listOf(from to dist, to to -dist)) {
+                v.animate().cancel()
+                v.translationX = start; v.scaleX = 0.86f; v.scaleY = 0.86f
+                v.animate().translationX(0f).scaleX(1f).scaleY(1f).setDuration(380L)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(1.1f)).start()
+            }
+            swap.animate().cancel()
+            swap.rotation = 0f
+            swap.animate().rotation(180f).setDuration(380L).setInterpolator(android.view.animation.DecelerateInterpolator())
+                .withEndAction { swap.rotation = 0f }.start()
+        } else {
+            if (srcChanged) flip(from)
+            if (dstChanged) flip(to)
+        }
     }
+
+    /** El botón del idioma da una vueltita (como una tarjeta) y brilla al cambiar. */
+    private fun flip(v: TextView) {
+        v.animate().cancel()
+        v.cameraDistance = 8000f * resources.displayMetrics.density
+        v.rotationX = -90f; v.alpha = 0.4f
+        v.animate().rotationX(0f).alpha(1f).setDuration(320L).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        v.scaleX = 1.08f; v.scaleY = 1.08f
+        v.animate().scaleX(1f).scaleY(1f).setDuration(420L).setInterpolator(android.view.animation.OvershootInterpolator(2f)).start()
+    }
+
+    /** ✨ La luz alrededor de la caja mientras se prepara el idioma (o mientras traduce). */
+    fun loading(on: Boolean) = sweep.run(on)
 
     private val showStatus = Runnable {
         status.alpha = 0f
@@ -277,5 +316,57 @@ class CursorBox(context: Context) : EditText(context) {
             }
         }
         return true
+    }
+}
+
+/** ✨ Una luz de colores (los del diamante) que recorre el borde redondo de la caja. */
+class SweepBorder(context: Context) : View(context) {
+    private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { style = android.graphics.Paint.Style.STROKE }
+    private val rect = android.graphics.RectF()
+    private val m = android.graphics.Matrix()
+    private var phase = 0f
+    private var anim: android.animation.ValueAnimator? = null
+    private val d = resources.displayMetrics.density
+
+    init { alpha = 0f; isClickable = false; isFocusable = false }
+
+    private var since = 0L
+    private val offNow = Runnable { run(false) }
+
+    fun run(on: Boolean) {
+        removeCallbacks(offNow)
+        // Que la luz dé al menos una vuelta completa (aunque el idioma cargue al instante)
+        if (!on && anim != null && android.os.SystemClock.uptimeMillis() - since < 1300L) {
+            postDelayed(offNow, 1300L - (android.os.SystemClock.uptimeMillis() - since)); return
+        }
+        if (on) {
+            if (anim == null) since = android.os.SystemClock.uptimeMillis()
+            if (anim == null) anim = android.animation.ValueAnimator.ofFloat(0f, 360f).apply {
+                duration = 1400L; repeatCount = android.animation.ValueAnimator.INFINITE
+                interpolator = android.view.animation.LinearInterpolator()
+                addUpdateListener { phase = it.animatedValue as Float; invalidate() }
+                start()
+            }
+            animate().cancel(); animate().alpha(1f).setDuration(220L).start()
+        } else {
+            animate().cancel()
+            animate().alpha(0f).setDuration(300L).withEndAction { anim?.cancel(); anim = null }.start()
+        }
+    }
+
+    override fun onDetachedFromWindow() { super.onDetachedFromWindow(); anim?.cancel(); anim = null }
+
+    override fun onDraw(c: Canvas) {
+        if (alpha <= 0f) return
+        val cx = width / 2f; val cy = height / 2f
+        val sh = android.graphics.SweepGradient(cx, cy,
+            intArrayOf(0x00000000, LightFx.COLORS[0], LightFx.COLORS[1], LightFx.COLORS[2], 0x00000000, 0x00000000),
+            floatArrayOf(0f, 0.08f, 0.16f, 0.24f, 0.32f, 1f))
+        m.reset(); m.setRotate(phase, cx, cy); sh.setLocalMatrix(m)
+        paint.shader = sh
+        paint.strokeWidth = 2.6f * d
+        val inset = paint.strokeWidth / 2f
+        rect.set(inset, inset, width - inset, height - inset)
+        c.drawRoundRect(rect, 20f * d, 20f * d, paint)
     }
 }
