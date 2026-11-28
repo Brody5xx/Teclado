@@ -1512,6 +1512,8 @@ class MainActivity : UiActivity() {
     /** Novedades de cada versión (la primera es la más nueva). */
     private fun releaseNotes(): List<Pair<String, String>> = listOf(
         "12.18.3" to tr("•  Mientras la IA piensa (Respuestas rápidas, Más formal…) también sale el diamante con la luz dando vueltas.", "•  While the AI is thinking (Quick replies, More formal…) the diamond with its spinning light also shows."),
+        "15.17.1" to tr("•  Arreglado: en la 15.17.0 la barra de traducir se estiraba y cubría toda la pantalla. Vuelve a su tamaño normal, con la animación nueva.",
+            "•  Fixed: in 15.17.0 the translate bar stretched and covered the whole screen. It's back to its normal size, with the new animation."),
         "15.17.0" to tr("•  Traducir mientras escribes, más bonito: al tocar ⇄ los dos idiomas se cruzan de lado y la flechita da media vuelta; al cambiar uno, su botón da una vueltita como tarjeta; y mientras se prepara el idioma, una luz con los colores del diamante le da la vuelta a la caja.\n" +
             "•  Sugerencias con IA (nuevo, en Ajustes › Sugerencias, apagado de fábrica): cuando haces una pausa al escribir, la IA gratis lee tu frase y propone cómo seguirla, a la derecha de las sugerencias. Un toque y se escribe. Necesita internet; nunca en incógnito ni en contraseñas.",
             "•  Translate while typing, prettier: tapping ⇄ makes the two languages cross sides and the arrow does a half turn; changing one makes its button flip like a card; and while the language gets ready, a light in the diamond's colors goes around the box.\n" +

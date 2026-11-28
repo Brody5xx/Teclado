@@ -330,6 +330,13 @@ class SweepBorder(context: Context) : View(context) {
 
     init { alpha = 0f; isClickable = false; isFocusable = false }
 
+    // No pide espacio propio: toma justo el tamaño de la caja (si no, la barra se estiraba a toda la pantalla)
+    override fun onMeasure(w: Int, h: Int) {
+        val mw = if (MeasureSpec.getMode(w) == MeasureSpec.EXACTLY) MeasureSpec.getSize(w) else 0
+        val mh = if (MeasureSpec.getMode(h) == MeasureSpec.EXACTLY) MeasureSpec.getSize(h) else 0
+        setMeasuredDimension(mw, mh)
+    }
+
     private var since = 0L
     private val offNow = Runnable { run(false) }
 
